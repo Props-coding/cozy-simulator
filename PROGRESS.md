@@ -15,12 +15,11 @@
 
 - Milestone 6: real test with a friend on a different network. Movement and voice in Gaming both confirmed working. This also resolves the previously pinned voice issue, it really was just the single-PC test setup being unreliable, not a code bug.
 
-- Milestone 7 (polish), first pieces: local time next to each name in the sidebar (using each browser's own clock, no outside service needed), and short join/leave chimes (generated in code, not sound files).
+- Milestone 7 (polish), first pieces: local time next to each name in the sidebar (using each browser's own clock, no outside service needed), and short join/leave chimes (generated in code, not sound files). Confirmed working.
 
 ## Next
-- Confirm local time shows correctly and join/leave chimes play.
-- State/Country display is on hold for now (would need a third-party IP lookup service; you said hold off). Going 3D is noted as a separate future decision, not part of this polish pass, since it'd mean rewriting the whole rendering approach.
-- More polish ideas welcome: cozier visuals, nicer character look, or a backlog item (body-doubling timer, weather station, porch, etc.)
+- Waiting on your priorities for what's next: cozier visuals, nicer character look, or a backlog item (body-doubling timer, weather station, porch, etc.)
+- State/Country display is on hold (would need a third-party IP lookup service). Going 3D is a separate future decision, not part of this polish pass, since it'd mean rewriting the whole rendering approach.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
