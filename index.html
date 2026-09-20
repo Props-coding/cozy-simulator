@@ -43,13 +43,21 @@
           Volume
           <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
         </label>
+        <label class="voice-row">
+          Lo-fi volume (Study)
+          <input id="lofi-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
+        </label>
       </div>
     </div>
   </div>
 
+  <!-- Holds the hidden lo-fi music player. Tucked off-screen rather
+       than display:none, since some browsers pause hidden video. -->
+  <div id="lofi-player"></div>
+
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 7</p>
+  <p id="version-tag">build 8</p>
 
   <script src="config.js"></script>
   <script src="world.js"></script>

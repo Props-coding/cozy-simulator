@@ -45,4 +45,18 @@ const CONFIG = {
 
   // How many times per second we tell friends where we are.
   positionUpdatesPerSecond: 12,
+
+  // --- Study room lo-fi music ---
+  // Plays locally for each person (not synced) while standing in Study.
+  // Primary: the official Lofi Girl 24/7 livestream, embedded via YouTube.
+  // Confirmed embeddable and it's the channel's own intended live stream.
+  lofiYouTubeVideoId: "rFZHOHl-L8A",
+
+  // Backup, in case the YouTube embed is ever blocked (e.g. strict
+  // network or ad blocker): a direct radio stream from SomaFM, a free
+  // internet radio station meant for exactly this kind of listening.
+  lofiBackupStreamUrl: "https://ice2.somafm.com/fluid-128-mp3",
+
+  // Starting volume for the Study music (0 to 1). There's a slider too.
+  defaultLofiVolume: 0.5,
 };

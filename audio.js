@@ -63,3 +63,101 @@ export function setMasterMuted(muted) {
 export function setMasterVolume(vol) {
   masterVolume = vol;
 }
+
+// --- Lo-fi music for the Study room ---
+// Plays locally, not synced with friends. Fades in when you enter Study,
+// fades out when you leave (or when Dinner/master mute silences it).
+
+let inStudy = false;
+let lofiUserVolume = 1; // this room's own volume slider, 0 to 1
+let lofiCurrentVolume = 0; // what's actually applied right now (eases toward target)
+let lofiMode = "youtube"; // or "backup", if the embed fails
+let ytPlayer = null;
+let ytPlayerReady = false;
+let backupAudioEl = null;
+
+function loadYouTubeApi() {
+  return new Promise((resolve) => {
+    if (window.YT && window.YT.Player) {
+      resolve();
+      return;
+    }
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+    window.onYouTubeIframeAPIReady = resolve;
+  });
+}
+
+function startBackupStream() {
+  if (!backupAudioEl) {
+    backupAudioEl = new Audio(CONFIG.lofiBackupStreamUrl);
+    backupAudioEl.loop = true;
+  }
+  backupAudioEl.volume = 0;
+  backupAudioEl.play().catch((err) => console.warn("Backup lo-fi stream blocked:", err));
+}
+
+function startYouTubeStream(containerEl) {
+  if (ytPlayer) {
+    if (ytPlayerReady) ytPlayer.playVideo();
+    return;
+  }
+  loadYouTubeApi().then(() => {
+    ytPlayer = new YT.Player(containerEl, {
+      videoId: CONFIG.lofiYouTubeVideoId,
+      playerVars: { autoplay: 1, controls: 0 },
+      events: {
+        onReady: () => {
+          ytPlayerReady = true;
+          ytPlayer.setVolume(0);
+          ytPlayer.playVideo();
+        },
+        onError: () => {
+          console.warn("Lo-fi YouTube embed failed, switching to the backup stream.");
+          lofiMode = "backup";
+          startBackupStream();
+        },
+      },
+    });
+  });
+}
+
+// Call once, when you walk into Study. containerEl is an empty element
+// the YouTube player can take over (only used the first time).
+export function enterStudy(containerEl) {
+  inStudy = true;
+  if (lofiMode === "youtube") {
+    startYouTubeStream(containerEl);
+  } else {
+    startBackupStream();
+  }
+}
+
+// Call once, when you walk out of Study (to anywhere, including Dinner).
+export function leaveStudy() {
+  inStudy = false;
+}
+
+export function setLofiVolume(vol) {
+  lofiUserVolume = vol;
+}
+
+// Call every frame. Eases the actual volume toward where it should be,
+// so entering/leaving Study fades instead of snapping.
+export function updateLofi(dt) {
+  const target = inStudy && !masterMuted ? lofiUserVolume * masterVolume : 0;
+  const ease = 1 - Math.pow(0.001, dt);
+  lofiCurrentVolume += (target - lofiCurrentVolume) * ease;
+  if (Math.abs(target - lofiCurrentVolume) < 0.002) {
+    lofiCurrentVolume = target;
+  }
+
+  if (lofiMode === "youtube" && ytPlayerReady) {
+    ytPlayer.setVolume(Math.round(lofiCurrentVolume * 100));
+    if (lofiCurrentVolume <= 0.002 && !inStudy) ytPlayer.pauseVideo();
+  } else if (backupAudioEl) {
+    backupAudioEl.volume = lofiCurrentVolume;
+    if (lofiCurrentVolume <= 0.002 && !inStudy) backupAudioEl.pause();
+  }
+}

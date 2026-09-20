@@ -16,6 +16,10 @@ import {
   updateVoiceRouting,
   setMasterMuted,
   setMasterVolume,
+  enterStudy,
+  leaveStudy,
+  setLofiVolume,
+  updateLofi,
 } from "./audio.js";
 
 const joinScreen = document.getElementById("join-screen");
@@ -27,12 +31,17 @@ const roomLabel = document.getElementById("room-label");
 const peerList = document.getElementById("peer-list");
 const muteToggle = document.getElementById("mute-toggle");
 const volumeSlider = document.getElementById("volume-slider");
+const lofiVolumeSlider = document.getElementById("lofi-volume-slider");
+const lofiPlayerContainer = document.getElementById("lofi-player");
 
 onPeerStream(handlePeerStream);
 onPeerLeave(removePeerAudio);
 
 muteToggle.addEventListener("change", () => setMasterMuted(muteToggle.checked));
 volumeSlider.addEventListener("input", () => setMasterVolume(parseFloat(volumeSlider.value)));
+lofiVolumeSlider.addEventListener("input", () => setLofiVolume(parseFloat(lofiVolumeSlider.value)));
+setLofiVolume(CONFIG.defaultLofiVolume);
+lofiVolumeSlider.value = CONFIG.defaultLofiVolume;
 
 const canvas = document.getElementById("house");
 canvas.width = CONFIG.canvasWidth;
@@ -85,6 +94,7 @@ function readMovement(dt) {
 let lastTime = performance.now();
 let timeSinceLastBroadcast = 0;
 const broadcastInterval = 1 / CONFIG.positionUpdatesPerSecond;
+let previousRoomId = null;
 
 // Friends' positions only arrive ~12 times a second, which looks choppy
 // if drawn directly. Instead we ease each friend's drawn position toward
@@ -122,6 +132,13 @@ function tick(now) {
   updateMicForRoom(currentRoom.id);
   updateVoiceRouting(currentRoom.id, getPeers());
 
+  if (currentRoom.id !== previousRoomId) {
+    if (currentRoom.id === "study") enterStudy(lofiPlayerContainer);
+    if (previousRoomId === "study") leaveStudy();
+    previousRoomId = currentRoom.id;
+  }
+  updateLofi(dt);
+
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
@@ -131,9 +148,10 @@ function tick(now) {
   drawWorld(ctx);
   for (const peer of getPeers()) {
     const shown = getSmoothedPosition(peer, dt);
-    drawPlayer(ctx, shown.x, shown.y, peer.color, peer.name);
+    const badge = peer.room === "dinner" ? "eating" : null;
+    drawPlayer(ctx, shown.x, shown.y, peer.color, peer.name, badge);
   }
-  drawPlayer(ctx, player.x, player.y, myColor, myName);
+  drawPlayer(ctx, player.x, player.y, myColor, myName, currentRoom.id === "dinner" ? "eating" : null);
 
   updateSidebar(currentRoom.name);
 

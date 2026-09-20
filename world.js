@@ -91,13 +91,24 @@ function drawWorld(ctx) {
 }
 
 // Draws one player (used for both yourself and everyone else) as a
-// colored square with their name above it.
-function drawPlayer(ctx, x, y, color, name) {
+// colored square with their name above it. Pass badge (e.g. "eating")
+// to show a small label over their head, used for the Dinner room.
+function drawPlayer(ctx, x, y, color, name, badge) {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, PLAYER_SIZE, PLAYER_SIZE);
   ctx.fillStyle = "#222";
   ctx.font = "12px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(name, x + PLAYER_SIZE / 2, y - 4);
+
+  if (badge) {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x - 6, y - 34, PLAYER_SIZE + 12, 16);
+    ctx.strokeStyle = "#5a4a3a";
+    ctx.strokeRect(x - 6, y - 34, PLAYER_SIZE + 12, 16);
+    ctx.fillStyle = "#5a4a3a";
+    ctx.fillText(badge, x + PLAYER_SIZE / 2, y - 22);
+  }
+
   ctx.textAlign = "left";
 }

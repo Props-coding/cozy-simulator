@@ -10,8 +10,11 @@
 
 - Milestone 4: voice with room rules. Mic only live in Gaming, you only hear someone if you're both in Gaming, plus a mute-all checkbox and volume slider. Confirmed working.
 
+- Milestone 5: lo-fi music in Study, fades in/out, own volume slider. Uses the official Lofi Girl YouTube livestream (confirmed embeddable), with a SomaFM internet radio stream as an automatic backup if the embed ever gets blocked. Dinner comes out silent automatically (it was never a voice room, and leaving Study fades the music out no matter where you walk to). Added a small "eating" badge over anyone standing in Dinner.
+
 ## Next
-- Milestone 5: lo-fi music in Study (local, not synced between friends) and full silence in Dinner, plus the "eating" badge over your character in Dinner. Researching a real, currently-working lo-fi stream before wiring it up.
+- Confirm Milestone 5: walk into Study, check music fades in; walk out, check it fades out; try the lo-fi volume slider. Walk into Dinner and check you see the "eating" badge and hear nothing.
+- Then Milestone 6: real test with friends on different networks.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.

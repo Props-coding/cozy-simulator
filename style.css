@@ -79,6 +79,13 @@ canvas {
   margin: 6px 0;
 }
 
+#lofi-player {
+  position: fixed;
+  left: -9999px;
+  width: 2px;
+  height: 2px;
+}
+
 #version-tag {
   position: fixed;
   bottom: 6px;
