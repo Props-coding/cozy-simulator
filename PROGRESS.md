@@ -11,10 +11,10 @@
 - Milestone 4: voice with room rules. Mic only live in Gaming, you only hear someone if you're both in Gaming, plus a mute-all checkbox and volume slider. Confirmed working.
 
 - Milestone 5: lo-fi music in Study, fades in/out, own volume slider. Uses the official Lofi Girl YouTube livestream (confirmed embeddable), with a SomaFM internet radio stream as an automatic backup if the embed ever gets blocked. Dinner comes out silent automatically (it was never a voice room, and leaving Study fades the music out no matter where you walk to). Added a small "eating" badge over anyone standing in Dinner. Confirmed working.
-- Voice in Gaming briefly stopped working. Not a code bug: Trystero (the matchmaking library) always picks the same 5 public relay servers for our app, and 2 of those specific 5 were having problems (one had a disk error, one wouldn't connect). Fixed by asking it to try 12 relays instead of 5, so a couple being down matters much less.
+- Voice in Gaming briefly stopped working. First suspected the public relay servers being flaky (real, and fixed with more redundancy), but voice still failed with no errors even once movement kept working fine. Found the real bug: the code that plays a friend's voice never actually pressed play, it only set an "autoplay" property on an element that wasn't even added to the page. Some browsers won't autoplay something like that. Fixed by attaching it properly and explicitly starting playback.
 
 ## Next
-- Confirm voice works again in Gaming after the relay fix.
+- Confirm voice works in Gaming now.
 - Then Milestone 6: real test with friends on different networks.
 
 ## Open questions

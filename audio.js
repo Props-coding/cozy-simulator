@@ -34,12 +34,15 @@ export function updateMicForRoom(roomId) {
 // Called when a friend's voice stream arrives, so we can play it.
 export function handlePeerStream(stream, peerId) {
   const audioEl = document.createElement("audio");
-  audioEl.autoplay = true;
   audioEl.srcObject = stream;
+  audioEl.muted = true; // updateVoiceRouting unmutes it once room rules allow
+  document.body.appendChild(audioEl); // some browsers won't reliably autoplay a detached element
+  audioEl.play().catch((err) => console.warn("Couldn't play a friend's voice:", err));
   peerAudioElements[peerId] = audioEl;
 }
 
 export function removePeerAudio(peerId) {
+  peerAudioElements[peerId]?.remove();
   delete peerAudioElements[peerId];
 }
 
