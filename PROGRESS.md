@@ -14,9 +14,9 @@
 - Voice in Gaming briefly stopped working. First suspected the public relay servers being flaky (real, and fixed with more redundancy), but voice still failed with no errors even once movement kept working fine. Found the real bug: the code that plays a friend's voice never actually pressed play, it only set an "autoplay" property on an element that wasn't even added to the page. Some browsers won't autoplay something like that. Fixed by attaching it properly and explicitly starting playback.
 
 ## Next
-- Confirm voice works in Gaming now.
-- Then Milestone 6: real test with friends on different networks.
+- Milestone 6: real test with friends on different networks. This will also settle the pinned voice issue below.
 
 ## Open questions
+- **Pinned: voice in Gaming still not confirmed working**, even after fixing two real bugs (relay redundancy, a missing `.play()` call). All the basic checks came back clean (not muted, volume up, tab not muted, system mixer not zeroed). Most likely explanation is that testing two windows on one PC, sharing one mic and one set of speakers, just isn't a reliable way to test voice (the project's own testing notes flagged this from the start). Real signal will come from testing with an actual friend on their own computer in Milestone 6. If it still fails there, the next move is a self-hosted relay or TURN server (e.g. a small DigitalOcean droplet), which is a real fix for real connectivity problems, but costs money and needs an account, so we'd decide that together only if needed.
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
 - Room name and password for matchmaking are in `config.js`, randomly generated. Since the GitHub repo is public, anyone who reads the source could see them, this is "hard to stumble onto by accident," not a real secret. Fine for a private friends project with nothing sensitive shared, per the project's own rules.
