@@ -27,7 +27,12 @@ joinButton.addEventListener("click", () => {
   joinScreen.hidden = true;
   gameScreen.hidden = false;
 
-  connectToRoom(myName, myColor);
+  try {
+    connectToRoom(myName, myColor);
+  } catch (err) {
+    // Movement still works alone even if connecting to friends fails.
+    console.error("Could not connect to other players:", err);
+  }
   requestAnimationFrame(tick);
 });
 

@@ -22,22 +22,22 @@ export function connectToRoom(myName, myColor) {
 
   // "position" is a custom message type we invented for sending where a
   // player is standing. Trystero lets us make up any name we want here.
-  const [sendPosition, receivePosition] = room.makeAction("position");
-  positionAction = sendPosition;
+  const position = room.makeAction("position");
+  positionAction = position.send;
 
-  receivePosition((data, peerId) => {
+  position.onMessage = (data, { peerId }) => {
     peers[peerId] = { ...peers[peerId], ...data };
-  });
+  };
 
-  room.onPeerJoin((peerId) => {
+  room.onPeerJoin = (peerId) => {
     peers[peerId] = { name: "...", color: "#999", x: 400, y: 300, room: "hallway" };
     // Tell the new friend who we are right away, don't wait for the next tick.
     positionAction({ name: myName, color: myColor, ...lastKnownPosition });
-  });
+  };
 
-  room.onPeerLeave((peerId) => {
+  room.onPeerLeave = (peerId) => {
     delete peers[peerId];
-  });
+  };
 }
 
 let lastKnownPosition = { x: 0, y: 0, room: "hallway" };
