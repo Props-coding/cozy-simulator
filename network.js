@@ -37,7 +37,15 @@ export function addLocalStream(stream) {
 // chosen a name and color on the Join screen.
 export function connectToRoom(myName, myColor) {
   room = joinRoom(
-    { appId: CONFIG.trysteroAppId, password: CONFIG.trysteroPassword },
+    {
+      appId: CONFIG.trysteroAppId,
+      password: CONFIG.trysteroPassword,
+      // Trystero only tries 5 of its ~29 public relays by default, always
+      // the same 5 for our app (picked from our appId). If a couple of
+      // those happen to be down, we're stuck. Trying more relays makes
+      // it much less likely all of them are down at once.
+      relayConfig: { redundancy: 12 },
+    },
     CONFIG.trysteroRoomId
   );
 

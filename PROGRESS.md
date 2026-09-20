@@ -10,10 +10,11 @@
 
 - Milestone 4: voice with room rules. Mic only live in Gaming, you only hear someone if you're both in Gaming, plus a mute-all checkbox and volume slider. Confirmed working.
 
-- Milestone 5: lo-fi music in Study, fades in/out, own volume slider. Uses the official Lofi Girl YouTube livestream (confirmed embeddable), with a SomaFM internet radio stream as an automatic backup if the embed ever gets blocked. Dinner comes out silent automatically (it was never a voice room, and leaving Study fades the music out no matter where you walk to). Added a small "eating" badge over anyone standing in Dinner.
+- Milestone 5: lo-fi music in Study, fades in/out, own volume slider. Uses the official Lofi Girl YouTube livestream (confirmed embeddable), with a SomaFM internet radio stream as an automatic backup if the embed ever gets blocked. Dinner comes out silent automatically (it was never a voice room, and leaving Study fades the music out no matter where you walk to). Added a small "eating" badge over anyone standing in Dinner. Confirmed working.
+- Voice in Gaming briefly stopped working. Not a code bug: Trystero (the matchmaking library) always picks the same 5 public relay servers for our app, and 2 of those specific 5 were having problems (one had a disk error, one wouldn't connect). Fixed by asking it to try 12 relays instead of 5, so a couple being down matters much less.
 
 ## Next
-- Confirm Milestone 5: walk into Study, check music fades in; walk out, check it fades out; try the lo-fi volume slider. Walk into Dinner and check you see the "eating" badge and hear nothing.
+- Confirm voice works again in Gaming after the relay fix.
 - Then Milestone 6: real test with friends on different networks.
 
 ## Open questions
