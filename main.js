@@ -1,18 +1,35 @@
-// Starts the game: sets up the canvas, reads keyboard input, and runs
-// the move-and-draw loop.
+// Starts the game: Join screen, then the move-and-draw loop, plus
+// sending your position to friends and drawing where they are.
+import { connectToRoom, broadcastPosition, getPeers } from "./network.js";
+
+const joinScreen = document.getElementById("join-screen");
+const gameScreen = document.getElementById("game-screen");
+const nameInput = document.getElementById("name-input");
+const colorInput = document.getElementById("color-input");
+const joinButton = document.getElementById("join-button");
+const roomLabel = document.getElementById("room-label");
+const peerList = document.getElementById("peer-list");
 
 const canvas = document.getElementById("house");
 canvas.width = CONFIG.canvasWidth;
 canvas.height = CONFIG.canvasHeight;
 const ctx = canvas.getContext("2d");
 
-const roomLabel = document.getElementById("room-label");
+let myName = "Friend";
+let myColor = "#e05a47";
 
-const player = {
-  x: 380,
-  y: 70,
-  color: "#e05a47",
-};
+const player = { x: 380, y: 70 };
+
+joinButton.addEventListener("click", () => {
+  myName = nameInput.value.trim() || "Friend";
+  myColor = colorInput.value;
+
+  joinScreen.hidden = true;
+  gameScreen.hidden = false;
+
+  connectToRoom(myName, myColor);
+  requestAnimationFrame(tick);
+});
 
 // Tracks which movement keys are currently held down.
 const keysDown = {};
@@ -33,6 +50,16 @@ function readMovement(dt) {
 }
 
 let lastTime = performance.now();
+let timeSinceLastBroadcast = 0;
+const broadcastInterval = 1 / CONFIG.positionUpdatesPerSecond;
+
+function updateSidebar(myRoomName) {
+  const rows = [`${myName} (you) — ${myRoomName}`];
+  for (const peer of getPeers()) {
+    rows.push(`${peer.name} — ${CONFIG.roomNames[peer.room] || peer.room}`);
+  }
+  peerList.innerHTML = rows.map((r) => `<li>${r}</li>`).join("");
+}
 
 function tick(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05); // cap so a tab-switch pause doesn't teleport the player
@@ -43,14 +70,22 @@ function tick(now) {
     movePlayer(player, dx, dy);
   }
 
-  drawWorld(ctx);
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, 24, 24);
+  const currentRoom = getCurrentRoom(player);
+  roomLabel.textContent = "You are in: " + currentRoom.name;
 
-  const room = getCurrentRoom(player);
-  roomLabel.textContent = "You are in: " + room.name;
+  timeSinceLastBroadcast += dt;
+  if (timeSinceLastBroadcast >= broadcastInterval) {
+    timeSinceLastBroadcast = 0;
+    broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id);
+  }
+
+  drawWorld(ctx);
+  for (const peer of getPeers()) {
+    drawPlayer(ctx, peer.x, peer.y, peer.color, peer.name);
+  }
+  drawPlayer(ctx, player.x, player.y, myColor, myName);
+
+  updateSidebar(currentRoom.name);
 
   requestAnimationFrame(tick);
 }
-
-requestAnimationFrame(tick);

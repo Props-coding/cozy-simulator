@@ -89,3 +89,15 @@ function drawWorld(ctx) {
     ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
   }
 }
+
+// Draws one player (used for both yourself and everyone else) as a
+// colored square with their name above it.
+function drawPlayer(ctx, x, y, color, name) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, PLAYER_SIZE, PLAYER_SIZE);
+  ctx.fillStyle = "#222";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(name, x + PLAYER_SIZE / 2, y - 4);
+  ctx.textAlign = "left";
+}

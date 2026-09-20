@@ -21,3 +21,54 @@ canvas {
   color: #777;
   font-size: 0.9em;
 }
+
+#join-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6vh;
+}
+
+#join-screen label {
+  font-size: 1em;
+}
+
+#join-button {
+  font-size: 1em;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid #5a4a3a;
+  background: #e05a47;
+  color: white;
+  cursor: pointer;
+}
+
+#game-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+#sidebar {
+  text-align: left;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 16px;
+}
+
+#sidebar h2 {
+  font-size: 1em;
+  margin: 0 0 8px;
+}
+
+#peer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9em;
+}

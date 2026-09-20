@@ -8,12 +8,37 @@
 </head>
 <body>
   <h1>Cozy House</h1>
-  <p id="room-label">You are in: Hallway</p>
-  <canvas id="house"></canvas>
-  <p class="hint">Move with the arrow keys or WASD.</p>
+
+  <!-- Join screen: shown first, hidden once you click Join. -->
+  <div id="join-screen">
+    <label>
+      Your name:
+      <input id="name-input" type="text" maxlength="16" placeholder="e.g. Sam">
+    </label>
+    <label>
+      Your color:
+      <input id="color-input" type="color" value="#e05a47">
+    </label>
+    <button id="join-button">Join the house</button>
+  </div>
+
+  <!-- The house itself: hidden until you join. -->
+  <div id="game-screen" hidden>
+    <div id="game-layout">
+      <div>
+        <p id="room-label">You are in: Hallway</p>
+        <canvas id="house"></canvas>
+        <p class="hint">Move with the arrow keys or WASD.</p>
+      </div>
+      <div id="sidebar">
+        <h2>Who's here</h2>
+        <ul id="peer-list"></ul>
+      </div>
+    </div>
+  </div>
 
   <script src="config.js"></script>
   <script src="world.js"></script>
-  <script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
