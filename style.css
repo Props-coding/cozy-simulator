@@ -22,7 +22,7 @@ canvas {
   font-size: 0.9em;
 }
 
-#join-screen {
+#join-screen:not([hidden]) {
   display: flex;
   flex-direction: column;
   align-items: center;
