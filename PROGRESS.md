@@ -6,11 +6,11 @@
 
 - Milestone 3: multiplayer movement. Added a Join screen (name and color), friends' browsers find each other with Trystero, everyone sees each other walk around, sidebar shows who's in which room.
 - Fixed two bugs found during testing: (1) the Join screen wasn't actually hiding after clicking Join, a CSS mistake on my part; (2) the Trystero connection code was calling two functions the wrong way (using an older version of Trystero's API than the one we're actually using), which silently broke the whole house view and the sidebar. Also added a small "build N" version number in the bottom corner of the page so you can tell when you're looking at the latest push vs. an old cached page.
-- Confirmed working, but friends' movement looked choppy (we only get their position ~12 times a second). Fixed by smoothing: your own screen now eases friends toward their latest known spot each frame instead of snapping.
+- Confirmed working, but friends' movement looked choppy (we only get their position ~12 times a second). Fixed by smoothing: your own screen now eases friends toward their latest known spot each frame instead of snapping. Milestone 3 fully confirmed.
 
 ## Next
-- Confirm the movement looks smooth now for the other player.
-- Then Milestone 4: voice with room rules (talk in Gaming, silent elsewhere).
+- Milestone 4: voice with room rules. Mic only live in Gaming, you only hear someone if you're both in Gaming. Added a mute-all checkbox and volume slider too, since that's a standing safety rule for whenever live audio ships, not worth shipping voice without it even one milestone early.
+- Test: two windows, headphones recommended to avoid feedback if testing solo.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.

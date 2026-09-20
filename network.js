@@ -12,6 +12,27 @@ let room = null;
 let positionAction = null;
 const peers = {}; // peerId -> { name, color, x, y, room }
 
+// Set these before or after connectToRoom, doesn't matter, they're only
+// read once a friend's voice stream or leave event actually happens.
+let externalOnPeerStream = null;
+let externalOnPeerLeave = null;
+
+export function onPeerStream(callback) {
+  externalOnPeerStream = callback;
+}
+
+export function onPeerLeave(callback) {
+  externalOnPeerLeave = callback;
+}
+
+// Sends your mic audio to everyone in the room. Call once, after both
+// connectToRoom and mic permission have gone through.
+export function addLocalStream(stream) {
+  if (room) {
+    room.addStream(stream);
+  }
+}
+
 // Connects to the shared room. Call this once, after the player has
 // chosen a name and color on the Join screen.
 export function connectToRoom(myName, myColor) {
@@ -37,6 +58,11 @@ export function connectToRoom(myName, myColor) {
 
   room.onPeerLeave = (peerId) => {
     delete peers[peerId];
+    externalOnPeerLeave?.(peerId);
+  };
+
+  room.onPeerStream = (stream, peerId) => {
+    externalOnPeerStream?.(stream, peerId);
   };
 }
 

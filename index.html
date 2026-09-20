@@ -33,13 +33,23 @@
       <div id="sidebar">
         <h2>Who's here</h2>
         <ul id="peer-list"></ul>
+        <hr>
+        <h2>Voice</h2>
+        <label class="voice-row">
+          <input id="mute-toggle" type="checkbox">
+          Mute everyone
+        </label>
+        <label class="voice-row">
+          Volume
+          <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+        </label>
       </div>
     </div>
   </div>
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 6</p>
+  <p id="version-tag">build 7</p>
 
   <script src="config.js"></script>
   <script src="world.js"></script>

@@ -1,6 +1,22 @@
 // Starts the game: Join screen, then the move-and-draw loop, plus
 // sending your position to friends and drawing where they are.
-import { connectToRoom, broadcastPosition, getPeers } from "./network.js";
+import {
+  connectToRoom,
+  broadcastPosition,
+  getPeers,
+  addLocalStream,
+  onPeerStream,
+  onPeerLeave,
+} from "./network.js";
+import {
+  requestMic,
+  updateMicForRoom,
+  handlePeerStream,
+  removePeerAudio,
+  updateVoiceRouting,
+  setMasterMuted,
+  setMasterVolume,
+} from "./audio.js";
 
 const joinScreen = document.getElementById("join-screen");
 const gameScreen = document.getElementById("game-screen");
@@ -9,6 +25,14 @@ const colorInput = document.getElementById("color-input");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
 const peerList = document.getElementById("peer-list");
+const muteToggle = document.getElementById("mute-toggle");
+const volumeSlider = document.getElementById("volume-slider");
+
+onPeerStream(handlePeerStream);
+onPeerLeave(removePeerAudio);
+
+muteToggle.addEventListener("change", () => setMasterMuted(muteToggle.checked));
+volumeSlider.addEventListener("input", () => setMasterVolume(parseFloat(volumeSlider.value)));
 
 const canvas = document.getElementById("house");
 canvas.width = CONFIG.canvasWidth;
@@ -20,7 +44,7 @@ let myColor = "#e05a47";
 
 const player = { x: 380, y: 70 };
 
-joinButton.addEventListener("click", () => {
+joinButton.addEventListener("click", async () => {
   myName = nameInput.value.trim() || "Friend";
   myColor = colorInput.value;
 
@@ -29,6 +53,10 @@ joinButton.addEventListener("click", () => {
 
   try {
     connectToRoom(myName, myColor);
+    const micStream = await requestMic();
+    if (micStream) {
+      addLocalStream(micStream);
+    }
   } catch (err) {
     // Movement still works alone even if connecting to friends fails.
     console.error("Could not connect to other players:", err);
@@ -91,6 +119,8 @@ function tick(now) {
 
   const currentRoom = getCurrentRoom(player);
   roomLabel.textContent = "You are in: " + currentRoom.name;
+  updateMicForRoom(currentRoom.id);
+  updateVoiceRouting(currentRoom.id, getPeers());
 
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
