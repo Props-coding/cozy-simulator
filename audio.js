@@ -10,6 +10,44 @@ let masterMuted = false;
 let masterVolume = 1;
 const peerAudioElements = {}; // peerId -> <audio> element playing their voice
 
+// --- Join/leave sounds ---
+// Short tones generated in code, so we don't need to find or host a
+// sound file for something this small.
+
+let toneContext = null;
+
+// Call once, from inside the Join button's click handler (a real user
+// gesture), so the browser allows audio to start later without a click.
+export function primeSoundEffects() {
+  toneContext = new (window.AudioContext || window.webkitAudioContext)();
+  if (toneContext.state === "suspended") toneContext.resume();
+}
+
+function playTone(freq, delayMs) {
+  if (!toneContext) return;
+  setTimeout(() => {
+    const osc = toneContext.createOscillator();
+    const gain = toneContext.createGain();
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(masterMuted ? 0 : 0.15 * masterVolume, toneContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, toneContext.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(toneContext.destination);
+    osc.start();
+    osc.stop(toneContext.currentTime + 0.15);
+  }, delayMs);
+}
+
+export function playJoinSound() {
+  playTone(660, 0);
+  playTone(880, 100);
+}
+
+export function playLeaveSound() {
+  playTone(440, 0);
+  playTone(330, 100);
+}
+
 // Asks for mic access. Must be called from inside the Join button's
 // click handler, since browsers only allow this right after a click.
 export async function requestMic() {

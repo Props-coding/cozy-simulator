@@ -16,6 +16,7 @@ const peers = {}; // peerId -> { name, color, x, y, room }
 // read once a friend's voice stream or leave event actually happens.
 let externalOnPeerStream = null;
 let externalOnPeerLeave = null;
+let externalOnPeerJoin = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -23,6 +24,10 @@ export function onPeerStream(callback) {
 
 export function onPeerLeave(callback) {
   externalOnPeerLeave = callback;
+}
+
+export function onPeerJoin(callback) {
+  externalOnPeerJoin = callback;
 }
 
 // Sends your mic audio to everyone in the room. Call once, after both
@@ -62,6 +67,7 @@ export function connectToRoom(myName, myColor) {
     peers[peerId] = { name: "...", color: "#999", x: 400, y: 300, room: "hallway" };
     // Tell the new friend who we are right away, don't wait for the next tick.
     positionAction({ name: myName, color: myColor, ...lastKnownPosition });
+    externalOnPeerJoin?.(peerId);
   };
 
   room.onPeerLeave = (peerId) => {
@@ -77,10 +83,10 @@ export function connectToRoom(myName, myColor) {
 let lastKnownPosition = { x: 0, y: 0, room: "hallway" };
 
 // Call this often (see main.js) to tell everyone where we are.
-export function broadcastPosition(name, color, x, y, roomId) {
-  lastKnownPosition = { x, y, room: roomId };
+export function broadcastPosition(name, color, x, y, roomId, timeZone) {
+  lastKnownPosition = { x, y, room: roomId, tz: timeZone };
   if (positionAction) {
-    positionAction({ name, color, x, y, room: roomId });
+    positionAction({ name, color, x, y, room: roomId, tz: timeZone });
   }
 }
 

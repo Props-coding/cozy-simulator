@@ -7,6 +7,7 @@ import {
   addLocalStream,
   onPeerStream,
   onPeerLeave,
+  onPeerJoin,
 } from "./network.js";
 import {
   requestMic,
@@ -20,7 +21,21 @@ import {
   leaveStudy,
   setLofiVolume,
   updateLofi,
+  primeSoundEffects,
+  playJoinSound,
+  playLeaveSound,
 } from "./audio.js";
+
+const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function formatLocalTime(tz) {
+  if (!tz) return "";
+  try {
+    return new Date().toLocaleTimeString([], { timeZone: tz, hour: "numeric", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
 
 const joinScreen = document.getElementById("join-screen");
 const gameScreen = document.getElementById("game-screen");
@@ -35,7 +50,11 @@ const lofiVolumeSlider = document.getElementById("lofi-volume-slider");
 const lofiPlayerContainer = document.getElementById("lofi-player");
 
 onPeerStream(handlePeerStream);
-onPeerLeave(removePeerAudio);
+onPeerLeave((peerId) => {
+  removePeerAudio(peerId);
+  playLeaveSound();
+});
+onPeerJoin(() => playJoinSound());
 
 muteToggle.addEventListener("change", () => setMasterMuted(muteToggle.checked));
 volumeSlider.addEventListener("input", () => setMasterVolume(parseFloat(volumeSlider.value)));
@@ -59,6 +78,7 @@ joinButton.addEventListener("click", async () => {
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
+  primeSoundEffects();
 
   try {
     connectToRoom(myName, myColor);
@@ -111,9 +131,11 @@ function getSmoothedPosition(peer, dt) {
 }
 
 function updateSidebar(myRoomName) {
-  const rows = [`${myName} (you) — ${myRoomName}`];
+  const rows = [`${myName} (you) — ${myRoomName} — ${formatLocalTime(myTimeZone)}`];
   for (const peer of getPeers()) {
-    rows.push(`${peer.name} — ${CONFIG.roomNames[peer.room] || peer.room}`);
+    const time = formatLocalTime(peer.tz);
+    const roomName = CONFIG.roomNames[peer.room] || peer.room;
+    rows.push(`${peer.name} — ${roomName}${time ? " — " + time : ""}`);
   }
   peerList.innerHTML = rows.map((r) => `<li>${r}</li>`).join("");
 }
@@ -142,7 +164,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id);
+    broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id, myTimeZone);
   }
 
   drawWorld(ctx);
