@@ -4,5 +4,20 @@ body {
   background: #fdf6ec;
   color: #333;
   text-align: center;
-  margin-top: 15vh;
+  margin-top: 4vh;
+}
+
+#room-label {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+canvas {
+  border: 2px solid #5a4a3a;
+  border-radius: 6px;
+}
+
+.hint {
+  color: #777;
+  font-size: 0.9em;
 }
