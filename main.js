@@ -58,6 +58,20 @@ let lastTime = performance.now();
 let timeSinceLastBroadcast = 0;
 const broadcastInterval = 1 / CONFIG.positionUpdatesPerSecond;
 
+// Friends' positions only arrive ~12 times a second, which looks choppy
+// if drawn directly. Instead we ease each friend's drawn position toward
+// their latest known position a little every frame, so movement looks
+// smooth in between updates.
+const displayPositions = {}; // peerId -> { x, y }
+
+function getSmoothedPosition(peer, dt) {
+  const shown = (displayPositions[peer.id] ??= { x: peer.x, y: peer.y });
+  const ease = 1 - Math.pow(0.001, dt); // fraction of the gap to close this frame
+  shown.x += (peer.x - shown.x) * ease;
+  shown.y += (peer.y - shown.y) * ease;
+  return shown;
+}
+
 function updateSidebar(myRoomName) {
   const rows = [`${myName} (you) — ${myRoomName}`];
   for (const peer of getPeers()) {
@@ -86,7 +100,8 @@ function tick(now) {
 
   drawWorld(ctx);
   for (const peer of getPeers()) {
-    drawPlayer(ctx, peer.x, peer.y, peer.color, peer.name);
+    const shown = getSmoothedPosition(peer, dt);
+    drawPlayer(ctx, shown.x, shown.y, peer.color, peer.name);
   }
   drawPlayer(ctx, player.x, player.y, myColor, myName);
 
