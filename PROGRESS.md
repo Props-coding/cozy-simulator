@@ -17,10 +17,10 @@
 
 - Milestone 7 (polish), first pieces: local time next to each name in the sidebar (using each browser's own clock, no outside service needed), and short join/leave chimes (generated in code, not sound files). Confirmed working.
 
-- Milestone 7 (polish), cozier visuals: wood-look walls with rounded corners, textured floors, simple furniture per room (couch and TV in Gaming, bookshelf and desk in Study, dining table and chairs in Dinner, a rug and plant in the Hallway), a warm gradient background, and a cozy rounded font (Quicksand, from Google Fonts). Characters are now round with a little face and a soft shadow, name tags are readable pill badges instead of plain text.
+- Milestone 7 (polish), cozier visuals: wood-look walls with rounded corners, textured floors, simple furniture per room (couch and TV in Gaming, bookshelf and desk in Study, dining table and chairs in Dinner, a rug and plant in the Hallway), a warm gradient background, and a cozy rounded font (Quicksand, from Google Fonts). Characters are now round with a little face and a soft shadow, name tags are readable pill badges instead of plain text. Confirmed working. (One deploy briefly got stuck "queued" on GitHub's side after a couple of quick pushes in a row cancelled each other's in-progress deploys, not a bug, just needed a few extra minutes.)
 
 ## Next
-- Confirm the new look renders correctly and still runs smoothly.
+- Waiting on your priorities for what's next: more polish, or a backlog item (body-doubling timer, weather station, porch, etc.)
 - State/Country display is on hold (would need a third-party IP lookup service). Going 3D is a separate future decision, not part of this polish pass, since it'd mean rewriting the whole rendering approach.
 
 ## Open questions
