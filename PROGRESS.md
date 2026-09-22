@@ -68,9 +68,11 @@
 
 - Build 0.25: chat. A chat card under the sidebar with two tabs: House (everyone) and Office (only people standing in the same office as you; the tab works while you're in any office). Press Enter to start typing, Enter to send, Escape to go back to walking (typing never moves your character or triggers game keys). New messages pop up as a speech bubble over the speaker for a few seconds, tabs show a dot for unread messages, and incoming messages make a soft blip (silent in Dinner). Chat isn't saved: people who join later don't see earlier messages.
 
+- Not pushed yet: emoji-friendly chat. A 😊 button next to the chat box opens a grid of common emoji (click one to add it where your cursor is); Windows key + period also works. Long messages and speech bubbles are now shortened without ever cutting an emoji in half. Added character emotes (Kxiven's idea) to the backlog.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: north wing with offices that close gaps, bedrooms, Theater (replacing Gaming), conference room with a shared whiteboard, then coins, achievements, unlockable customization and pets.
+- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: north wing with offices that close gaps, bedrooms, Theater (replacing Gaming), conference room with a shared whiteboard, then coins, achievements, unlockable customization, pets and emotes.
 - Decisions needed before starting: where bedrooms go; what the conference room replaces or where it's added; which extras beyond hats and shoes to unlock.
 
 ## Open questions

@@ -36,6 +36,16 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// Shortens text to at most `max` characters, counting an emoji (even a
+// combined one like 👍🏽, which is really several hidden pieces) as one
+// character so it never gets cut in half. Adds `ending` (like "…") when
+// something was cut off.
+function clipText(text, max, ending = "") {
+  const chars = [...new Intl.Segmenter().segment(text)].map((s) => s.segment);
+  if (chars.length <= max) return text;
+  return chars.slice(0, max - (ending ? 1 : 0)).join("") + ending;
+}
+
 // Lightens (positive amt) or darkens (negative amt) a "#rrggbb" color.
 function shadeColor(hex, amt) {
   const num = parseInt(hex.slice(1), 16);
@@ -1971,7 +1981,7 @@ function drawPlayerTag(ctx, p) {
   // Speech bubble for a recent chat message, above the name (and badge).
   if (p.bubble) {
     ctx.font = "600 12px 'Quicksand', sans-serif";
-    const text = p.bubble.length > 34 ? p.bubble.slice(0, 33) + "…" : p.bubble;
+    const text = clipText(p.bubble, 34, "…");
     const w = ctx.measureText(text).width + 18, h = 22;
     const bottom = headTop - (p.badge ? 46 : 26);
     ctx.fillStyle = "rgba(40, 25, 10, 0.15)";

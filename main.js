@@ -406,7 +406,7 @@ function renderChat() {
   if (lines.length === 0) {
     const empty = document.createElement("li");
     empty.className = "chat-empty";
-    empty.textContent = chatTab === "house" ? "Say hi to everyone!" : "Only people in this office can see this chat.";
+    empty.textContent = chatTab === "house" ? "Say hi to everyone! Press Enter to start typing." : "Only people in this office can see this chat.";
     chatLog.appendChild(empty);
   }
   for (const line of lines) {
@@ -459,7 +459,7 @@ function updateChatTabs(room) {
 
 document.getElementById("chat-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  const text = chatInput.value.trim().slice(0, CHAT_MAX_LENGTH);
+  const text = clipText(chatInput.value.trim(), CHAT_MAX_LENGTH);
   chatInput.blur(); // sending takes you straight back to walking
   if (!text || performance.now() - lastChatSent < 400) return;
   lastChatSent = performance.now();
@@ -490,9 +490,35 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// The 😊 button: a small grid of emoji. Clicking one puts it where your
+// cursor is in the chat box and keeps you typing. (Windows key + period
+// opens Windows' own emoji picker too.)
+const emojiButton = document.getElementById("emoji-button");
+const emojiPicker = document.getElementById("emoji-picker");
+
+emojiButton.addEventListener("click", () => {
+  emojiPicker.hidden = !emojiPicker.hidden;
+});
+
+emojiPicker.addEventListener("click", (e) => {
+  const emoji = e.target.closest("button")?.textContent;
+  if (!emoji) return;
+  const start = chatInput.selectionStart ?? chatInput.value.length;
+  const end = chatInput.selectionEnd ?? start;
+  chatInput.value = chatInput.value.slice(0, start) + emoji + chatInput.value.slice(end);
+  chatInput.focus();
+  chatInput.setSelectionRange(start + emoji.length, start + emoji.length);
+  emojiPicker.hidden = true;
+});
+
+// Clicking anywhere else closes the emoji grid.
+document.addEventListener("click", (e) => {
+  if (!emojiPicker.hidden && !emojiPicker.contains(e.target) && e.target !== emojiButton) emojiPicker.hidden = true;
+});
+
 onChat((message, peerId) => {
   if (typeof message?.text !== "string") return;
-  const text = message.text.trim().slice(0, CHAT_MAX_LENGTH);
+  const text = clipText(message.text.trim(), CHAT_MAX_LENGTH);
   if (!text) return;
   let channel = "house";
   if (message.office !== undefined) {

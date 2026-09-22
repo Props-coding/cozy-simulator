@@ -332,8 +332,50 @@ canvas {
 }
 
 #chat-form {
+  position: relative;
   display: flex;
   gap: 6px;
+}
+
+#emoji-button {
+  flex: none;
+  width: 30px;
+  font-size: 1em;
+  border-radius: 50%;
+  border: 2px solid #eadcc6;
+  background: white;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* The emoji grid pops up just above the chat box. */
+#emoji-picker:not([hidden]) {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  padding: 8px;
+  background: #fffaf3;
+  border: 2px solid #eadcc6;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(90, 65, 40, 0.2);
+  z-index: 5;
+}
+
+#emoji-picker button {
+  font-size: 1.2em;
+  padding: 3px 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+#emoji-picker button:hover {
+  background: #f3e6d0;
 }
 
 #chat-input {
