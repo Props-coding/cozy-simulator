@@ -40,6 +40,8 @@
 
 - Cozier rooms (build 0.19): each room has its own floor (light wood boards in the Hallway, soft navy carpet in Gaming, warm dark wood in Study, small warm tiles in Dinner) and its own wall color. Computer desks in Gaming are wood now. Study redone as a proper cozy study spot: a big red rug with a shared study table (open books, mugs of tea, a lamp) and three cushions to sit at it, a reading armchair and floor lamp by the window, string lights along the walls, a beanbag, plants, and a soft golden glow over the whole room. Plants redrawn so they actually look like plants (the old one in the Study corner didn't read as anything). Floors are now painted once and reused, so all the extra detail doesn't slow the game down. Floor styles and colors, and wall colors, are in `config.js` (roomFloors, roomWallColors).
 
+- Not pushed yet (will go out with the next batch): moved the fridge from Gaming to Dinner, and turned the Study armchair around to face the window.
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 - Small things noticed in review, not yet fixed: chimes still play in Dinner (should be fully silent), the screen stays blank until you answer the mic prompt, and there's no message if you deny the mic.

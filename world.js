@@ -72,7 +72,6 @@ const FURNITURE = [
   { kind: "stool", x: 0.85, y: 7.15, w: 0.6, h: 0.6, solid: false },
   { kind: "pcDesk", x: 4.0, y: 6.4, w: 1.7, h: 0.7, screen: "#6fc8ff" },
   { kind: "stool", x: 4.55, y: 7.15, w: 0.6, h: 0.6, solid: false },
-  { kind: "fridge", x: 0.4, y: 9.7, w: 0.8, h: 0.6 },
   { kind: "snackTable", x: 4.2, y: 9.9, w: 1.4, h: 0.6 },
 
   // Study
@@ -95,6 +94,7 @@ const FURNITURE = [
   { kind: "plant", x: 6.4, y: 4.3, w: 0.6, h: 0.6 },
 
   // Dinner
+  { kind: "fridge", x: 16.9, y: 3.3, w: 0.8, h: 0.6 },
   { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6 },
   { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6 },
   { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6 },

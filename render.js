@@ -433,16 +433,16 @@ const FURNITURE_DRAWERS = {
     drawLamp(ctx, x + w / 2, mid + 2);
   },
 
-  // A cozy reading armchair with a little cushion.
+  // A cozy reading armchair facing up toward the window, so you see its
+  // back, with a blanket draped over the top.
   armchair(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, 0.25, 26, "#a8732c"); // backrest
-    const seat = drawBlock(ctx, f.x + 0.12, f.y + 0.25, f.w - 0.24, f.h - 0.25, 12, "#c98f3c");
+    drawBlock(ctx, f.x + 0.12, f.y, f.w - 0.24, f.h - 0.25, 12, "#c98f3c"); // seat
+    drawBlock(ctx, f.x, f.y, 0.2, f.h - 0.1, 18, "#b07c30"); // arms
+    drawBlock(ctx, f.x + f.w - 0.2, f.y, 0.2, f.h - 0.1, 18, "#b07c30");
+    const back = drawBlock(ctx, f.x + 0.05, f.y + f.h - 0.25, f.w - 0.1, 0.25, 30, "#a8732c");
     ctx.fillStyle = "#6f8a6a";
-    roundRectPath(ctx, seat.top.x + seat.top.w / 2 - 9, seat.top.y - 8, 18, 14, 5);
-    ctx.fill();
-    drawBlock(ctx, f.x, f.y + 0.15, 0.2, f.h - 0.15, 18, "#b07c30"); // arms
-    drawBlock(ctx, f.x + f.w - 0.2, f.y + 0.15, 0.2, f.h - 0.15, 18, "#b07c30");
+    ctx.fillRect(back.face.x + back.face.w * 0.55, back.top.y, back.face.w * 0.3, 16);
   },
 
   // A tall standing lamp with a fabric shade.
