@@ -1,8 +1,7 @@
 // Settings you might want to change. Comments explain each one.
 
 const CONFIG = {
-  // Canvas size (the house view), in pixels. Bigger than before since
-  // the isometric view needs more room to show depth.
+  // Canvas size (the house view), in pixels.
   canvasWidth: 1000,
   canvasHeight: 620,
 

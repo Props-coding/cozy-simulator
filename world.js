@@ -1,9 +1,8 @@
 // The house layout: rooms, walls, and movement/collision logic.
-// Positions here are in "grid units" (an abstract floor plan), not screen
-// pixels. render.js turns a grid position into a screen pixel position
-// for the isometric view. Keeping that math in one place (render.js) is
-// what keeps every object's positioning in sync; this file never touches
-// pixels directly.
+// Positions here are in "grid units" (one grid unit = one floor tile), not
+// screen pixels. render.js turns a grid position into a screen pixel
+// position. Keeping that math in one place (render.js) is what keeps
+// every object's positioning in sync; this file never touches pixels.
 //
 // Layout: a hallway band across the top, with Gaming, Study, and Dinner
 // in a row underneath. Each room has one doorway gap up into the hallway.
@@ -27,13 +26,14 @@ const ROOMS = [
 const WALLS = [
   // Outer walls
   { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS }, // top
-  { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS }, // bottom
+  { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
   { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // left
   { x: 18, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // right
 
-  // Dividers between rooms (no doors between rooms directly)
-  { x: 6 - WALL_THICKNESS / 2, y: 3, w: WALL_THICKNESS, h: 8 },
-  { x: 12 - WALL_THICKNESS / 2, y: 3, w: WALL_THICKNESS, h: 8 },
+  // Dividers between rooms (no doors between rooms directly). They start
+  // at the same line as the walls above the rooms so the tops line up.
+  { x: 6 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
+  { x: 12 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
 
   // Wall above Gaming, with a doorway gap in the middle
   { x: 0, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
@@ -48,25 +48,62 @@ const WALLS = [
   { x: 16, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
 ];
 
-const PLAYER_SIZE = 0.6; // grid units, used for collision and for depth sorting
+// Furniture and decorations. x/y/w/h is the patch of floor each one
+// stands on (its "footprint"), in grid units. render.js decides what each
+// kind looks like. Solid pieces block walking, so you can walk in front of
+// and behind a table but not through it. Rugs, windows and the hanging
+// lamp are "solid: false" since you can walk over or under them.
+// Windows and mirrors hang on a wall: their y is the bottom edge of the
+// wall they're on.
+const FURNITURE = [
+  // Hallway
+  { kind: "rug", x: 6, y: 0.7, w: 6, h: 1.4, solid: false },
+  { kind: "plant", x: 16.9, y: 0.3, w: 0.6, h: 0.6 },
+  { kind: "mirror", x: 2, y: 0, w: 0.7, solid: false },
+
+  // Gaming
+  { kind: "rug", x: 0.4, y: 4.4, w: 3.4, h: 1.4, solid: false },
+  { kind: "tv", x: 0.3, y: 3.3, w: 1.5, h: 0.5 },
+  { kind: "couch", x: 0.3, y: 6.1, w: 3, h: 0.9 },
+  { kind: "sideTable", x: 3.7, y: 6.2, w: 0.7, h: 0.7 },
+
+  // Study
+  { kind: "bookshelf", x: 6.4, y: 3.3, w: 1.4, h: 0.5 },
+  { kind: "window", x: 10.3, y: 3.2, w: 1.4, solid: false },
+  { kind: "desk", x: 10.2, y: 3.4, w: 1.6, h: 0.7 },
+  { kind: "plant", x: 6.4, y: 10.1, w: 0.6, h: 0.6 },
+
+  // Dinner
+  { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6 },
+  { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6 },
+  { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6 },
+  { kind: "table", x: 14.1, y: 6.4, w: 1.8, h: 1.2 },
+  { kind: "chair", x: 14.7, y: 7.9, w: 0.6, h: 0.6 },
+  { kind: "pendant", x: 15, y: 7, solid: false },
+];
+
+// Everything you bump into: walls plus solid furniture.
+const SOLIDS = [...WALLS, ...FURNITURE.filter((f) => f.solid !== false)];
+
+const PLAYER_SIZE = 0.6; // grid units, used for collision and for draw order
 
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-// Moves a player by (dx, dy), sliding along walls instead of passing
+// Moves a player by (dx, dy), sliding along walls and furniture instead of passing
 // through them. Checks x and y separately so bumping into a wall on one
 // axis doesn't stop movement on the other. dx/dy are in grid units.
 function movePlayer(player, dx, dy) {
   const box = () => ({ x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE });
 
   player.x += dx;
-  if (WALLS.some((w) => rectsOverlap(box(), w))) {
+  if (SOLIDS.some((w) => rectsOverlap(box(), w))) {
     player.x -= dx;
   }
 
   player.y += dy;
-  if (WALLS.some((w) => rectsOverlap(box(), w))) {
+  if (SOLIDS.some((w) => rectsOverlap(box(), w))) {
     player.y -= dy;
   }
 }
