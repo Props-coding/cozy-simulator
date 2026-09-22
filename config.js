@@ -84,4 +84,10 @@ const CONFIG = {
 
   // Starting volume for the Study music (0 to 1). There's a slider too.
   defaultLofiVolume: 0.5,
+
+  // --- Study focus timer ---
+  // Press F in the Study to start a shared focus session for everyone.
+  // After the focus time there's a short break, then it ends. In minutes.
+  focusMinutes: 25,
+  breakMinutes: 5,
 };

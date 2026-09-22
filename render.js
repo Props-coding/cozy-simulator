@@ -1127,6 +1127,35 @@ function drawRoomLabels(ctx) {
   }
 }
 
+// The Study focus timer, shown as a little chalkboard over the study table
+// so everyone can see it (even from other rooms).
+function drawStudySign(ctx, text) {
+  const table = FURNITURE.find((f) => f.kind === "studyTable");
+  const p = toScreen(table.x + table.w / 2, table.y);
+  ctx.font = "700 14px 'Quicksand', sans-serif";
+  const w = ctx.measureText(text).width + 24, h = 26;
+  const x = p.x - w / 2, y = p.y - 78;
+  // Two strings it hangs from.
+  ctx.strokeStyle = "rgba(60, 40, 20, 0.6)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y);
+  ctx.lineTo(x + 16, y - 10);
+  ctx.moveTo(x + w - 10, y);
+  ctx.lineTo(x + w - 16, y - 10);
+  ctx.stroke();
+  roundRectPath(ctx, x - 3, y - 3, w + 6, h + 6, 6);
+  ctx.fillStyle = WOOD;
+  ctx.fill();
+  roundRectPath(ctx, x, y, w, h, 4);
+  ctx.fillStyle = "#34473a";
+  ctx.fill();
+  ctx.fillStyle = "#f3ecd8";
+  ctx.textAlign = "center";
+  ctx.fillText(text, p.x, y + 18);
+  ctx.textAlign = "left";
+}
+
 // The camera: how far the view is scrolled sideways, in pixels. When the
 // whole house fits on screen it stays centered; once offices make it
 // wider, it follows `focus` (your own character), stopping at the ends.
@@ -1141,7 +1170,7 @@ function cameraX(focus) {
 // Draws the whole house for one frame. `players` is an array of
 // { x, y, color, name, badge }, including yourself; `focus` is who the
 // camera follows.
-function drawScene(ctx, players, focus) {
+function drawScene(ctx, players, focus, studySign) {
   ctx.fillStyle = WOOD_DARK;
   ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
   ctx.save();
@@ -1158,6 +1187,7 @@ function drawScene(ctx, players, focus) {
   for (const sprite of sprites) sprite.draw(ctx);
 
   drawLights(ctx);
+  if (studySign) drawStudySign(ctx, studySign); // under name tags, so names stay readable
   for (const p of players) drawPlayerTag(ctx, p);
   drawRoomLabels(ctx);
   ctx.restore();

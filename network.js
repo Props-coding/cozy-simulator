@@ -20,6 +20,8 @@ let externalOnPeerLeave = null;
 let externalOnPeerJoin = null;
 let externalOnKnock = null;
 let knockAction = null;
+let externalOnFocus = null;
+let focusAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -36,6 +38,18 @@ export function onPeerJoin(callback) {
 // Someone knocked on your office door. callback gets their peer id.
 export function onKnock(callback) {
   externalOnKnock = callback;
+}
+
+// The Study focus timer was started, moved on, or stopped by a friend.
+// callback gets the message: { phase, remainingMs }.
+export function onFocus(callback) {
+  externalOnFocus = callback;
+}
+
+// Tells everyone (or just one friend, if peerId is given) about the Study
+// focus timer.
+export function sendFocus(message, peerId) {
+  focusAction?.send(message, peerId ? { target: peerId } : undefined);
 }
 
 // Knock on one friend's office door (only they get the message).
@@ -84,6 +98,9 @@ export function connectToRoom(myName, myColor) {
   // "knock" carries no information, the message arriving is the knock.
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
+
+  focusAction = room.makeAction("focus");
+  focusAction.onMessage = (message) => externalOnFocus?.(message);
 
   lastKnownPosition = { ...lastKnownPosition, name: myName, color: myColor };
 

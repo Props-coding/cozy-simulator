@@ -56,6 +56,8 @@
 
 - Not pushed yet: nicer characters. Little feet, rosy cheeks, and a bouncy walk (feet take turns lifting). Pick a hat on the Join screen (beanie, cap, bow, headphones, flower, or none) with a live preview of how you'll look. The Join screen now remembers your name, color and hat from last time.
 
+- Not pushed yet: Study focus timer. In the Study, press F to start a shared 25 minute focus session for everyone (press F again to stop it). A little chalkboard over the study table counts down, visible from anywhere in the house. When focus ends, a gentle chime starts a 5 minute break, then another chime when the break is over. Friends who join mid-session see the timer too. Lengths are in `config.js` (focusMinutes, breakMinutes).
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 

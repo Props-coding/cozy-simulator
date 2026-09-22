@@ -81,6 +81,14 @@ export function playKnockSound() {
   playTone(150, 180, { gain: 0.3, duration: 0.08, type: "triangle" });
 }
 
+// Three gentle rising notes: the Study focus timer moving on to a break,
+// or the break ending.
+export function playTimerChime() {
+  playTone(523.25, 0, { gain: 0.1, duration: 0.5, type: "sine" });
+  playTone(659.25, 220, { gain: 0.1, duration: 0.5, type: "sine" });
+  playTone(783.99, 440, { gain: 0.1, duration: 0.7, type: "sine" });
+}
+
 // A tiny, soft click for buttons and toggles.
 export function playClickSound() {
   playTone(600, 0, { gain: 0.06, duration: 0.05, type: "triangle" });

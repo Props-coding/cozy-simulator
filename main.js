@@ -10,6 +10,8 @@ import {
   onPeerJoin,
   onKnock,
   sendKnock,
+  onFocus,
+  sendFocus,
 } from "./network.js";
 import {
   requestMic,
@@ -29,6 +31,7 @@ import {
   playRoomChangeSound,
   playClickSound,
   playKnockSound,
+  playTimerChime,
 } from "./audio.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -63,7 +66,11 @@ onPeerLeave((peerId) => {
   removePeerAudio(peerId);
   playLeaveSound();
 });
-onPeerJoin(() => playJoinSound());
+onPeerJoin((peerId) => {
+  playJoinSound();
+  // Let a friend who just arrived see the Study timer, if one is running.
+  if (focusTimer) sendFocus(focusMessage(), peerId);
+});
 
 muteToggle.addEventListener("change", () => {
   setMasterMuted(muteToggle.checked);
@@ -244,6 +251,48 @@ onKnock((peerId) => {
 
 let lastKnockTime = 0;
 
+// --- Study focus timer ---
+// Shared by everyone: when someone starts or stops it, a message goes to
+// all friends. Each browser then counts down on its own clock, and moves
+// from focus to break to done by itself, so no more messages are needed.
+// focusTimer is { phase: "focus" or "break", endsAt } or null.
+let focusTimer = null;
+
+function focusMessage() {
+  return focusTimer ? { phase: focusTimer.phase, remainingMs: focusTimer.endsAt - performance.now() } : { phase: null };
+}
+
+function setFocusFromMessage(message) {
+  const validPhase = message?.phase === "focus" || message?.phase === "break";
+  const validTime = typeof message?.remainingMs === "number" && message.remainingMs > 0 && message.remainingMs < 3 * 60 * 60 * 1000;
+  focusTimer = validPhase && validTime ? { phase: message.phase, endsAt: performance.now() + message.remainingMs } : null;
+}
+
+onFocus(setFocusFromMessage);
+
+// Called every frame: moves focus on to break, and break on to done,
+// with a chime for anyone in the Study.
+function updateFocusTimer(roomId) {
+  if (!focusTimer || performance.now() < focusTimer.endsAt) return;
+  if (focusTimer.phase === "focus") {
+    focusTimer = { phase: "break", endsAt: focusTimer.endsAt + CONFIG.breakMinutes * 60 * 1000 };
+  } else {
+    focusTimer = null;
+  }
+  if (roomId === "study") playTimerChime();
+}
+
+// "18:42" style time left on the timer.
+function focusTimeLeft() {
+  const seconds = Math.max(0, Math.ceil((focusTimer.endsAt - performance.now()) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function studySignText() {
+  if (!focusTimer) return null;
+  return (focusTimer.phase === "focus" ? "Focus " : "Break ") + focusTimeLeft();
+}
+
 // The short prompt under the room name, like "Press E to build your office".
 function actionHintFor(room) {
   if (performance.now() < notice.until) return notice.text;
@@ -257,6 +306,11 @@ function actionHintFor(room) {
     if (myOffice) return "You already have an office.";
     if (offices.length >= OFFICE_SLOTS) return "All three offices are taken right now.";
     return "Press E to build your office.";
+  }
+  if (room.id === "study") {
+    if (!focusTimer) return `Press F to start a ${CONFIG.focusMinutes} minute focus session for everyone in the Study.`;
+    const what = focusTimer.phase === "focus" ? "Focus time" : "Break time";
+    return `${what}: ${focusTimeLeft()} left. Press F to stop the timer.`;
   }
   return "";
 }
@@ -277,6 +331,13 @@ window.addEventListener("keydown", (e) => {
   if (key === "l" && getCurrentRoom(player).office?.mine) {
     myOffice.locked = !myOffice.locked;
     saveMyOffice();
+    playClickSound();
+  }
+
+  // Start or stop the shared Study focus timer.
+  if (key === "f" && getCurrentRoom(player).id === "study") {
+    focusTimer = focusTimer ? null : { phase: "focus", endsAt: performance.now() + CONFIG.focusMinutes * 60 * 1000 };
+    sendFocus(focusMessage());
     playClickSound();
   }
 
@@ -399,6 +460,7 @@ function tick(now) {
     previousRoomId = currentRoom.id;
   }
   updateLofi(dt);
+  updateFocusTimer(currentRoom.id);
 
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
@@ -414,7 +476,7 @@ function tick(now) {
     return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, name: peer.name, badge: peer.room === "dinner" ? "eating" : null };
   });
   scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null });
-  drawScene(ctx, scenePlayers, player);
+  drawScene(ctx, scenePlayers, player, studySignText());
 
   updateSidebar(currentRoom.name);
 
