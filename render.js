@@ -1967,6 +1967,28 @@ function drawPlayerTag(ctx, p) {
     ctx.fillStyle = "#5c4530";
     ctx.fillText(p.badge, cx, headTop - 27);
   }
+
+  // Speech bubble for a recent chat message, above the name (and badge).
+  if (p.bubble) {
+    ctx.font = "600 12px 'Quicksand', sans-serif";
+    const text = p.bubble.length > 34 ? p.bubble.slice(0, 33) + "…" : p.bubble;
+    const w = ctx.measureText(text).width + 18, h = 22;
+    const bottom = headTop - (p.badge ? 46 : 26);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.15)";
+    roundRectPath(ctx, cx - w / 2 + 1, bottom - h + 2, w, h, 10);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    roundRectPath(ctx, cx - w / 2, bottom - h, w, h, 10);
+    ctx.fill();
+    ctx.beginPath(); // little tail pointing down at the speaker
+    ctx.moveTo(cx - 5, bottom - 1);
+    ctx.lineTo(cx + 5, bottom - 1);
+    ctx.lineTo(cx, bottom + 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#4a3a2c";
+    ctx.fillText(text, cx, bottom - 7);
+  }
   ctx.textAlign = "left";
 }
 

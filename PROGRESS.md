@@ -66,6 +66,8 @@
 
 - Build 0.24: fixed friends losing each other after a refresh. Cause: the free relay (TURN) server we added earlier stopped accepting its old shared login in 2026, so any pair of friends whose networks can't connect directly had no backup route. Switched to a free Metered account (Open Relay, 20 GB a month). The login lives at the top of `config.js` (TURN_USERNAME and TURN_PASSWORD). Tested: all four relay addresses connect.
 
+- Not pushed yet: chat. A chat card under the sidebar with two tabs: House (everyone) and Office (only people standing in the same office as you; the tab works while you're in any office). Press Enter to start typing, Enter to send, Escape to go back to walking (typing never moves your character or triggers game keys). New messages pop up as a speech bubble over the speaker for a few seconds, tabs show a dot for unread messages, and incoming messages make a soft blip (silent in Dinner). Chat isn't saved: people who join later don't see earlier messages.
+
 ## Next
 - Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 

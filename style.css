@@ -247,6 +247,124 @@ canvas {
   gap: 20px;
 }
 
+/* The sidebar and the chat card, stacked in one column the sidebar's width. */
+#side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 230px;
+}
+
+/* Chat card: same cream card style as the sidebar. */
+#chat-card {
+  text-align: left;
+  background: #fffaf3;
+  border-radius: 14px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 4px 14px rgba(122, 92, 62, 0.15);
+}
+
+.chat-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chat-tab {
+  position: relative;
+  flex: 1;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9em;
+  padding: 5px 0;
+  border-radius: 999px;
+  border: 2px solid #eadcc6;
+  background: transparent;
+  color: var(--wood);
+  cursor: pointer;
+}
+
+.chat-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.chat-tab:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Little dot on a tab with messages you haven't looked at yet. */
+.unread-dot {
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c0664a;
+}
+
+#chat-log {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  height: 170px;
+  overflow-y: auto;
+  background: #f7eddc;
+  border-radius: 10px;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+#chat-log li {
+  padding: 2px 0;
+}
+
+#chat-log .chat-name {
+  font-weight: 700;
+}
+
+#chat-log .chat-empty {
+  color: #9c8770;
+  font-style: italic;
+}
+
+#chat-form {
+  display: flex;
+  gap: 6px;
+}
+
+#chat-input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 0.9em;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 2px solid #eadcc6;
+  background: white;
+  color: #4a3a2c;
+}
+
+#chat-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chat-send {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
 /* Too narrow for the house and sidebar side by side (house 1008 + gap 20
    + sidebar 230 + edges 32): stack the sidebar under the house instead,
    so the header lines up with the house. */

@@ -89,6 +89,12 @@ export function playTimerChime() {
   playTone(783.99, 440, { gain: 0.1, duration: 0.7, type: "sine" });
 }
 
+// A soft little blip when a chat message comes in.
+export function playChatSound() {
+  playTone(880, 0, { gain: 0.05, duration: 0.08, type: "sine" });
+  playTone(1174.66, 70, { gain: 0.05, duration: 0.1, type: "sine" });
+}
+
 // A tiny, soft click for buttons and toggles.
 export function playClickSound() {
   playTone(600, 0, { gain: 0.06, duration: 0.05, type: "triangle" });

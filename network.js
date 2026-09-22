@@ -22,6 +22,8 @@ let externalOnKnock = null;
 let knockAction = null;
 let externalOnFocus = null;
 let focusAction = null;
+let externalOnChat = null;
+let chatAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -50,6 +52,18 @@ export function onFocus(callback) {
 // focus timer.
 export function sendFocus(message, peerId) {
   focusAction?.send(message, peerId ? { target: peerId } : undefined);
+}
+
+// A chat message arrived. callback gets the message and the sender's id.
+export function onChat(callback) {
+  externalOnChat = callback;
+}
+
+// Sends a chat message to everyone, or only to the friends listed in
+// peerIds (used for office chat). An empty list sends nothing.
+export function sendChat(message, peerIds) {
+  if (Array.isArray(peerIds) && peerIds.length === 0) return;
+  chatAction?.send(message, peerIds ? { target: peerIds } : undefined);
 }
 
 // Knock on one friend's office door (only they get the message).
@@ -98,6 +112,9 @@ export function connectToRoom(myName, myColor) {
   // "knock" carries no information, the message arriving is the knock.
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
+
+  chatAction = room.makeAction("chat");
+  chatAction.onMessage = (message, { peerId }) => externalOnChat?.(message, peerId);
 
   focusAction = room.makeAction("focus");
   focusAction.onMessage = (message) => externalOnFocus?.(message);

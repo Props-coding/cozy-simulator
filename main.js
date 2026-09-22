@@ -12,6 +12,8 @@ import {
   sendKnock,
   onFocus,
   sendFocus,
+  onChat,
+  sendChat,
 } from "./network.js";
 import {
   requestMic,
@@ -32,6 +34,7 @@ import {
   playClickSound,
   playKnockSound,
   playTimerChime,
+  playChatSound,
 } from "./audio.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -317,7 +320,7 @@ function actionHintFor(room) {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || e.repeat || dialogOpen) return;
+  if (gameScreen.hidden || e.repeat || dialogOpen || isTypingInChat(e)) return;
   const key = e.key.toLowerCase();
 
   if (key === "e" && !myOffice && isNearBuildDoor(player)) {
@@ -368,6 +371,143 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// --- Chat ---
+// Two channels: "house" (everyone) and office chat (only people standing
+// in the same office). Messages aren't saved anywhere: you see what's
+// said while you're here. New messages also pop up as a speech bubble
+// over the speaker for a few seconds.
+const CHAT_MAX_LENGTH = 200;
+const chatInput = document.getElementById("chat-input");
+const chatLog = document.getElementById("chat-log");
+const chatTabs = { house: document.getElementById("chat-tab-house"), office: document.getElementById("chat-tab-office") };
+
+let chatTab = "house"; // which tab is showing
+let chatLines = []; // { channel: "house" or an office id like "office-2", name, color, text }
+const unread = { house: false, office: false };
+const bubbles = {}; // "me" or a peer id -> { text, until }
+let lastChatSent = 0;
+let lastOfficeRoomId = null; // the office you're standing in, if any
+
+// True while you're typing a chat message, so letters don't move you or
+// trigger E, F, K, L or R.
+function isTypingInChat(e) {
+  return e.target === chatInput;
+}
+
+function bubbleFor(who) {
+  const b = bubbles[who];
+  return b && performance.now() < b.until ? b.text : null;
+}
+
+function renderChat() {
+  const channel = chatTab === "house" ? "house" : lastOfficeRoomId;
+  const lines = chatLines.filter((l) => l.channel === channel);
+  chatLog.innerHTML = "";
+  if (lines.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "chat-empty";
+    empty.textContent = chatTab === "house" ? "Say hi to everyone!" : "Only people in this office can see this chat.";
+    chatLog.appendChild(empty);
+  }
+  for (const line of lines) {
+    // Built with textContent (never innerHTML), since friends' names and
+    // messages come over the network.
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "chat-name";
+    name.style.color = safeColor(line.color);
+    name.textContent = line.name + ": ";
+    li.append(name, document.createTextNode(line.text));
+    chatLog.appendChild(li);
+  }
+  chatLog.scrollTop = chatLog.scrollHeight;
+  chatTabs.house.querySelector(".unread-dot").hidden = !unread.house;
+  chatTabs.office.querySelector(".unread-dot").hidden = !unread.office;
+}
+
+function addChatLine(line) {
+  chatLines.push(line);
+  if (chatLines.length > 200) chatLines = chatLines.slice(-200); // keep it light
+  const tabForLine = line.channel === "house" ? "house" : "office";
+  if (tabForLine !== chatTab) unread[tabForLine] = true;
+  renderChat();
+}
+
+function switchChatTab(tab) {
+  chatTab = tab;
+  unread[tab] = false;
+  chatTabs.house.classList.toggle("active", tab === "house");
+  chatTabs.office.classList.toggle("active", tab === "office");
+  renderChat();
+}
+
+chatTabs.house.addEventListener("click", () => switchChatTab("house"));
+chatTabs.office.addEventListener("click", () => switchChatTab("office"));
+
+// Called every frame: the Office tab only works while you're in an office,
+// and its label shows which one.
+function updateChatTabs(room) {
+  const officeId = room.office ? room.id : null;
+  if (officeId === lastOfficeRoomId) return;
+  lastOfficeRoomId = officeId;
+  chatTabs.office.disabled = !officeId;
+  chatTabs.office.title = officeId ? room.name : "Walk into an office to chat there";
+  unread.office = false;
+  if (!officeId && chatTab === "office") switchChatTab("house");
+  else renderChat();
+}
+
+document.getElementById("chat-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = chatInput.value.trim().slice(0, CHAT_MAX_LENGTH);
+  chatInput.blur(); // sending takes you straight back to walking
+  if (!text || performance.now() - lastChatSent < 400) return;
+  lastChatSent = performance.now();
+  chatInput.value = "";
+
+  if (chatTab === "office" && lastOfficeRoomId) {
+    const inThisOffice = getPeers().filter((p) => p.room === lastOfficeRoomId).map((p) => p.id);
+    sendChat({ text, office: lastOfficeRoomId }, inThisOffice);
+    addChatLine({ channel: lastOfficeRoomId, name: myName, color: myColor, text });
+  } else {
+    sendChat({ text });
+    addChatLine({ channel: "house", name: myName, color: myColor, text });
+  }
+  bubbles.me = { text, until: performance.now() + 6000 };
+});
+
+// Enter starts typing; Enter sends and goes back to walking; Escape goes
+// back to walking without sending.
+window.addEventListener("keydown", (e) => {
+  if (gameScreen.hidden || dialogOpen) return;
+  if (e.key === "Enter" && e.target !== chatInput) {
+    e.preventDefault();
+    for (const k in keysDown) keysDown[k] = false; // stop walking while typing
+    chatInput.focus();
+  } else if (e.target === chatInput && (e.key === "Escape" || (e.key === "Enter" && !chatInput.value.trim()))) {
+    e.preventDefault();
+    chatInput.blur();
+  }
+});
+
+onChat((message, peerId) => {
+  if (typeof message?.text !== "string") return;
+  const text = message.text.trim().slice(0, CHAT_MAX_LENGTH);
+  if (!text) return;
+  let channel = "house";
+  if (message.office !== undefined) {
+    // Office chat: only show it if we're standing in that office right now.
+    if (message.office !== getCurrentRoom(player).id) return;
+    channel = message.office;
+  }
+  const peer = getPeers().find((p) => p.id === peerId);
+  addChatLine({ channel, name: String(peer?.name ?? "Someone").slice(0, 16), color: peer?.color, text });
+  bubbles[peerId] = { text, until: performance.now() + 6000 };
+  playChatSound();
+});
+
+renderChat();
+
 // --- In-game "are you sure?" card ---
 // Shows the cozy card over the house and resolves to true or false.
 // While it's open, your character stays put and game keys are ignored.
@@ -404,7 +544,9 @@ function askConfirm({ title, text, yes, no }) {
 
 // Tracks which movement keys are currently held down.
 const keysDown = {};
-window.addEventListener("keydown", (e) => (keysDown[e.key.toLowerCase()] = true));
+window.addEventListener("keydown", (e) => {
+  if (!isTypingInChat(e)) keysDown[e.key.toLowerCase()] = true;
+});
 window.addEventListener("keyup", (e) => (keysDown[e.key.toLowerCase()] = false));
 
 function readMovement(dt) {
@@ -512,9 +654,10 @@ function tick(now) {
     const shown = getSmoothedPosition(peer, dt);
     // A friend's hat name comes over the network, so only accept known hats.
     const hat = HAT_DRAWERS[peer.hat] ? peer.hat : "none";
-    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, name: peer.name, badge: peer.room === "dinner" ? "eating" : null };
+    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id) };
   });
-  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null });
+  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me") });
+  updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, player, studySignText());
 
   updateSidebar(currentRoom.name);

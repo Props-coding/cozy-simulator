@@ -67,6 +67,7 @@
         <p id="action-hint"></p>
         <p class="hint">Move with the arrow keys or WASD.</p>
       </div>
+      <div id="side-column">
       <div id="sidebar">
         <h2>Who's here</h2>
         <ul id="peer-list"></ul>
@@ -92,6 +93,21 @@
           Lo-fi volume (Study)
           <input id="lofi-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
         </label>
+      </div>
+
+      <!-- Chat: "House" goes to everyone, "Office" only to people in the
+           same office as you. -->
+      <div id="chat-card">
+        <div class="chat-tabs">
+          <button id="chat-tab-house" class="chat-tab active" type="button">House<span class="unread-dot" hidden></span></button>
+          <button id="chat-tab-office" class="chat-tab" type="button" disabled>Office<span class="unread-dot" hidden></span></button>
+        </div>
+        <ul id="chat-log"></ul>
+        <form id="chat-form" autocomplete="off">
+          <input id="chat-input" type="text" maxlength="200" placeholder="Enter to chat">
+          <button type="submit" class="chat-send">Send</button>
+        </form>
+      </div>
       </div>
     </div>
     </div>
