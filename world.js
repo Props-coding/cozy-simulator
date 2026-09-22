@@ -13,10 +13,10 @@ const WALL_THICKNESS = 0.4;
 // player is standing in. Order matters: checked top to bottom, first
 // match wins.
 const ROOMS = [
-  { id: "gaming", name: CONFIG.roomNames.gaming, rect: { x: 0, y: 3, w: 6, h: 8 }, color: CONFIG.roomColors.gaming },
-  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, color: CONFIG.roomColors.study },
-  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, color: CONFIG.roomColors.dinner },
-  { id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 }, color: CONFIG.roomColors.hallway },
+  { id: "gaming", name: CONFIG.roomNames.gaming, rect: { x: 0, y: 3, w: 6, h: 8 } },
+  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 } },
+  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 } },
+  { id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -58,7 +58,7 @@ const WALLS = [
 // wall they're on.
 const FURNITURE = [
   // Hallway
-  { kind: "rug", x: 6, y: 0.7, w: 6, h: 1.4, solid: false },
+  { kind: "rug", x: 6, y: 0.7, w: 6, h: 1.4, color: "#7b8fa8", solid: false },
   { kind: "plant", x: 16.9, y: 0.3, w: 0.6, h: 0.6 },
   { kind: "mirror", x: 2, y: 0, w: 0.7, solid: false },
 
@@ -76,10 +76,23 @@ const FURNITURE = [
   { kind: "snackTable", x: 4.2, y: 9.9, w: 1.4, h: 0.6 },
 
   // Study
-  { kind: "bookshelf", x: 6.4, y: 3.3, w: 1.4, h: 0.5 },
+  // Study: a shared study table on a big rug with cushions to sit on, a
+  // reading armchair and floor lamp by the window, string lights, a
+  // beanbag, and plants.
+  { kind: "rug", x: 7, y: 5.3, w: 4, h: 3, color: "#a8473a", solid: false },
+  { kind: "lights", x: 6, y: 3.2, w: 2, solid: false },
+  { kind: "lights", x: 10, y: 3.2, w: 2, solid: false },
+  { kind: "bookshelf", x: 6.3, y: 3.3, w: 1.5, h: 0.5 },
   { kind: "window", x: 10.3, y: 3.2, w: 1.4, solid: false },
-  { kind: "desk", x: 10.2, y: 3.4, w: 1.6, h: 0.7 },
-  { kind: "plant", x: 6.4, y: 10.1, w: 0.6, h: 0.6 },
+  { kind: "armchair", x: 10.1, y: 3.6, w: 1.1, h: 0.8 },
+  { kind: "floorLamp", x: 11.3, y: 3.4, w: 0.4, h: 0.4 },
+  { kind: "studyTable", x: 7.6, y: 6.2, w: 2.8, h: 0.9 },
+  { kind: "stool", x: 7.8, y: 7.15, w: 0.6, h: 0.6, color: "#d9a441", solid: false },
+  { kind: "stool", x: 8.7, y: 7.15, w: 0.6, h: 0.6, color: "#7a9e5c", solid: false },
+  { kind: "stool", x: 9.6, y: 7.15, w: 0.6, h: 0.6, color: "#c0554a", solid: false },
+  { kind: "beanbag", x: 6.4, y: 9.5, w: 0.9, h: 0.8 },
+  { kind: "plant", x: 11.1, y: 10.1, w: 0.6, h: 0.6 },
+  { kind: "plant", x: 6.4, y: 4.3, w: 0.6, h: 0.6 },
 
   // Dinner
   { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6 },

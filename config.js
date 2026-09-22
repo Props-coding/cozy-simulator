@@ -17,12 +17,21 @@ const CONFIG = {
     dinner: "Dinner",
   },
 
-  // Colors for each room's floor.
-  roomColors: {
-    hallway: "#e8e0d0",
-    gaming: "#cfe8d8",
-    study: "#d8dcef",
-    dinner: "#f0dcd4",
+  // Each room's floor: a style ("planks" for wood boards, "carpet", or
+  // "checker" for tiles) and a main color.
+  roomFloors: {
+    hallway: { style: "planks", color: "#d4b48c" },
+    gaming: { style: "carpet", color: "#39455e" },
+    study: { style: "planks", color: "#9c6a45" },
+    dinner: { style: "checker", color: "#dcae8c" },
+  },
+
+  // The color of the walls you see inside each room.
+  roomWallColors: {
+    hallway: "#eadbc2",
+    gaming: "#56617a",
+    study: "#6f8a6a",
+    dinner: "#f0d9b8",
   },
 
   // --- Multiplayer (Trystero) settings ---

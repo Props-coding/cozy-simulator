@@ -97,44 +97,124 @@ function drawBlock(ctx, gx, gy, w, h, height, color) {
 }
 
 // --- Floors (drawn first, flat, never cover anything) ---
+// Floors and rugs never change, so they're painted once onto a hidden
+// canvas and copied onto the screen each frame, which is much faster
+// than redrawing hundreds of floorboards 60 times a second.
 
-function drawFloors(ctx) {
+// A repeatable "random" number from 0 to 1 for a given n, so each
+// floorboard gets its own slightly different shade that stays the same
+// every time the page loads.
+function noise(n) {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Wood boards running left to right, each a slightly different shade,
+// with staggered joins like a real floor.
+function drawPlanks(ctx, box, color) {
+  const plankH = TILE / 3;
+  for (let row = 0; row * plankH < box.h; row++) {
+    const y = box.y + row * plankH;
+    let x = box.x - noise(row) * TILE * 3;
+    for (let i = 0; x < box.x + box.w; i++) {
+      const len = TILE * (2.5 + noise(row * 31 + i + 0.5) * 3); // boards of different lengths
+      ctx.fillStyle = shadeColor(color, Math.round((noise(row * 31 + i) - 0.5) * 16));
+      ctx.fillRect(x, y, len, plankH);
+      ctx.fillStyle = "rgba(40, 20, 5, 0.18)";
+      ctx.fillRect(x, y, 1, plankH); // join between boards
+      x += len;
+    }
+    ctx.fillStyle = "rgba(40, 20, 5, 0.22)";
+    ctx.fillRect(box.x, y + plankH - 1, box.w, 1); // gap between rows
+  }
+}
+
+// Soft carpet: an even color with tiny flecks of lighter and darker fibers.
+function drawCarpet(ctx, box, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  for (let i = 0; i < (box.w * box.h) / 30; i++) {
+    ctx.fillStyle = noise(i) > 0.5 ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.08)";
+    ctx.fillRect(box.x + noise(i + 0.3) * box.w, box.y + noise(i + 0.7) * box.h, 2, 2);
+  }
+}
+
+// Small kitchen-style tiles, alternating the room color with a slightly
+// lighter shade of it, with thin grout lines.
+function drawChecker(ctx, box, color) {
+  const size = TILE / 2;
+  for (let ty = 0; ty * size < box.h; ty++) {
+    for (let tx = 0; tx * size < box.w; tx++) {
+      ctx.fillStyle = (tx + ty) % 2 === 0 ? color : shadeColor(color, 22);
+      ctx.fillRect(box.x + tx * size, box.y + ty * size, size, size);
+      ctx.strokeStyle = "rgba(90, 60, 40, 0.12)";
+      ctx.strokeRect(box.x + tx * size + 0.5, box.y + ty * size + 0.5, size - 1, size - 1);
+    }
+  }
+}
+
+const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker };
+
+function paintFloors(ctx) {
   ctx.fillStyle = WOOD_DARK;
   ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
 
   for (const room of ROOMS) {
-    const { x, y, w, h } = room.rect;
-    for (let ty = 0; ty < h; ty++) {
-      for (let tx = 0; tx < w; tx++) {
-        const p = toScreen(x + tx, y + ty);
-        // A faint checkerboard plus a thin edge line on each tile.
-        ctx.fillStyle = shadeColor(room.color, (tx + ty) % 2 === 0 ? 4 : -4);
-        ctx.fillRect(p.x, p.y, TILE, TILE);
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.06)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(p.x + 0.5, p.y + 0.5, TILE - 1, TILE - 1);
-      }
-    }
+    const floor = CONFIG.roomFloors[room.id];
+    const a = toScreen(room.rect.x, room.rect.y);
+    const box = { x: a.x, y: a.y, w: room.rect.w * TILE, h: room.rect.h * TILE };
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip(); // keep each room's pattern inside its own room
+    FLOOR_STYLES[floor.style](ctx, box, floor.color);
+    ctx.restore();
   }
 
-  // Rugs lie flat on the floor, so they're part of the floor pass.
+  // Rugs lie flat on the floor: a main color, a lighter inner border,
+  // and a row of diamonds down the middle.
   for (const f of FURNITURE) {
     if (f.kind !== "rug") continue;
     const a = toScreen(f.x, f.y);
-    const color = f.y < 3 ? "#c98a6b" : "#8a9bb5";
-    roundRectPath(ctx, a.x, a.y, f.w * TILE, f.h * TILE, 10);
-    ctx.fillStyle = color;
+    const w = f.w * TILE, h = f.h * TILE;
+    roundRectPath(ctx, a.x, a.y, w, h, 10);
+    ctx.fillStyle = f.color;
     ctx.fill();
-    roundRectPath(ctx, a.x + 5, a.y + 5, f.w * TILE - 10, f.h * TILE - 10, 7);
-    ctx.strokeStyle = shadeColor(color, 30);
+    roundRectPath(ctx, a.x + 6, a.y + 6, w - 12, h - 12, 7);
+    ctx.strokeStyle = shadeColor(f.color, 45);
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.fillStyle = shadeColor(f.color, 30);
+    const count = Math.floor((w - 30) / 26);
+    for (let i = 0; i < count; i++) {
+      const cx = a.x + w / 2 + (i - (count - 1) / 2) * 26, cy = a.y + h / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 8);
+      ctx.lineTo(cx + 8, cy);
+      ctx.lineTo(cx, cy + 8);
+      ctx.lineTo(cx - 8, cy);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 }
 
+let floorCanvas = null;
+
+function drawFloors(ctx) {
+  if (!floorCanvas) {
+    floorCanvas = document.createElement("canvas");
+    floorCanvas.width = CONFIG.canvasWidth;
+    floorCanvas.height = CONFIG.canvasHeight;
+    paintFloors(floorCanvas.getContext("2d"));
+  }
+  ctx.drawImage(floorCanvas, 0, 0);
+}
+
 // --- Walls ---
-// Simple panels: a wood top edge, a lighter plaster front face, and a
-// dark baseboard line where the wall meets the floor. Walls running up and
+// Simple panels: a wood top edge, a painted front face (each room has its
+// own wall color, see config.js), and a dark baseboard line where the wall
+// meets the floor. Walls running up and
 // down the screen (taller than wide) are all wood: their front face would
 // only be a sliver at the bottom end. A soft shade on the floor just
 // below the wall helps it read as standing up.
@@ -154,30 +234,69 @@ function drawWall(ctx, wall) {
   ctx.fillRect(a.x, a.y - height, b.x - a.x, b.y - a.y);
   // Front face.
   const hasFace = !wall.low && wall.w > wall.h;
-  ctx.fillStyle = hasFace ? "#e9d8bd" : WOOD_DARK;
+  // The face belongs to whichever room it faces: the one just below it.
+  const facing = getCurrentRoom({ x: wall.x + wall.w / 2 - PLAYER_SIZE / 2, y: wall.y + wall.h });
+  ctx.fillStyle = hasFace ? CONFIG.roomWallColors[facing.id] : WOOD_DARK;
   ctx.fillRect(a.x, b.y - height, b.x - a.x, height);
   // Baseboard.
   if (hasFace) {
     ctx.fillStyle = WOOD_DARK;
     ctx.fillRect(a.x, b.y - 5, b.x - a.x, 5);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // a thin trim line near the top
+    ctx.fillRect(a.x, b.y - height + 3, b.x - a.x, 2);
   }
+}
+
+// Where each bulb on a string of lights sits: a gentle droop between
+// the two ends, along the top of the wall it hangs on.
+function stringLightBulbs(f) {
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, top = a.y - WALL_HEIGHT + 6;
+  const bulbs = [];
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    bulbs.push({ x: a.x + 4 + t * (w - 8), y: top + Math.sin(t * Math.PI) * 8 });
+  }
+  return bulbs;
 }
 
 // --- Furniture ---
 // One function per kind. Each gets the furniture entry from world.js,
 // draws its own shadow first, then its upright shape.
 const FURNITURE_DRAWERS = {
+  // A leafy plant in a round clay pot.
   plant(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const pot = drawBlock(ctx, f.x + 0.1, f.y, f.w - 0.2, f.h, 16, "#b86b4b");
-    const cx = pot.top.x + pot.top.w / 2;
-    const cy = pot.top.y;
-    const leaves = [[-7, -8, 10, "#4f7a48"], [7, -10, 9, "#5c8a54"], [0, -18, 10, "#6fa05e"], [0, -4, 8, "#6fa05e"]];
-    for (const [dx, dy, r, color] of leaves) {
+    const base = toScreen(f.x + f.w / 2, f.y + f.h);
+    const cx = base.x, by = base.y - 2;
+    // Pot: a tapered clay pot with a rim.
+    ctx.fillStyle = "#b86b4b";
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, by);
+    ctx.lineTo(cx + 9, by);
+    ctx.lineTo(cx + 12, by - 16);
+    ctx.lineTo(cx - 12, by - 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#9a5439";
+    ctx.fillRect(cx - 9, by - 3, 18, 3);
+    ctx.fillStyle = "#cf8260";
+    ctx.fillRect(cx - 13, by - 20, 26, 5);
+    // Leaves fanning up and out of the pot, darker at the back.
+    const leaves = [
+      [-0.9, 22, "#3f6b3c"], [0.9, 22, "#3f6b3c"],
+      [-0.5, 26, "#4f7a48"], [0.5, 26, "#4f7a48"],
+      [-0.2, 24, "#6fa05e"], [0.2, 24, "#6fa05e"], [0, 20, "#7fb46a"],
+    ];
+    for (const [angle, len, color] of leaves) {
+      ctx.save();
+      ctx.translate(cx, by - 18);
+      ctx.rotate(angle);
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(cx + dx, cy + dy, r, 0, Math.PI * 2);
+      ctx.ellipse(0, -len / 2, 6, len / 2, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
     }
   },
 
@@ -186,7 +305,7 @@ const FURNITURE_DRAWERS = {
   // with the screen still glowing above their head.
   pcDesk(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#3d3a45");
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, WOOD);
     const { x, y, w, h } = d.top;
     // Monitor on the back of the desk.
     const mw = 44, mh = 28, mx = x + w / 2 - mw / 2 - 6, my = y - mh + 6;
@@ -219,7 +338,7 @@ const FURNITURE_DRAWERS = {
     ctx.fill();
   },
 
-  // A round stool you stand on to sit at a computer.
+  // A round stool or cushion you stand on to sit at a desk or table.
   stool(ctx, f) {
     const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
     ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
@@ -228,7 +347,7 @@ const FURNITURE_DRAWERS = {
     ctx.fill();
     ctx.fillStyle = "#2b2b33";
     ctx.fillRect(c.x - 2, c.y - 4, 4, 10);
-    ctx.fillStyle = "#c0554a";
+    ctx.fillStyle = f.color || "#c0554a";
     ctx.beginPath();
     ctx.ellipse(c.x, c.y - 5, 11, 6, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -278,18 +397,104 @@ const FURNITURE_DRAWERS = {
     }
   },
 
-  desk(ctx, f) {
+  // The shared study table: open books, mugs, a stack of books and a lamp.
+  studyTable(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 26, WOOD);
-    // An open book and a lamp on the desk.
-    ctx.fillStyle = "#f4ecdc";
-    ctx.fillRect(d.top.x + 10, d.top.y + 8, 22, 14);
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#8b5e3c");
+    const { x, y, w, h } = t.top;
+    const mid = y + h / 2;
+    // Open books.
+    for (const bx of [x + 10, x + w - 64]) {
+      ctx.fillStyle = "#f4ecdc";
+      ctx.fillRect(bx, mid - 4, 26, 15);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+      ctx.fillRect(bx + 12.5, mid - 4, 1, 15);
+      ctx.fillRect(bx + 3, mid, 7, 1);
+      ctx.fillRect(bx + 16, mid + 3, 7, 1);
+    }
+    // Mugs of tea.
+    for (const [mx, color] of [[x + 44, "#e8dcc8"], [x + w - 28, "#c0554a"]]) {
+      ctx.fillStyle = color;
+      ctx.fillRect(mx, mid - 6, 9, 10);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(mx + 10, mid - 1, 3, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+      ctx.fillStyle = "#5c3a22";
+      ctx.fillRect(mx + 1, mid - 6, 7, 2);
+    }
+    // A stack of closed books.
+    const stack = ["#4a90a4", "#e0a84c", "#7a9e5c"];
+    stack.forEach((color, i) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x + w / 2 + 14, mid + 4 - i * 5, 20 - i * 2, 5);
+    });
+    drawLamp(ctx, x + w / 2, mid + 2);
+  },
+
+  // A cozy reading armchair with a little cushion.
+  armchair(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, 0.25, 26, "#a8732c"); // backrest
+    const seat = drawBlock(ctx, f.x + 0.12, f.y + 0.25, f.w - 0.24, f.h - 0.25, 12, "#c98f3c");
+    ctx.fillStyle = "#6f8a6a";
+    roundRectPath(ctx, seat.top.x + seat.top.w / 2 - 9, seat.top.y - 8, 18, 14, 5);
+    ctx.fill();
+    drawBlock(ctx, f.x, f.y + 0.15, 0.2, f.h - 0.15, 18, "#b07c30"); // arms
+    drawBlock(ctx, f.x + f.w - 0.2, f.y + 0.15, 0.2, f.h - 0.15, 18, "#b07c30");
+  },
+
+  // A tall standing lamp with a fabric shade.
+  floorLamp(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const base = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = WOOD_DARK;
     ctx.beginPath();
-    ctx.moveTo(d.top.x + 21, d.top.y + 8);
-    ctx.lineTo(d.top.x + 21, d.top.y + 22);
+    ctx.ellipse(base.x, base.y - 2, 7, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(base.x - 1.5, base.y - 58, 3, 56);
+    ctx.fillStyle = "#f2d9a0";
+    ctx.beginPath();
+    ctx.moveTo(base.x - 12, base.y - 52);
+    ctx.lineTo(base.x + 12, base.y - 52);
+    ctx.lineTo(base.x + 7, base.y - 70);
+    ctx.lineTo(base.x - 7, base.y - 70);
+    ctx.closePath();
+    ctx.fill();
+  },
+
+  // A squishy beanbag, lighter on top where the light hits it.
+  beanbag(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const c = toScreen(f.x + f.w / 2, f.y + f.h);
+    const rx = (f.w * TILE) / 2, ry = 20;
+    const fill = ctx.createLinearGradient(0, c.y - 2 * ry, 0, c.y);
+    fill.addColorStop(0, "#d98c6a");
+    fill.addColorStop(1, "#9a5439");
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y - ry, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.12)"; // the dip where you sit
+    ctx.beginPath();
+    ctx.ellipse(c.x + 2, c.y - ry - 4, rx * 0.5, ry * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // Warm string lights draped along the top of a wall.
+  lights(ctx, f) {
+    ctx.strokeStyle = "rgba(60, 40, 20, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    stringLightBulbs(f).forEach((bulb, i) => (i === 0 ? ctx.moveTo(bulb.x, bulb.y) : ctx.lineTo(bulb.x, bulb.y)));
     ctx.stroke();
-    drawLamp(ctx, d.top.x + d.top.w - 16, d.top.y + d.top.h / 2);
+    for (const bulb of stringLightBulbs(f)) {
+      ctx.fillStyle = "#ffd98a";
+      ctx.beginPath();
+      ctx.arc(bulb.x, bulb.y + 2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   },
 
   table(ctx, f) {
@@ -370,13 +575,28 @@ function drawLamp(ctx, x, y) {
 // Warm light effects, drawn over everything in a final pass so glows
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
+  // The Study gets a soft golden wash, like a room lit by lamps at night.
+  const study = ROOMS.find((r) => r.id === "study").rect;
+  const s1 = toScreen(study.x, study.y - 1), s2 = toScreen(study.x + study.w, study.y + study.h);
+  const cx = (s1.x + s2.x) / 2, cy = (s1.y + s2.y) / 2;
+  const wash = ctx.createRadialGradient(cx, cy, 20, cx, cy, 260);
+  wash.addColorStop(0, "rgba(255, 190, 100, 0.12)");
+  wash.addColorStop(1, "rgba(60, 30, 10, 0.12)");
+  ctx.fillStyle = wash;
+  ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
+
   for (const f of FURNITURE) {
     if (f.kind === "pcDesk") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x - 6, p.y - 30, 40, f.screen + "66");
-    } else if (f.kind === "desk") {
-      const p = toScreen(f.x + f.w, f.y + f.h / 2);
-      drawGlow(ctx, p.x - 16, p.y - 44, 26, "rgba(255, 220, 130, 0.55)");
+    } else if (f.kind === "studyTable") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+      drawGlow(ctx, p.x, p.y - 44, 40, "rgba(255, 215, 130, 0.5)");
+    } else if (f.kind === "floorLamp") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h);
+      drawGlow(ctx, p.x, p.y - 58, 60, "rgba(255, 210, 130, 0.45)");
+    } else if (f.kind === "lights") {
+      for (const bulb of stringLightBulbs(f)) drawGlow(ctx, bulb.x, bulb.y + 2, 9, "rgba(255, 210, 120, 0.55)");
     } else if (f.kind === "pendant") {
       // A lamp hanging from the ceiling over the dinner table.
       const p = toScreen(f.x, f.y);
