@@ -37,6 +37,15 @@ canvas {
   box-shadow: 0 10px 24px rgba(90, 65, 40, 0.3);
 }
 
+/* The little character preview on the Join screen: a soft round frame
+   instead of the house view's heavy border. */
+#character-preview {
+  border: none;
+  border-radius: 50%;
+  background: #f3e6d0;
+  box-shadow: inset 0 2px 6px rgba(90, 65, 40, 0.15);
+}
+
 /* Prompts like "Press E to build your office". Keeps its height when
    empty so the house doesn't jump up and down as prompts come and go. */
 #action-hint {
@@ -69,6 +78,16 @@ canvas {
 #join-screen label {
   font-size: 1em;
   font-weight: 600;
+  color: var(--wood);
+}
+
+#hat-input {
+  font-family: inherit;
+  font-size: 0.95em;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #d9c3a5;
+  background: white;
   color: var(--wood);
 }
 

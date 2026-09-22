@@ -916,19 +916,121 @@ function playerFeet(p) {
   return toScreen(p.x + PLAYER_SIZE / 2, p.y + PLAYER_SIZE);
 }
 
+// Hats you can pick on the Join screen. Each draws on top of a round body
+// with its center at (cx, cy) and radius r. "none" draws nothing.
+const HAT_DRAWERS = {
+  none() {},
+
+  // A knitted beanie with a folded band and a pompom.
+  beanie(ctx, cx, cy, r) {
+    ctx.fillStyle = "#c0554a";
+    ctx.beginPath();
+    ctx.arc(cx, cy - 1, r + 1, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#a8473a";
+    roundRectPath(ctx, cx - r + 1, cy - r * 0.55, r * 2 - 2, 5, 2);
+    ctx.fill();
+    ctx.fillStyle = "#f3e6d0";
+    ctx.beginPath();
+    ctx.arc(cx, cy - r - 2, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A baseball cap with the brim pointing off to the side.
+  cap(ctx, cx, cy, r) {
+    ctx.fillStyle = "#4a90a4";
+    ctx.beginPath();
+    ctx.arc(cx, cy - 2, r, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#3a7384";
+    ctx.beginPath();
+    ctx.ellipse(cx + r * 0.75, cy - r * 0.5, 8, 2.8, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f3e6d0";
+    ctx.beginPath();
+    ctx.arc(cx, cy - r - 1, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A big bow on top.
+  bow(ctx, cx, cy, r) {
+    const bx = cx + 5, by = cy - r + 1;
+    ctx.fillStyle = "#e37aa0";
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx - 9, by - 6);
+    ctx.lineTo(bx - 9, by + 5);
+    ctx.closePath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + 9, by - 6);
+    ctx.lineTo(bx + 9, by + 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#c95a84";
+    ctx.beginPath();
+    ctx.arc(bx, by, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // Chunky headphones: a band over the top and a cup on each side.
+  headphones(ctx, cx, cy, r) {
+    ctx.strokeStyle = "#3a3a40";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 2, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.stroke();
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = "#3a3a40";
+      roundRectPath(ctx, cx + side * (r + 1) - 3.5, cy - 5, 7, 11, 3);
+      ctx.fill();
+      ctx.fillStyle = "#e0a84c";
+      ctx.fillRect(cx + side * (r + 1) - 1, cy - 3, 2, 7);
+    }
+  },
+
+  // A little flower tucked behind one ear.
+  flower(ctx, cx, cy, r) {
+    const fx = cx - r * 0.6, fy = cy - r * 0.75;
+    ctx.fillStyle = "#fbf3e4";
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(fx + Math.cos(angle) * 3.6, fy + Math.sin(angle) * 3.6, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e0a84c";
+    ctx.beginPath();
+    ctx.arc(fx, fy, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  },
+};
+
 // Draws one player's body (used for yourself and everyone else): a soft
-// shadow at their feet, then a round body standing on it, lit from above
-// (lighter on top, darker underneath) like everything else.
+// shadow, two little feet, and a round body lit from above (lighter on
+// top, darker underneath) like everything else, with their hat on top.
+// While walking (p.moving), the body bobs and the feet take turns lifting.
 function drawPlayerBody(ctx, p) {
   const foot = playerFeet(p);
   const r = PLAYER_RADIUS;
+  const step = p.moving ? Math.sin(performance.now() / 1000 * 12) : 0;
+  const bob = Math.abs(step) * 2.5;
   const cx = foot.x;
-  const cy = foot.y - r - 3;
+  const cy = foot.y - r - 5 - bob;
 
   ctx.fillStyle = "rgba(40, 25, 10, 0.25)";
   ctx.beginPath();
-  ctx.ellipse(foot.x, foot.y, r * 0.85, r * 0.35, 0, 0, Math.PI * 2);
+  ctx.ellipse(foot.x, foot.y, r * 0.85 - bob * 0.6, r * 0.35, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Feet, peeking out under the body.
+  ctx.fillStyle = shadeColor(p.color, -70);
+  for (const [side, lift] of [[-1, Math.max(0, step) * 3], [1, Math.max(0, -step) * 3]]) {
+    ctx.beginPath();
+    ctx.ellipse(cx + side * 5.5, foot.y - 2.5 - lift, 4, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   const body = ctx.createLinearGradient(0, cy - r, 0, cy + r);
   body.addColorStop(0, shadeColor(p.color, 35));
@@ -941,17 +1043,39 @@ function drawPlayerBody(ctx, p) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Face: two eyes and a little smile.
+  // Face: two eyes, rosy cheeks and a little smile.
   ctx.fillStyle = "#2b2b2b";
   ctx.beginPath();
   ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
   ctx.arc(cx + 4, cy - 2, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(240, 120, 120, 0.35)";
+  ctx.beginPath();
+  ctx.ellipse(cx - 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = "#2b2b2b";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
   ctx.stroke();
+
+  (HAT_DRAWERS[p.hat] || HAT_DRAWERS.none)(ctx, cx, cy, r);
+}
+
+// Draws a character by itself, centered in a small canvas, for the
+// preview on the Join screen.
+function drawCharacterPreview(canvas, color, hat) {
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const p = { x: 0, y: 0, color, hat, moving: false };
+  const foot = playerFeet(p);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height - 13);
+  ctx.scale(2, 2); // drawn at double size so it's easy to see
+  ctx.translate(-foot.x, -foot.y);
+  drawPlayerBody(ctx, p);
+  ctx.restore();
 }
 
 // Name tag and optional badge (like "eating"). Drawn in a last pass so
@@ -959,7 +1083,7 @@ function drawPlayerBody(ctx, p) {
 function drawPlayerTag(ctx, p) {
   const foot = playerFeet(p);
   const cx = foot.x;
-  const headTop = foot.y - PLAYER_RADIUS * 2 - 3;
+  const headTop = foot.y - PLAYER_RADIUS * 2 - 10; // a little room above for hats
 
   ctx.font = "600 12px 'Quicksand', sans-serif";
   ctx.textAlign = "center";

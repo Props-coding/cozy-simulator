@@ -54,6 +54,8 @@
 
 - Not pushed yet: Dinner makeover. A little kitchen along the back wall (counter with a stove, pot and bread under a kitchen window, a sink, the fridge), a warm rug under the table, a table runner with plates at every seat and two glowing candles, a sideboard with stacked plates and a teapot, a plant, and the same soft golden glow as the Study.
 
+- Not pushed yet: nicer characters. Little feet, rosy cheeks, and a bouncy walk (feet take turns lifting). Pick a hat on the Join screen (beanie, cap, bow, headphones, flower, or none) with a live preview of how you'll look. The Join screen now remembers your name, color and hat from last time.
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 

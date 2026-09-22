@@ -85,6 +85,8 @@ export function connectToRoom(myName, myColor) {
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
 
+  lastKnownPosition = { ...lastKnownPosition, name: myName, color: myColor };
+
   room.onPeerJoin = (peerId) => {
     // Placeholder spot in the middle of the hallway (grid units), until
     // their first real position message arrives a moment later.
@@ -93,7 +95,7 @@ export function connectToRoom(myName, myColor) {
     // anyone arriving later needs our mic sent to them directly.
     if (localStream) room.addStream(localStream, { target: peerId });
     // Tell the new friend who we are right away, don't wait for the next tick.
-    positionAction({ name: myName, color: myColor, ...lastKnownPosition });
+    positionAction(lastKnownPosition);
     externalOnPeerJoin?.(peerId);
   };
 
@@ -109,12 +111,12 @@ export function connectToRoom(myName, myColor) {
 
 let lastKnownPosition = { x: 0, y: 0, room: "hallway" };
 
-// Call this often (see main.js) to tell everyone where we are, and
-// whether we have an office (null if not).
-export function broadcastPosition(name, color, x, y, roomId, timeZone, office) {
-  lastKnownPosition = { x, y, room: roomId, tz: timeZone, office };
+// Call this often (see main.js) to tell everyone about yourself: an
+// object with name, color, hat, x, y, room, tz (time zone) and office.
+export function broadcastPosition(state) {
+  lastKnownPosition = state;
   if (positionAction) {
-    positionAction({ name, color, x, y, room: roomId, tz: timeZone, office });
+    positionAction(state);
   }
 }
 

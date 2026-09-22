@@ -46,6 +46,8 @@ const joinScreen = document.getElementById("join-screen");
 const gameScreen = document.getElementById("game-screen");
 const nameInput = document.getElementById("name-input");
 const colorInput = document.getElementById("color-input");
+const hatInput = document.getElementById("hat-input");
+const characterPreview = document.getElementById("character-preview");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
 const actionHint = document.getElementById("action-hint");
@@ -81,6 +83,25 @@ const ctx = canvas.getContext("2d");
 
 let myName = "Friend";
 let myColor = "#e05a47";
+let myHat = "none";
+
+// The Join screen remembers your name, color and hat from last time.
+const PROFILE_STORAGE_KEY = "cozy-house-profile";
+try {
+  const saved = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY));
+  if (saved) {
+    nameInput.value = saved.name || "";
+    if (/^#[0-9a-fA-F]{6}$/.test(saved.color)) colorInput.value = saved.color;
+    if (HAT_DRAWERS[saved.hat]) hatInput.value = saved.hat;
+  }
+} catch {
+  // Nothing saved yet, or storage is blocked: start with the defaults.
+}
+
+const updatePreview = () => drawCharacterPreview(characterPreview, colorInput.value, hatInput.value);
+colorInput.addEventListener("input", updatePreview);
+hatInput.addEventListener("change", updatePreview);
+updatePreview();
 
 // Starting spot: roughly the middle of the hallway (grid units, not pixels).
 const player = { x: 8.7, y: 1.2 };
@@ -88,6 +109,12 @@ const player = { x: 8.7, y: 1.2 };
 joinButton.addEventListener("click", async () => {
   myName = nameInput.value.trim() || "Friend";
   myColor = colorInput.value;
+  myHat = HAT_DRAWERS[hatInput.value] ? hatInput.value : "none";
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat }));
+  } catch {
+    // Storage blocked (e.g. private window): just won't be remembered.
+  }
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
@@ -308,8 +335,13 @@ const displayPositions = {}; // peerId -> { x, y }
 function getSmoothedPosition(peer, dt) {
   const shown = (displayPositions[peer.id] ??= { x: peer.x, y: peer.y });
   const ease = 1 - Math.pow(0.001, dt); // fraction of the gap to close this frame
-  shown.x += (peer.x - shown.x) * ease;
-  shown.y += (peer.y - shown.y) * ease;
+  const stepX = (peer.x - shown.x) * ease;
+  const stepY = (peer.y - shown.y) * ease;
+  shown.x += stepX;
+  shown.y += stepY;
+  // Counts as walking if they moved more than a little this frame (used
+  // for the walking bounce).
+  shown.moving = dt > 0 && Math.hypot(stepX, stepY) / dt > 0.5;
   return shown;
 }
 
@@ -372,14 +404,16 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const officeInfo = myOffice ? { slot: myOffice.slot, since: myOffice.since, locked: myOffice.locked } : null;
-    broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id, myTimeZone, officeInfo);
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo });
   }
 
   const scenePlayers = getPeers().map((peer) => {
     const shown = getSmoothedPosition(peer, dt);
-    return { x: shown.x, y: shown.y, color: peer.color, name: peer.name, badge: peer.room === "dinner" ? "eating" : null };
+    // A friend's hat name comes over the network, so only accept known hats.
+    const hat = HAT_DRAWERS[peer.hat] ? peer.hat : "none";
+    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, name: peer.name, badge: peer.room === "dinner" ? "eating" : null };
   });
-  scenePlayers.push({ x: player.x, y: player.y, color: myColor, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null });
+  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null });
   drawScene(ctx, scenePlayers, player);
 
   updateSidebar(currentRoom.name);
