@@ -2,8 +2,13 @@
 // room rules: your mic is only live while you stand in a voice room,
 // and you only hear a friend if you're both in the same voice room.
 
-// Rooms where voice chat is on. For v1, just Gaming.
+// Rooms where voice chat is on: Gaming, plus every office (where you
+// only hear the people in that same office).
 const VOICE_ROOMS = ["gaming"];
+
+function isVoiceRoom(roomId) {
+  return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-");
+}
 
 let localTrack = null;
 let masterMuted = false;
@@ -90,7 +95,7 @@ export async function requestMic() {
 // Turns your mic on or off depending on which room you're standing in.
 export function updateMicForRoom(roomId) {
   if (localTrack) {
-    localTrack.enabled = VOICE_ROOMS.includes(roomId);
+    localTrack.enabled = isVoiceRoom(roomId);
   }
 }
 
@@ -112,7 +117,7 @@ export function removePeerAudio(peerId) {
 // Call every frame with your current room and the list of peers, to
 // mute or unmute each friend's voice according to the room rules.
 export function updateVoiceRouting(myRoomId, peers) {
-  const iAmInVoiceRoom = VOICE_ROOMS.includes(myRoomId);
+  const iAmInVoiceRoom = isVoiceRoom(myRoomId);
   for (const peer of peers) {
     const audioEl = peerAudioElements[peer.id];
     if (!audioEl) continue;

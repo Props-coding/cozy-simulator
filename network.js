@@ -93,11 +93,12 @@ export function connectToRoom(myName, myColor) {
 
 let lastKnownPosition = { x: 0, y: 0, room: "hallway" };
 
-// Call this often (see main.js) to tell everyone where we are.
-export function broadcastPosition(name, color, x, y, roomId, timeZone) {
-  lastKnownPosition = { x, y, room: roomId, tz: timeZone };
+// Call this often (see main.js) to tell everyone where we are, and
+// whether we have an office (null if not).
+export function broadcastPosition(name, color, x, y, roomId, timeZone, office) {
+  lastKnownPosition = { x, y, room: roomId, tz: timeZone, office };
   if (positionAction) {
-    positionAction({ name, color, x, y, room: roomId, tz: timeZone });
+    positionAction({ name, color, x, y, room: roomId, tz: timeZone, office });
   }
 }
 

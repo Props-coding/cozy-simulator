@@ -6,28 +6,33 @@
 //
 // Layout: a hallway band across the top, with Gaming, Study, and Dinner
 // in a row underneath. Each room has one doorway gap up into the hallway.
+// Friends can also build personal offices through a door at the west end
+// of the hallway: each one extends the hallway further west, with the
+// office underneath it. Offices come and go as their owners join and
+// leave, so the room and wall lists below get rebuilt when that happens
+// (see buildHouse at the bottom).
 
 const WALL_THICKNESS = 0.4;
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
 // match wins.
-const ROOMS = [
+const BASE_ROOMS = [
   { id: "gaming", name: CONFIG.roomNames.gaming, rect: { x: 0, y: 3, w: 6, h: 8 } },
   { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 } },
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 } },
-  { id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
 // dividers between rooms, and the wall segments above each room (with a
 // gap left open for the doorway). Same shape of logic as a plain top-down
 // house, just in grid units instead of pixels.
-const WALLS = [
+// (The top wall and the hallway's west end move as offices are added, so
+// those are made in buildHouse instead.)
+const BASE_WALLS = [
   // Outer walls
-  { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS }, // top
   { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
-  { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // left
+  { x: -WALL_THICKNESS, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 }, // left side of Gaming
   { x: 18, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // right
 
   // Dividers between rooms (no doors between rooms directly). They start
@@ -56,7 +61,7 @@ const WALLS = [
 // are also not solid: you stand on one to "sit" at a computer.
 // Windows and mirrors hang on a wall: their y is the bottom edge of the
 // wall they're on.
-const FURNITURE = [
+const BASE_FURNITURE = [
   // Hallway
   { kind: "rug", x: 6, y: 0.7, w: 6, h: 1.4, color: "#7b8fa8", solid: false },
   { kind: "plant", x: 16.9, y: 0.3, w: 0.6, h: 0.6 },
@@ -103,8 +108,105 @@ const FURNITURE = [
   { kind: "pendant", x: 15, y: 7, solid: false },
 ];
 
-// Everything you bump into: walls plus solid furniture.
-const SOLIDS = [...WALLS, ...FURNITURE.filter((f) => f.solid !== false)];
+// --- Offices ---
+const OFFICE_SLOTS = 3; // how many offices can exist at once
+const OFFICE_WIDTH = 4; // grid units per office, including its wall
+const OFFICE_BOTTOM = 9; // offices run from the hallway (y 3) down to here
+
+// The current house: rebuilt by buildHouse whenever offices change.
+// houseVersion goes up by one each time, so render.js knows to redraw
+// its saved floor picture.
+let ROOMS = [];
+let WALLS = [];
+let FURNITURE = [];
+let SOLIDS = []; // everything you bump into: walls plus solid furniture
+let houseVersion = 0;
+let hallwayWestX = 0; // where the hallway currently ends on the west side
+
+// offices: a list of { slot (1 to 3), ownerName, color, locked, mine }.
+// Slot 1 is right next to Gaming, slot 3 is furthest west. The hallway
+// reaches as far west as the furthest built office.
+function buildHouse(offices) {
+  const furthest = Math.max(0, ...offices.map((o) => o.slot));
+  const westX = -furthest * OFFICE_WIDTH;
+  const t = WALL_THICKNESS;
+  hallwayWestX = westX;
+
+  const rooms = [...BASE_ROOMS];
+  const walls = [
+    ...BASE_WALLS,
+    { x: westX - t, y: -t, w: 18 - westX + t * 2, h: t }, // top, full length of the hallway
+    { x: westX - t, y: -t, w: t, h: furthest ? OFFICE_BOTTOM + t * 2 : 3 + t * 2 }, // west end
+  ];
+  const furniture = [...BASE_FURNITURE];
+
+  // The door you use to build an office, on the back wall at the far west.
+  furniture.push({ kind: "buildDoor", x: westX + 0.3, y: 0, w: 0.9, solid: false });
+
+  for (let slot = 1; slot <= furthest; slot++) {
+    // Office floor runs from x0 to x0 + 3.6; its right wall is at x0 + 3.6
+    // (for slot 1 that's the Gaming room's left wall).
+    const x0 = -slot * OFFICE_WIDTH;
+    const inner = OFFICE_WIDTH - t;
+    const office = offices.find((o) => o.slot === slot);
+
+    if (!office) {
+      // An empty slot between built offices: just a plain wall along the hallway.
+      walls.push({ x: x0 - t, y: 3 - t / 2, w: OFFICE_WIDTH + t, h: t });
+      continue;
+    }
+
+    const id = "office-" + slot;
+    rooms.push({ id, name: office.ownerName + "'s Office", rect: { x: x0, y: 3, w: inner, h: OFFICE_BOTTOM - 3 }, office });
+    walls.push(
+      { x: x0 - t, y: 3 - t / 2, w: 1 + t, h: t }, // wall above, left of the doorway
+      { x: x0 + 2.6, y: 3 - t / 2, w: inner - 2.6, h: t }, // wall above, right of the doorway
+      { x: x0 - t, y: 3 - t / 2, w: t, h: OFFICE_BOTTOM - 3 + t * 1.5 }, // left side
+      { x: x0 + inner, y: 3 - t / 2, w: t, h: OFFICE_BOTTOM - 3 + t * 1.5 }, // right side
+      { x: x0 - t, y: OFFICE_BOTTOM, w: OFFICE_WIDTH + t, h: t, low: true } // bottom
+    );
+    furniture.push(
+      { kind: "rug", x: x0 + 0.4, y: 4.4, w: 2.8, h: 1.6, color: "#7d6a8f", solid: false },
+      { kind: "plant", x: x0 + 0.2, y: 3.3, w: 0.6, h: 0.6 },
+      { kind: "bookshelf", x: x0 + 2.8, y: 3.3, w: 0.7, h: 0.5 },
+      { kind: "pcDesk", x: x0 + 0.3, y: 6.4, w: 1.7, h: 0.7, screen: office.color },
+      { kind: "stool", x: x0 + 0.85, y: 7.15, w: 0.6, h: 0.6, color: office.color, solid: false },
+      { kind: "plant", x: x0 + 2.8, y: 8.2, w: 0.6, h: 0.6 }
+    );
+    if (office.locked) {
+      furniture.push({ kind: "closedDoor", x: x0 + 1, y: 3 + t / 2, w: 1.6, solid: false });
+    }
+  }
+
+  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: westX, y: 0, w: 18 - westX, h: 3 } });
+
+  ROOMS = rooms;
+  WALLS = walls;
+  FURNITURE = furniture;
+  SOLIDS = [...walls, ...furniture.filter((f) => f.solid !== false)];
+  houseVersion++;
+}
+
+buildHouse([]);
+
+// The on-screen name of a room, given its id (used by the sidebar).
+function roomNameFor(id) {
+  return ROOMS.find((r) => r.id === id)?.name || CONFIG.roomNames[id] || "somewhere";
+}
+
+// True if the player is standing right by the office door at the west
+// end of the hallway.
+function isNearBuildDoor(player) {
+  return player.x < hallwayWestX + 1.6 && player.y < 1.2;
+}
+
+// True if the player's center is inside some room (false means a room
+// just disappeared from under them, like an office whose owner left).
+function isInsideARoom(player) {
+  const cx = player.x + PLAYER_SIZE / 2;
+  const cy = player.y + PLAYER_SIZE / 2;
+  return ROOMS.some((r) => cx >= r.rect.x && cx <= r.rect.x + r.rect.w && cy >= r.rect.y && cy <= r.rect.y + r.rect.h);
+}
 
 const PLAYER_SIZE = 0.6; // grid units, used for collision and for draw order
 
@@ -115,16 +217,24 @@ function rectsOverlap(a, b) {
 // Moves a player by (dx, dy), sliding along walls and furniture instead of passing
 // through them. Checks x and y separately so bumping into a wall on one
 // axis doesn't stop movement on the other. dx/dy are in grid units.
+// Also stops you walking into someone else's locked office (but anyone
+// already inside can always walk out).
 function movePlayer(player, dx, dy) {
   const box = () => ({ x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE });
+  const startRoomId = getCurrentRoom(player).id;
+  const blocked = () => {
+    if (SOLIDS.some((w) => rectsOverlap(box(), w))) return true;
+    const room = getCurrentRoom(player);
+    return room.id !== startRoomId && room.office?.locked && !room.office.mine;
+  };
 
   player.x += dx;
-  if (SOLIDS.some((w) => rectsOverlap(box(), w))) {
+  if (blocked()) {
     player.x -= dx;
   }
 
   player.y += dy;
-  if (SOLIDS.some((w) => rectsOverlap(box(), w))) {
+  if (blocked()) {
     player.y -= dy;
   }
 }

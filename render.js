@@ -156,11 +156,8 @@ function drawChecker(ctx, box, color) {
 const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker };
 
 function paintFloors(ctx) {
-  ctx.fillStyle = WOOD_DARK;
-  ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
-
   for (const room of ROOMS) {
-    const floor = CONFIG.roomFloors[room.id];
+    const floor = CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
     const box = { x: a.x, y: a.y, w: room.rect.w * TILE, h: room.rect.h * TILE };
     ctx.save();
@@ -199,16 +196,32 @@ function paintFloors(ctx) {
   }
 }
 
+// The house's full width in screen pixels, from the far west end of the
+// hallway to the east wall, with a little margin. Used for the saved floor
+// picture and for how far the camera can scroll.
+function houseBounds() {
+  const left = toScreen(hallwayWestX - 1, 0).x;
+  const right = toScreen(19, 0).x;
+  return { left, right };
+}
+
 let floorCanvas = null;
+let floorVersion = -1;
 
 function drawFloors(ctx) {
-  if (!floorCanvas) {
+  // Repaint only when the house has changed (an office was added, removed
+  // or locked), not every frame.
+  if (floorVersion !== houseVersion) {
+    const { left, right } = houseBounds();
     floorCanvas = document.createElement("canvas");
-    floorCanvas.width = CONFIG.canvasWidth;
+    floorCanvas.width = right - left;
     floorCanvas.height = CONFIG.canvasHeight;
-    paintFloors(floorCanvas.getContext("2d"));
+    const fctx = floorCanvas.getContext("2d");
+    fctx.translate(-left, 0);
+    paintFloors(fctx);
+    floorVersion = houseVersion;
   }
-  ctx.drawImage(floorCanvas, 0, 0);
+  ctx.drawImage(floorCanvas, houseBounds().left, 0);
 }
 
 // --- Walls ---
@@ -236,7 +249,7 @@ function drawWall(ctx, wall) {
   const hasFace = !wall.low && wall.w > wall.h;
   // The face belongs to whichever room it faces: the one just below it.
   const facing = getCurrentRoom({ x: wall.x + wall.w / 2 - PLAYER_SIZE / 2, y: wall.y + wall.h });
-  ctx.fillStyle = hasFace ? CONFIG.roomWallColors[facing.id] : WOOD_DARK;
+  ctx.fillStyle = hasFace ? CONFIG.roomWallColors[facing.id] || CONFIG.roomWallColors.office : WOOD_DARK;
   ctx.fillRect(a.x, b.y - height, b.x - a.x, height);
   // Baseboard.
   if (hasFace) {
@@ -539,6 +552,46 @@ const FURNITURE_DRAWERS = {
     ctx.fillRect(a.x + w - 6, top - 2, 9, h + 4);
   },
 
+  // The door at the west end of the hallway that you use to build an
+  // office: a wood door on the back wall with a little brass "+" plate.
+  buildDoor(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const top = a.y - WALL_HEIGHT + 2, w = f.w * TILE, h = WALL_HEIGHT - 7;
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(a.x - 3, top - 3, w + 6, h + 3); // frame
+    ctx.fillStyle = "#9a7048";
+    ctx.fillRect(a.x, top, w, h);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
+    ctx.strokeRect(a.x + 4.5, top + 4.5, w - 9, h / 2 - 6);
+    ctx.fillStyle = "#e0b84c";
+    ctx.beginPath();
+    ctx.arc(a.x + w - 7, top + h / 2 + 3, 2.5, 0, Math.PI * 2); // knob
+    ctx.fill();
+    ctx.fillRect(a.x + w / 2 - 6, top + h / 2 + 4, 12, 9); // plate
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(a.x + w / 2 - 3.5, top + h / 2 + 8, 7, 1.5);
+    ctx.fillRect(a.x + w / 2 - 0.75, top + h / 2 + 5, 1.5, 7);
+  },
+
+  // A locked office: the doorway is filled with a shut door and a padlock.
+  closedDoor(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE;
+    ctx.fillStyle = "#9a7048";
+    ctx.fillRect(a.x, a.y - WALL_HEIGHT, w, WALL_HEIGHT);
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(a.x, a.y - 5, w, 5);
+    ctx.fillRect(a.x + w / 2 - 0.75, a.y - WALL_HEIGHT, 1.5, WALL_HEIGHT - 5);
+    ctx.fillStyle = "#e0b84c";
+    roundRectPath(ctx, a.x + w / 2 - 6, a.y - 24, 12, 10, 2);
+    ctx.fill();
+    ctx.strokeStyle = "#e0b84c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(a.x + w / 2, a.y - 24, 4, Math.PI, 0);
+    ctx.stroke();
+  },
+
   // Hung on a wall face: a small round-cornered mirror.
   mirror(ctx, f) {
     const a = toScreen(f.x, f.y);
@@ -626,13 +679,22 @@ function drawLights(ctx) {
 // front. Wall hangings sort just after the wall they hang on. Things you
 // can stand on (like stools) sort by their top edge, so you're always
 // drawn over them.
-const STATIC_SPRITES = [
-  ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
-  ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
-    sortY: f.h === undefined ? f.y + 0.001 : f.solid === false ? f.y : f.y + f.h,
-    draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
-  })),
-];
+let staticSprites = [];
+let spritesVersion = -1;
+
+function getStaticSprites() {
+  if (spritesVersion !== houseVersion) {
+    staticSprites = [
+      ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
+      ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
+        sortY: f.h === undefined ? f.y + 0.001 : f.solid === false ? f.y : f.y + f.h,
+        draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
+      })),
+    ];
+    spritesVersion = houseVersion;
+  }
+  return staticSprites;
+}
 
 // --- Characters ---
 const PLAYER_RADIUS = 14; // screen pixels
@@ -728,13 +790,30 @@ function drawRoomLabels(ctx) {
   }
 }
 
+// The camera: how far the view is scrolled sideways, in pixels. When the
+// whole house fits on screen it stays centered; once offices make it
+// wider, it follows `focus` (your own character), stopping at the ends.
+function cameraX(focus) {
+  const { left, right } = houseBounds();
+  const view = CONFIG.canvasWidth;
+  if (right - left <= view) return (left + right) / 2 - view / 2;
+  const target = toScreen(focus.x + PLAYER_SIZE / 2, 0).x - view / 2;
+  return Math.max(left, Math.min(right - view, target));
+}
+
 // Draws the whole house for one frame. `players` is an array of
-// { x, y, color, name, badge }, including yourself.
-function drawScene(ctx, players) {
+// { x, y, color, name, badge }, including yourself; `focus` is who the
+// camera follows.
+function drawScene(ctx, players, focus) {
+  ctx.fillStyle = WOOD_DARK;
+  ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+  ctx.save();
+  ctx.translate(-Math.round(cameraX(focus)), 0);
+
   drawFloors(ctx);
 
   // Walls, furniture and players, sorted so lower on screen draws in front.
-  const sprites = [...STATIC_SPRITES];
+  const sprites = [...getStaticSprites()];
   for (const p of players) {
     sprites.push({ sortY: p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) });
   }
@@ -744,4 +823,5 @@ function drawScene(ctx, players) {
   drawLights(ctx);
   for (const p of players) drawPlayerTag(ctx, p);
   drawRoomLabels(ctx);
+  ctx.restore();
 }

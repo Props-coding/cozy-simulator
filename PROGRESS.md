@@ -40,7 +40,9 @@
 
 - Cozier rooms (build 0.19): each room has its own floor (light wood boards in the Hallway, soft navy carpet in Gaming, warm dark wood in Study, small warm tiles in Dinner) and its own wall color. Computer desks in Gaming are wood now. Study redone as a proper cozy study spot: a big red rug with a shared study table (open books, mugs of tea, a lamp) and three cushions to sit at it, a reading armchair and floor lamp by the window, string lights along the walls, a beanbag, plants, and a soft golden glow over the whole room. Plants redrawn so they actually look like plants (the old one in the Study corner didn't read as anything). Floors are now painted once and reused, so all the extra detail doesn't slow the game down. Floor styles and colors, and wall colors, are in `config.js` (roomFloors, roomWallColors).
 
-- Not pushed yet (will go out with the next batch): moved the fridge from Gaming to Dinner, and turned the Study armchair around to face the window.
+- Moved the fridge from Gaming to Dinner, and turned the Study armchair around to face the window.
+
+- Offices (build 0.20): a door at the far west end of the hallway. Stand by it and press E to build your own office (one per person, up to three). Each new office extends the hallway west, with the office below it, named after its owner ("Sam's Office"), with a desk whose screen and stool match your color. Voice is on inside an office, but only between people in that same office. The owner can press L inside to lock the door: nobody else can walk in, but anyone already inside can still walk out. Your browser remembers your office so it comes back each time you join; while you're offline it's gone. The view now scrolls to follow you once the house is wider than the screen. If two people build at the exact same moment, whoever was first keeps the spot and the other moves to the next free one.
 
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.

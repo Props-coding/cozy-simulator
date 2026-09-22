@@ -24,6 +24,7 @@ const CONFIG = {
     gaming: { style: "carpet", color: "#39455e" },
     study: { style: "planks", color: "#9c6a45" },
     dinner: { style: "checker", color: "#dcae8c" },
+    office: { style: "planks", color: "#b98a5e" }, // used for every office
   },
 
   // The color of the walls you see inside each room.
@@ -32,6 +33,7 @@ const CONFIG = {
     gaming: "#56617a",
     study: "#6f8a6a",
     dinner: "#f0d9b8",
+    office: "#8f7fa3", // used for every office
   },
 
   // --- Multiplayer (Trystero) settings ---

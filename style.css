@@ -37,6 +37,15 @@ canvas {
   box-shadow: 0 10px 24px rgba(90, 65, 40, 0.3);
 }
 
+/* Prompts like "Press E to build your office". Keeps its height when
+   empty so the house doesn't jump up and down as prompts come and go. */
+#action-hint {
+  min-height: 1.3em;
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #b8742a;
+}
+
 .hint {
   color: #9c8770;
   font-size: 0.9em;

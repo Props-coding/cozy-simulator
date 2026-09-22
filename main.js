@@ -45,6 +45,7 @@ const nameInput = document.getElementById("name-input");
 const colorInput = document.getElementById("color-input");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
+const actionHint = document.getElementById("action-hint");
 const peerList = document.getElementById("peer-list");
 const muteToggle = document.getElementById("mute-toggle");
 const volumeSlider = document.getElementById("volume-slider");
@@ -100,6 +101,126 @@ joinButton.addEventListener("click", async () => {
     console.error("Could not connect to other players:", err);
   }
   requestAnimationFrame(tick);
+});
+
+// --- Offices ---
+// Your own office, if you've built one: { slot, since, locked }. Your
+// browser remembers it, so it comes back each time you join. Nobody else
+// stores it: it only exists while you're here.
+const OFFICE_STORAGE_KEY = "cozy-house-office";
+
+function loadMyOffice() {
+  try {
+    return JSON.parse(localStorage.getItem(OFFICE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function saveMyOffice() {
+  try {
+    if (myOffice) localStorage.setItem(OFFICE_STORAGE_KEY, JSON.stringify(myOffice));
+    else localStorage.removeItem(OFFICE_STORAGE_KEY);
+  } catch {
+    // Private windows can block storage; the office just won't be remembered.
+  }
+}
+
+let myOffice = loadMyOffice();
+let offices = []; // everyone's offices right now, as passed to buildHouse
+let officeSignature = "";
+
+// An office message from a friend is only trusted if it looks right.
+function isValidOffice(o) {
+  return o && Number.isInteger(o.slot) && o.slot >= 1 && o.slot <= OFFICE_SLOTS && typeof o.since === "number";
+}
+
+function firstFreeSlot(taken) {
+  for (let slot = 1; slot <= OFFICE_SLOTS; slot++) {
+    if (!taken.has(slot)) return slot;
+  }
+  return null;
+}
+
+// Collects everyone's offices. If two people ever claim the same slot
+// (say, both built one at the same moment), whoever built first keeps it
+// and the other moves to a free slot, or loses theirs if all are taken.
+// Every browser runs this same rule, so everyone ends up agreeing.
+function gatherOffices(peers) {
+  const claims = peers
+    .filter((p) => isValidOffice(p.office))
+    .map((p) => ({ slot: p.office.slot, since: p.office.since, locked: !!p.office.locked, ownerName: String(p.name).slice(0, 16), color: safeColor(p.color), mine: false }));
+  claims.sort((a, b) => a.since - b.since || a.ownerName.localeCompare(b.ownerName));
+
+  const taken = new Map();
+  for (const claim of claims) {
+    if (!taken.has(claim.slot)) taken.set(claim.slot, claim);
+  }
+
+  if (myOffice) {
+    const holder = taken.get(myOffice.slot);
+    const theyWereFirst = holder && (holder.since < myOffice.since || (holder.since === myOffice.since && holder.ownerName.localeCompare(myName) < 0));
+    if (theyWereFirst) {
+      const free = firstFreeSlot(taken);
+      if (free) myOffice.slot = free;
+      else myOffice = null;
+      saveMyOffice();
+    }
+    if (myOffice) {
+      taken.set(myOffice.slot, { slot: myOffice.slot, since: myOffice.since, locked: myOffice.locked, ownerName: myName, color: safeColor(myColor), mine: true });
+    }
+  }
+  return [...taken.values()].sort((a, b) => a.slot - b.slot);
+}
+
+// Rebuilds the house if anyone's office appeared, disappeared or got
+// locked/unlocked since last frame.
+function updateOffices() {
+  offices = gatherOffices(getPeers());
+  const signature = JSON.stringify(offices);
+  if (signature === officeSignature) return;
+  officeSignature = signature;
+  buildHouse(offices);
+  // If the office you were standing in just vanished (its owner left),
+  // pop back to the middle of the hallway.
+  const box = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
+  if (!isInsideARoom(player) || SOLIDS.some((s) => rectsOverlap(box, s))) {
+    player.x = 8.7;
+    player.y = 1.2;
+  }
+}
+
+// The short prompt under the room name, like "Press E to build your office".
+function actionHintFor(room) {
+  if (room.office?.mine) {
+    return myOffice.locked ? "Your office is locked. Press L to unlock the door." : "This is your office. Press L to lock the door.";
+  }
+  if (isNearBuildDoor(player)) {
+    if (myOffice) return "You already have an office.";
+    if (offices.length >= OFFICE_SLOTS) return "All three offices are taken right now.";
+    return "Press E to build your office.";
+  }
+  return "";
+}
+
+window.addEventListener("keydown", (e) => {
+  if (gameScreen.hidden || e.repeat) return;
+  const key = e.key.toLowerCase();
+
+  if (key === "e" && !myOffice && isNearBuildDoor(player)) {
+    const slot = firstFreeSlot(new Map(offices.map((o) => [o.slot, o])));
+    if (slot) {
+      myOffice = { slot, since: Date.now(), locked: false };
+      saveMyOffice();
+      playClickSound();
+    }
+  }
+
+  if (key === "l" && getCurrentRoom(player).office?.mine) {
+    myOffice.locked = !myOffice.locked;
+    saveMyOffice();
+    playClickSound();
+  }
 });
 
 // Tracks which movement keys are currently held down.
@@ -162,7 +283,7 @@ function updateSidebar(myRoomName) {
   let rows = peerRow(myColor, `${myName} (you) · ${myRoomName} · ${formatLocalTime(myTimeZone)}`);
   for (const peer of getPeers()) {
     const time = formatLocalTime(peer.tz);
-    const roomName = CONFIG.roomNames[peer.room] || peer.room;
+    const roomName = roomNameFor(peer.room);
     rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`);
   }
   peerList.innerHTML = rows;
@@ -172,6 +293,8 @@ function tick(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05); // cap so a tab-switch pause doesn't teleport the player
   lastTime = now;
 
+  updateOffices();
+
   const { dx, dy } = readMovement(dt);
   if (dx !== 0 || dy !== 0) {
     movePlayer(player, dx, dy);
@@ -179,6 +302,8 @@ function tick(now) {
 
   const currentRoom = getCurrentRoom(player);
   roomLabel.textContent = "You are in: " + currentRoom.name;
+  const hint = actionHintFor(currentRoom);
+  if (actionHint.textContent !== hint) actionHint.textContent = hint;
   updateMicForRoom(currentRoom.id);
   updateVoiceRouting(currentRoom.id, getPeers());
 
@@ -193,7 +318,8 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id, myTimeZone);
+    const officeInfo = myOffice ? { slot: myOffice.slot, since: myOffice.since, locked: myOffice.locked } : null;
+    broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id, myTimeZone, officeInfo);
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -201,7 +327,7 @@ function tick(now) {
     return { x: shown.x, y: shown.y, color: peer.color, name: peer.name, badge: peer.room === "dinner" ? "eating" : null };
   });
   scenePlayers.push({ x: player.x, y: player.y, color: myColor, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null });
-  drawScene(ctx, scenePlayers);
+  drawScene(ctx, scenePlayers, player);
 
   updateSidebar(currentRoom.name);
 
