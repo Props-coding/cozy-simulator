@@ -46,6 +46,8 @@
 
 - Build 0.21: fixed the house shifting sideways when you walk into your office (the sidebar grew wider with the longer room name; it now has a fixed width and wraps long lines). Added a way to remove your office: press R inside it, and confirm.
 
+- Not pushed yet (waiting for more changes): redrew the office-building door (proper frame, carved panels, brass knob and sign, welcome mat) and the locked office door (double doors with a padlock, and the wall top now runs unbroken above it). Moved the Hallway label so it doesn't sit on the new mat.
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 - Small things noticed in review, not yet fixed: chimes still play in Dinner (should be fully silent), the screen stays blank until you answer the mic prompt, and there's no message if you deny the mic.

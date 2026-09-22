@@ -553,43 +553,81 @@ const FURNITURE_DRAWERS = {
   },
 
   // The door at the west end of the hallway that you use to build an
-  // office: a wood door on the back wall with a little brass "+" plate.
+  // office: a paneled wood door in a lighter frame, with a brass knob, a
+  // little brass "Office" sign, and a welcome mat on the floor in front.
   buildDoor(ctx, f) {
     const a = toScreen(f.x, f.y);
-    const top = a.y - WALL_HEIGHT + 2, w = f.w * TILE, h = WALL_HEIGHT - 7;
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x - 3, top - 3, w + 6, h + 3); // frame
-    ctx.fillStyle = "#9a7048";
-    ctx.fillRect(a.x, top, w, h);
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
-    ctx.strokeRect(a.x + 4.5, top + 4.5, w - 9, h / 2 - 6);
-    ctx.fillStyle = "#e0b84c";
-    ctx.beginPath();
-    ctx.arc(a.x + w - 7, top + h / 2 + 3, 2.5, 0, Math.PI * 2); // knob
+    const doorW = 30, doorH = WALL_HEIGHT - 5;
+    const x = a.x + (f.w * TILE - doorW) / 2, y = a.y - doorH;
+
+    drawDoorFrame(ctx, x, y, doorW, doorH);
+    drawDoorLeaf(ctx, x, y, doorW, doorH);
+    drawKnob(ctx, x + doorW - 6, y + doorH * 0.58);
+
+    // Small brass sign on the top panel, with a tiny "+" for "build".
+    ctx.fillStyle = "#d9b04a";
+    roundRectPath(ctx, x + doorW / 2 - 7, y + 6, 14, 8, 2);
     ctx.fill();
-    ctx.fillRect(a.x + w / 2 - 6, top + h / 2 + 4, 12, 9); // plate
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x + w / 2 - 3.5, top + h / 2 + 8, 7, 1.5);
-    ctx.fillRect(a.x + w / 2 - 0.75, top + h / 2 + 5, 1.5, 7);
+    ctx.fillStyle = "#6b4a1e";
+    ctx.fillRect(x + doorW / 2 - 3, y + 9.5, 6, 1);
+    ctx.fillRect(x + doorW / 2 - 0.5, y + 7.5, 1, 5);
+
+    // Welcome mat on the floor just in front of the door.
+    roundRectPath(ctx, x - 4, a.y + 3, doorW + 8, 9, 3);
+    ctx.fillStyle = "#b5543f";
+    ctx.fill();
+    roundRectPath(ctx, x - 1.5, a.y + 5, doorW + 3, 5, 2);
+    ctx.strokeStyle = "#d98c6a";
+    ctx.lineWidth = 1;
+    ctx.stroke();
   },
 
-  // A locked office: the doorway is filled with a shut door and a padlock.
+  // A locked office: the doorway gets a matching wall top, a frame, a pair
+  // of paneled doors shut in the middle, and a brass padlock across them.
   closedDoor(ctx, f) {
     const a = toScreen(f.x, f.y);
     const w = f.w * TILE;
-    ctx.fillStyle = "#9a7048";
-    ctx.fillRect(a.x, a.y - WALL_HEIGHT, w, WALL_HEIGHT);
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x, a.y - 5, w, 5);
-    ctx.fillRect(a.x + w / 2 - 0.75, a.y - WALL_HEIGHT, 1.5, WALL_HEIGHT - 5);
-    ctx.fillStyle = "#e0b84c";
-    roundRectPath(ctx, a.x + w / 2 - 6, a.y - 24, 12, 10, 2);
-    ctx.fill();
-    ctx.strokeStyle = "#e0b84c";
+
+    // Soft shade on the floor below, same as every wall.
+    const shade = ctx.createLinearGradient(0, a.y, 0, a.y + 10);
+    shade.addColorStop(0, "rgba(40, 25, 10, 0.22)");
+    shade.addColorStop(1, "rgba(40, 25, 10, 0)");
+    ctx.fillStyle = shade;
+    ctx.fillRect(a.x, a.y, w, 10);
+
+    // Wall top above the doorway, so the wall's top edge runs unbroken.
+    const capTop = toScreen(f.x, f.y - WALL_THICKNESS).y - WALL_HEIGHT;
+    ctx.fillStyle = WOOD;
+    ctx.fillRect(a.x, capTop, w, a.y - WALL_HEIGHT - capTop);
+
+    const frame = 3;
+    const x = a.x + frame, y = a.y - WALL_HEIGHT + frame, doorH = WALL_HEIGHT - frame;
+    const leafW = (w - frame * 2) / 2;
+    drawDoorFrame(ctx, x, y, w - frame * 2, doorH);
+    drawDoorLeaf(ctx, x, y, leafW, doorH);
+    drawDoorLeaf(ctx, x + leafW, y, leafW, doorH);
+    ctx.fillStyle = "rgba(40, 20, 5, 0.35)";
+    ctx.fillRect(x + leafW - 0.5, y, 1, doorH); // the seam where the doors meet
+    drawKnob(ctx, x + leafW - 5, y + doorH * 0.58);
+    drawKnob(ctx, x + leafW + 5, y + doorH * 0.58);
+
+    // Padlock hanging across the two knobs.
+    const lx = x + leafW, ly = y + doorH * 0.58 + 3;
+    ctx.strokeStyle = "#b8923a";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(a.x + w / 2, a.y - 24, 4, Math.PI, 0);
+    ctx.arc(lx, ly, 4, Math.PI, 0);
     ctx.stroke();
+    ctx.fillStyle = "#d9b04a";
+    roundRectPath(ctx, lx - 5.5, ly, 11, 9, 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.fillRect(lx - 4, ly + 1, 8, 1.5);
+    ctx.fillStyle = "#6b4a1e";
+    ctx.beginPath();
+    ctx.arc(lx, ly + 4, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(lx - 0.6, ly + 4, 1.2, 3);
   },
 
   // Hung on a wall face: a small round-cornered mirror.
@@ -610,6 +648,52 @@ const FURNITURE_DRAWERS = {
     ctx.fill();
   },
 };
+
+// --- Doors ---
+// A lighter wood frame (casing) around a door opening.
+function drawDoorFrame(ctx, x, y, w, h) {
+  ctx.fillStyle = "#c89a68";
+  ctx.fillRect(x - 3, y - 3, w + 6, h + 3);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.fillRect(x - 3, y - 3, w + 6, 1);
+}
+
+// One door: warm wood with a raised edge and two sunken panels. Light
+// comes from above, so each panel's top edge is in shadow and its bottom
+// edge catches the light, which is what makes it look carved in.
+function drawDoorLeaf(ctx, x, y, w, h) {
+  ctx.fillStyle = "#a97a4f";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.fillRect(x, y, w, 1.5);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+  ctx.fillRect(x, y + h - 2, w, 2);
+
+  const px = x + 4, pw = w - 8;
+  const panels = [[y + 4, h * 0.36], [y + h * 0.36 + 8, h - h * 0.36 - 13]];
+  for (const [py, ph] of panels) {
+    ctx.fillStyle = "#946840";
+    ctx.fillRect(px, py, pw, ph);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.fillRect(px, py, pw, 1.5);
+    ctx.fillRect(px, py, 1.5, ph);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillRect(px, py + ph - 1.5, pw, 1.5);
+    ctx.fillRect(px + pw - 1.5, py, 1.5, ph);
+  }
+}
+
+// A round brass door knob with a little shine on top.
+function drawKnob(ctx, x, y) {
+  ctx.fillStyle = "#b8923a";
+  ctx.beginPath();
+  ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f2d78a";
+  ctx.beginPath();
+  ctx.arc(x - 0.7, y - 0.8, 1, 0, Math.PI * 2);
+  ctx.fill();
+}
 
 // A little table lamp with its base at (x, y) on a surface.
 function drawLamp(ctx, x, y) {
@@ -773,14 +857,15 @@ function drawPlayerTag(ctx, p) {
   ctx.textAlign = "left";
 }
 
-// Room names as small pills: the hallway's in its top-left corner, the
-// other rooms' along their bottom edge, clear of furniture.
+// Room names as small pills: the hallway's near its top-left corner (just
+// right of the office door and its mat), the other rooms' along their
+// bottom edge, clear of furniture.
 function drawRoomLabels(ctx) {
   ctx.font = "600 14px 'Quicksand', sans-serif";
   for (const room of ROOMS) {
     const { x, y, w, h } = room.rect;
     const textW = ctx.measureText(room.name).width;
-    const p = room.id === "hallway" ? toScreen(x + 0.3, y + 0.25) : toScreen(x + w / 2, y + h - 0.6);
+    const p = room.id === "hallway" ? toScreen(x + 1.5, y + 0.25) : toScreen(x + w / 2, y + h - 0.6);
     const left = room.id === "hallway" ? p.x : p.x - textW / 2 - 10;
     ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
     roundRectPath(ctx, left, p.y, textW + 20, 22, 8);
