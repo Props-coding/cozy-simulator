@@ -38,9 +38,12 @@
         <ul id="peer-list"></ul>
         <hr>
         <h2>Voice</h2>
-        <label class="voice-row">
-          <input id="mute-toggle" type="checkbox">
+        <label class="voice-row toggle-row">
           Mute everyone
+          <span class="toggle">
+            <input id="mute-toggle" type="checkbox">
+            <span class="toggle-track"></span>
+          </span>
         </label>
         <label class="voice-row">
           Volume
@@ -60,7 +63,7 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.13</p>
+  <p id="version-tag">build 0.14</p>
 
   <script src="config.js"></script>
   <script src="world.js"></script>

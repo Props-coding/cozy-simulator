@@ -24,6 +24,8 @@ import {
   primeSoundEffects,
   playJoinSound,
   playLeaveSound,
+  playRoomChangeSound,
+  playClickSound,
 } from "./audio.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -56,9 +58,14 @@ onPeerLeave((peerId) => {
 });
 onPeerJoin(() => playJoinSound());
 
-muteToggle.addEventListener("change", () => setMasterMuted(muteToggle.checked));
+muteToggle.addEventListener("change", () => {
+  setMasterMuted(muteToggle.checked);
+  playClickSound();
+});
 volumeSlider.addEventListener("input", () => setMasterVolume(parseFloat(volumeSlider.value)));
+volumeSlider.addEventListener("change", () => playClickSound());
 lofiVolumeSlider.addEventListener("input", () => setLofiVolume(parseFloat(lofiVolumeSlider.value)));
+lofiVolumeSlider.addEventListener("change", () => playClickSound());
 setLofiVolume(CONFIG.defaultLofiVolume);
 lofiVolumeSlider.value = CONFIG.defaultLofiVolume;
 
@@ -79,6 +86,7 @@ joinButton.addEventListener("click", async () => {
   joinScreen.hidden = true;
   gameScreen.hidden = false;
   primeSoundEffects();
+  playClickSound();
 
   try {
     connectToRoom(myName, myColor);
@@ -130,14 +138,33 @@ function getSmoothedPosition(peer, dt) {
   return shown;
 }
 
+// Friends' names and colors come over the network from their own
+// browsers, so we treat them as untrusted text before putting them on
+// the page (a friend's name shouldn't be able to break the page layout).
+function escapeHtml(text) {
+  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Only accept a real "#rrggbb" color, otherwise fall back to a neutral
+// gray, since this value goes straight into a style attribute.
+function safeColor(color) {
+  return /^#[0-9a-fA-F]{6}$/.test(color) ? color : "#999999";
+}
+
+// Turns a color and a line of text into one sidebar row, with a small
+// dot in the player's color so the list matches who you see on screen.
+function peerRow(color, text) {
+  return `<li><span class="peer-dot" style="background:${safeColor(color)}"></span>${escapeHtml(text)}</li>`;
+}
+
 function updateSidebar(myRoomName) {
-  const rows = [`${myName} (you) — ${myRoomName} — ${formatLocalTime(myTimeZone)}`];
+  let rows = peerRow(myColor, `${myName} (you) — ${myRoomName} — ${formatLocalTime(myTimeZone)}`);
   for (const peer of getPeers()) {
     const time = formatLocalTime(peer.tz);
     const roomName = CONFIG.roomNames[peer.room] || peer.room;
-    rows.push(`${peer.name} — ${roomName}${time ? " — " + time : ""}`);
+    rows += peerRow(peer.color, `${peer.name} — ${roomName}${time ? " — " + time : ""}`);
   }
-  peerList.innerHTML = rows.map((r) => `<li>${r}</li>`).join("");
+  peerList.innerHTML = rows;
 }
 
 function tick(now) {
@@ -157,6 +184,7 @@ function tick(now) {
   if (currentRoom.id !== previousRoomId) {
     if (currentRoom.id === "study") enterStudy(lofiPlayerContainer);
     if (previousRoomId === "study") leaveStudy();
+    if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
     previousRoomId = currentRoom.id;
   }
   updateLofi(dt);

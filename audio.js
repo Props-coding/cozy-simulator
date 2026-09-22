@@ -23,18 +23,22 @@ export function primeSoundEffects() {
   if (toneContext.state === "suspended") toneContext.resume();
 }
 
-function playTone(freq, delayMs) {
+// gain: how loud (0 to 1). duration: how long the tone rings out, in
+// seconds. type: the waveform shape, which changes the character of the
+// sound (sine = smooth and mellow, triangle = a bit softer and rounder).
+function playTone(freq, delayMs, { gain = 0.15, duration = 0.15, type = "sine" } = {}) {
   if (!toneContext) return;
   setTimeout(() => {
     const osc = toneContext.createOscillator();
-    const gain = toneContext.createGain();
+    const gainNode = toneContext.createGain();
+    osc.type = type;
     osc.frequency.value = freq;
-    gain.gain.setValueAtTime(masterMuted ? 0 : 0.15 * masterVolume, toneContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, toneContext.currentTime + 0.15);
-    osc.connect(gain);
-    gain.connect(toneContext.destination);
+    gainNode.gain.setValueAtTime(masterMuted ? 0 : gain * masterVolume, toneContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, toneContext.currentTime + duration);
+    osc.connect(gainNode);
+    gainNode.connect(toneContext.destination);
     osc.start();
-    osc.stop(toneContext.currentTime + 0.15);
+    osc.stop(toneContext.currentTime + duration);
   }, delayMs);
 }
 
@@ -46,6 +50,27 @@ export function playJoinSound() {
 export function playLeaveSound() {
   playTone(440, 0);
   playTone(330, 100);
+}
+
+// A pair of notes for each room, so walking into a different one has its
+// own gentle little "arrival" feel. Kept quiet and quick on purpose, it's
+// a texture, not an announcement.
+const ROOM_CHIME_NOTES = {
+  hallway: [523.25, 659.25], // C5, E5: light and neutral
+  gaming: [659.25, 783.99], // E5, G5: a little brighter
+  study: [493.88, 587.33], // B4, D5: softer, calmer
+  dinner: [440, 554.37], // A4, C#5: warm, settling in
+};
+
+export function playRoomChangeSound(roomId) {
+  const [a, b] = ROOM_CHIME_NOTES[roomId] || ROOM_CHIME_NOTES.hallway;
+  playTone(a, 0, { gain: 0.07, duration: 0.12, type: "triangle" });
+  playTone(b, 60, { gain: 0.07, duration: 0.12, type: "triangle" });
+}
+
+// A tiny, soft click for buttons and toggles.
+export function playClickSound() {
+  playTone(600, 0, { gain: 0.06, duration: 0.05, type: "triangle" });
 }
 
 // Asks for mic access. Must be called from inside the Join button's
