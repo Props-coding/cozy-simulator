@@ -126,14 +126,29 @@ Do these in order. Stop after each one for the user to test.
 
 Add one at a time and ask the user which to do next.
 
-- **Study body-doubling:** a shared focus timer everyone in Study can see
+Already done: study focus timer (body-doubling), knock on locked offices, personal offices with lock and secret themes, house and office chat.
+
+### Big ideas (added 2026-09-22)
+
+Suggested order, since later ideas build on earlier ones: 1 and 2 first (they reshape the map), then 3 and 4, then 5 to 8 as one "progression" group.
+
+1. **North wing, and offices that close the gap.** Move offices to the north side of the hallway, so the house grows up as well as sideways. When an office is removed, the offices after it slide over to fill its spot instead of leaving a hole. Anyone standing in an office that slides moves with it.
+2. **Bedrooms.** Built and owned like offices (one per person, lockable, gone while the owner is offline). Could carry the older bedroom idea: white noise, and a "goodnight" moment when you leave. Needs a decision on where they go (for example north wing next to offices, or their own wing).
+3. **Theater (replaces Gaming).** Voice stays on, like Gaming now. A big screen where everyone in the room watches the same YouTube video: play, pause and skipping stay in sync for everyone in the Theater. Each person streams the video from YouTube themselves, so it costs nothing extra. Some videos don't allow embedding and won't play.
+4. **Conference room with a whiteboard.** A large conference table, voice on. A whiteboard anyone in the room can draw on together, with a few pen colors and a clear button. Drawings are shared live and sent to people who walk in; they last only while someone is in the house (no server to store them), unless we add a "save as picture" button.
+5. **Currency.** Earn coins for time spent in the house (for example a few per minute, maybe a small bonus in Study focus sessions).
+6. **Achievements.** Small badges for things like first office built, hours in the house, a finished focus session, first knock.
+7. **Character customization with unlockables.** Spend coins to unlock more hats, shoes, and other extras (for example outfits, glasses, name-tag colors, or trails). Picked on the Join screen or in a wardrobe.
+8. **Pets.** A little pet that follows you around (cat, dog, and so on), unlockable with coins, visible to friends.
+
+**Honest limits for 5 to 8:** with no server, coins, achievements and unlocks are saved in each person's own browser. That means they don't follow you to another computer or browser, clearing browser data erases them, and a tech-savvy friend could edit their own coins. For a friends project that's usually fine; a "backup code" you can copy and paste back in would protect against losing progress.
+
+### Older ideas still open
+
 - **Weather station:** stand on a mood tile so friends can see how you are doing without a word
 - **Porch:** a quiet spot for small late-night talks, lower voice volume
-- **Theater:** watch parties with screen sharing
-- **Bedroom:** white noise and a "goodnight" ritual when leaving
-- **Fireplace:** ambient crackle in a room with no agenda
+- **Fireplace room:** ambient crackle in a room with no agenda (the Props lake-house office already has a fireplace)
 - **Music room:** a shared jukebox
-- **Knock or doorbell** before entering a private room
 - **Seasonal decorations**
 - **Distance-based voice** within a room, where volume fades with distance
 

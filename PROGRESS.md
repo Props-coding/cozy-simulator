@@ -69,7 +69,9 @@
 - Build 0.25: chat. A chat card under the sidebar with two tabs: House (everyone) and Office (only people standing in the same office as you; the tab works while you're in any office). Press Enter to start typing, Enter to send, Escape to go back to walking (typing never moves your character or triggers game keys). New messages pop up as a speech bubble over the speaker for a few seconds, tabs show a dot for unread messages, and incoming messages make a soft blip (silent in Dinner). Chat isn't saved: people who join later don't see earlier messages.
 
 ## Next
-- Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
+- Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
+- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: north wing with offices that close gaps, bedrooms, Theater (replacing Gaming), conference room with a shared whiteboard, then coins, achievements, unlockable customization and pets.
+- Decisions needed before starting: where bedrooms go; what the conference room replaces or where it's added; which extras beyond hats and shoes to unlock.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
