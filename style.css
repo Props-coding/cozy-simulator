@@ -25,10 +25,57 @@ h1 {
   letter-spacing: 0.5px;
 }
 
+/* The Join screen's title is hidden once you're in the house, which has
+   its own header bar instead. */
+body:has(#game-screen:not([hidden])) #join-title {
+  display: none;
+}
+
+/* Everything in the house view lives in one centered box, as wide as the
+   house plus the sidebar, so all edges line up. */
+#game-container {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+/* Header bar: title on the left, the room you're in on the right. */
+#game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+#game-header h1 {
+  margin: 0;
+}
+
+/* The current room, as a small pill in the same card style as the sidebar. */
 #room-label {
   font-weight: 700;
-  font-size: 1.1em;
+  font-size: 1em;
   color: var(--wood);
+  background: #fffaf3;
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(122, 92, 62, 0.15);
+}
+
+#house-column {
+  text-align: center;
+}
+
+#house-column .hint {
+  margin-top: 4px;
+}
+
+/* No gap under the house from inline spacing, so edges line up exactly. */
+#house {
+  display: block;
 }
 
 canvas {
@@ -128,7 +175,7 @@ canvas {
    empty so the house doesn't jump up and down as prompts come and go. */
 #action-hint {
   min-height: 1.3em;
-  margin: 0 0 6px;
+  margin: 10px 0 0;
   font-weight: 700;
   color: #b8742a;
 }
@@ -198,7 +245,16 @@ canvas {
   justify-content: center;
   align-items: flex-start;
   gap: 20px;
-  flex-wrap: wrap;
+}
+
+/* Too narrow for the house and sidebar side by side (house 1008 + gap 20
+   + sidebar 230 + edges 32): stack the sidebar under the house instead,
+   so the header lines up with the house. */
+@media (max-width: 1290px) {
+  #game-layout {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 /* Fixed width, so a long room name (like "Sam's Office") wraps onto a

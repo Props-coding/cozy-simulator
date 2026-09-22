@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Cozy House</h1>
+  <!-- Title for the Join screen (the house view has its own header). -->
+  <h1 id="join-title">Cozy House</h1>
 
   <!-- Join screen: shown first, hidden once you click Join. -->
   <div id="join-screen">
@@ -40,10 +41,15 @@
 
   <!-- The house itself: hidden until you join. -->
   <div id="game-screen" hidden>
+    <!-- One centered container: a header bar, then the house and the
+         sidebar side by side (the sidebar drops below on narrow windows). -->
+    <div id="game-container">
+      <header id="game-header">
+        <h1>Cozy House</h1>
+        <span id="room-label">📍 Hallway</span>
+      </header>
     <div id="game-layout">
-      <div>
-        <p id="room-label">You are in: Hallway</p>
-        <p id="action-hint"></p>
+      <div id="house-column">
         <div id="house-wrap">
           <canvas id="house"></canvas>
           <!-- A cozy in-game "are you sure?" card, shown over the house. -->
@@ -58,6 +64,7 @@
             </div>
           </div>
         </div>
+        <p id="action-hint"></p>
         <p class="hint">Move with the arrow keys or WASD.</p>
       </div>
       <div id="sidebar">
@@ -86,6 +93,7 @@
           <input id="lofi-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
         </label>
       </div>
+    </div>
     </div>
   </div>
 

@@ -486,7 +486,7 @@ function tick(now) {
   }
 
   const currentRoom = getCurrentRoom(player);
-  roomLabel.textContent = "You are in: " + currentRoom.name;
+  roomLabel.textContent = "📍 " + currentRoom.name;
   const hint = actionHintFor(currentRoom);
   if (actionHint.textContent !== hint) actionHint.textContent = hint;
   updateMicForRoom(currentRoom.id);

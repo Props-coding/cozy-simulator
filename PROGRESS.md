@@ -62,6 +62,8 @@
 
 - Not pushed yet: secret office themes (an Easter egg). If someone named Props, Brightness or Kxiven (any capitals) builds an office, they get a themed one. Props gets a cozy lake house (log walls, stone fireplace with a flickering fire, lake window, canoe paddle and fishing rod on the wall, tackle box). Brightness gets a STALKER-style concrete bunker (bare concrete, pipes and rebar in the walls, a flickering fluorescent tube, a steel desk with a Geiger counter, an army crate with a gas mask, a rusty barrel, cold light). Kxiven gets a classical Chinese scholar's study (round moon window, calligraphy scroll, potted bamboo, bonsai, low writing desk with inkstone and brushes, floor cushion, red paper lantern). The names are in `config.js` (officeThemes). Voice, locking, knocking and removing work the same as any office.
 
+- Not pushed yet: tidier page layout. Everything sits in one centered box: a header bar with "Cozy House" on the left and the room you're in as a small pill on the right (replacing the "You are in" line), then the house and the sidebar side by side with their tops lined up. Prompts like "Press E" now sit just under the house, above the controls hint. On a narrow window the sidebar moves below the house.
+
 ## Next
 - Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 
