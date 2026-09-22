@@ -50,6 +50,10 @@ export function connectToRoom(myName, myColor) {
       // those happen to be down, we're stuck. Trying more relays makes
       // it much less likely all of them are down at once.
       relayConfig: { redundancy: 12 },
+      // A relay (TURN) server for when two friends' home networks can't
+      // connect to each other directly. See config.js for where this
+      // comes from and how to swap it for a different provider.
+      turnConfig: CONFIG.turnServers,
     },
     CONFIG.trysteroRoomId
   );

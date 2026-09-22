@@ -46,6 +46,19 @@ const CONFIG = {
   // How many times per second we tell friends where we are.
   positionUpdatesPerSecond: 12,
 
+  // A relay server (called TURN) that steps in when two friends' home
+  // networks can't connect directly to each other. Without this, some
+  // pairs of friends may not see or hear each other at all.
+  // This is a free, shared relay from the Open Relay Project (metered.ca)
+  // that anyone can use, no account needed. If it's ever slow or full
+  // (since it's shared with other projects worldwide), switch to a
+  // personal free account at metered.ca and put your own values here.
+  turnServers: [
+    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+  ],
+
   // --- Study room lo-fi music ---
   // Plays locally for each person (not synced) while standing in Study.
   // Primary: the official Lofi Girl 24/7 livestream, embedded via YouTube.

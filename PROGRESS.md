@@ -19,8 +19,11 @@
 
 - Milestone 7 (polish), cozier visuals: wood-look walls with rounded corners, textured floors, simple furniture per room (couch and TV in Gaming, bookshelf and desk in Study, dining table and chairs in Dinner, a rug and plant in the Hallway), a warm gradient background, and a cozy rounded font (Quicksand, from Google Fonts). Characters are now round with a little face and a soft shadow, name tags are readable pill badges instead of plain text. Confirmed working. (One deploy briefly got stuck "queued" on GitHub's side after a couple of quick pushes in a row cancelled each other's in-progress deploys, not a bug, just needed a few extra minutes.)
 
+- Fixed a connection bug found testing with two friends: you could see Friend #1, Friend #1 could see both of you, but you and Friend #2 couldn't see or hear each other. Cause: some pairs of home networks can't connect directly to each other, and we had no fallback for that case. Added a free relay server (TURN, from the Open Relay Project, no account needed) as a backup path. Settings are in `config.js` under `turnServers` if we ever need to swap providers. Needs testing with the same three friends to confirm it's fixed.
+
 ## Next
-- Waiting on your priorities for what's next: more polish, or a backlog item (body-doubling timer, weather station, porch, etc.)
+- Waiting on results from the TURN server test with your two friends.
+- After that: more polish, or a backlog item (body-doubling timer, weather station, porch, etc.)
 - State/Country display is on hold (would need a third-party IP lookup service). Going 3D is a separate future decision, not part of this polish pass, since it'd mean rewriting the whole rendering approach.
 
 ## Open questions
