@@ -64,6 +64,8 @@
 
 - Build 0.23: tidier page layout. Everything sits in one centered box: a header bar with "Cozy House" on the left and the room you're in as a small pill on the right (replacing the "You are in" line), then the house and the sidebar side by side with their tops lined up. Prompts like "Press E" now sit just under the house, above the controls hint. On a narrow window the sidebar moves below the house.
 
+- Build 0.24: fixed friends losing each other after a refresh. Cause: the free relay (TURN) server we added earlier stopped accepting its old shared login in 2026, so any pair of friends whose networks can't connect directly had no backup route. Switched to a free Metered account (Open Relay, 20 GB a month). The login lives at the top of `config.js` (TURN_USERNAME and TURN_PASSWORD). Tested: all four relay addresses connect.
+
 ## Next
 - Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 

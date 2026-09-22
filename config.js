@@ -1,5 +1,13 @@
 // Settings you might want to change. Comments explain each one.
 
+// --- Relay (TURN) login, from your free Metered account ---
+// Paste the username and password from the Metered dashboard between the
+// quote marks below (Dashboard > TURN Server > Show ICE Servers Array).
+// Only these two lines need to change; the relay settings further down
+// use them automatically.
+const TURN_USERNAME = "699927adb612d03f8a3cadf1";
+const TURN_PASSWORD = "K9PZnt1CKh6d65PN";
+
 const CONFIG = {
   // Canvas size (the house view), in pixels.
   canvasWidth: 1000,
@@ -61,14 +69,17 @@ const CONFIG = {
   // A relay server (called TURN) that steps in when two friends' home
   // networks can't connect directly to each other. Without this, some
   // pairs of friends may not see or hear each other at all.
-  // This is a free, shared relay from the Open Relay Project (metered.ca)
-  // that anyone can use, no account needed. If it's ever slow or full
-  // (since it's shared with other projects worldwide), switch to a
-  // personal free account at metered.ca and put your own values here.
+  // This is the Open Relay Project from Metered (metered.ca): free for
+  // 20 GB a month with a free account. (The old no-account shared login
+  // stopped working in 2026.) The login comes from TURN_USERNAME and
+  // TURN_PASSWORD at the top of this file. Note the site is public, so
+  // anyone reading the code could see this login; the worst case is a
+  // stranger using some of the free monthly allowance.
   turnServers: [
-    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
-    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:global.relay.metered.ca:80", username: TURN_USERNAME, credential: TURN_PASSWORD },
+    { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: TURN_USERNAME, credential: TURN_PASSWORD },
+    { urls: "turn:global.relay.metered.ca:443", username: TURN_USERNAME, credential: TURN_PASSWORD },
+    { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: TURN_USERNAME, credential: TURN_PASSWORD },
   ],
 
   // --- Study room lo-fi music ---
