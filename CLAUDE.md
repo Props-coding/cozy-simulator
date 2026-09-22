@@ -130,7 +130,7 @@ Already done: study focus timer (body-doubling), knock on locked offices, person
 
 ### Big ideas (added 2026-09-22)
 
-Suggested order, since later ideas build on earlier ones: 1 and 2 first (they reshape the map), then 3 and 4, then 5 to 9 as one "progression" group. Emotes (9) could also come early on their own, since the free ones don't need coins.
+Suggested order, since later ideas build on earlier ones: 1 and 2 first (they reshape the map), then 3 and 4, then 5 to 8 and 10 as one "progression" group. The Library (9) and emotes (10) could come any time, since the Library doesn't depend on anything and the free emotes don't need coins.
 
 1. **North wing, and offices that close the gap.** Move offices to the north side of the hallway, so the house grows up as well as sideways. When an office is removed, the offices after it slide over to fill its spot instead of leaving a hole. Anyone standing in an office that slides moves with it.
 2. **Bedrooms.** Built and owned like offices (one per person, lockable, gone while the owner is offline). Could carry the older bedroom idea: white noise, and a "goodnight" moment when you leave. Needs a decision on where they go (for example north wing next to offices, or their own wing).
@@ -139,10 +139,12 @@ Suggested order, since later ideas build on earlier ones: 1 and 2 first (they re
 5. **Currency.** Earn coins for time spent in the house (for example a few per minute, maybe a small bonus in Study focus sessions).
 6. **Achievements.** Small badges for things like first office built, hours in the house, a finished focus session, first knock.
 7. **Character customization with unlockables.** Spend coins to unlock more hats, shoes, and other extras (for example outfits, glasses, name-tag colors, or trails). Picked on the Join screen or in a wardrobe.
+   - **The shopkeeper: three raccoons in a trenchcoat.** Items are bought from a shady-but-cozy vendor: three raccoons stacked on top of each other inside one long trenchcoat, drawn in our style (soft shadow, lit from above, upright on the floor). Ideas for the look: the top raccoon's masked face and ears poking out of the collar under a floppy hat, a second pair of eyes peeking out between the coat buttons, little paws at the sleeve ends, and a striped tail or two poking out under the hem. Walk up and press a key to open the shop, which "flashes open the coat" to show the wares. A few shifty lines of dialogue ("psst... hats. you want hats?").
 8. **Pets.** A little pet that follows you around (cat, dog, and so on), unlockable with coins, visible to friends.
-9. **Emotes** (suggested by Kxiven). Quick character actions friends can see, like wave, heart, laugh, dance or sleepy, from number keys or a small emote wheel. A few free to start, more unlockable with coins.
+9. **Library with rain.** A quiet, cozy reading room: tall bookshelves, reading nooks, warm lamps, and rain streaming down the windows. Rain sound plays softly for everyone inside (locally, like the Study's lo-fi, fading in and out as you enter and leave), with its own volume slider. The rain can be generated in code (filtered noise shaped to sound like rain), so there's no sound file to find, license or host. Voice off, like the Study, or quiet voice (decide when building).
+10. **Emotes** (suggested by Kxiven). Quick character actions friends can see, like wave, heart, laugh, dance or sleepy, from number keys or a small emote wheel. A few free to start, more unlockable with coins.
 
-**Honest limits for 5 to 9:** with no server, coins, achievements and unlocks are saved in each person's own browser. That means they don't follow you to another computer or browser, clearing browser data erases them, and a tech-savvy friend could edit their own coins. For a friends project that's usually fine; a "backup code" you can copy and paste back in would protect against losing progress.
+**Honest limits for 5 to 8 and 10:** with no server, coins, achievements and unlocks are saved in each person's own browser. That means they don't follow you to another computer or browser, clearing browser data erases them, and a tech-savvy friend could edit their own coins. For a friends project that's usually fine; a "backup code" you can copy and paste back in would protect against losing progress.
 
 ### Older ideas still open
 
