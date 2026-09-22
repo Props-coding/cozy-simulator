@@ -153,11 +153,47 @@ function drawChecker(ctx, box, color) {
   }
 }
 
-const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker };
+// Bare concrete: big poured slabs with seams, a few stains and cracks.
+function drawConcrete(ctx, box, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
+  for (let x = box.x + TILE * 1.8; x < box.x + box.w; x += TILE * 1.8) ctx.fillRect(x, box.y, 1.5, box.h);
+  for (let y = box.y + TILE * 1.5; y < box.y + box.h; y += TILE * 1.5) ctx.fillRect(box.x, y, box.w, 1.5);
+  for (let i = 0; i < 6; i++) {
+    ctx.fillStyle = `rgba(40, 35, 25, ${0.05 + noise(i + 9) * 0.06})`;
+    ctx.beginPath();
+    ctx.ellipse(box.x + noise(i + 1.1) * box.w, box.y + noise(i + 2.3) * box.h, 10 + noise(i) * 22, 6 + noise(i + 4) * 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "rgba(30, 30, 30, 0.3)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    let x = box.x + noise(i + 20) * box.w, y = box.y + noise(i + 30) * box.h;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let j = 0; j < 5; j++) {
+      x += 6 + noise(i * 7 + j) * 8;
+      y += (noise(i * 5 + j + 0.5) - 0.5) * 12;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+}
+
+const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker, concrete: drawConcrete };
+
+// The look of each secret office theme: floor, wall color, a pattern on
+// the walls, and a tint over the whole room (warm or cold).
+const OFFICE_THEME_STYLE = {
+  lakehouse: { floor: { style: "planks", color: "#a8744c" }, wall: "#9c6b43", wallPattern: "logs", tint: "rgba(255, 160, 80, 0.10)" },
+  stalker: { floor: { style: "concrete", color: "#8e908b" }, wall: "#8a8d88", wallPattern: "concrete", tint: "rgba(30, 60, 50, 0.16)" },
+  scholar: { floor: { style: "planks", color: "#7a4a32" }, wall: "#eadcc0", wallPattern: "lacquer", tint: "rgba(255, 190, 120, 0.08)" },
+};
 
 function paintFloors(ctx) {
   for (const room of ROOMS) {
-    const floor = CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
+    const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
     const box = { x: a.x, y: a.y, w: room.rect.w * TILE, h: room.rect.h * TILE };
     ctx.save();
@@ -249,7 +285,8 @@ function drawWall(ctx, wall) {
   const hasFace = !wall.low && wall.w > wall.h;
   // The face belongs to whichever room it faces: the one just below it.
   const facing = getCurrentRoom({ x: wall.x + wall.w / 2 - PLAYER_SIZE / 2, y: wall.y + wall.h });
-  ctx.fillStyle = hasFace ? CONFIG.roomWallColors[facing.id] || CONFIG.roomWallColors.office : WOOD_DARK;
+  const themeStyle = OFFICE_THEME_STYLE[facing.theme];
+  ctx.fillStyle = hasFace ? themeStyle?.wall || CONFIG.roomWallColors[facing.id] || CONFIG.roomWallColors.office : WOOD_DARK;
   ctx.fillRect(a.x, b.y - height, b.x - a.x, height);
   // Baseboard.
   if (hasFace) {
@@ -257,6 +294,7 @@ function drawWall(ctx, wall) {
     ctx.fillRect(a.x, b.y - 5, b.x - a.x, 5);
     ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // a thin trim line near the top
     ctx.fillRect(a.x, b.y - height + 3, b.x - a.x, 2);
+    if (themeStyle) drawWallPattern(ctx, themeStyle.wallPattern, a.x, b.y - height, b.x - a.x, height);
     // Hallway walls get wood paneling on the bottom part, with a rail on top.
     if (facing.id === "hallway") {
       const panelTop = b.y - 18;
@@ -335,6 +373,34 @@ const PICTURE_ART = {
     }
   },
 };
+
+// Extra detail on a themed office's walls: stacked logs, poured concrete
+// with rust stains, or plaster with a red lacquer band.
+function drawWallPattern(ctx, pattern, x, y, w, h) {
+  if (pattern === "logs") {
+    for (let ly = y + 3; ly < y + h - 6; ly += 8) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.fillRect(x, ly, w, 1.5);
+      ctx.fillStyle = "rgba(40, 20, 5, 0.3)";
+      ctx.fillRect(x, ly + 6, w, 1.5);
+    }
+  } else if (pattern === "concrete") {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    for (let sx = x + 22; sx < x + w; sx += 30) ctx.fillRect(sx, y, 1, h - 5);
+    ctx.fillStyle = "rgba(40, 40, 40, 0.35)"; // tie holes left by the concrete forms
+    for (let sx = x + 11; sx < x + w; sx += 30) {
+      ctx.fillRect(sx, y + 10, 2, 2);
+      ctx.fillRect(sx, y + 24, 2, 2);
+    }
+    ctx.fillStyle = "rgba(138, 75, 42, 0.25)"; // rust streak
+    ctx.fillRect(x + w * 0.6, y + 4, 3, h - 12);
+  } else if (pattern === "lacquer") {
+    ctx.fillStyle = "#9a2f24";
+    ctx.fillRect(x, y + 5, w, 4);
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(x, y + 9, w, 1);
+  }
+}
 
 // --- Furniture ---
 // One function per kind. Each gets the furniture entry from world.js,
@@ -668,6 +734,474 @@ const FURNITURE_DRAWERS = {
     ctx.clip();
     PICTURE_ART[f.art](ctx, ix, iy, iw, ih);
     ctx.restore();
+  },
+
+  // --- Secret office: lake house ---
+
+  // A stone fireplace with a chimney, a wood mantel, and a crackling fire.
+  fireplace(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const fp = drawBlock(ctx, f.x, f.y, f.w, f.h, 34, "#8d8a84");
+    const { x, y, w, h } = fp.face;
+    // Chimney rising up from the back.
+    ctx.fillStyle = "#7d7a74";
+    ctx.fillRect(x + w * 0.2, fp.top.y - 44, w * 0.6, 46);
+    // Stones on the chimney and the front.
+    const stones = ["#9a968f", "#85817a", "#a8a49c"];
+    for (let row = 0; row < 8; row++) {
+      for (let i = 0; i < 4; i++) {
+        const sx = x + w * 0.2 + ((row % 2) * 5 + i * 11), sy = fp.top.y - 42 + row * 5.5;
+        if (sx + 9 > x + w * 0.8) continue;
+        ctx.fillStyle = stones[(row + i) % 3];
+        roundRectPath(ctx, sx, sy, 9, 4.5, 2);
+        ctx.fill();
+      }
+    }
+    for (let row = 0; row < 5; row++) {
+      for (let sx = x + (row % 2) * 6; sx < x + w - 4; sx += 12) {
+        ctx.fillStyle = stones[(row + Math.round(sx)) % 3];
+        roundRectPath(ctx, sx + 1, y + 2 + row * 6.5, 10, 5, 2);
+        ctx.fill();
+      }
+    }
+    // Wood mantel.
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(x - 3, y - 3, w + 6, 5);
+    // Fire opening, logs and flickering flames.
+    const ox = x + w / 2, oy = y + h - 3;
+    ctx.fillStyle = "#2a1d14";
+    ctx.beginPath();
+    ctx.moveTo(ox - 14, oy);
+    ctx.lineTo(ox - 14, oy - 12);
+    ctx.arc(ox, oy - 12, 14, Math.PI, 0);
+    ctx.lineTo(ox + 14, oy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#6b4a2e";
+    ctx.fillRect(ox - 11, oy - 5, 22, 4);
+    const t = performance.now() / 1000;
+    for (const [dx, hgt, color] of [[-5, 14, "#e0602a"], [4, 16, "#e0602a"], [0, 18, "#f2a03a"], [-1, 11, "#fbd66a"]]) {
+      const lick = Math.sin(t * 9 + dx) * 2.5;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(ox + dx - 5, oy - 5);
+      ctx.quadraticCurveTo(ox + dx, oy - 5 - hgt - lick, ox + dx + 5, oy - 5);
+      ctx.fill();
+    }
+  },
+
+  // Hung on a wall face: a window onto the lake, with pines on the far shore.
+  lakeWindow(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const x = a.x, y = a.y - WALL_HEIGHT + 5, w = f.w * TILE, h = 25;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.fillRect(x + 2, y + 3, w, h);
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(x, y, w, h);
+    const ix = x + 3, iy = y + 3, iw = w - 6, ih = h - 6;
+    const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
+    sky.addColorStop(0, "#f2c49a");
+    sky.addColorStop(1, "#bfdcea");
+    ctx.fillStyle = sky;
+    ctx.fillRect(ix, iy, iw, ih);
+    ctx.fillStyle = "#3f5a3a"; // pines
+    for (let px = ix; px < ix + iw; px += 6) {
+      ctx.beginPath();
+      ctx.moveTo(px, iy + ih * 0.55);
+      ctx.lineTo(px + 3, iy + ih * 0.2 + ((px * 7) % 4));
+      ctx.lineTo(px + 6, iy + ih * 0.55);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#4a7f9e"; // the lake
+    ctx.fillRect(ix, iy + ih * 0.55, iw, ih * 0.45);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+    ctx.fillRect(ix + 4, iy + ih * 0.7, 8, 1);
+    ctx.fillRect(ix + iw - 14, iy + ih * 0.85, 9, 1);
+    ctx.fillStyle = WOOD_DARK; // window bars
+    ctx.fillRect(x + w / 2 - 1, y, 2, h);
+  },
+
+  // Hung on a wall face: a canoe paddle and a fishing rod, crossed.
+  paddle(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const x = a.x, y = a.y - WALL_HEIGHT + 4, w = f.w * TILE;
+    ctx.strokeStyle = "#3a3a3a"; // fishing rod
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + w - 6, y + 2);
+    ctx.lineTo(x + 8, y + 30);
+    ctx.stroke();
+    ctx.fillStyle = "#b8923a";
+    ctx.beginPath();
+    ctx.arc(x + 13, y + 25, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(240, 240, 240, 0.7)";
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(x + w - 6, y + 2);
+    ctx.lineTo(x + w - 5, y + 16);
+    ctx.stroke();
+    // Paddle: a wood shaft with a wide blade.
+    ctx.save();
+    ctx.translate(x + w / 2, y + 17);
+    ctx.rotate(0.9);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.fillRect(-16, -1, 32, 3);
+    ctx.fillStyle = "#c89a68";
+    ctx.fillRect(-18, -1.5, 22, 3);
+    ctx.beginPath();
+    ctx.ellipse(10, 0, 9, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b5603c";
+    ctx.fillRect(-20, -2, 4, 4);
+    ctx.restore();
+  },
+
+  // A green tackle box with a brass latch.
+  tackleBox(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = drawBlock(ctx, f.x, f.y, f.w, f.h, 14, "#4f6b3a");
+    ctx.fillStyle = "#3a5029";
+    ctx.fillRect(b.top.x + b.top.w / 2 - 6, b.top.y + 2, 12, 3); // handle
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(b.face.x + b.face.w / 2 - 2, b.face.y + 3, 4, 4); // latch
+  },
+
+  // --- Secret office: STALKER bunker ---
+
+  // Hung on a wall face: two old pipes with flanges, rust and a red valve.
+  pipes(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const x = a.x, y = a.y - WALL_HEIGHT + 8, w = f.w * TILE;
+    for (const [py, size] of [[y, 5], [y + 14, 4]]) {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+      ctx.fillRect(x, py + 2, w, size);
+      ctx.fillStyle = "#6f716c";
+      ctx.fillRect(x, py, w, size);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.fillRect(x, py, w, 1);
+      ctx.fillStyle = "#555752";
+      for (let fx = x + 14; fx < x + w; fx += 26) ctx.fillRect(fx, py - 1.5, 3, size + 3);
+      ctx.fillStyle = "rgba(138, 75, 42, 0.6)";
+      ctx.fillRect(x + w * 0.35, py + size - 1, 6, 2);
+    }
+    ctx.strokeStyle = "#8a2f24"; // valve wheel
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x + w * 0.7, y - 3, 4, 0, Math.PI * 2);
+    ctx.moveTo(x + w * 0.7 - 4, y - 3);
+    ctx.lineTo(x + w * 0.7 + 4, y - 3);
+    ctx.stroke();
+  },
+
+  // Hung on a wall face: a broken patch of concrete with rusty rebar
+  // sticking out of it.
+  rebar(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const x = a.x, y = a.y - WALL_HEIGHT + 6, w = f.w * TILE;
+    ctx.fillStyle = "#6a6c67";
+    ctx.beginPath();
+    ctx.moveTo(x + 6, y + 4);
+    ctx.lineTo(x + w * 0.6, y);
+    ctx.lineTo(x + w - 4, y + 8);
+    ctx.lineTo(x + w - 10, y + 22);
+    ctx.lineTo(x + w * 0.4, y + 26);
+    ctx.lineTo(x + 4, y + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#8a4b2a";
+    ctx.lineWidth = 1.5;
+    for (const [x1, y1, x2, y2] of [[x + 8, y + 8, x + w - 6, y + 10], [x + 10, y + 17, x + w - 12, y + 19], [x + w * 0.4, y + 2, x + w * 0.45, y + 24]]) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+  },
+
+  // An olive army crate with a stencil, and a gas mask sitting on top.
+  crate(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#5b6340");
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(c.face.x + 2.5, c.face.y + 2.5, c.face.w - 5, c.face.h - 6);
+    ctx.fillStyle = "rgba(230, 225, 200, 0.55)"; // stencil marks
+    ctx.fillRect(c.face.x + 8, c.face.y + 8, 14, 2);
+    ctx.fillRect(c.face.x + 8, c.face.y + 12, 9, 2);
+    ctx.fillStyle = "#8a4b2a";
+    ctx.fillRect(c.face.x, c.face.y + c.face.h - 7, 4, 3);
+    // Gas mask: a rubber face, two round lenses and a filter.
+    const mx = c.top.x + c.top.w / 2, my = c.top.y + c.top.h / 2 - 4;
+    ctx.fillStyle = "#3a3d38";
+    ctx.beginPath();
+    ctx.ellipse(mx, my, 10, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = "#9fb3a8";
+      ctx.beginPath();
+      ctx.arc(mx + side * 4.5, my - 2, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillRect(mx + side * 4.5 - 1.5, my - 4, 1.5, 1.5);
+    }
+    ctx.fillStyle = "#5b6340";
+    ctx.beginPath();
+    ctx.arc(mx, my + 7, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A grey steel desk with a yellow Geiger counter and a few papers.
+  metalDesk(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#6b6e68");
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(d.face.x + d.face.w - 28.5, d.face.y + 4.5, 22, 7);
+    ctx.strokeRect(d.face.x + d.face.w - 28.5, d.face.y + 12.5, 22, 7);
+    const { x, y, w, h } = d.top;
+    ctx.fillStyle = "#e8e2cf"; // papers
+    ctx.fillRect(x + 8, y + 5, 18, h - 10);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    for (let i = 0; i < 4; i++) ctx.fillRect(x + 10, y + 8 + i * 4, 12, 1);
+    // Geiger counter: a yellow box with a dial, and its probe on a cable.
+    const gx = x + w - 34, gy = y + h / 2 - 12;
+    ctx.fillStyle = "#c9a227";
+    roundRectPath(ctx, gx, gy, 22, 16, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f3ecd8";
+    ctx.beginPath();
+    ctx.arc(gx + 8, gy + 8, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8a2f24";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(gx + 8, gy + 8);
+    ctx.lineTo(gx + 8 + Math.cos(-0.8 + Math.sin(performance.now() / 300) * 0.4) * 4, gy + 8 + Math.sin(-0.8) * 4);
+    ctx.stroke();
+    ctx.strokeStyle = "#2b2b2b";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(gx + 22, gy + 10);
+    ctx.quadraticCurveTo(gx + 30, gy + 20, gx + 24, gy + 22);
+    ctx.stroke();
+    ctx.fillStyle = "#3a3a3a";
+    ctx.fillRect(gx + 16, gy + 20, 10, 3);
+  },
+
+  // A rusty oil barrel: a round drum, lighter on top where the light hits,
+  // with two raised rings and a rust drip.
+  barrel(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const base = toScreen(f.x + f.w / 2, f.y + f.h);
+    const rx = (f.w * TILE) / 2, ry = 5, hgt = 30;
+    const cx = base.x, bottom = base.y - ry, top = bottom - hgt;
+    const side = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    side.addColorStop(0, "#6b3a20");
+    side.addColorStop(0.45, "#9a5a34");
+    side.addColorStop(1, "#6b3a20");
+    ctx.fillStyle = side;
+    ctx.beginPath();
+    ctx.ellipse(cx, bottom, rx, ry, 0, 0, Math.PI);
+    ctx.lineTo(cx - rx, top);
+    ctx.ellipse(cx, top, rx, ry, 0, Math.PI, 0, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(40, 20, 10, 0.45)";
+    ctx.lineWidth = 2;
+    for (const ringY of [top + 10, top + 21]) {
+      ctx.beginPath();
+      ctx.ellipse(cx, ringY, rx, ry, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(60, 30, 15, 0.5)";
+    ctx.fillRect(cx - rx * 0.4, top + 3, 3, 14);
+    ctx.fillStyle = "#a8683f";
+    ctx.beginPath();
+    ctx.ellipse(cx, top, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5c3018";
+    ctx.beginPath();
+    ctx.arc(cx + rx * 0.4, top, 2, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // --- Secret office: scholar's study ---
+
+  // Hung on a wall face: a round "moon" window with a lattice and a plum branch.
+  moonWindow(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const r = 15, cx = a.x + (f.w * TILE) / 2, cy = a.y - WALL_HEIGHT + 20;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.beginPath();
+    ctx.arc(cx + 2, cy + 3, r + 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5a2a1e";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = "#f3e9d2";
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.strokeStyle = "#3a2a20"; // plum branch with blossoms
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy + 6);
+    ctx.quadraticCurveTo(cx - 2, cy + 2, cx + 6, cy - 8);
+    ctx.stroke();
+    ctx.fillStyle = "#e37aa0";
+    for (const [bx, by] of [[-6, 3], [1, -2], [5, -7], [-10, 6]]) {
+      ctx.beginPath();
+      ctx.arc(cx + bx, cy + by, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "rgba(90, 42, 30, 0.55)"; // lattice
+    ctx.lineWidth = 1;
+    for (let i = -r; i <= r; i += 7) {
+      ctx.beginPath();
+      ctx.moveTo(cx + i, cy - r);
+      ctx.lineTo(cx + i, cy + r);
+      ctx.moveTo(cx - r, cy + i);
+      ctx.lineTo(cx + r, cy + i);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+
+  // Hung on a wall face: a hanging calligraphy scroll with a red seal.
+  scroll(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x + 2, y = a.y - WALL_HEIGHT + 3;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.fillRect(x + 2, y + 3, w - 4, 32);
+    ctx.fillStyle = "#c9b48a";
+    ctx.fillRect(x, y + 2, w - 4, 31);
+    ctx.fillStyle = "#f5eedb";
+    ctx.fillRect(x + 3, y + 5, w - 10, 25);
+    ctx.fillStyle = "#5a2a1e"; // rods
+    ctx.fillRect(x - 2, y, w, 3);
+    ctx.fillRect(x - 2, y + 32, w, 3);
+    ctx.fillStyle = "#1e1a17"; // brush strokes, like three characters
+    const mx = x + (w - 4) / 2;
+    for (let i = 0; i < 3; i++) {
+      const cy = y + 9 + i * 7;
+      ctx.fillRect(mx - 4, cy, 8, 1.3);
+      ctx.fillRect(mx - 0.6, cy - 2, 1.3, 5);
+      ctx.fillRect(mx - 3 + (i % 2) * 4, cy + 2, 3, 1.1);
+    }
+    ctx.fillStyle = "#b8322a"; // seal
+    ctx.fillRect(mx + 1, y + 26, 3, 3);
+  },
+
+  // Potted bamboo: a celadon pot with a few tall jointed stalks.
+  bamboo(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const base = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#7fa89a";
+    roundRectPath(ctx, base.x - 10, base.y - 14, 20, 13, 4);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(base.x - 8, base.y - 12, 16, 1.5);
+    for (const [dx, hgt] of [[-5, 46], [0, 56], [5, 40]]) {
+      ctx.fillStyle = "#6f9e4c";
+      ctx.fillRect(base.x + dx - 1.5, base.y - 14 - hgt, 3, hgt);
+      ctx.fillStyle = "#4f7a38";
+      for (let ny = base.y - 24; ny > base.y - 14 - hgt; ny -= 10) ctx.fillRect(base.x + dx - 2, ny, 4, 1.5);
+      ctx.fillStyle = "#7fb46a";
+      ctx.beginPath();
+      ctx.ellipse(base.x + dx + 5, base.y - 14 - hgt + 6, 6, 2, -0.5, 0, Math.PI * 2);
+      ctx.ellipse(base.x + dx - 5, base.y - 14 - hgt + 12, 6, 2, 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A little bonsai tree in a shallow blue pot on a low wood stand.
+  bonsai(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const stand = drawBlock(ctx, f.x, f.y, f.w, f.h, 10, "#5a2a1e");
+    const cx = stand.top.x + stand.top.w / 2, cy = stand.top.y + stand.top.h / 2;
+    ctx.fillStyle = "#3f6f8f";
+    roundRectPath(ctx, cx - 11, cy - 6, 22, 7, 2);
+    ctx.fill();
+    ctx.strokeStyle = "#5c4030";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 6);
+    ctx.quadraticCurveTo(cx - 8, cy - 14, cx + 2, cy - 22);
+    ctx.stroke();
+    for (const [dx, dy, r, color] of [[-7, -18, 6, "#4f7a48"], [4, -24, 7, "#5c8a54"], [9, -16, 5, "#4f7a48"], [0, -28, 5, "#6fa05e"]]) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy + dy, r, r * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A low lacquered writing desk with paper, an inkstone and brushes.
+  lowDesk(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 14, "#5a2a1e");
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(d.face.x, d.face.y + 1, d.face.w, 1);
+    const { x, y, w, h } = d.top;
+    const mid = y + h / 2;
+    // Rice paper with brush strokes.
+    ctx.fillStyle = "#f5eedb";
+    ctx.fillRect(x + w / 2 - 14, y + 4, 28, h - 8);
+    ctx.fillStyle = "#1e1a17";
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(x + w / 2 - 8 + i * 6, y + 8, 1.4, h - 16);
+      ctx.fillRect(x + w / 2 - 10 + i * 6, y + 11 + (i % 2) * 4, 5, 1.2);
+    }
+    // Inkstone with a pool of ink.
+    ctx.fillStyle = "#3a3a40";
+    roundRectPath(ctx, x + 6, mid - 7, 16, 13, 3);
+    ctx.fill();
+    ctx.fillStyle = "#15151a";
+    ctx.beginPath();
+    ctx.ellipse(x + 14, mid - 3, 4, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Brush rest with two brushes, and a brush pot.
+    ctx.fillStyle = "#6f8a6a";
+    ctx.fillRect(x + w - 30, mid + 4, 14, 3);
+    ctx.strokeStyle = "#c89a68";
+    ctx.lineWidth = 1.5;
+    for (const by of [mid + 1, mid + 5]) {
+      ctx.beginPath();
+      ctx.moveTo(x + w - 34, by);
+      ctx.lineTo(x + w - 14, by - 2);
+      ctx.stroke();
+      ctx.fillStyle = "#1e1a17";
+      ctx.fillRect(x + w - 14, by - 3.5, 4, 2.5);
+    }
+    ctx.fillStyle = "#7fa89a";
+    ctx.fillRect(x + w - 11, mid - 12, 7, 9);
+    ctx.strokeStyle = "#c89a68";
+    ctx.beginPath();
+    ctx.moveTo(x + w - 9, mid - 12);
+    ctx.lineTo(x + w - 11, mid - 20);
+    ctx.moveTo(x + w - 6, mid - 12);
+    ctx.lineTo(x + w - 4, mid - 19);
+    ctx.stroke();
+  },
+
+  // A flat silk floor cushion to kneel on at the low desk.
+  floorCushion(ctx, f) {
+    const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y + 4, 15, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    roundRectPath(ctx, c.x - 13, c.y - 6, 26, 12, 5);
+    ctx.fillStyle = "#b8322a";
+    ctx.fill();
+    ctx.strokeStyle = "#c9a24a";
+    ctx.lineWidth = 1.5;
+    roundRectPath(ctx, c.x - 10, c.y - 4, 20, 8, 3);
+    ctx.stroke();
   },
 
   fridge(ctx, f) {
@@ -1013,6 +1547,65 @@ function drawCounter(ctx, f) {
   return c;
 }
 
+// A ceiling fluorescent tube in the bunker office. Mostly on, but every so
+// often it stutters off for a moment, like a bad starter.
+function drawFluorescent(ctx, f, now) {
+  const p = toScreen(f.x, f.y);
+  const y = p.y - 110;
+  const flick = noise(Math.floor(now * 10));
+  const on = flick > 0.12 && !(flick > 0.9 && noise(Math.floor(now * 30)) > 0.5);
+  ctx.strokeStyle = "rgba(40, 40, 40, 0.7)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(p.x - 18, y - 18);
+  ctx.lineTo(p.x - 18, y);
+  ctx.moveTo(p.x + 18, y - 18);
+  ctx.lineTo(p.x + 18, y);
+  ctx.stroke();
+  ctx.fillStyle = "#5a5d58";
+  ctx.fillRect(p.x - 26, y - 2, 52, 5);
+  ctx.fillStyle = on ? "#eefcf4" : "#9aa39c";
+  ctx.fillRect(p.x - 23, y + 3, 46, 3);
+  if (on) {
+    ctx.fillStyle = "rgba(210, 255, 235, 0.10)";
+    ctx.beginPath();
+    ctx.moveTo(p.x - 23, y + 6);
+    ctx.lineTo(p.x + 23, y + 6);
+    ctx.lineTo(p.x + 70, p.y + 20);
+    ctx.lineTo(p.x - 70, p.y + 20);
+    ctx.closePath();
+    ctx.fill();
+    drawGlow(ctx, p.x, y + 5, 40, "rgba(220, 255, 240, 0.45)");
+  }
+}
+
+// A red paper lantern hanging from the ceiling, with gold caps, a tassel,
+// and a warm glow.
+function drawPaperLantern(ctx, f) {
+  const p = toScreen(f.x, f.y);
+  const y = p.y - 100;
+  ctx.strokeStyle = "rgba(60, 40, 20, 0.7)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(p.x, y - 30);
+  ctx.lineTo(p.x, y - 12);
+  ctx.stroke();
+  drawGlow(ctx, p.x, y, 50, "rgba(255, 150, 90, 0.4)");
+  ctx.fillStyle = "#c8372b";
+  ctx.beginPath();
+  ctx.ellipse(p.x, y, 11, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(90, 20, 15, 0.5)";
+  ctx.beginPath();
+  ctx.ellipse(p.x, y, 5, 12, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#c9a24a";
+  ctx.fillRect(p.x - 6, y - 14, 12, 3);
+  ctx.fillRect(p.x - 6, y + 11, 12, 3);
+  ctx.fillStyle = "#b8322a";
+  ctx.fillRect(p.x - 1, y + 14, 2, 9);
+}
+
 // --- Doors ---
 // A lighter wood frame (casing) around a door opening.
 function drawDoorFrame(ctx, x, y, w, h) {
@@ -1090,7 +1683,26 @@ function drawLights(ctx) {
     ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
   }
 
+  // Secret themed offices get their own warm or cold tint.
+  for (const room of ROOMS) {
+    if (!room.theme) continue;
+    const s1 = toScreen(room.rect.x, room.rect.y - 1), s2 = toScreen(room.rect.x + room.rect.w, room.rect.y + room.rect.h);
+    ctx.fillStyle = OFFICE_THEME_STYLE[room.theme].tint;
+    ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
+  }
+
+  const now = performance.now() / 1000;
   for (const f of FURNITURE) {
+    if (f.kind === "fireplace") {
+      // Firelight that breathes in and out a little.
+      const p = toScreen(f.x + f.w / 2, f.y + f.h);
+      const flicker = Math.sin(now * 7) * 3 + Math.sin(now * 13) * 2;
+      drawGlow(ctx, p.x, p.y - 12, 60 + flicker, "rgba(255, 150, 60, 0.45)");
+    } else if (f.kind === "fluorescent") {
+      drawFluorescent(ctx, f, now);
+    } else if (f.kind === "paperLantern") {
+      drawPaperLantern(ctx, f);
+    }
     if (f.kind === "pcDesk") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x - 6, p.y - 30, 40, f.screen + "66");

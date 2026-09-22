@@ -60,6 +60,8 @@
 
 - Not pushed yet: removing your office now asks with a cozy in-game card ("Keep it" / "Remove office") instead of the browser's plain box. Dinner chairs now face the table from all four sides, and the sideboard that faced the wall is now a tea cart. The hallway is cozy now: wood paneling on the lower wall, three framed paintings between warm wall lamps, a side table with a lamp, flowers and a key bowl under the mirror, a cushioned bench, coat hooks with coats and a scarf, boots lined up underneath, an umbrella stand, a long warm runner rug, and a soft golden glow.
 
+- Not pushed yet: secret office themes (an Easter egg). If someone named Props, Brightness or Kxiven (any capitals) builds an office, they get a themed one. Props gets a cozy lake house (log walls, stone fireplace with a flickering fire, lake window, canoe paddle and fishing rod on the wall, tackle box). Brightness gets a STALKER-style concrete bunker (bare concrete, pipes and rebar in the walls, a flickering fluorescent tube, a steel desk with a Geiger counter, an army crate with a gas mask, a rusty barrel, cold light). Kxiven gets a classical Chinese scholar's study (round moon window, calligraphy scroll, potted bamboo, bonsai, low writing desk with inkstone and brushes, floor cushion, red paper lantern). The names are in `config.js` (officeThemes). Voice, locking, knocking and removing work the same as any office.
+
 ## Next
 - Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 

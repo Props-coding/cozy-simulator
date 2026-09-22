@@ -85,6 +85,16 @@ const CONFIG = {
   // Starting volume for the Study music (0 to 1). There's a slider too.
   defaultLofiVolume: 0.5,
 
+  // --- Secret office themes (an Easter egg) ---
+  // If someone with one of these names builds an office, they get a
+  // special themed one instead of the default. Names are matched without
+  // caring about capital letters. Themes: "lakehouse", "stalker", "scholar".
+  officeThemes: {
+    props: "lakehouse",
+    brightness: "stalker",
+    kxiven: "scholar",
+  },
+
   // --- Study focus timer ---
   // Press F in the Study to start a shared focus session for everyone.
   // After the focus time there's a short break, then it ends. In minutes.

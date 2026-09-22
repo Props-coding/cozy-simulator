@@ -181,7 +181,8 @@ function buildHouse(offices) {
     }
 
     const id = "office-" + slot;
-    rooms.push({ id, name: office.ownerName + "'s Office", rect: { x: x0, y: 3, w: inner, h: OFFICE_BOTTOM - 3 }, office });
+    const theme = officeThemeFor(office.ownerName);
+    rooms.push({ id, name: office.ownerName + "'s Office", rect: { x: x0, y: 3, w: inner, h: OFFICE_BOTTOM - 3 }, office, theme });
     walls.push(
       { x: x0 - t, y: 3 - t / 2, w: 1 + t, h: t }, // wall above, left of the doorway
       { x: x0 + 2.6, y: 3 - t / 2, w: inner - 2.6, h: t }, // wall above, right of the doorway
@@ -189,14 +190,7 @@ function buildHouse(offices) {
       { x: x0 + inner, y: 3 - t / 2, w: t, h: OFFICE_BOTTOM - 3 + t * 1.5 }, // right side
       { x: x0 - t, y: OFFICE_BOTTOM, w: OFFICE_WIDTH + t, h: t, low: true } // bottom
     );
-    furniture.push(
-      { kind: "rug", x: x0 + 0.4, y: 4.4, w: 2.8, h: 1.6, color: "#7d6a8f", solid: false },
-      { kind: "plant", x: x0 + 0.2, y: 3.3, w: 0.6, h: 0.6 },
-      { kind: "bookshelf", x: x0 + 2.8, y: 3.3, w: 0.7, h: 0.5 },
-      { kind: "pcDesk", x: x0 + 0.3, y: 6.4, w: 1.7, h: 0.7, screen: office.color },
-      { kind: "stool", x: x0 + 0.85, y: 7.15, w: 0.6, h: 0.6, color: office.color, solid: false },
-      { kind: "plant", x: x0 + 2.8, y: 8.2, w: 0.6, h: 0.6 }
-    );
+    furniture.push(...(OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default)(x0, office));
     if (office.locked) {
       furniture.push({ kind: "closedDoor", x: x0 + 1, y: 3 + t / 2, w: 1.6, solid: false });
     }
@@ -212,6 +206,73 @@ function buildHouse(offices) {
 }
 
 buildHouse([]);
+
+// --- Office furniture ---
+// What goes in an office, given x0 (the office's left edge) and the office
+// itself. Everyone gets "default"; a few names get a secret themed office
+// instead (see officeThemes in config.js). Offices are 3.6 wide and run
+// from y 3 down to y 9, with the doorway at the top between x0 + 1 and
+// x0 + 2.6. The two short bits of wall either side of the doorway (y 3.2)
+// are where wall hangings go.
+const OFFICE_FURNITURE = {
+  default: (x0, office) => [
+    { kind: "rug", x: x0 + 0.4, y: 4.4, w: 2.8, h: 1.6, color: "#7d6a8f", solid: false },
+    { kind: "plant", x: x0 + 0.2, y: 3.3, w: 0.6, h: 0.6 },
+    { kind: "bookshelf", x: x0 + 2.8, y: 3.3, w: 0.7, h: 0.5 },
+    { kind: "pcDesk", x: x0 + 0.3, y: 6.4, w: 1.7, h: 0.7, screen: office.color },
+    { kind: "stool", x: x0 + 0.85, y: 7.15, w: 0.6, h: 0.6, color: office.color, solid: false },
+    { kind: "plant", x: x0 + 2.8, y: 8.2, w: 0.6, h: 0.6 },
+  ],
+
+  // Cozy lake house: a stone fireplace with a rug in front, a window onto
+  // the lake, a canoe paddle and fishing rod on the wall, a tackle box.
+  lakehouse: (x0, office) => [
+    { kind: "rug", x: x0 + 0.2, y: 5.3, w: 1.9, h: 1.2, color: "#8a3b2e", solid: false },
+    { kind: "paddle", x: x0, y: 3.2, w: 1.0, solid: false },
+    { kind: "lakeWindow", x: x0 + 2.65, y: 3.2, w: 0.9, solid: false },
+    { kind: "fireplace", x: x0 + 0.3, y: 4.4, w: 1.2, h: 0.6 },
+    { kind: "pcDesk", x: x0 + 1.9, y: 6.6, w: 1.5, h: 0.7, screen: office.color },
+    { kind: "stool", x: x0 + 2.35, y: 7.35, w: 0.6, h: 0.6, color: "#8a3b2e", solid: false },
+    { kind: "tackleBox", x: x0 + 0.3, y: 7.6, w: 0.7, h: 0.4 },
+  ],
+
+  // STALKER-style bunker: bare concrete, pipes and rebar in the walls, a
+  // flickering fluorescent tube, a steel desk with a Geiger counter, an
+  // army crate with a gas mask on it, and a rusty barrel.
+  stalker: (x0, office) => [
+    { kind: "pipes", x: x0 - 0.4, y: 3.2, w: 1.4, solid: false },
+    { kind: "rebar", x: x0 + 2.65, y: 3.2, w: 0.9, solid: false },
+    { kind: "crate", x: x0 + 2.65, y: 3.4, w: 0.85, h: 0.6 },
+    { kind: "metalDesk", x: x0 + 0.3, y: 6.4, w: 1.7, h: 0.7 },
+    { kind: "stool", x: x0 + 0.85, y: 7.15, w: 0.6, h: 0.6, color: "#5b6340", solid: false },
+    { kind: "barrel", x: x0 + 2.9, y: 7.4, w: 0.55, h: 0.55 },
+    { kind: "fluorescent", x: x0 + 1.8, y: 5.6, solid: false },
+  ],
+
+  // Classical Chinese scholar's study: a round moon window, a hanging
+  // calligraphy scroll, potted bamboo and a bonsai, and a low writing desk
+  // with an inkstone and brushes, with a cushion to kneel on and a paper
+  // lantern overhead.
+  scholar: (x0, office) => [
+    { kind: "rug", x: x0 + 0.4, y: 5.3, w: 2.8, h: 2.3, color: "#8f2f2a", solid: false },
+    { kind: "scroll", x: x0 + 0.2, y: 3.2, w: 0.55, solid: false },
+    { kind: "moonWindow", x: x0 + 2.7, y: 3.2, w: 0.8, solid: false },
+    { kind: "bamboo", x: x0 + 0.15, y: 7.9, w: 0.6, h: 0.5 },
+    { kind: "bonsai", x: x0 + 2.85, y: 7.9, w: 0.6, h: 0.5 },
+    { kind: "lowDesk", x: x0 + 0.9, y: 6.0, w: 1.8, h: 0.7 },
+    { kind: "floorCushion", x: x0 + 1.5, y: 6.75, w: 0.6, h: 0.5, solid: false },
+    { kind: "paperLantern", x: x0 + 1.8, y: 4.7, solid: false },
+  ],
+};
+
+// The secret office theme for a name, or null for a normal office.
+// Matched without caring about capital letters or stray spaces.
+function officeThemeFor(name) {
+  const key = String(name).trim().toLowerCase();
+  // Only names actually listed count (so a name like "constructor" can't
+  // accidentally match something built into JavaScript).
+  return Object.hasOwn(CONFIG.officeThemes, key) ? CONFIG.officeThemes[key] : null;
+}
 
 // The on-screen name of a room, given its id (used by the sidebar).
 function roomNameFor(id) {
