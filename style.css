@@ -104,9 +104,14 @@ canvas {
   flex-wrap: wrap;
 }
 
+/* Fixed width, so a long room name (like "Sam's Office") wraps onto a
+   second line instead of making the sidebar wider and shoving the house
+   sideways. */
 #sidebar {
   text-align: left;
-  min-width: 180px;
+  width: 230px;
+  box-sizing: border-box;
+  flex: none;
   background: #fffaf3;
   border: none;
   border-radius: 14px;

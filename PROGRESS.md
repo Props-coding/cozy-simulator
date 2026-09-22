@@ -44,6 +44,8 @@
 
 - Offices (build 0.20): a door at the far west end of the hallway. Stand by it and press E to build your own office (one per person, up to three). Each new office extends the hallway west, with the office below it, named after its owner ("Sam's Office"), with a desk whose screen and stool match your color. Voice is on inside an office, but only between people in that same office. The owner can press L inside to lock the door: nobody else can walk in, but anyone already inside can still walk out. Your browser remembers your office so it comes back each time you join; while you're offline it's gone. The view now scrolls to follow you once the house is wider than the screen. If two people build at the exact same moment, whoever was first keeps the spot and the other moves to the next free one.
 
+- Build 0.21: fixed the house shifting sideways when you walk into your office (the sidebar grew wider with the longer room name; it now has a fixed width and wraps long lines). Added a way to remove your office: press R inside it, and confirm.
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 - Small things noticed in review, not yet fixed: chimes still play in Dinner (should be fully silent), the screen stays blank until you answer the mic prompt, and there's no message if you deny the mic.

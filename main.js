@@ -193,7 +193,8 @@ function updateOffices() {
 // The short prompt under the room name, like "Press E to build your office".
 function actionHintFor(room) {
   if (room.office?.mine) {
-    return myOffice.locked ? "Your office is locked. Press L to unlock the door." : "This is your office. Press L to lock the door.";
+    const lock = myOffice.locked ? "Press L to unlock the door" : "Press L to lock the door";
+    return `Your office. ${lock}, or R to remove your office.`;
   }
   if (isNearBuildDoor(player)) {
     if (myOffice) return "You already have an office.";
@@ -220,6 +221,19 @@ window.addEventListener("keydown", (e) => {
     myOffice.locked = !myOffice.locked;
     saveMyOffice();
     playClickSound();
+  }
+
+  // Removing asks first, since it can't be undone (though you can always
+  // build a new one). You get moved back to the hallway once it's gone.
+  if (key === "r" && getCurrentRoom(player).office?.mine) {
+    if (window.confirm("Remove your office? Anyone inside will be moved to the hallway.")) {
+      myOffice = null;
+      saveMyOffice();
+      playClickSound();
+    }
+    // The confirm box swallows key releases, so forget any held keys to
+    // stop your character walking on by itself afterwards.
+    for (const k in keysDown) keysDown[k] = false;
   }
 });
 
