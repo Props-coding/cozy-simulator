@@ -72,7 +72,7 @@
 
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: north wing with offices that close gaps, bedrooms, Theater (replacing Gaming), conference room with a shared whiteboard, then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.
+- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), conference room with a shared whiteboard, then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.
 - Decisions needed before starting: where bedrooms go; what the conference room replaces or where it's added; which extras beyond hats and shoes to unlock.
 
 ## Open questions
