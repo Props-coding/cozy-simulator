@@ -48,9 +48,10 @@
 
 - Not pushed yet (waiting for more changes): redrew the office-building door (proper frame, carved panels, brass knob and sign, welcome mat) and the locked office door (double doors with a padlock, and the wall top now runs unbroken above it). Moved the Hallway label so it doesn't sit on the new mat.
 
+- Not pushed yet: Dinner is now fully silent (no chimes either), the house appears right away instead of waiting for you to answer the mic question, and if the mic is blocked the sidebar says so and explains how to allow it.
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
-- Small things noticed in review, not yet fixed: chimes still play in Dinner (should be fully silent), the screen stays blank until you answer the mic prompt, and there's no message if you deny the mic.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.

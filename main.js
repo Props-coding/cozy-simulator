@@ -51,6 +51,7 @@ const muteToggle = document.getElementById("mute-toggle");
 const volumeSlider = document.getElementById("volume-slider");
 const lofiVolumeSlider = document.getElementById("lofi-volume-slider");
 const lofiPlayerContainer = document.getElementById("lofi-player");
+const micStatus = document.getElementById("mic-status");
 
 onPeerStream(handlePeerStream);
 onPeerLeave((peerId) => {
@@ -90,17 +91,22 @@ joinButton.addEventListener("click", async () => {
   primeSoundEffects();
   playClickSound();
 
+  // Start drawing the house right away, instead of waiting for you to
+  // answer the browser's microphone question.
+  requestAnimationFrame(tick);
+
   try {
     connectToRoom(myName, myColor);
     const micStream = await requestMic();
     if (micStream) {
       addLocalStream(micStream);
+    } else {
+      micStatus.hidden = false;
     }
   } catch (err) {
     // Movement still works alone even if connecting to friends fails.
     console.error("Could not connect to other players:", err);
   }
-  requestAnimationFrame(tick);
 });
 
 // --- Offices ---

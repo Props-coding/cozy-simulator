@@ -11,6 +11,7 @@ function isVoiceRoom(roomId) {
 }
 
 let localTrack = null;
+let currentRoomId = "hallway"; // kept up to date by updateMicForRoom
 let masterMuted = false;
 let masterVolume = 1;
 const peerAudioElements = {}; // peerId -> <audio> element playing their voice
@@ -32,7 +33,8 @@ export function primeSoundEffects() {
 // seconds. type: the waveform shape, which changes the character of the
 // sound (sine = smooth and mellow, triangle = a bit softer and rounder).
 function playTone(freq, delayMs, { gain = 0.15, duration = 0.15, type = "sine" } = {}) {
-  if (!toneContext) return;
+  // Dinner means "away eating": no sounds at all, not even little chimes.
+  if (!toneContext || currentRoomId === "dinner") return;
   setTimeout(() => {
     const osc = toneContext.createOscillator();
     const gainNode = toneContext.createGain();
@@ -93,7 +95,9 @@ export async function requestMic() {
 }
 
 // Turns your mic on or off depending on which room you're standing in.
+// Called every frame, so it also keeps track of your room for the chimes.
 export function updateMicForRoom(roomId) {
+  currentRoomId = roomId;
   if (localTrack) {
     localTrack.enabled = isVoiceRoom(roomId);
   }
