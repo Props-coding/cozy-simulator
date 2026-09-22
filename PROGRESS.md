@@ -52,6 +52,8 @@
 
 - Not pushed yet: knocking. Stand in front of someone's locked office and press K. They hear a knock-knock and see "Sam is knocking on your office door." (You can knock once every 2 seconds.)
 
+- Not pushed yet: Dinner makeover. A little kitchen along the back wall (counter with a stove, pot and bread under a kitchen window, a sink, the fridge), a warm rug under the table, a table runner with plates at every seat and two glowing candles, a sideboard with stacked plates and a teapot, a plant, and the same soft golden glow as the Study.
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 

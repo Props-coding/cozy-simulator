@@ -366,6 +366,84 @@ const FURNITURE_DRAWERS = {
     ctx.fill();
   },
 
+  // Kitchen counter with a stove: cream cupboards, a wood worktop, two
+  // burners with a pot on one, and a cutting board with a loaf of bread.
+  stove(ctx, f) {
+    const c = drawCounter(ctx, f);
+    const { x, y, w, h } = c.top;
+    ctx.fillStyle = "#3a3a40";
+    roundRectPath(ctx, x + w - 36, y + 3, 32, h - 6, 3);
+    ctx.fill();
+    ctx.strokeStyle = "#6a6a72";
+    ctx.lineWidth = 1.5;
+    for (const bx of [x + w - 28, x + w - 12]) {
+      ctx.beginPath();
+      ctx.ellipse(bx, y + h / 2, 5, 3.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#c0554a"; // pot
+    ctx.fillRect(x + w - 35, y + h / 2 - 10, 14, 10);
+    ctx.fillStyle = "#a8473a";
+    ctx.fillRect(x + w - 37, y + h / 2 - 11, 18, 3);
+    ctx.fillStyle = "#d9b98f"; // cutting board
+    roundRectPath(ctx, x + 6, y + 4, 24, h - 8, 3);
+    ctx.fill();
+    ctx.fillStyle = "#c98a3c"; // bread
+    ctx.beginPath();
+    ctx.ellipse(x + 18, y + h / 2 - 1, 8, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A small counter with a sink and a tall tap.
+  sink(ctx, f) {
+    const c = drawCounter(ctx, f);
+    const { x, y, w, h } = c.top;
+    ctx.fillStyle = "#b8c2c8";
+    roundRectPath(ctx, x + 5, y + 4, w - 10, h - 8, 4);
+    ctx.fill();
+    ctx.fillStyle = "#8f9aa1";
+    roundRectPath(ctx, x + 8, y + 7, w - 16, h - 12, 3);
+    ctx.fill();
+    ctx.strokeStyle = "#cfd6da";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, y + 4);
+    ctx.lineTo(x + w / 2, y - 8);
+    ctx.quadraticCurveTo(x + w / 2, y - 12, x + w / 2 + 6, y - 10);
+    ctx.stroke();
+  },
+
+  // A low wooden sideboard with the good plates stacked up and a teapot.
+  sideboard(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const s = drawBlock(ctx, f.x, f.y, f.w, f.h, 30, WOOD);
+    const { x, y, w } = s.face;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 4.5, y + 4.5, w / 2 - 7, 20);
+    ctx.strokeRect(x + w / 2 + 2.5, y + 4.5, w / 2 - 7, 20);
+    drawKnob(ctx, x + w / 2 - 6, y + 15);
+    drawKnob(ctx, x + w / 2 + 6, y + 15);
+    const top = s.top;
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = i % 2 ? "#e8dcc8" : "#f7f1e6";
+      ctx.beginPath();
+      ctx.ellipse(top.x + 20, top.y + top.h / 2 - i * 2.5, 10, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#4a90a4"; // teapot
+    ctx.beginPath();
+    ctx.ellipse(top.x + top.w - 24, top.y + top.h / 2 - 5, 9, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(top.x + top.w - 26, top.y + top.h / 2 - 14, 4, 3);
+    ctx.strokeStyle = "#4a90a4";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(top.x + top.w - 15, top.y + top.h / 2 - 5);
+    ctx.lineTo(top.x + top.w - 9, top.y + top.h / 2 - 10);
+    ctx.stroke();
+  },
+
   fridge(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const fr = drawBlock(ctx, f.x, f.y, f.w, f.h, 46, "#dfe6ea");
@@ -513,8 +591,34 @@ const FURNITURE_DRAWERS = {
   table(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#8b6b4a");
-    // Fruit bowl in the middle of the tabletop.
     const cx = t.top.x + t.top.w / 2, cy = t.top.y + t.top.h / 2;
+    // A cloth runner down the middle of the table.
+    ctx.fillStyle = "#c0554a";
+    ctx.fillRect(t.top.x + 4, cy - 8, t.top.w - 8, 16);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(t.top.x + 4, cy - 6, t.top.w - 8, 1);
+    ctx.fillRect(t.top.x + 4, cy + 5, t.top.w - 8, 1);
+    // A plate in front of each chair.
+    const plates = [[0, -t.top.h / 2 + 8], [0, t.top.h / 2 - 7], [-t.top.w / 2 + 10, 0], [t.top.w / 2 - 10, 0]];
+    for (const [dx, dy] of plates) {
+      ctx.fillStyle = "#f7f1e6";
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy + dy, 7, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Two candles either side of the fruit bowl.
+    for (const dx of [-22, 22]) {
+      ctx.fillStyle = "#f3e6c8";
+      ctx.fillRect(cx + dx - 2, cy - 12, 4, 10);
+      ctx.fillStyle = "#ffb347";
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy - 15, 1.8, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Fruit bowl in the middle of the tabletop.
     ctx.fillStyle = "#e8dcc8";
     ctx.beginPath();
     ctx.ellipse(cx, cy, 16, 9, 0, 0, Math.PI * 2);
@@ -535,9 +639,10 @@ const FURNITURE_DRAWERS = {
   },
 
   // Hung on a wall face: a window with curtains.
+  // (A "short" window sits higher up, so it clears a kitchen counter.)
   window(ctx, f) {
     const a = toScreen(f.x, f.y);
-    const top = a.y - WALL_HEIGHT + 6, w = f.w * TILE, h = 24;
+    const top = a.y - WALL_HEIGHT + (f.short ? 3 : 6), w = f.w * TILE, h = f.short ? 15 : 24;
     ctx.fillStyle = "rgba(40, 25, 10, 0.18)"; // small shadow just below it
     ctx.fillRect(a.x + 2, top + 3, w, h);
     ctx.fillStyle = WOOD_DARK;
@@ -649,6 +754,23 @@ const FURNITURE_DRAWERS = {
   },
 };
 
+// A kitchen counter: cream cupboards with a wood worktop. Returns the
+// block's boxes so the stove and sink can add their details on top.
+function drawCounter(ctx, f) {
+  drawShadow(ctx, f.x, f.y, f.w, f.h);
+  const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#e8dcc8");
+  ctx.fillStyle = "#b58a5c";
+  ctx.fillRect(c.top.x, c.top.y, c.top.w, c.top.h);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.fillRect(c.top.x, c.top.y, c.top.w, 1.5);
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
+  ctx.lineWidth = 1;
+  for (let dx = 0; dx + 16 <= c.face.w; dx += 18) {
+    ctx.strokeRect(c.face.x + dx + 2.5, c.face.y + 3.5, 14, c.face.h - 8);
+  }
+  return c;
+}
+
 // --- Doors ---
 // A lighter wood frame (casing) around a door opening.
 function drawDoorFrame(ctx, x, y, w, h) {
@@ -712,15 +834,18 @@ function drawLamp(ctx, x, y) {
 // Warm light effects, drawn over everything in a final pass so glows
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
-  // The Study gets a soft golden wash, like a room lit by lamps at night.
-  const study = ROOMS.find((r) => r.id === "study").rect;
-  const s1 = toScreen(study.x, study.y - 1), s2 = toScreen(study.x + study.w, study.y + study.h);
-  const cx = (s1.x + s2.x) / 2, cy = (s1.y + s2.y) / 2;
-  const wash = ctx.createRadialGradient(cx, cy, 20, cx, cy, 260);
-  wash.addColorStop(0, "rgba(255, 190, 100, 0.12)");
-  wash.addColorStop(1, "rgba(60, 30, 10, 0.12)");
-  ctx.fillStyle = wash;
-  ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
+  // Study and Dinner get a soft golden wash, like rooms lit by lamps at
+  // night: warm in the middle, a little dimmer at the edges.
+  for (const id of ["study", "dinner"]) {
+    const rect = ROOMS.find((r) => r.id === id).rect;
+    const s1 = toScreen(rect.x, rect.y - 1), s2 = toScreen(rect.x + rect.w, rect.y + rect.h);
+    const cx = (s1.x + s2.x) / 2, cy = (s1.y + s2.y) / 2;
+    const wash = ctx.createRadialGradient(cx, cy, 20, cx, cy, 260);
+    wash.addColorStop(0, "rgba(255, 190, 100, 0.12)");
+    wash.addColorStop(1, "rgba(60, 30, 10, 0.12)");
+    ctx.fillStyle = wash;
+    ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
+  }
 
   for (const f of FURNITURE) {
     if (f.kind === "pcDesk") {
@@ -729,6 +854,9 @@ function drawLights(ctx) {
     } else if (f.kind === "studyTable") {
       const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
       drawGlow(ctx, p.x, p.y - 44, 40, "rgba(255, 215, 130, 0.5)");
+    } else if (f.kind === "table") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+      for (const dx of [-22, 22]) drawGlow(ctx, p.x + dx, p.y - 24 - 15, 14, "rgba(255, 190, 110, 0.55)");
     } else if (f.kind === "floorLamp") {
       const p = toScreen(f.x + f.w / 2, f.y + f.h);
       drawGlow(ctx, p.x, p.y - 58, 60, "rgba(255, 210, 130, 0.45)");

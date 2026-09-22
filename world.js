@@ -98,8 +98,16 @@ const BASE_FURNITURE = [
   { kind: "plant", x: 11.1, y: 10.1, w: 0.6, h: 0.6 },
   { kind: "plant", x: 6.4, y: 4.3, w: 0.6, h: 0.6 },
 
-  // Dinner
+  // Dinner: a little kitchen along the back wall (stove counter under a
+  // window, sink, fridge), a rug under the dining table, a sideboard with
+  // the good plates, and a plant.
+  { kind: "rug", x: 13.3, y: 5.1, w: 3.4, h: 3.6, color: "#b5763a", solid: false },
+  { kind: "window", x: 12.3, y: 3.2, w: 1.5, short: true, solid: false },
+  { kind: "stove", x: 12.2, y: 3.3, w: 1.7, h: 0.6 },
+  { kind: "sink", x: 16.1, y: 3.3, w: 0.75, h: 0.6 },
   { kind: "fridge", x: 16.9, y: 3.3, w: 0.8, h: 0.6 },
+  { kind: "sideboard", x: 12.2, y: 10.0, w: 1.8, h: 0.6 },
+  { kind: "plant", x: 17.2, y: 10.1, w: 0.6, h: 0.6 },
   { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6 },
   { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6 },
   { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6 },
