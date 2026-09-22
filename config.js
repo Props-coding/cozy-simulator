@@ -1,12 +1,14 @@
 // Settings you might want to change. Comments explain each one.
 
 const CONFIG = {
-  // Canvas size (the house view), in pixels.
-  canvasWidth: 800,
-  canvasHeight: 600,
+  // Canvas size (the house view), in pixels. Bigger than before since
+  // the isometric view needs more room to show depth.
+  canvasWidth: 1000,
+  canvasHeight: 620,
 
-  // How fast your character walks, in pixels per second.
-  playerSpeed: 220,
+  // How fast your character walks, in grid units per second (a "grid
+  // unit" is roughly one floor tile; each room is about 6 units wide).
+  playerSpeed: 5,
 
   // Room names shown on screen. Change these if you want different labels.
   roomNames: {

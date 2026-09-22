@@ -77,7 +77,8 @@ const ctx = canvas.getContext("2d");
 let myName = "Friend";
 let myColor = "#e05a47";
 
-const player = { x: 380, y: 70 };
+// Starting spot: roughly the middle of the hallway (grid units, not pixels).
+const player = { x: 8.7, y: 1.2 };
 
 joinButton.addEventListener("click", async () => {
   myName = nameInput.value.trim() || "Friend";
@@ -195,13 +196,12 @@ function tick(now) {
     broadcastPosition(myName, myColor, player.x, player.y, currentRoom.id, myTimeZone);
   }
 
-  drawWorld(ctx);
-  for (const peer of getPeers()) {
+  const scenePlayers = getPeers().map((peer) => {
     const shown = getSmoothedPosition(peer, dt);
-    const badge = peer.room === "dinner" ? "eating" : null;
-    drawPlayer(ctx, shown.x, shown.y, peer.color, peer.name, badge);
-  }
-  drawPlayer(ctx, player.x, player.y, myColor, myName, currentRoom.id === "dinner" ? "eating" : null);
+    return { x: shown.x, y: shown.y, color: peer.color, name: peer.name, badge: peer.room === "dinner" ? "eating" : null };
+  });
+  scenePlayers.push({ x: player.x, y: player.y, color: myColor, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null });
+  drawScene(ctx, scenePlayers);
 
   updateSidebar(currentRoom.name);
 
