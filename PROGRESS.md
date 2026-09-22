@@ -59,7 +59,7 @@
 - Not pushed yet: Study focus timer. In the Study, press F to start a shared 25 minute focus session for everyone (press F again to stop it). A little chalkboard over the study table counts down, visible from anywhere in the house. When focus ends, a gentle chime starts a 5 minute break, then another chime when the break is over. Friends who join mid-session see the timer too. Lengths are in `config.js` (focusMinutes, breakMinutes).
 
 ## Next
-- Confirm Milestone 7 and the LAN room look and feel right.
+- Push the "Not pushed yet" batch above as build 0.22 when you're ready, then test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
