@@ -30,6 +30,7 @@
   - A newly joined friend briefly flew in from off-screen, because their starting spot was still in old pixel units. They now start in the hallway.
   - If an ad blocker stopped YouTube from loading at all, Study stayed silent. It now switches to the backup radio stream in that case too.
   - Removed the long dashes from the sidebar text.
+  - Confirmed working on the live site.
 
 - State/Country display is on hold (would need a third-party IP lookup service).
 
