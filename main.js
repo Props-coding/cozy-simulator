@@ -159,11 +159,11 @@ function peerRow(color, text) {
 }
 
 function updateSidebar(myRoomName) {
-  let rows = peerRow(myColor, `${myName} (you) — ${myRoomName} — ${formatLocalTime(myTimeZone)}`);
+  let rows = peerRow(myColor, `${myName} (you) · ${myRoomName} · ${formatLocalTime(myTimeZone)}`);
   for (const peer of getPeers()) {
     const time = formatLocalTime(peer.tz);
     const roomName = CONFIG.roomNames[peer.room] || peer.room;
-    rows += peerRow(peer.color, `${peer.name} — ${roomName}${time ? " — " + time : ""}`);
+    rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`);
   }
   peerList.innerHTML = rows;
 }

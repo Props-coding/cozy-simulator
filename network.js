@@ -10,6 +10,7 @@ import { joinRoom } from "https://esm.sh/trystero@0.25.4/nostr";
 
 let room = null;
 let positionAction = null;
+let localStream = null; // your mic, once you've allowed it
 const peers = {}; // peerId -> { name, color, x, y, room }
 
 // Set these before or after connectToRoom, doesn't matter, they're only
@@ -33,6 +34,7 @@ export function onPeerJoin(callback) {
 // Sends your mic audio to everyone in the room. Call once, after both
 // connectToRoom and mic permission have gone through.
 export function addLocalStream(stream) {
+  localStream = stream;
   if (room) {
     room.addStream(stream);
   }
@@ -68,7 +70,12 @@ export function connectToRoom(myName, myColor) {
   };
 
   room.onPeerJoin = (peerId) => {
-    peers[peerId] = { name: "...", color: "#999", x: 400, y: 300, room: "hallway" };
+    // Placeholder spot in the middle of the hallway (grid units), until
+    // their first real position message arrives a moment later.
+    peers[peerId] = { name: "...", color: "#999", x: 8.7, y: 1.2, room: "hallway" };
+    // addLocalStream only reaches friends who were already here, so
+    // anyone arriving later needs our mic sent to them directly.
+    if (localStream) room.addStream(localStream, { target: peerId });
     // Tell the new friend who we are right away, don't wait for the next tick.
     positionAction({ name: myName, color: myColor, ...lastKnownPosition });
     externalOnPeerJoin?.(peerId);

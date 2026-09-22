@@ -1,6 +1,6 @@
 // The house layout: rooms, walls, and movement/collision logic.
 // Positions here are in "grid units" (an abstract floor plan), not screen
-// pixels — render.js turns a grid position into a screen pixel position
+// pixels. render.js turns a grid position into a screen pixel position
 // for the isometric view. Keeping that math in one place (render.js) is
 // what keeps every object's positioning in sync; this file never touches
 // pixels directly.

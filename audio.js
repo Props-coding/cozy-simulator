@@ -143,13 +143,14 @@ let ytPlayerReady = false;
 let backupAudioEl = null;
 
 function loadYouTubeApi() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (window.YT && window.YT.Player) {
       resolve();
       return;
     }
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
+    tag.onerror = reject; // e.g. an ad blocker stopped YouTube from loading at all
     document.head.appendChild(tag);
     window.onYouTubeIframeAPIReady = resolve;
   });
@@ -164,12 +165,19 @@ function startBackupStream() {
   backupAudioEl.play().catch((err) => console.warn("Backup lo-fi stream blocked:", err));
 }
 
+function switchToBackup() {
+  console.warn("Lo-fi YouTube embed failed, switching to the backup stream.");
+  lofiMode = "backup";
+  startBackupStream();
+}
+
 function startYouTubeStream(containerEl) {
   if (ytPlayer) {
     if (ytPlayerReady) ytPlayer.playVideo();
     return;
   }
-  loadYouTubeApi().then(() => {
+  loadYouTubeApi().catch(switchToBackup).then(() => {
+    if (lofiMode === "backup") return;
     ytPlayer = new YT.Player(containerEl, {
       videoId: CONFIG.lofiYouTubeVideoId,
       playerVars: { autoplay: 1, controls: 0 },
@@ -179,11 +187,7 @@ function startYouTubeStream(containerEl) {
           ytPlayer.setVolume(0);
           ytPlayer.playVideo();
         },
-        onError: () => {
-          console.warn("Lo-fi YouTube embed failed, switching to the backup stream.");
-          lofiMode = "backup";
-          startBackupStream();
-        },
+        onError: switchToBackup,
       },
     });
   });
