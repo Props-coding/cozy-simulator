@@ -57,24 +57,25 @@ Always keep a visible master mute and a volume control, in case someone needs to
 
 ## World and movement
 
-- Isometric 2D on an HTML canvas, one screen (switched from top-down in Milestone 7; see "Isometric rendering" below for how this is built). Layout: a hallway in the middle with Gaming, Study, and Dinner rooms around it.
-- Arrow keys or WASD, translated into isometric screen movement. Walls with doorways. Smooth movement.
+- Top-down 2D on an HTML canvas, one screen, in a Stardew Valley-style look (see "Stardew-style rendering" below for what that means and how it is built; this replaces an earlier attempt at a rotated isometric view, which was tried in Milestone 7 and looked wrong). Layout: a hallway in the middle with Gaming, Study, and Dinner rooms around it.
+- Simple square floor tiles, viewed straight from above. Objects and characters are drawn standing upright on the tiles, not laid flat.
+- Arrow keys or WASD. Walls with doorways. Smooth movement.
 - Each player has a name, color, position, and current room.
 - Broadcast position about 10 to 15 times per second and smooth it on the receiving side.
 - **Join screen:** name, color choice, and a Join button.
 - A small sidebar lists who is in which room.
 
-## Isometric rendering
+## Stardew-style rendering
 
-This section governs the Milestone 7 rewrite. The earlier flat top-down look was missing depth cues; isometric fixes that, but only if these are followed consistently. Treat this as the checklist for "does the rewrite look right," not just "does it run."
+This section governs the Milestone 7 rewrite. It replaces the earlier "Isometric rendering" approach, which produced a tilted, hard-to-read diamond-shaped room. This is the easier, more forgiving technique actual cozy top-down games use, and it is the checklist for "does the rewrite look right," not just "does it run."
 
-- **Grid-based positions, not hand-placed pixels.** Every object (wall, furniture, character) gets a position expressed as a grid coordinate (row, column, and height for stacked objects). Screen x/y is always computed from that grid coordinate through one shared conversion formula, never set directly in pixels. If two objects use different math to land on screen, they will drift out of alignment as more get added. Worth a quick check that this is actually how positioning works before building more on top of it.
-- **Three-tone faces on every solid object.** Walls, furniture, and characters should each be built from a top face, a left face, and a right face, with the top lightest, one side a medium shade, and the other side the darkest, all from the same base color. This is what makes a shape read as a 3D block instead of a flat sticker sitting on the floor. It matters more than any lighting effect layered on top.
-- **One consistent light direction, applied everywhere.** Pick a single light source, typically straight above or a fixed diagonal, and use it for every object's shading and every shadow. Mixed light directions are one of the fastest ways to make an isometric scene look wrong.
-- **Walls have height, not just a floor-colored edge.** A wall needs a visible vertical face below its top edge, like a box standing on the grid, not a flat colored line marking a boundary.
-- **Shadows under every object and character.** A soft dark shape right at the base of each object, where it touches the floor. This is the single biggest depth cue and applies in isometric exactly as it did in the old top-down view.
-- **Draw order sorts by depth and vertical position together, not one axis alone.** In isometric, an object closer to the camera and lower on the grid needs to draw in front of one further back or higher up, and both factors matter at once. Getting this wrong is the most likely bug: objects popping in front of walls or furniture they should be behind. Worth specific testing (walk the character behind and in front of furniture and walls) before calling this milestone done.
-- **Floor tiles, even subtle.** A grid of tiles with a faint alternating shade or a thin edge line per tile. This matters more here than it did in top-down, since there is no wall directly behind objects to give the eye something to compare against.
+- **The floor stays a simple grid, viewed straight down.** Square tiles, not diamonds. This is what makes rooms read clearly as rooms, and it avoids the rotated-grid math that made the isometric attempt fragile.
+- **Objects and characters are drawn standing up, not flat on the floor.** A tree, a table, a person: each is a simple upright shape (or sprite) planted on a tile, tall enough to have a top and a bottom, rather than a flat painted rectangle.
+- **A soft shadow under every object and character, right where it touches the floor.** This is the single biggest depth cue in this style, more than any shading trick. Every wall decoration, every piece of furniture, every character needs one.
+- **Draw order by vertical screen position, one simple rule: whatever is lower on screen draws in front.** No depth axis to juggle, no two-factor sort. When the character walks below a table, the character overlaps the table's bottom edge; when above it, the table overlaps the character. This one rule does most of the work of "standing in a room" that isometric was trying to achieve with much more math.
+- **A little shading on tall objects, but nowhere near full three-face treatment.** A slightly darker band at the base of a tree or piece of furniture, and a slightly lighter top, is enough. No need for separate top, left, and right faces.
+- **One consistent light direction for that shading,** same as before: pick one (light from above works fine here) and use it everywhere so shadows and shading agree with each other.
+- **Walls stay simple colored panels with a baseboard line,** not standing 3D boxes. A thin darker line where a wall meets the floor is enough to read as a vertical surface without building it as a box.
 
 ## Suggested file layout
 
@@ -83,7 +84,7 @@ index.html        the page
 style.css         looks
 main.js           starts everything
 world.js          house layout, movement, room detection
-render.js         isometric grid math and drawing (walls, floor tiles, shading, draw-order sort)
+render.js         Stardew-style drawing: floor tiles, object shadows and shading, draw-order sort
 network.js        Trystero connection, sharing positions
 audio.js          voice rules, lo-fi, mute and volume
 config.js         easy settings: room name, password, stream URL, colors, room names
@@ -105,8 +106,8 @@ Do these in order. Stop after each one for the user to test.
 4. **Voice with room rules.** Talk in Gaming, silent elsewhere.
 5. **Lo-fi and Dinner.** Study music and full mute in Dinner, plus the master mute and volume.
 6. **Real test with friends** on different networks. Fix problems found.
-7. **Isometric rendering rewrite.** Replace the flat top-down look with a proper isometric view, following the "Isometric rendering" checklist above: grid-based positions, three-tone shading, consistent light direction, walled height, shadows, correct draw order, and floor tiles. Test by walking the character in front of and behind furniture and walls before calling this done.
-8. **Further polish.** Cozier look, join and leave sounds, nicer characters, once the isometric base is solid.
+7. **Stardew-style rendering rewrite.** Replace the flat look with the Stardew-style checklist above: simple floor tiles, upright objects with shadows, one light direction, draw order by vertical position, and simple baseboard walls. An earlier attempt at rotated isometric view was tried here and looked wrong, this replaces it. Test by walking the character in front of and behind furniture before calling this done.
+8. **Further polish.** Cozier look, join and leave sounds, nicer characters, once the rendering base is solid.
 
 ## Testing notes
 
@@ -145,7 +146,7 @@ Add one at a time and ask the user which to do next.
 - [ ] Study room: lo-fi plays and nobody's voice is heard
 - [ ] Dinner room: everything is silent
 - [ ] Master mute and volume work
-- [ ] Isometric view reads clearly (correct draw order, shading, shadows, floor tiles)
+- [ ] Rendering reads clearly (shadows, correct draw order, floor tiles, consistent shading)
 - [ ] Settings are easy to change in `config.js`
 - [ ] `README.md` explains in plain language how to update the site
 
