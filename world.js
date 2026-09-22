@@ -52,7 +52,8 @@ const WALLS = [
 // stands on (its "footprint"), in grid units. render.js decides what each
 // kind looks like. Solid pieces block walking, so you can walk in front of
 // and behind a table but not through it. Rugs, windows and the hanging
-// lamp are "solid: false" since you can walk over or under them.
+// lamp are "solid: false" since you can walk over or under them. Stools
+// are also not solid: you stand on one to "sit" at a computer.
 // Windows and mirrors hang on a wall: their y is the bottom edge of the
 // wall they're on.
 const FURNITURE = [
@@ -61,11 +62,18 @@ const FURNITURE = [
   { kind: "plant", x: 16.9, y: 0.3, w: 0.6, h: 0.6 },
   { kind: "mirror", x: 2, y: 0, w: 0.7, solid: false },
 
-  // Gaming
-  { kind: "rug", x: 0.4, y: 4.4, w: 3.4, h: 1.4, solid: false },
-  { kind: "tv", x: 0.3, y: 3.3, w: 1.5, h: 0.5 },
-  { kind: "couch", x: 0.3, y: 6.1, w: 3, h: 0.9 },
-  { kind: "sideTable", x: 3.7, y: 6.2, w: 0.7, h: 0.7 },
+  // Gaming: a LAN room, two rows of two computer desks with a stool in
+  // front of each. "screen" is the color of that monitor's game.
+  { kind: "pcDesk", x: 0.3, y: 3.3, w: 1.7, h: 0.7, screen: "#7fd67a" },
+  { kind: "stool", x: 0.85, y: 4.05, w: 0.6, h: 0.6, solid: false },
+  { kind: "pcDesk", x: 4.0, y: 3.3, w: 1.7, h: 0.7, screen: "#ff9a6b" },
+  { kind: "stool", x: 4.55, y: 4.05, w: 0.6, h: 0.6, solid: false },
+  { kind: "pcDesk", x: 0.3, y: 6.4, w: 1.7, h: 0.7, screen: "#b78cff" },
+  { kind: "stool", x: 0.85, y: 7.15, w: 0.6, h: 0.6, solid: false },
+  { kind: "pcDesk", x: 4.0, y: 6.4, w: 1.7, h: 0.7, screen: "#6fc8ff" },
+  { kind: "stool", x: 4.55, y: 7.15, w: 0.6, h: 0.6, solid: false },
+  { kind: "fridge", x: 0.4, y: 9.7, w: 0.8, h: 0.6 },
+  { kind: "snackTable", x: 4.2, y: 9.9, w: 1.4, h: 0.6 },
 
   // Study
   { kind: "bookshelf", x: 6.4, y: 3.3, w: 1.4, h: 0.5 },

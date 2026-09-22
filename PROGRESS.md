@@ -36,8 +36,10 @@
 
 - Milestone 7, Stardew-style rewrite (build 0.17): the house is now seen straight from above with square floor tiles, and walls, furniture and characters stand upright with a lighter top, a darker base, and a soft shadow right underneath (one light, from above). Whatever stands lower on screen is drawn in front, so you can walk behind the couch or the dinner table and be partly hidden, or in front and overlap it. Furniture is now solid, you walk around it instead of through it. Walls are simple cream panels with a wood baseboard. Arrow keys move straight up/down/left/right on screen again. Furniture positions are listed in `world.js` (FURNITURE), how each piece looks is in `render.js`. Names and "eating" badges always stay visible on top, even behind furniture. Needs your look in the browser.
 
+- Gaming room turned into a LAN room (build 0.18): four computer desks in two rows, each with a glowing monitor (a different game color on each), a PC tower with a light strip, keyboard and mouse, and a stool in front. Stand on a stool to "sit" at a computer. A mini fridge and a snack table with chips and sodas at the back. The old couch and TV are gone (the couch was also facing the wrong way).
+
 ## Next
-- Confirm Milestone 7 looks and feels right.
+- Confirm Milestone 7 and the LAN room look and feel right.
 - Small things noticed in review, not yet fixed: chimes still play in Dinner (should be fully silent), the screen stays blank until you answer the mic prompt, and there's no message if you deny the mic.
 
 ## Open questions

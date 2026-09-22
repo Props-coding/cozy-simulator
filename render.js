@@ -181,45 +181,83 @@ const FURNITURE_DRAWERS = {
     }
   },
 
-  tv(ctx, f) {
+  // A LAN station: desk with a PC tower, keyboard and a monitor facing
+  // you. Whoever stands on the stool in front covers the desk's front,
+  // with the screen still glowing above their head.
+  pcDesk(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const stand = drawBlock(ctx, f.x, f.y, f.w, f.h, 18, WOOD);
-    // Screen sitting on the stand.
-    const sx = stand.top.x + 6, sw = stand.top.w - 12, sh = 30;
-    const sy = stand.top.y + stand.top.h / 2 - sh;
-    ctx.fillStyle = "#26262c";
-    roundRectPath(ctx, sx, sy, sw, sh, 3);
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#3d3a45");
+    const { x, y, w, h } = d.top;
+    // Monitor on the back of the desk.
+    const mw = 44, mh = 28, mx = x + w / 2 - mw / 2 - 6, my = y - mh + 6;
+    ctx.fillStyle = "#1e1e24";
+    ctx.fillRect(mx + mw / 2 - 3, my + mh - 2, 6, 8); // stand
+    roundRectPath(ctx, mx, my, mw, mh, 3);
     ctx.fill();
-    const grad = ctx.createLinearGradient(0, sy, 0, sy + sh);
-    grad.addColorStop(0, "#8fe3ff");
-    grad.addColorStop(1, "#4fb8e8");
-    ctx.fillStyle = grad;
-    ctx.fillRect(sx + 3, sy + 3, sw - 6, sh - 6);
+    const screen = ctx.createLinearGradient(0, my, 0, my + mh);
+    screen.addColorStop(0, shadeColor(f.screen, 30));
+    screen.addColorStop(1, shadeColor(f.screen, -40));
+    ctx.fillStyle = screen;
+    ctx.fillRect(mx + 3, my + 3, mw - 6, mh - 6);
+    // A few blocky "game" shapes on the screen.
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.fillRect(mx + 8, my + mh - 11, 6, 6);
+    ctx.fillRect(mx + 20, my + 8, 10, 4);
+    ctx.fillRect(mx + 30, my + mh - 13, 6, 8);
+    // PC tower on the right, with a colored light strip.
+    const tx = x + w - 16, ty = y - 18;
+    ctx.fillStyle = "#26262c";
+    roundRectPath(ctx, tx, ty, 12, 26, 2);
+    ctx.fill();
+    ctx.fillStyle = f.screen;
+    ctx.fillRect(tx + 2, ty + 4, 2, 18);
+    // Keyboard and mouse at the front edge.
+    ctx.fillStyle = "#1e1e24";
+    ctx.fillRect(mx + 4, y + h - 11, 30, 7);
+    ctx.beginPath();
+    ctx.ellipse(mx + 42, y + h - 7, 3, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
   },
 
-  couch(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const color = "#4a5568";
-    drawBlock(ctx, f.x, f.y, f.w, 0.3, 36, "#404b5e"); // backrest
-    const seat = drawBlock(ctx, f.x, f.y + 0.3, f.w, f.h - 0.3, 20, color);
-    // Cushion seams on the seat.
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
-    ctx.lineWidth = 1.5;
-    for (const t of [1 / 3, 2 / 3]) {
-      ctx.beginPath();
-      ctx.moveTo(seat.top.x + seat.top.w * t, seat.top.y + 2);
-      ctx.lineTo(seat.top.x + seat.top.w * t, seat.top.y + seat.top.h - 2);
-      ctx.stroke();
-    }
-    // Arms on each end.
-    drawBlock(ctx, f.x, f.y, 0.3, f.h, 28, "#3f495a");
-    drawBlock(ctx, f.x + f.w - 0.3, f.y, 0.3, f.h, 28, "#3f495a");
+  // A round stool you stand on to sit at a computer.
+  stool(ctx, f) {
+    const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y + 6, 13, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2b2b33";
+    ctx.fillRect(c.x - 2, c.y - 4, 4, 10);
+    ctx.fillStyle = "#c0554a";
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y - 5, 11, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
   },
 
-  sideTable(ctx, f) {
+  fridge(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, WOOD);
-    drawLamp(ctx, t.top.x + t.top.w / 2, t.top.y + t.top.h / 2);
+    const fr = drawBlock(ctx, f.x, f.y, f.w, f.h, 46, "#dfe6ea");
+    ctx.fillStyle = "#9aa6ad";
+    ctx.fillRect(fr.face.x + fr.face.w - 8, fr.face.y + 8, 3, 14); // handle
+    ctx.fillStyle = "#c0554a";
+    ctx.fillRect(fr.face.x + 6, fr.face.y + 8, 8, 8); // a magnet
+  },
+
+  snackTable(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, WOOD);
+    const { x, y, h } = t.top;
+    // A chips bag and a few soda cans.
+    ctx.fillStyle = "#e0a84c";
+    roundRectPath(ctx, x + 8, y + h / 2 - 14, 16, 20, 3);
+    ctx.fill();
+    const cans = ["#c0554a", "#4a90a4", "#7a9e5c"];
+    cans.forEach((color, i) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 32 + i * 9, y + h / 2 - 10, 6, 12);
+      ctx.fillStyle = "#cfd6da";
+      ctx.fillRect(x + 32 + i * 9, y + h / 2 - 11, 6, 2);
+    });
   },
 
   bookshelf(ctx, f) {
@@ -333,12 +371,9 @@ function drawLamp(ctx, x, y) {
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
   for (const f of FURNITURE) {
-    if (f.kind === "tv") {
-      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
-      drawGlow(ctx, p.x, p.y - 30, 44, "rgba(111, 211, 255, 0.25)");
-    } else if (f.kind === "sideTable") {
-      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
-      drawGlow(ctx, p.x, p.y - 40, 28, "rgba(255, 210, 130, 0.5)");
+    if (f.kind === "pcDesk") {
+      const p = toScreen(f.x + f.w / 2, f.y);
+      drawGlow(ctx, p.x - 6, p.y - 30, 40, f.screen + "66");
     } else if (f.kind === "desk") {
       const p = toScreen(f.x + f.w, f.y + f.h / 2);
       drawGlow(ctx, p.x - 16, p.y - 44, 26, "rgba(255, 220, 130, 0.55)");
@@ -368,11 +403,13 @@ function drawLights(ctx) {
 // Walls and furniture never move, so their draw-order list is built once.
 // `sortY` is where each thing touches the floor (the bottom edge of its
 // footprint): things with a bigger sortY are lower on screen and draw in
-// front. Wall hangings sort just after the wall they hang on.
+// front. Wall hangings sort just after the wall they hang on. Things you
+// can stand on (like stools) sort by their top edge, so you're always
+// drawn over them.
 const STATIC_SPRITES = [
   ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
   ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
-    sortY: f.h === undefined ? f.y + 0.001 : f.y + f.h,
+    sortY: f.h === undefined ? f.y + 0.001 : f.solid === false ? f.y : f.y + f.h,
     draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
   })),
 ];
