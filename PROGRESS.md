@@ -50,6 +50,8 @@
 
 - Not pushed yet: Dinner is now fully silent (no chimes either), the house appears right away instead of waiting for you to answer the mic question, and if the mic is blocked the sidebar says so and explains how to allow it.
 
+- Not pushed yet: knocking. Stand in front of someone's locked office and press K. They hear a knock-knock and see "Sam is knocking on your office door." (You can knock once every 2 seconds.)
+
 ## Next
 - Confirm Milestone 7 and the LAN room look and feel right.
 

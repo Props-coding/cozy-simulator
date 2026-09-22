@@ -8,6 +8,8 @@ import {
   onPeerStream,
   onPeerLeave,
   onPeerJoin,
+  onKnock,
+  sendKnock,
 } from "./network.js";
 import {
   requestMic,
@@ -26,6 +28,7 @@ import {
   playLeaveSound,
   playRoomChangeSound,
   playClickSound,
+  playKnockSound,
 } from "./audio.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -155,7 +158,7 @@ function firstFreeSlot(taken) {
 function gatherOffices(peers) {
   const claims = peers
     .filter((p) => isValidOffice(p.office))
-    .map((p) => ({ slot: p.office.slot, since: p.office.since, locked: !!p.office.locked, ownerName: String(p.name).slice(0, 16), color: safeColor(p.color), mine: false }));
+    .map((p) => ({ slot: p.office.slot, since: p.office.since, locked: !!p.office.locked, ownerName: String(p.name).slice(0, 16), ownerId: p.id, color: safeColor(p.color), mine: false }));
   claims.sort((a, b) => a.since - b.since || a.ownerName.localeCompare(b.ownerName));
 
   const taken = new Map();
@@ -196,8 +199,29 @@ function updateOffices() {
   }
 }
 
+// A short message that shows in the prompt line for a few seconds, like
+// "Sam is knocking on your office door."
+let notice = { text: "", until: 0 };
+
+function showNotice(text) {
+  notice = { text, until: performance.now() + 4000 };
+}
+
+// Knocks: someone at your locked door. Ignored if you have no office.
+onKnock((peerId) => {
+  if (!myOffice) return;
+  const name = getPeers().find((p) => p.id === peerId)?.name || "Someone";
+  playKnockSound();
+  showNotice(`${String(name).slice(0, 16)} is knocking on your office door.`);
+});
+
+let lastKnockTime = 0;
+
 // The short prompt under the room name, like "Press E to build your office".
 function actionHintFor(room) {
+  if (performance.now() < notice.until) return notice.text;
+  const lockedDoor = lockedDoorInFront(player);
+  if (lockedDoor) return `${lockedDoor.office.ownerName}'s office is locked. Press K to knock.`;
   if (room.office?.mine) {
     const lock = myOffice.locked ? "Press L to unlock the door" : "Press L to lock the door";
     return `Your office. ${lock}, or R to remove your office.`;
@@ -227,6 +251,15 @@ window.addEventListener("keydown", (e) => {
     myOffice.locked = !myOffice.locked;
     saveMyOffice();
     playClickSound();
+  }
+
+  // Knock, at most once every 2 seconds so nobody gets spammed.
+  const lockedDoor = lockedDoorInFront(player);
+  if (key === "k" && lockedDoor && performance.now() - lastKnockTime > 2000) {
+    lastKnockTime = performance.now();
+    sendKnock(lockedDoor.office.ownerId);
+    playKnockSound();
+    showNotice(`You knocked. ${lockedDoor.office.ownerName} will hear it.`);
   }
 
   // Removing asks first, since it can't be undone (though you can always

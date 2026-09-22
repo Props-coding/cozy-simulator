@@ -75,6 +75,12 @@ export function playRoomChangeSound(roomId) {
   playTone(b, 60, { gain: 0.07, duration: 0.12, type: "triangle" });
 }
 
+// A soft wooden knock-knock, for knocking on an office door.
+export function playKnockSound() {
+  playTone(170, 0, { gain: 0.3, duration: 0.08, type: "triangle" });
+  playTone(150, 180, { gain: 0.3, duration: 0.08, type: "triangle" });
+}
+
 // A tiny, soft click for buttons and toggles.
 export function playClickSound() {
   playTone(600, 0, { gain: 0.06, duration: 0.05, type: "triangle" });

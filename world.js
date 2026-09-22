@@ -200,6 +200,16 @@ function isNearBuildDoor(player) {
   return player.x < hallwayWestX + 1.6 && player.y < 1.2;
 }
 
+// If the player is in the hallway right in front of someone else's locked
+// office door, returns that office's room (otherwise null). Used for the
+// "Press K to knock" prompt.
+function lockedDoorInFront(player) {
+  if (getCurrentRoom(player).id !== "hallway") return null;
+  const cx = player.x + PLAYER_SIZE / 2;
+  const nearDoor = (r) => cx >= r.rect.x + 1 && cx <= r.rect.x + 2.6 && player.y + PLAYER_SIZE > 2.4;
+  return ROOMS.find((r) => r.office?.locked && !r.office.mine && nearDoor(r)) || null;
+}
+
 // True if the player's center is inside some room (false means a room
 // just disappeared from under them, like an office whose owner left).
 function isInsideARoom(player) {

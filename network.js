@@ -18,6 +18,8 @@ const peers = {}; // peerId -> { name, color, x, y, room }
 let externalOnPeerStream = null;
 let externalOnPeerLeave = null;
 let externalOnPeerJoin = null;
+let externalOnKnock = null;
+let knockAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -29,6 +31,16 @@ export function onPeerLeave(callback) {
 
 export function onPeerJoin(callback) {
   externalOnPeerJoin = callback;
+}
+
+// Someone knocked on your office door. callback gets their peer id.
+export function onKnock(callback) {
+  externalOnKnock = callback;
+}
+
+// Knock on one friend's office door (only they get the message).
+export function sendKnock(peerId) {
+  knockAction?.send(true, { target: peerId });
 }
 
 // Sends your mic audio to everyone in the room. Call once, after both
@@ -68,6 +80,10 @@ export function connectToRoom(myName, myColor) {
   position.onMessage = (data, { peerId }) => {
     peers[peerId] = { ...peers[peerId], ...data };
   };
+
+  // "knock" carries no information, the message arriving is the knock.
+  knockAction = room.makeAction("knock");
+  knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
 
   room.onPeerJoin = (peerId) => {
     // Placeholder spot in the middle of the hallway (grid units), until
