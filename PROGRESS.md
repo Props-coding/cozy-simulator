@@ -46,20 +46,20 @@
 
 - Build 0.21: fixed the house shifting sideways when you walk into your office (the sidebar grew wider with the longer room name; it now has a fixed width and wraps long lines). Added a way to remove your office: press R inside it, and confirm.
 
-- Not pushed yet (waiting for more changes): redrew the office-building door (proper frame, carved panels, brass knob and sign, welcome mat) and the locked office door (double doors with a padlock, and the wall top now runs unbroken above it). Moved the Hallway label so it doesn't sit on the new mat.
+- Build 0.22: redrew the office-building door (proper frame, carved panels, brass knob and sign, welcome mat) and the locked office door (double doors with a padlock, and the wall top now runs unbroken above it). Moved the Hallway label so it doesn't sit on the new mat.
 
-- Not pushed yet: Dinner is now fully silent (no chimes either), the house appears right away instead of waiting for you to answer the mic question, and if the mic is blocked the sidebar says so and explains how to allow it.
+- Build 0.22: Dinner is now fully silent (no chimes either), the house appears right away instead of waiting for you to answer the mic question, and if the mic is blocked the sidebar says so and explains how to allow it.
 
-- Not pushed yet: knocking. Stand in front of someone's locked office and press K. They hear a knock-knock and see "Sam is knocking on your office door." (You can knock once every 2 seconds.)
+- Build 0.22: knocking. Stand in front of someone's locked office and press K. They hear a knock-knock and see "Sam is knocking on your office door." (You can knock once every 2 seconds.)
 
-- Not pushed yet: Dinner makeover. A little kitchen along the back wall (counter with a stove, pot and bread under a kitchen window, a sink, the fridge), a warm rug under the table, a table runner with plates at every seat and two glowing candles, a sideboard with stacked plates and a teapot, a plant, and the same soft golden glow as the Study.
+- Build 0.22: Dinner makeover. A little kitchen along the back wall (counter with a stove, pot and bread under a kitchen window, a sink, the fridge), a warm rug under the table, a table runner with plates at every seat and two glowing candles, a sideboard with stacked plates and a teapot, a plant, and the same soft golden glow as the Study.
 
-- Not pushed yet: nicer characters. Little feet, rosy cheeks, and a bouncy walk (feet take turns lifting). Pick a hat on the Join screen (beanie, cap, bow, headphones, flower, or none) with a live preview of how you'll look. The Join screen now remembers your name, color and hat from last time.
+- Build 0.22: nicer characters. Little feet, rosy cheeks, and a bouncy walk (feet take turns lifting). Pick a hat on the Join screen (beanie, cap, bow, headphones, flower, or none) with a live preview of how you'll look. The Join screen now remembers your name, color and hat from last time.
 
-- Not pushed yet: Study focus timer. In the Study, press F to start a shared 25 minute focus session for everyone (press F again to stop it). A little chalkboard over the study table counts down, visible from anywhere in the house. When focus ends, a gentle chime starts a 5 minute break, then another chime when the break is over. Friends who join mid-session see the timer too. Lengths are in `config.js` (focusMinutes, breakMinutes).
+- Build 0.22: Study focus timer. In the Study, press F to start a shared 25 minute focus session for everyone (press F again to stop it). A little chalkboard over the study table counts down, visible from anywhere in the house. When focus ends, a gentle chime starts a 5 minute break, then another chime when the break is over. Friends who join mid-session see the timer too. Lengths are in `config.js` (focusMinutes, breakMinutes).
 
 ## Next
-- Push the "Not pushed yet" batch above as build 0.22 when you're ready, then test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
+- Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
