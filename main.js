@@ -36,6 +36,7 @@ import {
   playTimerChime,
   playChatSound,
 } from "./audio.js";
+import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -151,7 +152,7 @@ joinButton.addEventListener("click", async () => {
 });
 
 // --- Offices ---
-// Your own office, if you've built one: { slot, since, locked }. Your
+// Your own office, if you've built one: { since, locked }. Your
 // browser remembers it, so it comes back each time you join. Nobody else
 // stores it: it only exists while you're here.
 const OFFICE_STORAGE_KEY = "cozy-house-office";
@@ -179,55 +180,46 @@ let officeSignature = "";
 
 // An office message from a friend is only trusted if it looks right.
 function isValidOffice(o) {
-  return o && Number.isInteger(o.slot) && o.slot >= 1 && o.slot <= OFFICE_SLOTS && typeof o.since === "number";
+  return o && typeof o.since === "number" && Number.isFinite(o.since);
 }
 
-function firstFreeSlot(taken) {
-  for (let slot = 1; slot <= OFFICE_SLOTS; slot++) {
-    if (!taken.has(slot)) return slot;
-  }
-  return null;
-}
-
-// Collects everyone's offices. If two people ever claim the same slot
-// (say, both built one at the same moment), whoever built first keeps it
-// and the other moves to a free slot, or loses theirs if all are taken.
-// Every browser runs this same rule, so everyone ends up agreeing.
+// Collects everyone's offices, in the order they were built (earliest
+// first), and gives them spots 1, 2, 3 in that order. So when one is
+// removed, the ones after it slide over to fill the gap. Every browser
+// runs this same rule, so everyone agrees on who is where. If two people
+// build the last spot at the same moment, whoever was first keeps it.
 function gatherOffices(peers) {
-  const claims = peers
-    .filter((p) => isValidOffice(p.office))
-    .map((p) => ({ slot: p.office.slot, since: p.office.since, locked: !!p.office.locked, ownerName: String(p.name).slice(0, 16), ownerId: p.id, color: safeColor(p.color), mine: false }));
-  claims.sort((a, b) => a.since - b.since || a.ownerName.localeCompare(b.ownerName));
-
-  const taken = new Map();
-  for (const claim of claims) {
-    if (!taken.has(claim.slot)) taken.set(claim.slot, claim);
+  const claims = new Map(); // one per office, even if a friend briefly shows up twice after a refresh
+  for (const p of peers) {
+    if (!isValidOffice(p.office)) continue;
+    const ownerName = String(p.name).slice(0, 16);
+    claims.set(p.office.since + "|" + ownerName, { since: p.office.since, locked: !!p.office.locked, ownerName, ownerId: p.id, color: safeColor(p.color), mine: false });
   }
-
   if (myOffice) {
-    const holder = taken.get(myOffice.slot);
-    const theyWereFirst = holder && (holder.since < myOffice.since || (holder.since === myOffice.since && holder.ownerName.localeCompare(myName) < 0));
-    if (theyWereFirst) {
-      const free = firstFreeSlot(taken);
-      if (free) myOffice.slot = free;
-      else myOffice = null;
-      saveMyOffice();
-    }
-    if (myOffice) {
-      taken.set(myOffice.slot, { slot: myOffice.slot, since: myOffice.since, locked: myOffice.locked, ownerName: myName, color: safeColor(myColor), mine: true });
-    }
+    claims.set(myOffice.since + "|" + myName, { since: myOffice.since, locked: !!myOffice.locked, ownerName: myName, color: safeColor(myColor), mine: true });
   }
-  return [...taken.values()].sort((a, b) => a.slot - b.slot);
+  const sorted = [...claims.values()].sort((a, b) => a.since - b.since || a.ownerName.localeCompare(b.ownerName));
+  const kept = sorted.slice(0, OFFICE_SLOTS);
+  if (myOffice && !kept.some((o) => o.mine)) {
+    myOffice = null;
+    saveMyOffice();
+    showNotice("Someone built the last office just before you. Try again when one frees up.");
+  }
+  return kept.map((o, i) => ({ ...o, slot: i + 1 }));
 }
 
-// Rebuilds the house if anyone's office appeared, disappeared or got
-// locked/unlocked since last frame.
+// Rebuilds the house if anyone's office appeared, disappeared, moved or
+// got locked/unlocked since last frame.
 function updateOffices() {
   offices = gatherOffices(getPeers());
   const signature = JSON.stringify(offices);
   if (signature === officeSignature) return;
   officeSignature = signature;
+  const before = getCurrentRoom(player);
   buildHouse(offices);
+  // If your office slid over to fill a gap, slide along with it.
+  const after = ROOMS.find((r) => r.id === before.id);
+  if (before.office && after) player.x += after.rect.x - before.rect.x;
   // If the office you were standing in just vanished (its owner left),
   // pop back to the middle of the hallway.
   const box = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
@@ -320,16 +312,13 @@ function actionHintFor(room) {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || e.repeat || dialogOpen || isTypingInChat(e)) return;
+  if (gameScreen.hidden || e.repeat || dialogOpen || isTyping(e)) return;
   const key = e.key.toLowerCase();
 
-  if (key === "e" && !myOffice && isNearBuildDoor(player)) {
-    const slot = firstFreeSlot(new Map(offices.map((o) => [o.slot, o])));
-    if (slot) {
-      myOffice = { slot, since: Date.now(), locked: false };
-      saveMyOffice();
-      playClickSound();
-    }
+  if (key === "e" && !myOffice && isNearBuildDoor(player) && offices.length < OFFICE_SLOTS) {
+    myOffice = { since: Date.now(), locked: false };
+    saveMyOffice();
+    playClickSound();
   }
 
   if (key === "l" && getCurrentRoom(player).office?.mine) {
@@ -371,6 +360,14 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// --- Theater ---
+// Theater messages only go to the people standing in the Theater.
+initTheater(() => getPeers().filter((p) => p.room === "theater").map((p) => p.id));
+
+// Clicking the house gives the keyboard back to the game (for example
+// after clicking on the Theater's video, which keeps the keys otherwise).
+canvas.addEventListener("mousedown", () => document.activeElement?.blur());
+
 // --- Chat ---
 // Two channels: "house" (everyone) and office chat (only people standing
 // in the same office). Messages aren't saved anywhere: you see what's
@@ -388,10 +385,10 @@ const bubbles = {}; // "me" or a peer id -> { text, until }
 let lastChatSent = 0;
 let lastOfficeRoomId = null; // the office you're standing in, if any
 
-// True while you're typing a chat message, so letters don't move you or
-// trigger E, F, K, L or R.
-function isTypingInChat(e) {
-  return e.target === chatInput;
+// True while you're typing in a text box (chat, or the Theater's link
+// box), so letters don't move you or trigger E, F, K, L or R.
+function isTyping(e) {
+  return e.target instanceof HTMLInputElement && e.target.type === "text";
 }
 
 function bubbleFor(who) {
@@ -480,13 +477,13 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
 // back to walking without sending.
 window.addEventListener("keydown", (e) => {
   if (gameScreen.hidden || dialogOpen) return;
-  if (e.key === "Enter" && e.target !== chatInput) {
+  if (e.key === "Enter" && !isTyping(e)) {
     e.preventDefault();
     for (const k in keysDown) keysDown[k] = false; // stop walking while typing
     chatInput.focus();
-  } else if (e.target === chatInput && (e.key === "Escape" || (e.key === "Enter" && !chatInput.value.trim()))) {
+  } else if (isTyping(e) && (e.key === "Escape" || (e.key === "Enter" && e.target === chatInput && !chatInput.value.trim()))) {
     e.preventDefault();
-    chatInput.blur();
+    e.target.blur();
   }
 });
 
@@ -571,7 +568,7 @@ function askConfirm({ title, text, yes, no }) {
 // Tracks which movement keys are currently held down.
 const keysDown = {};
 window.addEventListener("keydown", (e) => {
-  if (!isTypingInChat(e)) keysDown[e.key.toLowerCase()] = true;
+  if (!isTyping(e)) keysDown[e.key.toLowerCase()] = true;
 });
 window.addEventListener("keyup", (e) => (keysDown[e.key.toLowerCase()] = false));
 
@@ -663,16 +660,19 @@ function tick(now) {
   if (currentRoom.id !== previousRoomId) {
     if (currentRoom.id === "study") enterStudy(lofiPlayerContainer);
     if (previousRoomId === "study") leaveStudy();
+    if (previousRoomId === "theater") leaveTheater();
+    if (currentRoom.id === "theater") enterTheater();
     if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
     previousRoomId = currentRoom.id;
   }
   updateLofi(dt);
+  updateTheater();
   updateFocusTimer(currentRoom.id);
 
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    const officeInfo = myOffice ? { slot: myOffice.slot, since: myOffice.since, locked: myOffice.locked } : null;
+    const officeInfo = myOffice ? { since: myOffice.since, locked: myOffice.locked } : null;
     broadcastPosition({ name: myName, color: myColor, hat: myHat, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo });
   }
 

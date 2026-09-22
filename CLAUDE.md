@@ -39,7 +39,8 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Room | Voice chat | Sound you hear | Notes |
 |---|---|---|---|
 | Hallway (hub) | Off | Silence | Neutral space between rooms |
-| Gaming | On, with others in the room | Friends' voices | Talk freely |
+| Theater (was Gaming) | On, with others in the room | Friends' voices, plus a shared YouTube video | Paste a link and it plays in sync for everyone in the room |
+| Offices (north of the hallway) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner | Off | Nothing, all sound muted | Means "I'm away eating". Show a small "eating" badge over the character |
 

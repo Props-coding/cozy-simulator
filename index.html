@@ -52,6 +52,17 @@
       <div id="house-column">
         <div id="house-wrap">
           <canvas id="house"></canvas>
+          <!-- The Theater's screen: shown over the house while you're in the
+               Theater. theater.js puts the YouTube player inside. -->
+          <div id="theater-panel" hidden>
+            <div id="theater-screen"><div id="theater-player"></div></div>
+            <form id="theater-form" autocomplete="off">
+              <input id="theater-url" type="text" placeholder="Paste a YouTube link">
+              <button type="submit" class="warm-button">Play for everyone</button>
+              <button id="theater-size" type="button" class="soft-button">Shrink screen</button>
+            </form>
+            <p id="theater-note"></p>
+          </div>
           <!-- A cozy in-game "are you sure?" card, shown over the house. -->
           <div id="confirm-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
             <div class="confirm-card">

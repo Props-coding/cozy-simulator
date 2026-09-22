@@ -4,13 +4,12 @@
 // position. Keeping that math in one place (render.js) is what keeps
 // every object's positioning in sync; this file never touches pixels.
 //
-// Layout: a hallway band across the top, with Gaming, Study, and Dinner
-// in a row underneath. Each room has one doorway gap up into the hallway.
-// Friends can also build personal offices through a door at the west end
-// of the hallway: each one extends the hallway further west, with the
-// office underneath it. Offices come and go as their owners join and
+// Layout: a hallway runs across the middle of the house. Theater, Study,
+// and Dinner hang below it (south), each with a doorway up into the
+// hallway. Personal offices hang above it (north), each with a doorway
+// down into the hallway. Offices come and go as their owners join and
 // leave, so the room and wall lists below get rebuilt when that happens
-// (see buildHouse at the bottom).
+// (see buildHouse).
 
 const WALL_THICKNESS = 0.4;
 
@@ -18,7 +17,7 @@ const WALL_THICKNESS = 0.4;
 // player is standing in. Order matters: checked top to bottom, first
 // match wins.
 const BASE_ROOMS = [
-  { id: "gaming", name: CONFIG.roomNames.gaming, rect: { x: 0, y: 3, w: 6, h: 8 } },
+  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 } },
   { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 } },
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 } },
 ];
@@ -27,12 +26,12 @@ const BASE_ROOMS = [
 // dividers between rooms, and the wall segments above each room (with a
 // gap left open for the doorway). Same shape of logic as a plain top-down
 // house, just in grid units instead of pixels.
-// (The top wall and the hallway's west end move as offices are added, so
-// those are made in buildHouse instead.)
+// (The hallway's top wall gets a doorway for each office, so it's made in
+// buildHouse instead.)
 const BASE_WALLS = [
   // Outer walls
   { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
-  { x: -WALL_THICKNESS, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 }, // left side of Gaming
+  { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // left
   { x: 18, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // right
 
   // Dividers between rooms (no doors between rooms directly). They start
@@ -40,9 +39,9 @@ const BASE_WALLS = [
   { x: 6 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
   { x: 12 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
 
-  // Wall above Gaming, with a doorway gap in the middle
-  { x: 0, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
-  { x: 4, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
+  // Wall above the Theater, with its doorway at the right-hand end (so the
+  // big screen can fill the rest of that wall)
+  { x: 0, y: 3 - WALL_THICKNESS / 2, w: 4.2, h: WALL_THICKNESS },
 
   // Wall above Study, with a doorway gap in the middle
   { x: 6, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
@@ -65,35 +64,39 @@ const BASE_FURNITURE = [
   // Hallway: a long runner rug, and along the back wall (west to east):
   // coat hooks with boots underneath, framed pictures between warm wall
   // lamps, a side table with a lamp and flowers under a mirror, a
-  // cushioned bench, an umbrella stand and a plant.
+  // cushioned bench, an umbrella stand and a plant. They're spaced to leave
+  // the three office doorways clear (x 5 to 6.6, 9 to 10.6, 13 to 14.6).
   { kind: "rug", x: 1.5, y: 1.0, w: 15, h: 1.1, color: "#b5603c", solid: false },
-  { kind: "coatHooks", x: 1.6, y: 0, w: 1.1, solid: false },
-  { kind: "boots", x: 1.7, y: 0.15, w: 0.9, h: 0.35, solid: false },
-  { kind: "sconce", x: 3.6, y: 0, solid: false },
-  { kind: "picture", x: 4.5, y: 0, w: 1.1, art: "hills", solid: false },
-  { kind: "sconce", x: 6.3, y: 0, solid: false },
-  { kind: "mirror", x: 7.95, y: 0, w: 0.7, short: true, solid: false },
-  { kind: "console", x: 7.3, y: 0.1, w: 2.0, h: 0.45 },
-  { kind: "picture", x: 10.0, y: 0, w: 1.1, art: "sea", solid: false },
-  { kind: "sconce", x: 11.6, y: 0, solid: false },
-  { kind: "picture", x: 12.8, y: 0, w: 1.0, art: "flowers", solid: false },
-  { kind: "bench", x: 12.3, y: 0.1, w: 2.0, h: 0.5 },
-  { kind: "sconce", x: 15.0, y: 0, solid: false },
-  { kind: "umbrellaStand", x: 16.2, y: 0.2, w: 0.4, h: 0.4 },
-  { kind: "plant", x: 16.9, y: 0.3, w: 0.6, h: 0.6 },
+  { kind: "coatHooks", x: 0.4, y: 0, w: 1.1, solid: false },
+  { kind: "boots", x: 0.5, y: 0.15, w: 0.9, h: 0.35, solid: false },
+  { kind: "sconce", x: 2.0, y: 0, solid: false },
+  { kind: "picture", x: 2.5, y: 0, w: 1.1, art: "hills", solid: false },
+  { kind: "sconce", x: 4.3, y: 0, solid: false },
+  { kind: "mirror", x: 7.5, y: 0, w: 0.7, short: true, solid: false },
+  { kind: "console", x: 6.85, y: 0.1, w: 2.0, h: 0.45 },
+  { kind: "picture", x: 11.1, y: 0, w: 1.1, art: "sea", solid: false },
+  { kind: "sconce", x: 12.6, y: 0, solid: false },
+  { kind: "picture", x: 15.3, y: 0, w: 0.9, art: "flowers", solid: false },
+  { kind: "bench", x: 15.0, y: 0.1, w: 1.5, h: 0.5 },
+  { kind: "umbrellaStand", x: 16.65, y: 0.2, w: 0.4, h: 0.4 },
+  { kind: "plant", x: 17.25, y: 0.3, w: 0.6, h: 0.6 },
 
-  // Gaming: a LAN room, two rows of two computer desks with a stool in
-  // front of each. "screen" is the color of that monitor's game.
-  { kind: "pcDesk", x: 0.3, y: 3.3, w: 1.7, h: 0.7, screen: "#7fd67a" },
-  { kind: "stool", x: 0.85, y: 4.05, w: 0.6, h: 0.6, solid: false },
-  { kind: "pcDesk", x: 4.0, y: 3.3, w: 1.7, h: 0.7, screen: "#ff9a6b" },
-  { kind: "stool", x: 4.55, y: 4.05, w: 0.6, h: 0.6, solid: false },
-  { kind: "pcDesk", x: 0.3, y: 6.4, w: 1.7, h: 0.7, screen: "#b78cff" },
-  { kind: "stool", x: 0.85, y: 7.15, w: 0.6, h: 0.6, solid: false },
-  { kind: "pcDesk", x: 4.0, y: 6.4, w: 1.7, h: 0.7, screen: "#6fc8ff" },
-  { kind: "stool", x: 4.55, y: 7.15, w: 0.6, h: 0.6, solid: false },
-  { kind: "snackTable", x: 4.2, y: 9.9, w: 1.4, h: 0.6 },
+  // Theater: a big screen along the top wall, two rows of plush cinema
+  // seats facing it, and a popcorn machine by the door side. Seats aren't
+  // solid: stand on one to "sit", and its back hides your lower half the
+  // way a real cinema seat would.
+  { kind: "bigScreen", x: 0.3, y: 3.3, w: 3.6, h: 0.3 },
+  { kind: "theaterSeat", x: 0.4, y: 5.4, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 1.3, y: 5.4, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 2.2, y: 5.4, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 3.1, y: 5.4, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 0.4, y: 7.2, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 1.3, y: 7.2, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 2.2, y: 7.2, w: 0.7, h: 0.6, solid: false },
+  { kind: "theaterSeat", x: 3.1, y: 7.2, w: 0.7, h: 0.6, solid: false },
+  { kind: "popcorn", x: 4.5, y: 9.8, w: 0.9, h: 0.6 },
 
+  // Study
   // Study
   // Study: a shared study table on a big rug with cushions to sit on, a
   // reading armchair and floor lamp by the window, string lights, a
@@ -133,9 +136,20 @@ const BASE_FURNITURE = [
 ];
 
 // --- Offices ---
+// Offices sit north of the hallway in up to three spots, filled left to
+// right. When one is removed, the ones after it slide over to close the
+// gap. The door for building a new office is always on the hallway wall
+// at the next free spot.
 const OFFICE_SLOTS = 3; // how many offices can exist at once
 const OFFICE_WIDTH = 4; // grid units per office, including its wall
-const OFFICE_BOTTOM = 9; // offices run from the hallway (y 3) down to here
+const OFFICE_FIRST_X = 4; // left edge of the first office spot
+const OFFICE_DEPTH = 5; // how far north an office reaches from the hallway
+const OFFICE_TOP = -WALL_THICKNESS - OFFICE_DEPTH; // the office floor's north edge
+
+// Left edge of office spot 1, 2 or 3.
+function officeX(slot) {
+  return OFFICE_FIRST_X + (slot - 1) * OFFICE_WIDTH;
+}
 
 // The current house: rebuilt by buildHouse whenever offices change.
 // houseVersion goes up by one each time, so render.js knows to redraw
@@ -145,123 +159,116 @@ let WALLS = [];
 let FURNITURE = [];
 let SOLIDS = []; // everything you bump into: walls plus solid furniture
 let houseVersion = 0;
-let hallwayWestX = 0; // where the hallway currently ends on the west side
+let houseTopY = -WALL_THICKNESS; // the house's northern edge (for the camera)
+let buildDoorX = null; // left edge of the next free office spot, or null if all are taken
 
-// offices: a list of { slot (1 to 3), ownerName, color, locked, mine }.
-// Slot 1 is right next to Gaming, slot 3 is furthest west. The hallway
-// reaches as far west as the furthest built office.
+// offices: a list of { slot (1 to 3), since, ownerName, color, locked, mine },
+// already in order (slot 1 first). An office's room id comes from when it
+// was built, so it stays the same when it slides to a different spot.
 function buildHouse(offices) {
-  const furthest = Math.max(0, ...offices.map((o) => o.slot));
-  const westX = -furthest * OFFICE_WIDTH;
   const t = WALL_THICKNESS;
-  hallwayWestX = westX;
-
   const rooms = [...BASE_ROOMS];
-  const walls = [
-    ...BASE_WALLS,
-    { x: westX - t, y: -t, w: 18 - westX + t * 2, h: t }, // top, full length of the hallway
-    { x: westX - t, y: -t, w: t, h: furthest ? OFFICE_BOTTOM + t * 2 : 3 + t * 2 }, // west end
-  ];
+  const walls = [...BASE_WALLS];
   const furniture = [...BASE_FURNITURE];
 
-  // The door you use to build an office, on the back wall at the far west.
-  furniture.push({ kind: "buildDoor", x: westX + 0.3, y: 0, w: 0.9, solid: false });
+  // The hallway's top wall, with a doorway (x0 + 1 to x0 + 2.6) into each office.
+  const doorways = offices.map((o) => officeX(o.slot) + 1).sort((a, b) => a - b);
+  let from = -t;
+  for (const doorway of doorways) {
+    walls.push({ x: from, y: -t, w: doorway - from, h: t });
+    from = doorway + 1.6;
+  }
+  walls.push({ x: from, y: -t, w: 18 + t - from, h: t });
 
-  for (let slot = 1; slot <= furthest; slot++) {
-    // Office floor runs from x0 to x0 + 3.6; its right wall is at x0 + 3.6
-    // (for slot 1 that's the Gaming room's left wall).
-    const x0 = -slot * OFFICE_WIDTH;
+  for (const office of offices) {
+    const x0 = officeX(office.slot);
     const inner = OFFICE_WIDTH - t;
-    const office = offices.find((o) => o.slot === slot);
-
-    if (!office) {
-      // An empty slot between built offices: just a plain wall along the hallway.
-      walls.push({ x: x0 - t, y: 3 - t / 2, w: OFFICE_WIDTH + t, h: t });
-      continue;
-    }
-
-    const id = "office-" + slot;
     const theme = officeThemeFor(office.ownerName);
-    rooms.push({ id, name: office.ownerName + "'s Office", rect: { x: x0, y: 3, w: inner, h: OFFICE_BOTTOM - 3 }, office, theme });
+    rooms.push({ id: "office-" + office.since, name: office.ownerName + "'s Office", rect: { x: x0, y: OFFICE_TOP, w: inner, h: OFFICE_DEPTH }, office, theme });
     walls.push(
-      { x: x0 - t, y: 3 - t / 2, w: 1 + t, h: t }, // wall above, left of the doorway
-      { x: x0 + 2.6, y: 3 - t / 2, w: inner - 2.6, h: t }, // wall above, right of the doorway
-      { x: x0 - t, y: 3 - t / 2, w: t, h: OFFICE_BOTTOM - 3 + t * 1.5 }, // left side
-      { x: x0 + inner, y: 3 - t / 2, w: t, h: OFFICE_BOTTOM - 3 + t * 1.5 }, // right side
-      { x: x0 - t, y: OFFICE_BOTTOM, w: OFFICE_WIDTH + t, h: t, low: true } // bottom
+      { x: x0 - t, y: OFFICE_TOP - t, w: OFFICE_WIDTH + t, h: t }, // north wall
+      { x: x0 - t, y: OFFICE_TOP - t, w: t, h: OFFICE_DEPTH + t }, // left side, down to the hallway wall
+      { x: x0 + inner, y: OFFICE_TOP - t, w: t, h: OFFICE_DEPTH + t } // right side
     );
-    furniture.push(...(OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default)(x0, office));
+    furniture.push(...(OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default)(x0, OFFICE_TOP, office));
     if (office.locked) {
-      furniture.push({ kind: "closedDoor", x: x0 + 1, y: 3 + t / 2, w: 1.6, solid: false });
+      furniture.push({ kind: "closedDoor", x: x0 + 1, y: 0, w: 1.6, solid: false });
     }
   }
 
-  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: westX, y: 0, w: 18 - westX, h: 3 } });
+  // The "+" door where the next office would go.
+  buildDoorX = offices.length < OFFICE_SLOTS ? officeX(offices.length + 1) : null;
+  if (buildDoorX !== null) {
+    furniture.push({ kind: "buildDoor", x: buildDoorX + 1.35, y: 0, w: 0.9, solid: false });
+  }
+
+  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 } });
 
   ROOMS = rooms;
   WALLS = walls;
   FURNITURE = furniture;
   SOLIDS = [...walls, ...furniture.filter((f) => f.solid !== false)];
+  houseTopY = offices.length ? OFFICE_TOP - t : -t;
   houseVersion++;
 }
 
 buildHouse([]);
 
 // --- Office furniture ---
-// What goes in an office, given x0 (the office's left edge) and the office
-// itself. Everyone gets "default"; a few names get a secret themed office
-// instead (see officeThemes in config.js). Offices are 3.6 wide and run
-// from y 3 down to y 9, with the doorway at the top between x0 + 1 and
-// x0 + 2.6. The two short bits of wall either side of the doorway (y 3.2)
-// are where wall hangings go.
+// What goes in an office, given x0 (its left edge), top (its north edge)
+// and the office itself. Everyone gets "default"; a few names get a secret
+// themed office instead (see officeThemes in config.js). Offices are 3.6
+// wide and 5 deep, with the doorway at the bottom between x0 + 1 and
+// x0 + 2.6, so that lane is kept clear. Wall hangings go on the north wall
+// (their y is "top", the bottom edge of that wall).
 const OFFICE_FURNITURE = {
-  default: (x0, office) => [
-    { kind: "rug", x: x0 + 0.4, y: 4.4, w: 2.8, h: 1.6, color: "#7d6a8f", solid: false },
-    { kind: "plant", x: x0 + 0.2, y: 3.3, w: 0.6, h: 0.6 },
-    { kind: "bookshelf", x: x0 + 2.8, y: 3.3, w: 0.7, h: 0.5 },
-    { kind: "pcDesk", x: x0 + 0.3, y: 6.4, w: 1.7, h: 0.7, screen: office.color },
-    { kind: "stool", x: x0 + 0.85, y: 7.15, w: 0.6, h: 0.6, color: office.color, solid: false },
-    { kind: "plant", x: x0 + 2.8, y: 8.2, w: 0.6, h: 0.6 },
+  default: (x0, top, office) => [
+    { kind: "rug", x: x0 + 0.4, y: top + 2.0, w: 2.8, h: 1.6, color: "#7d6a8f", solid: false },
+    { kind: "plant", x: x0 + 0.15, y: top + 0.1, w: 0.6, h: 0.6 },
+    { kind: "pcDesk", x: x0 + 0.95, y: top + 0.15, w: 1.7, h: 0.7, screen: office.color },
+    { kind: "stool", x: x0 + 1.5, y: top + 0.9, w: 0.6, h: 0.6, color: office.color, solid: false },
+    { kind: "bookshelf", x: x0 + 2.85, y: top + 0.1, w: 0.65, h: 0.5 },
+    { kind: "plant", x: x0 + 2.9, y: top + 3.8, w: 0.6, h: 0.6 },
   ],
 
   // Cozy lake house: a stone fireplace with a rug in front, a window onto
   // the lake, a canoe paddle and fishing rod on the wall, a tackle box.
-  lakehouse: (x0, office) => [
-    { kind: "rug", x: x0 + 0.2, y: 5.3, w: 1.9, h: 1.2, color: "#8a3b2e", solid: false },
-    { kind: "paddle", x: x0, y: 3.2, w: 1.0, solid: false },
-    { kind: "lakeWindow", x: x0 + 2.65, y: 3.2, w: 0.9, solid: false },
-    { kind: "fireplace", x: x0 + 0.3, y: 4.4, w: 1.2, h: 0.6 },
-    { kind: "pcDesk", x: x0 + 1.9, y: 6.6, w: 1.5, h: 0.7, screen: office.color },
-    { kind: "stool", x: x0 + 2.35, y: 7.35, w: 0.6, h: 0.6, color: "#8a3b2e", solid: false },
-    { kind: "tackleBox", x: x0 + 0.3, y: 7.6, w: 0.7, h: 0.4 },
+  lakehouse: (x0, top, office) => [
+    { kind: "rug", x: x0 + 0.8, y: top + 0.9, w: 1.9, h: 1.1, color: "#8a3b2e", solid: false },
+    { kind: "paddle", x: x0 + 0.1, y: top, w: 1.0, solid: false },
+    { kind: "lakeWindow", x: x0 + 2.5, y: top, w: 1.0, solid: false },
+    { kind: "fireplace", x: x0 + 1.2, y: top + 0.1, w: 1.1, h: 0.6 },
+    { kind: "pcDesk", x: x0 + 0.05, y: top + 2.4, w: 1.35, h: 0.7, screen: office.color },
+    { kind: "stool", x: x0 + 0.42, y: top + 3.15, w: 0.6, h: 0.6, color: "#8a3b2e", solid: false },
+    { kind: "tackleBox", x: x0 + 2.8, y: top + 2.6, w: 0.6, h: 0.4 },
   ],
 
   // STALKER-style bunker: bare concrete, pipes and rebar in the walls, a
   // flickering fluorescent tube, a steel desk with a Geiger counter, an
   // army crate with a gas mask on it, and a rusty barrel.
-  stalker: (x0, office) => [
-    { kind: "pipes", x: x0 - 0.4, y: 3.2, w: 1.4, solid: false },
-    { kind: "rebar", x: x0 + 2.65, y: 3.2, w: 0.9, solid: false },
-    { kind: "crate", x: x0 + 2.65, y: 3.4, w: 0.85, h: 0.6 },
-    { kind: "metalDesk", x: x0 + 0.3, y: 6.4, w: 1.7, h: 0.7 },
-    { kind: "stool", x: x0 + 0.85, y: 7.15, w: 0.6, h: 0.6, color: "#5b6340", solid: false },
-    { kind: "barrel", x: x0 + 2.9, y: 7.4, w: 0.55, h: 0.55 },
-    { kind: "fluorescent", x: x0 + 1.8, y: 5.6, solid: false },
+  stalker: (x0, top, office) => [
+    { kind: "pipes", x: x0 - 0.3, y: top, w: 1.6, solid: false },
+    { kind: "rebar", x: x0 + 2.5, y: top, w: 1.0, solid: false },
+    { kind: "metalDesk", x: x0 + 0.15, y: top + 0.15, w: 1.7, h: 0.7 },
+    { kind: "stool", x: x0 + 0.7, y: top + 0.9, w: 0.6, h: 0.6, color: "#5b6340", solid: false },
+    { kind: "crate", x: x0 + 2.6, y: top + 0.15, w: 0.85, h: 0.6 },
+    { kind: "barrel", x: x0 + 2.9, y: top + 3.0, w: 0.55, h: 0.55 },
+    { kind: "fluorescent", x: x0 + 1.8, y: top + 2.8, solid: false },
   ],
 
   // Classical Chinese scholar's study: a round moon window, a hanging
   // calligraphy scroll, potted bamboo and a bonsai, and a low writing desk
   // with an inkstone and brushes, with a cushion to kneel on and a paper
   // lantern overhead.
-  scholar: (x0, office) => [
-    { kind: "rug", x: x0 + 0.4, y: 5.3, w: 2.8, h: 2.3, color: "#8f2f2a", solid: false },
-    { kind: "scroll", x: x0 + 0.2, y: 3.2, w: 0.55, solid: false },
-    { kind: "moonWindow", x: x0 + 2.7, y: 3.2, w: 0.8, solid: false },
-    { kind: "bamboo", x: x0 + 0.15, y: 7.9, w: 0.6, h: 0.5 },
-    { kind: "bonsai", x: x0 + 2.85, y: 7.9, w: 0.6, h: 0.5 },
-    { kind: "lowDesk", x: x0 + 0.9, y: 6.0, w: 1.8, h: 0.7 },
-    { kind: "floorCushion", x: x0 + 1.5, y: 6.75, w: 0.6, h: 0.5, solid: false },
-    { kind: "paperLantern", x: x0 + 1.8, y: 4.7, solid: false },
+  scholar: (x0, top, office) => [
+    { kind: "rug", x: x0 + 0.4, y: top + 1.0, w: 2.8, h: 2.2, color: "#8f2f2a", solid: false },
+    { kind: "scroll", x: x0 + 0.95, y: top, w: 0.55, solid: false },
+    { kind: "moonWindow", x: x0 + 2.55, y: top, w: 0.8, solid: false },
+    { kind: "bamboo", x: x0 + 0.1, y: top + 0.1, w: 0.6, h: 0.5 },
+    { kind: "lowDesk", x: x0 + 0.9, y: top + 1.3, w: 1.8, h: 0.7 },
+    { kind: "floorCushion", x: x0 + 1.5, y: top + 2.05, w: 0.6, h: 0.5, solid: false },
+    { kind: "bonsai", x: x0 + 2.9, y: top + 3.8, w: 0.6, h: 0.5 },
+    { kind: "paperLantern", x: x0 + 1.8, y: top + 2.6, solid: false },
   ],
 };
 
@@ -279,10 +286,12 @@ function roomNameFor(id) {
   return ROOMS.find((r) => r.id === id)?.name || CONFIG.roomNames[id] || "somewhere";
 }
 
-// True if the player is standing right by the office door at the west
-// end of the hallway.
+// True if the player is standing in the hallway right by the "+" door
+// where the next office would go.
 function isNearBuildDoor(player) {
-  return player.x < hallwayWestX + 1.6 && player.y < 1.6;
+  if (buildDoorX === null || getCurrentRoom(player).id !== "hallway") return false;
+  const cx = player.x + PLAYER_SIZE / 2;
+  return cx >= buildDoorX + 0.8 && cx <= buildDoorX + 2.8 && player.y < 1.2;
 }
 
 // If the player is in the hallway right in front of someone else's locked
@@ -291,7 +300,7 @@ function isNearBuildDoor(player) {
 function lockedDoorInFront(player) {
   if (getCurrentRoom(player).id !== "hallway") return null;
   const cx = player.x + PLAYER_SIZE / 2;
-  const nearDoor = (r) => cx >= r.rect.x + 1 && cx <= r.rect.x + 2.6 && player.y + PLAYER_SIZE > 2.4;
+  const nearDoor = (r) => cx >= r.rect.x + 1 && cx <= r.rect.x + 2.6 && player.y < 0.9;
   return ROOMS.find((r) => r.office?.locked && !r.office.mine && nearDoor(r)) || null;
 }
 

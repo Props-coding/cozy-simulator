@@ -2,9 +2,9 @@
 // room rules: your mic is only live while you stand in a voice room,
 // and you only hear a friend if you're both in the same voice room.
 
-// Rooms where voice chat is on: Gaming, plus every office (where you
+// Rooms where voice chat is on: the Theater, plus every office (where you
 // only hear the people in that same office).
-const VOICE_ROOMS = ["gaming"];
+const VOICE_ROOMS = ["theater"];
 
 function isVoiceRoom(roomId) {
   return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-");
@@ -64,7 +64,7 @@ export function playLeaveSound() {
 // a texture, not an announcement.
 const ROOM_CHIME_NOTES = {
   hallway: [523.25, 659.25], // C5, E5: light and neutral
-  gaming: [659.25, 783.99], // E5, G5: a little brighter
+  theater: [659.25, 783.99], // E5, G5: a little brighter
   study: [493.88, 587.33], // B4, D5: softer, calmer
   dinner: [440, 554.37], // A4, C#5: warm, settling in
 };
@@ -155,6 +155,12 @@ export function setMasterMuted(muted) {
   masterMuted = muted;
 }
 
+// How loud other things (like the Theater's video) should be right now,
+// from 0 to 1, following the master mute and volume.
+export function getMasterLevel() {
+  return masterMuted ? 0 : masterVolume;
+}
+
 export function setMasterVolume(vol) {
   masterVolume = vol;
 }
@@ -171,18 +177,26 @@ let ytPlayer = null;
 let ytPlayerReady = false;
 let backupAudioEl = null;
 
-function loadYouTubeApi() {
-  return new Promise((resolve, reject) => {
+// Loads YouTube's player code once, however many things ask for it (the
+// Study's lo-fi and the Theater both use it).
+let youTubeApiPromise = null;
+
+export function loadYouTubeApi() {
+  youTubeApiPromise ??= new Promise((resolve, reject) => {
     if (window.YT && window.YT.Player) {
       resolve();
       return;
     }
+    window.onYouTubeIframeAPIReady = resolve;
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
-    tag.onerror = reject; // e.g. an ad blocker stopped YouTube from loading at all
+    tag.onerror = () => {
+      youTubeApiPromise = null; // let a later try have another go
+      reject(new Error("YouTube player code couldn't load"));
+    };
     document.head.appendChild(tag);
-    window.onYouTubeIframeAPIReady = resolve;
   });
+  return youTubeApiPromise;
 }
 
 function startBackupStream() {

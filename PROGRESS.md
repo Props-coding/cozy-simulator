@@ -70,6 +70,10 @@
 
 - Not pushed yet: emoji-friendly chat. A 😊 button next to the chat box opens a grid of common emoji (click one to add it where your cursor is); Windows key + period also works. Long messages and speech bubbles are now shortened without ever cutting an emoji in half. Added character emotes (Kxiven's idea) to the backlog.
 
+- Not pushed yet: rooms on the north side, and the Theater.
+  - Offices now sit north of the hallway, filling three spots left to right, each opening down into the hallway. The "+" door is always on the hallway wall where the next office will appear. When an office is removed, the ones after it slide over to close the gap, and anyone inside slides with it. All four office styles (normal, lake house, bunker, scholar) were rearranged for the door being at the bottom. The hallway decorations were moved to leave the three doorways clear. The camera now scrolls up and down as well as sideways.
+  - The Gaming room is now the Theater: a big screen on a little stage with speakers, two rows of plush red cinema seats (stand on one to sit, and the seat back hides your lower half like a real cinema), a popcorn machine, dim cinema lighting, and voice still on. Walk in and a screen appears over the house: paste a YouTube link and it plays for everyone in the Theater. Play, pause and skipping stay in sync, people who walk in mid-video jump to the right spot, and "Shrink screen" tucks it into a corner so you can see the room. Its volume follows the master volume and mute. Some videos don't allow playing on other sites and will show a message instead.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), conference room with a shared whiteboard, then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.

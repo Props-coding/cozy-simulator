@@ -90,6 +90,77 @@ canvas {
   display: inline-block;
 }
 
+/* The Theater's screen, floating over the top of the house view like a
+   cinema screen. "small" tucks it into the bottom-right corner. */
+#theater-panel:not([hidden]) {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 640px;
+  padding: 10px;
+  background: #1c1418;
+  border: 3px solid var(--wood);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(20, 10, 15, 0.5);
+}
+
+#theater-panel.small {
+  top: auto;
+  bottom: 14px;
+  left: auto;
+  right: 14px;
+  transform: none;
+  width: 300px;
+}
+
+#theater-screen {
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#theater-screen iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+#theater-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#theater-url {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid #5a4450;
+  background: #2a2026;
+  color: #f3e6d0;
+}
+
+#theater-panel.small #theater-url,
+#theater-panel.small .warm-button,
+#theater-panel.small #theater-note {
+  display: none;
+}
+
+#theater-panel.small #theater-form {
+  justify-content: center;
+}
+
+#theater-note {
+  margin: 6px 0 0;
+  min-height: 1.2em;
+  font-size: 0.85em;
+  color: #e8d6bd;
+}
+
 /* The in-game "are you sure?" card: dims the house a little and shows a
    warm cream card in the middle. */
 #confirm-dialog:not([hidden]) {

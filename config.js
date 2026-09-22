@@ -20,7 +20,7 @@ const CONFIG = {
   // Room names shown on screen. Change these if you want different labels.
   roomNames: {
     hallway: "Hallway",
-    gaming: "Gaming",
+    theater: "Theater",
     study: "Study",
     dinner: "Dinner",
   },
@@ -29,7 +29,7 @@ const CONFIG = {
   // "checker" for tiles) and a main color.
   roomFloors: {
     hallway: { style: "planks", color: "#d4b48c" },
-    gaming: { style: "carpet", color: "#39455e" },
+    theater: { style: "carpet", color: "#5a2833" },
     study: { style: "planks", color: "#9c6a45" },
     dinner: { style: "checker", color: "#dcae8c" },
     office: { style: "planks", color: "#b98a5e" }, // used for every office
@@ -38,7 +38,7 @@ const CONFIG = {
   // The color of the walls you see inside each room.
   roomWallColors: {
     hallway: "#eadbc2",
-    gaming: "#56617a",
+    theater: "#3d2c3a",
     study: "#6f8a6a",
     dinner: "#f0d9b8",
     office: "#8f7fa3", // used for every office

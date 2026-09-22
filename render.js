@@ -202,6 +202,8 @@ const OFFICE_THEME_STYLE = {
 };
 
 function paintFloors(ctx) {
+  ctx.fillStyle = WOOD_DARK;
+  ctx.fillRect(-2000, -2000, 6000, 6000);
   for (const room of ROOMS) {
     const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
@@ -246,9 +248,12 @@ function paintFloors(ctx) {
 // hallway to the east wall, with a little margin. Used for the saved floor
 // picture and for how far the camera can scroll.
 function houseBounds() {
-  const left = toScreen(hallwayWestX - 1, 0).x;
-  const right = toScreen(19, 0).x;
-  return { left, right };
+  return {
+    left: toScreen(-1, 0).x,
+    right: toScreen(19, 0).x,
+    top: toScreen(0, houseTopY - 0.6).y - WALL_HEIGHT,
+    bottom: toScreen(0, 12).y,
+  };
 }
 
 let floorCanvas = null;
@@ -258,16 +263,17 @@ function drawFloors(ctx) {
   // Repaint only when the house has changed (an office was added, removed
   // or locked), not every frame.
   if (floorVersion !== houseVersion) {
-    const { left, right } = houseBounds();
+    const { left, right, top, bottom } = houseBounds();
     floorCanvas = document.createElement("canvas");
     floorCanvas.width = right - left;
-    floorCanvas.height = CONFIG.canvasHeight;
+    floorCanvas.height = bottom - top;
     const fctx = floorCanvas.getContext("2d");
-    fctx.translate(-left, 0);
+    fctx.translate(-left, -top);
     paintFloors(fctx);
     floorVersion = houseVersion;
   }
-  ctx.drawImage(floorCanvas, houseBounds().left, 0);
+  const { left, top } = houseBounds();
+  ctx.drawImage(floorCanvas, left, top);
 }
 
 // --- Walls ---
@@ -599,6 +605,81 @@ const FURNITURE_DRAWERS = {
       ctx.fillStyle = "#5c3a22";
       ctx.fillRect(cx - 2.5, ty - 5, 5, 1.5);
     }
+  },
+
+  // --- Theater ---
+
+  // The big cinema screen on a low stage, with speakers either side.
+  bigScreen(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const stage = drawBlock(ctx, f.x, f.y, f.w, f.h, 6, "#3a2230");
+    const x = stage.top.x + 8, w = stage.top.w - 16, h = 56;
+    const y = stage.top.y - h + 4;
+    ctx.fillStyle = "#1c1418";
+    roundRectPath(ctx, x - 4, y - 4, w + 8, h + 8, 4);
+    ctx.fill();
+    const screen = ctx.createLinearGradient(0, y, 0, y + h);
+    screen.addColorStop(0, "#dfe7f2");
+    screen.addColorStop(1, "#b9c6d8");
+    ctx.fillStyle = screen;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.beginPath(); // a soft play symbol
+    ctx.moveTo(x + w / 2 - 7, y + h / 2 - 9);
+    ctx.lineTo(x + w / 2 + 9, y + h / 2);
+    ctx.lineTo(x + w / 2 - 7, y + h / 2 + 9);
+    ctx.closePath();
+    ctx.fill();
+    for (const sx of [stage.top.x - 2, stage.top.x + stage.top.w - 10]) {
+      ctx.fillStyle = "#2a1f26";
+      roundRectPath(ctx, sx, y + 14, 12, 34, 3);
+      ctx.fill();
+      ctx.fillStyle = "#4a3a44";
+      ctx.beginPath();
+      ctx.arc(sx + 6, y + 24, 3.5, 0, Math.PI * 2);
+      ctx.arc(sx + 6, y + 38, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A plush red cinema seat facing the screen (so you see its back), with
+  // armrests. Sort order draws it over whoever sits in it.
+  theaterSeat(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    drawBlock(ctx, f.x + 0.08, f.y, f.w - 0.16, f.h - 0.2, 12, "#7d2a33"); // seat cushion
+    drawBlock(ctx, f.x, f.y + 0.05, 0.08, f.h - 0.05, 17, "#4a2a30"); // armrests
+    drawBlock(ctx, f.x + f.w - 0.08, f.y + 0.05, 0.08, f.h - 0.05, 17, "#4a2a30");
+    const back = drawBlock(ctx, f.x + 0.04, f.y + f.h - 0.2, f.w - 0.08, 0.2, 26, "#9b3540");
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    roundRectPath(ctx, back.face.x + 4, back.face.y + 3, back.face.w - 8, back.face.h - 9, 4);
+    ctx.fill();
+  },
+
+  // An old-timey popcorn machine: a red cart with a glass box of popcorn.
+  popcorn(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const cart = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#b8322a");
+    ctx.fillStyle = "#e0b84c";
+    ctx.fillRect(cart.face.x, cart.face.y + 3, cart.face.w, 2);
+    const gx = cart.top.x + 4, gw = cart.top.w - 8, gh = 26, gy = cart.top.y + cart.top.h / 2 - gh;
+    ctx.fillStyle = "rgba(230, 240, 245, 0.55)"; // glass
+    ctx.fillRect(gx, gy, gw, gh);
+    ctx.fillStyle = "#f7e6a8"; // popcorn piled in the bottom
+    for (let i = 0; i < 14; i++) {
+      ctx.beginPath();
+      ctx.arc(gx + 3 + ((i * 7) % (gw - 6)), gy + gh - 4 - Math.floor(i / 5) * 4, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#8a2a24";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(gx, gy, gw, gh);
+    ctx.fillStyle = "#b8322a"; // little roof
+    ctx.beginPath();
+    ctx.moveTo(gx - 3, gy);
+    ctx.lineTo(gx + gw / 2, gy - 8);
+    ctx.lineTo(gx + gw + 3, gy);
+    ctx.closePath();
+    ctx.fill();
   },
 
   // --- Hallway pieces ---
@@ -1693,6 +1774,12 @@ function drawLights(ctx) {
     ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
   }
 
+  // The Theater is kept dim like a cinema, lit by the glow of its screen.
+  const theater = ROOMS.find((r) => r.id === "theater").rect;
+  const t1 = toScreen(theater.x, theater.y - 1), t2 = toScreen(theater.x + theater.w, theater.y + theater.h);
+  ctx.fillStyle = "rgba(20, 8, 25, 0.28)";
+  ctx.fillRect(t1.x, t1.y, t2.x - t1.x, t2.y - t1.y);
+
   // Secret themed offices get their own warm or cold tint.
   for (const room of ROOMS) {
     if (!room.theme) continue;
@@ -1703,7 +1790,10 @@ function drawLights(ctx) {
 
   const now = performance.now() / 1000;
   for (const f of FURNITURE) {
-    if (f.kind === "fireplace") {
+    if (f.kind === "bigScreen") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h);
+      drawGlow(ctx, p.x, p.y - 30, 150, "rgba(170, 200, 255, 0.22)");
+    } else if (f.kind === "fireplace") {
       // Firelight that breathes in and out a little.
       const p = toScreen(f.x + f.w / 2, f.y + f.h);
       const flicker = Math.sin(now * 7) * 3 + Math.sin(now * 13) * 2;
@@ -1761,7 +1851,8 @@ function drawLights(ctx) {
 // footprint): things with a bigger sortY are lower on screen and draw in
 // front. Wall hangings sort just after the wall they hang on. Things you
 // can stand on (like stools) sort by their top edge, so you're always
-// drawn over them.
+// drawn over them. Cinema seats are the opposite: they draw over whoever
+// sits in them, so you see heads above the seat backs.
 let staticSprites = [];
 let spritesVersion = -1;
 
@@ -1770,7 +1861,7 @@ function getStaticSprites() {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
-        sortY: f.h === undefined ? f.y + 0.001 : f.solid === false ? f.y : f.y + f.h,
+        sortY: f.h === undefined ? f.y + 0.001 : f.kind === "theaterSeat" ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
       })),
     ];
@@ -2049,15 +2140,19 @@ function drawStudySign(ctx, text) {
   ctx.textAlign = "left";
 }
 
-// The camera: how far the view is scrolled sideways, in pixels. When the
-// whole house fits on screen it stays centered; once offices make it
-// wider, it follows `focus` (your own character), stopping at the ends.
-function cameraX(focus) {
-  const { left, right } = houseBounds();
-  const view = CONFIG.canvasWidth;
-  if (right - left <= view) return (left + right) / 2 - view / 2;
-  const target = toScreen(focus.x + PLAYER_SIZE / 2, 0).x - view / 2;
-  return Math.max(left, Math.min(right - view, target));
+// The camera: how far the view is scrolled, in pixels. In each direction,
+// when the whole house fits on screen it stays centered; once offices
+// make it bigger, it follows `focus` (your own character), stopping at
+// the edges.
+function camera(focus) {
+  const { left, right, top, bottom } = houseBounds();
+  const center = toScreen(focus.x + PLAYER_SIZE / 2, focus.y + PLAYER_SIZE / 2);
+  // Along one direction: centered if the house fits, else follow `at`.
+  const follow = (lo, hi, view, at) => (hi - lo <= view ? (lo + hi) / 2 - view / 2 : Math.max(lo, Math.min(hi - view, at - view / 2)));
+  return {
+    x: follow(left, right, CONFIG.canvasWidth, center.x),
+    y: follow(top, bottom, CONFIG.canvasHeight, center.y),
+  };
 }
 
 // Draws the whole house for one frame. `players` is an array of
@@ -2067,7 +2162,8 @@ function drawScene(ctx, players, focus, studySign) {
   ctx.fillStyle = WOOD_DARK;
   ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
   ctx.save();
-  ctx.translate(-Math.round(cameraX(focus)), 0);
+  const cam = camera(focus);
+  ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
 
   drawFloors(ctx);
 

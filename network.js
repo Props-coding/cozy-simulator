@@ -24,6 +24,8 @@ let externalOnFocus = null;
 let focusAction = null;
 let externalOnChat = null;
 let chatAction = null;
+let externalOnTheater = null;
+let theaterAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -64,6 +66,18 @@ export function onChat(callback) {
 export function sendChat(message, peerIds) {
   if (Array.isArray(peerIds) && peerIds.length === 0) return;
   chatAction?.send(message, peerIds ? { target: peerIds } : undefined);
+}
+
+// Theater sync messages (what video, playing or paused, and where).
+export function onTheater(callback) {
+  externalOnTheater = callback;
+}
+
+// Sends a Theater message to the friends listed (only people in the
+// Theater). An empty list sends nothing.
+export function sendTheater(message, peerIds) {
+  if (!peerIds || peerIds.length === 0) return;
+  theaterAction?.send(message, { target: peerIds });
 }
 
 // Knock on one friend's office door (only they get the message).
@@ -112,6 +126,9 @@ export function connectToRoom(myName, myColor) {
   // "knock" carries no information, the message arriving is the knock.
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
+
+  theaterAction = room.makeAction("theater");
+  theaterAction.onMessage = (message, { peerId }) => externalOnTheater?.(message, peerId);
 
   chatAction = room.makeAction("chat");
   chatAction.onMessage = (message, { peerId }) => externalOnChat?.(message, peerId);
