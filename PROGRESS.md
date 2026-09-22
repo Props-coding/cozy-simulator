@@ -58,6 +58,8 @@
 
 - Build 0.22: Study focus timer. In the Study, press F to start a shared 25 minute focus session for everyone (press F again to stop it). A little chalkboard over the study table counts down, visible from anywhere in the house. When focus ends, a gentle chime starts a 5 minute break, then another chime when the break is over. Friends who join mid-session see the timer too. Lengths are in `config.js` (focusMinutes, breakMinutes).
 
+- Not pushed yet: removing your office now asks with a cozy in-game card ("Keep it" / "Remove office") instead of the browser's plain box. Dinner chairs now face the table from all four sides, and the sideboard that faced the wall is now a tea cart. The hallway is cozy now: wood paneling on the lower wall, three framed paintings between warm wall lamps, a side table with a lamp, flowers and a key bowl under the mirror, a cushioned bench, coat hooks with coats and a scarf, boots lined up underneath, an umbrella stand, a long warm runner rug, and a soft golden glow.
+
 ## Next
 - Test the multiplayer parts with friends: knocking, the shared focus timer, and seeing each other's hats. These were tested alone in a browser but not yet with two people.
 

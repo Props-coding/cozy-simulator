@@ -62,10 +62,25 @@ const BASE_WALLS = [
 // Windows and mirrors hang on a wall: their y is the bottom edge of the
 // wall they're on.
 const BASE_FURNITURE = [
-  // Hallway
-  { kind: "rug", x: 6, y: 0.7, w: 6, h: 1.4, color: "#7b8fa8", solid: false },
+  // Hallway: a long runner rug, and along the back wall (west to east):
+  // coat hooks with boots underneath, framed pictures between warm wall
+  // lamps, a side table with a lamp and flowers under a mirror, a
+  // cushioned bench, an umbrella stand and a plant.
+  { kind: "rug", x: 1.5, y: 1.0, w: 15, h: 1.1, color: "#b5603c", solid: false },
+  { kind: "coatHooks", x: 1.6, y: 0, w: 1.1, solid: false },
+  { kind: "boots", x: 1.7, y: 0.15, w: 0.9, h: 0.35, solid: false },
+  { kind: "sconce", x: 3.6, y: 0, solid: false },
+  { kind: "picture", x: 4.5, y: 0, w: 1.1, art: "hills", solid: false },
+  { kind: "sconce", x: 6.3, y: 0, solid: false },
+  { kind: "mirror", x: 7.95, y: 0, w: 0.7, short: true, solid: false },
+  { kind: "console", x: 7.3, y: 0.1, w: 2.0, h: 0.45 },
+  { kind: "picture", x: 10.0, y: 0, w: 1.1, art: "sea", solid: false },
+  { kind: "sconce", x: 11.6, y: 0, solid: false },
+  { kind: "picture", x: 12.8, y: 0, w: 1.0, art: "flowers", solid: false },
+  { kind: "bench", x: 12.3, y: 0.1, w: 2.0, h: 0.5 },
+  { kind: "sconce", x: 15.0, y: 0, solid: false },
+  { kind: "umbrellaStand", x: 16.2, y: 0.2, w: 0.4, h: 0.4 },
   { kind: "plant", x: 16.9, y: 0.3, w: 0.6, h: 0.6 },
-  { kind: "mirror", x: 2, y: 0, w: 0.7, solid: false },
 
   // Gaming: a LAN room, two rows of two computer desks with a stool in
   // front of each. "screen" is the color of that monitor's game.
@@ -99,20 +114,21 @@ const BASE_FURNITURE = [
   { kind: "plant", x: 6.4, y: 4.3, w: 0.6, h: 0.6 },
 
   // Dinner: a little kitchen along the back wall (stove counter under a
-  // window, sink, fridge), a rug under the dining table, a sideboard with
-  // the good plates, and a plant.
+  // window, sink, fridge), a rug under the dining table with chairs facing
+  // it from all four sides, a tea cart, and a plant. A chair's "facing"
+  // says which way you'd look sitting in it.
   { kind: "rug", x: 13.3, y: 5.1, w: 3.4, h: 3.6, color: "#b5763a", solid: false },
   { kind: "window", x: 12.3, y: 3.2, w: 1.5, short: true, solid: false },
   { kind: "stove", x: 12.2, y: 3.3, w: 1.7, h: 0.6 },
   { kind: "sink", x: 16.1, y: 3.3, w: 0.75, h: 0.6 },
   { kind: "fridge", x: 16.9, y: 3.3, w: 0.8, h: 0.6 },
-  { kind: "sideboard", x: 12.2, y: 10.0, w: 1.8, h: 0.6 },
+  { kind: "teaCart", x: 12.4, y: 9.9, w: 1.2, h: 0.6 },
   { kind: "plant", x: 17.2, y: 10.1, w: 0.6, h: 0.6 },
-  { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6 },
-  { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6 },
-  { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6 },
+  { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6, facing: "down" },
+  { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6, facing: "right" },
+  { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6, facing: "left" },
   { kind: "table", x: 14.1, y: 6.4, w: 1.8, h: 1.2 },
-  { kind: "chair", x: 14.7, y: 7.9, w: 0.6, h: 0.6 },
+  { kind: "chair", x: 14.7, y: 7.9, w: 0.6, h: 0.6, facing: "up" },
   { kind: "pendant", x: 15, y: 7, solid: false },
 ];
 
@@ -205,7 +221,7 @@ function roomNameFor(id) {
 // True if the player is standing right by the office door at the west
 // end of the hallway.
 function isNearBuildDoor(player) {
-  return player.x < hallwayWestX + 1.6 && player.y < 1.2;
+  return player.x < hallwayWestX + 1.6 && player.y < 1.6;
 }
 
 // If the player is in the hallway right in front of someone else's locked

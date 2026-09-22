@@ -37,6 +37,84 @@ canvas {
   box-shadow: 0 10px 24px rgba(90, 65, 40, 0.3);
 }
 
+/* Holds the house view, so the pop-up card can sit on top of it. */
+#house-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* The in-game "are you sure?" card: dims the house a little and shows a
+   warm cream card in the middle. */
+#confirm-dialog:not([hidden]) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(60, 40, 20, 0.35);
+  border-radius: 12px;
+}
+
+.confirm-card {
+  background: #fffaf3;
+  border: 3px solid var(--wood);
+  border-radius: 18px;
+  padding: 20px 26px;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(60, 40, 20, 0.35);
+  animation: pop-in 0.15s ease-out;
+}
+
+@keyframes pop-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.confirm-card h3 {
+  margin: 0 0 8px;
+  color: var(--wood-dark);
+}
+
+.confirm-card p {
+  margin: 0 0 16px;
+  color: var(--wood);
+  font-size: 0.95em;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.soft-button,
+.warm-button {
+  font-family: inherit;
+  font-size: 0.95em;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.soft-button {
+  background: #fffaf3;
+  color: var(--wood);
+  border: 2px solid #d9c3a5;
+}
+
+.warm-button {
+  background: #c0664a;
+  color: white;
+  border: 2px solid #c0664a;
+}
+
+.soft-button:hover,
+.warm-button:hover {
+  transform: translateY(-1px);
+}
+
 /* The little character preview on the Join screen: a soft round frame
    instead of the house view's heavy border. */
 #character-preview {

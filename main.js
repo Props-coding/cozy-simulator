@@ -60,6 +60,7 @@ const volumeSlider = document.getElementById("volume-slider");
 const lofiVolumeSlider = document.getElementById("lofi-volume-slider");
 const lofiPlayerContainer = document.getElementById("lofi-player");
 const micStatus = document.getElementById("mic-status");
+const confirmDialog = document.getElementById("confirm-dialog");
 
 onPeerStream(handlePeerStream);
 onPeerLeave((peerId) => {
@@ -316,7 +317,7 @@ function actionHintFor(room) {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || e.repeat) return;
+  if (gameScreen.hidden || e.repeat || dialogOpen) return;
   const key = e.key.toLowerCase();
 
   if (key === "e" && !myOffice && isNearBuildDoor(player)) {
@@ -353,16 +354,53 @@ window.addEventListener("keydown", (e) => {
   // Removing asks first, since it can't be undone (though you can always
   // build a new one). You get moved back to the hallway once it's gone.
   if (key === "r" && getCurrentRoom(player).office?.mine) {
-    if (window.confirm("Remove your office? Anyone inside will be moved to the hallway.")) {
-      myOffice = null;
-      saveMyOffice();
-      playClickSound();
-    }
-    // The confirm box swallows key releases, so forget any held keys to
-    // stop your character walking on by itself afterwards.
-    for (const k in keysDown) keysDown[k] = false;
+    askConfirm({
+      title: "Remove your office?",
+      text: "Anyone inside will be moved back to the hallway. You can always build a new one at the west door.",
+      yes: "Remove office",
+      no: "Keep it",
+    }).then((remove) => {
+      if (remove && myOffice) {
+        myOffice = null;
+        saveMyOffice();
+      }
+    });
   }
 });
+
+// --- In-game "are you sure?" card ---
+// Shows the cozy card over the house and resolves to true or false.
+// While it's open, your character stays put and game keys are ignored.
+// Escape (or the soft button) means no.
+let dialogOpen = false;
+
+function askConfirm({ title, text, yes, no }) {
+  document.getElementById("confirm-title").textContent = title;
+  document.getElementById("confirm-text").textContent = text;
+  const yesButton = document.getElementById("confirm-yes");
+  const noButton = document.getElementById("confirm-no");
+  yesButton.textContent = yes;
+  noButton.textContent = no;
+  dialogOpen = true;
+  confirmDialog.hidden = false;
+  noButton.focus(); // the safe choice is the one Enter picks
+
+  return new Promise((resolve) => {
+    const finish = (answer) => {
+      confirmDialog.hidden = true;
+      dialogOpen = false;
+      document.activeElement?.blur();
+      confirmDialog.onkeydown = null;
+      playClickSound();
+      resolve(answer);
+    };
+    yesButton.onclick = () => finish(true);
+    noButton.onclick = () => finish(false);
+    confirmDialog.onkeydown = (e) => {
+      if (e.key === "Escape") finish(false);
+    };
+  });
+}
 
 // Tracks which movement keys are currently held down.
 const keysDown = {};
@@ -372,6 +410,7 @@ window.addEventListener("keyup", (e) => (keysDown[e.key.toLowerCase()] = false))
 function readMovement(dt) {
   let dx = 0;
   let dy = 0;
+  if (dialogOpen) return { dx, dy }; // stay put while the pop-up card is open
   const dist = CONFIG.playerSpeed * dt;
 
   if (keysDown["arrowleft"] || keysDown["a"]) dx -= dist;

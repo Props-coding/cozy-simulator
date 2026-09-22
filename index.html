@@ -44,7 +44,20 @@
       <div>
         <p id="room-label">You are in: Hallway</p>
         <p id="action-hint"></p>
-        <canvas id="house"></canvas>
+        <div id="house-wrap">
+          <canvas id="house"></canvas>
+          <!-- A cozy in-game "are you sure?" card, shown over the house. -->
+          <div id="confirm-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+            <div class="confirm-card">
+              <h3 id="confirm-title"></h3>
+              <p id="confirm-text"></p>
+              <div class="confirm-buttons">
+                <button id="confirm-no" class="soft-button"></button>
+                <button id="confirm-yes" class="warm-button"></button>
+              </div>
+            </div>
+          </div>
+        </div>
         <p class="hint">Move with the arrow keys or WASD.</p>
       </div>
       <div id="sidebar">
