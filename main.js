@@ -38,6 +38,7 @@ import {
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
+import { FREE_HATS, ownedHats, ownedShoes, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -56,6 +57,7 @@ const gameScreen = document.getElementById("game-screen");
 const nameInput = document.getElementById("name-input");
 const colorInput = document.getElementById("color-input");
 const hatInput = document.getElementById("hat-input");
+const shoesInput = document.getElementById("shoes-input");
 const characterPreview = document.getElementById("character-preview");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
@@ -98,24 +100,59 @@ const ctx = canvas.getContext("2d");
 let myName = "Friend";
 let myColor = "#e05a47";
 let myHat = "none";
+let myShoes = "none";
 
-// The Join screen remembers your name, color and hat from last time.
+// The hats and shoes you can pick: the free hats, plus whatever you've
+// bought from the raccoons.
+const hatChoices = () => [...FREE_HATS, ...ownedHats()];
+const shoeChoices = () => [["none", "Plain feet"], ...ownedShoes()];
+
+function fillSelect(select, choices, chosen) {
+  select.innerHTML = "";
+  for (const [id, name] of choices) select.add(new Option(name, id));
+  select.value = choices.some(([id]) => id === chosen) ? chosen : "none";
+}
+
+// The Join screen remembers your name, color, hat and shoes from last time.
 const PROFILE_STORAGE_KEY = "cozy-house-profile";
+let savedProfile = null;
 try {
-  const saved = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY));
-  if (saved) {
-    nameInput.value = saved.name || "";
-    if (/^#[0-9a-fA-F]{6}$/.test(saved.color)) colorInput.value = saved.color;
-    if (HAT_DRAWERS[saved.hat]) hatInput.value = saved.hat;
-  }
+  savedProfile = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY));
 } catch {
   // Nothing saved yet, or storage is blocked: start with the defaults.
 }
+if (savedProfile) {
+  nameInput.value = savedProfile.name || "";
+  if (/^#[0-9a-fA-F]{6}$/.test(savedProfile.color)) colorInput.value = savedProfile.color;
+}
+fillSelect(hatInput, hatChoices(), savedProfile?.hat);
+fillSelect(shoesInput, shoeChoices(), savedProfile?.shoes);
 
-const updatePreview = () => drawCharacterPreview(characterPreview, colorInput.value, hatInput.value);
+function saveProfile() {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes }));
+  } catch {
+    // Storage blocked (e.g. private window): just won't be remembered.
+  }
+}
+
+const updatePreview = () => drawCharacterPreview(characterPreview, colorInput.value, hatInput.value, shoesInput.value);
 colorInput.addEventListener("input", updatePreview);
 hatInput.addEventListener("change", updatePreview);
+shoesInput.addEventListener("change", updatePreview);
 updatePreview();
+
+// The raccoons' shop can read and change what you're wearing.
+initShop({
+  get: () => ({ color: myColor, hat: myHat, shoes: myShoes }),
+  wear: (type, id) => {
+    if (type === "hat") myHat = id;
+    else myShoes = id;
+    saveProfile();
+    fillSelect(hatInput, hatChoices(), myHat);
+    fillSelect(shoesInput, shoeChoices(), myShoes);
+  },
+});
 
 // Starting spot: roughly the middle of the hallway (grid units, not pixels).
 const player = { x: 8.7, y: 1.2 };
@@ -123,12 +160,10 @@ const player = { x: 8.7, y: 1.2 };
 joinButton.addEventListener("click", async () => {
   myName = nameInput.value.trim() || "Friend";
   myColor = colorInput.value;
-  myHat = HAT_DRAWERS[hatInput.value] ? hatInput.value : "none";
-  try {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat }));
-  } catch {
-    // Storage blocked (e.g. private window): just won't be remembered.
-  }
+  myHat = hatChoices().some(([id]) => id === hatInput.value) ? hatInput.value : "none";
+  myShoes = shoeChoices().some(([id]) => id === shoesInput.value) ? shoesInput.value : "none";
+  saveProfile();
+  startEarningCrumbs();
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
@@ -275,6 +310,11 @@ function updateFocusTimer(roomId) {
   if (!focusTimer || performance.now() < focusTimer.endsAt) return;
   if (focusTimer.phase === "focus") {
     focusTimer = { phase: "break", endsAt: focusTimer.endsAt + CONFIG.breakMinutes * 60 * 1000 };
+    // A crumb bonus for anyone who stuck it out in the Study.
+    if (roomId === "study") {
+      addCrumbs(CONFIG.focusBonusCrumbs);
+      showNotice(`Focus session done! +${CONFIG.focusBonusCrumbs} crumbs. Time for a break.`);
+    }
   } else {
     focusTimer = null;
   }
@@ -295,6 +335,8 @@ function studySignText() {
 // The short prompt under the room name, like "Press E to build your office".
 function actionHintFor(room) {
   if (performance.now() < notice.until) return notice.text;
+  if (isShopBusy()) return "";
+  if (isNearRaccoons(player)) return "Press E to talk to the raccoons.";
   const lockedDoor = lockedDoorInFront(player);
   if (lockedDoor) return `${lockedDoor.office.ownerName}'s office is locked. Press K to knock.`;
   if (room.office?.mine) {
@@ -318,8 +360,14 @@ function actionHintFor(room) {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || e.repeat || dialogOpen || isTyping(e)) return;
+  if (gameScreen.hidden || e.repeat || dialogOpen || isShopBusy() || isTyping(e)) return;
   const key = e.key.toLowerCase();
+
+  if (key === "e" && isNearRaccoons(player)) {
+    for (const k in keysDown) keysDown[k] = false; // stop walking while you chat
+    talkToRaccoons();
+    return;
+  }
 
   if (key === "e" && !myOffice && isNearBuildDoor(player) && offices.length < OFFICE_SLOTS) {
     myOffice = { since: Date.now(), locked: false };
@@ -530,7 +578,7 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
 // Enter starts typing; Enter sends and goes back to walking; Escape goes
 // back to walking without sending.
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || dialogOpen) return;
+  if (gameScreen.hidden || dialogOpen || isShopBusy()) return;
   if (e.key === "Enter" && !isTyping(e)) {
     e.preventDefault();
     for (const k in keysDown) keysDown[k] = false; // stop walking while typing
@@ -632,7 +680,7 @@ window.addEventListener("keyup", (e) => (keysDown[e.key.toLowerCase()] = false))
 function readMovement(dt) {
   let dx = 0;
   let dy = 0;
-  if (dialogOpen) return { dx, dy }; // stay put while the pop-up card is open
+  if (dialogOpen || isShopBusy()) return { dx, dy }; // stay put while a pop-up is open
   const dist = CONFIG.playerSpeed * dt;
 
   if (keysDown["arrowleft"] || keysDown["a"]) dx -= dist;
@@ -731,16 +779,17 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const officeInfo = myOffice ? { since: myOffice.since, locked: myOffice.locked } : null;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo });
   }
 
   const scenePlayers = getPeers().map((peer) => {
     const shown = getSmoothedPosition(peer, dt);
     // A friend's hat name comes over the network, so only accept known hats.
-    const hat = HAT_DRAWERS[peer.hat] ? peer.hat : "none";
-    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id) };
+    const hat = Object.hasOwn(HAT_DRAWERS, peer.hat) ? peer.hat : "none";
+    const shoes = Object.hasOwn(SHOE_DRAWERS, peer.shoes) ? peer.shoes : "none";
+    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id) };
   });
-  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me") });
+  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me") });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText());
 

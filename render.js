@@ -740,6 +740,146 @@ const FURNITURE_DRAWERS = {
     }
   },
 
+  // --- The raccoon shop ---
+
+  // Three raccoons stacked in one long trenchcoat, swaying a little: the top
+  // one's masked face under a floppy hat, the middle one's eyes peeking out
+  // between the coat buttons, and a striped tail and little paws poking out
+  // at the bottom.
+  raccoons(ctx, f) {
+    const t = performance.now() / 1000;
+    const base = toScreen(f.x + f.w / 2, f.y + f.h);
+    const bx = base.x, by = base.y;
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+
+    // Striped tail poking out from under the hem, wagging.
+    const wag = Math.sin(t * 3) * 3;
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 ? "#3a3a40" : "#9a9aa2";
+      ctx.beginPath();
+      ctx.arc(bx + 12 + i * 3, by - 6 - i * 2.2 + (i * wag) / 6, 3.4 - i * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Little feet.
+    ctx.fillStyle = "#4a4a52";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(bx + side * 5, by - 2, 4, 2.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Everything above the feet sways gently.
+    ctx.save();
+    ctx.translate(bx, by - 4);
+    ctx.rotate(Math.sin(t * 1.6) * 0.035);
+    ctx.translate(-bx, -(by - 4));
+
+    // The trenchcoat: wider at the hem, lit from above.
+    const coat = ctx.createLinearGradient(0, by - 66, 0, by - 6);
+    coat.addColorStop(0, "#d6b98a");
+    coat.addColorStop(1, "#a88a5c");
+    ctx.fillStyle = coat;
+    ctx.beginPath();
+    ctx.moveTo(bx - 12, by - 66);
+    ctx.lineTo(bx + 12, by - 66);
+    ctx.lineTo(bx + 16, by - 6);
+    ctx.lineTo(bx - 16, by - 6);
+    ctx.closePath();
+    ctx.fill();
+    // The gap between the coat flaps, where the middle raccoon peeks out.
+    ctx.fillStyle = "#2f2a2a";
+    ctx.beginPath();
+    ctx.ellipse(bx + 1, by - 44, 3.5, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const blink = (t % 4) < 0.12;
+    const look = Math.sin(t * 0.7) * 1.2;
+    if (!blink) {
+      ctx.fillStyle = "#fbe9a8";
+      ctx.beginPath();
+      ctx.arc(bx - 0.6 + look, by - 46, 1.8, 0, Math.PI * 2);
+      ctx.arc(bx + 2.6 + look, by - 46, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Seam, belt and buttons.
+    ctx.strokeStyle = "rgba(90, 65, 35, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bx + 1, by - 36);
+    ctx.lineTo(bx + 1, by - 6);
+    ctx.stroke();
+    ctx.fillStyle = "#8a6a40";
+    ctx.fillRect(bx - 14, by - 32, 29, 4);
+    ctx.fillStyle = "#e0b84c";
+    ctx.fillRect(bx - 2, by - 33, 5, 6);
+    ctx.fillStyle = "#5c4530";
+    for (const yy of [by - 56, by - 22, by - 14]) {
+      ctx.beginPath();
+      ctx.arc(bx - 3, yy, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Sleeves with little grey paws.
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = "#b99a6a";
+      roundRectPath(ctx, bx + side * 13 - 4, by - 58, 8, 22, 3);
+      ctx.fill();
+      ctx.fillStyle = "#6a6a72";
+      ctx.beginPath();
+      ctx.arc(bx + side * 13, by - 35, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Popped collar.
+    ctx.fillStyle = "#c4a676";
+    ctx.beginPath();
+    ctx.moveTo(bx - 12, by - 66);
+    ctx.lineTo(bx - 3, by - 66);
+    ctx.lineTo(bx - 9, by - 58);
+    ctx.closePath();
+    ctx.moveTo(bx + 12, by - 66);
+    ctx.lineTo(bx + 3, by - 66);
+    ctx.lineTo(bx + 9, by - 58);
+    ctx.closePath();
+    ctx.fill();
+
+    // The top raccoon's head.
+    const hx = bx, hy = by - 75;
+    ctx.fillStyle = "#8f8f98";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(hx + side * 8, hy - 8, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(hx, hy, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ececef"; // white face markings
+    ctx.beginPath();
+    ctx.ellipse(hx, hy + 5, 6, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(hx - 8, hy - 6, 16, 2.2);
+    ctx.fillStyle = "#2b2b30"; // the bandit mask
+    roundRectPath(ctx, hx - 10, hy - 3.5, 20, 6.5, 3);
+    ctx.fill();
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(hx - 4.5, hy - 0.5, 1.6, 0, Math.PI * 2);
+    ctx.arc(hx + 4.5, hy - 0.5, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1e1e22";
+    ctx.beginPath();
+    ctx.arc(hx, hy + 3.5, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    // Floppy brown hat, a little low over the eyes.
+    ctx.fillStyle = "#5c4530";
+    ctx.beginPath();
+    ctx.ellipse(hx, hy - 7, 15, 3.8, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+    roundRectPath(ctx, hx - 8, hy - 17, 16, 11, 4);
+    ctx.fill();
+    ctx.fillStyle = "#3f2f22";
+    ctx.fillRect(hx - 8, hy - 10, 16, 2.5);
+    ctx.restore();
+  },
+
   // --- Theater ---
 
   // The big cinema screen on a low stage, with speakers either side.
@@ -2110,6 +2250,234 @@ const HAT_DRAWERS = {
   },
 };
 
+// Hats sold by the raccoons (see shop.js for names and prices). Each draws
+// on top of a round body with its center at (cx, cy) and radius r.
+Object.assign(HAT_DRAWERS, {
+  // A striped party cone with a pompom, tipped at a jaunty angle.
+  partyHat(ctx, cx, cy, r) {
+    const base = cy - r + 3;
+    ctx.fillStyle = "#e37aa0";
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, base);
+    ctx.lineTo(cx + 7, base);
+    ctx.lineTo(cx + 3, base - 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#f2c94c";
+    ctx.lineWidth = 2;
+    for (const t of [0.35, 0.65]) {
+      ctx.beginPath();
+      ctx.moveTo(cx - 8 + 11 * t, base - 18 * t);
+      ctx.lineTo(cx + 7 - 4 * t, base - 18 * t);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#6fc8ff";
+    ctx.beginPath();
+    ctx.arc(cx + 3, base - 19, 3, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A tall puffy white chef's hat.
+  chefHat(ctx, cx, cy, r) {
+    const base = cy - r + 4;
+    ctx.fillStyle = "#f7f4ee";
+    for (const [dx, dy, rr] of [[-6, -12, 6], [0, -15, 7], [6, -12, 6]]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, base + dy, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillRect(cx - 9, base - 10, 18, 8);
+    ctx.fillStyle = "#e3ddd2";
+    ctx.fillRect(cx - 10, base - 3, 20, 5);
+  },
+
+  // A classic black top hat with a red band.
+  topHat(ctx, cx, cy, r) {
+    const base = cy - r + 3;
+    ctx.fillStyle = "#2b2b2f";
+    ctx.beginPath();
+    ctx.ellipse(cx, base, 15, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(cx - 9, base - 18, 18, 18);
+    ctx.fillStyle = "#b8322a";
+    ctx.fillRect(cx - 9, base - 5, 18, 3);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fillRect(cx - 7, base - 17, 3, 11);
+  },
+
+  // A wide-brimmed cowboy hat.
+  cowboyHat(ctx, cx, cy, r) {
+    const base = cy - r + 3;
+    ctx.fillStyle = "#8b5e3c";
+    ctx.beginPath();
+    ctx.ellipse(cx, base, 19, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    roundRectPath(ctx, cx - 9, base - 13, 18, 13, 5);
+    ctx.fill();
+    ctx.fillStyle = "#6b4a2e";
+    ctx.fillRect(cx - 9, base - 4, 18, 2.5);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx, base - 13);
+    ctx.lineTo(cx, base - 8);
+    ctx.stroke();
+  },
+
+  // A pointy purple witch's hat with a gold buckle.
+  witchHat(ctx, cx, cy, r) {
+    const base = cy - r + 3;
+    ctx.fillStyle = "#5b3f7a";
+    ctx.beginPath();
+    ctx.ellipse(cx, base, 18, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, base);
+    ctx.lineTo(cx + 10, base);
+    ctx.quadraticCurveTo(cx + 4, base - 16, cx + 10, base - 24);
+    ctx.quadraticCurveTo(cx - 2, base - 18, cx - 10, base);
+    ctx.fill();
+    ctx.fillStyle = "#3f2a57";
+    ctx.fillRect(cx - 10, base - 5, 20, 3.5);
+    ctx.strokeStyle = "#e0b84c";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - 3, base - 6, 6, 5);
+  },
+
+  // A green frog hat with two googly eyes on top.
+  frogHat(ctx, cx, cy, r) {
+    ctx.fillStyle = "#6fb05a";
+    ctx.beginPath();
+    ctx.arc(cx, cy - 1, r + 1, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.closePath();
+    ctx.fill();
+    for (const side of [-1, 1]) {
+      const ex = cx + side * 6, ey = cy - r - 2;
+      ctx.fillStyle = "#6fb05a";
+      ctx.beginPath();
+      ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(ex, ey - 1, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2b2b2b";
+      ctx.beginPath();
+      ctx.arc(ex + side * 0.8, ey - 1, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e37aa0"; // little blush on the frog
+    ctx.beginPath();
+    ctx.arc(cx - 9, cy - r * 0.45, 1.5, 0, Math.PI * 2);
+    ctx.arc(cx + 9, cy - r * 0.45, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A little golden crown with three gems.
+  crown(ctx, cx, cy, r) {
+    const base = cy - r + 4;
+    ctx.fillStyle = "#e0b84c";
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, base);
+    ctx.lineTo(cx - 10, base - 10);
+    ctx.lineTo(cx - 5, base - 5);
+    ctx.lineTo(cx, base - 12);
+    ctx.lineTo(cx + 5, base - 5);
+    ctx.lineTo(cx + 10, base - 10);
+    ctx.lineTo(cx + 10, base);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f7e08a";
+    ctx.fillRect(cx - 10, base - 2, 20, 2);
+    for (const [gx, color] of [[-6, "#c0554a"], [0, "#3f6f9f"], [6, "#4f7a48"]]) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx + gx, base - 4, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A glowing golden halo floating above the head.
+  halo(ctx, cx, cy, r) {
+    const hy = cy - r - 7 + Math.sin(performance.now() / 500) * 1.2;
+    drawGlow(ctx, cx, hy, 16, "rgba(255, 230, 140, 0.55)");
+    ctx.strokeStyle = "#f2d06b";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.ellipse(cx, hy, 10, 3.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  },
+});
+
+// Shoes sold by the raccoons. Each draws one foot at (x, y) (its center),
+// replacing the plain little foot. "side" is -1 for left, 1 for right.
+const SHOE_DRAWERS = {
+  none: null, // plain feet in your own color
+
+  sneakers(ctx, x, y, side) {
+    ctx.fillStyle = "#f7f4ee";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 4.6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#c0554a";
+    ctx.fillRect(x - 3, y - 1, 6, 1.4);
+    ctx.fillStyle = "#b9b3a8";
+    ctx.fillRect(x - 4.4, y + 1.5, 8.8, 1.3);
+  },
+
+  rainBoots(ctx, x, y, side) {
+    ctx.fillStyle = "#f2c94c";
+    roundRectPath(ctx, x - 3.8, y - 6, 7.6, 9, 2.5);
+    ctx.fill();
+    ctx.fillStyle = "#d9a441";
+    ctx.fillRect(x - 3.8, y + 1.8, 7.6, 1.5);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.fillRect(x - 2.6, y - 5, 1.2, 5);
+  },
+
+  bunnySlippers(ctx, x, y, side) {
+    ctx.fillStyle = "#f5c6d6";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 5, 3.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const ear of [-1.6, 1.6]) {
+      ctx.beginPath();
+      ctx.ellipse(x + ear, y - 4, 1.2, 3, ear * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#2b2b2b";
+    ctx.fillRect(x - 1.8, y - 1, 1, 1);
+    ctx.fillRect(x + 0.8, y - 1, 1, 1);
+  },
+
+  cowboyBoots(ctx, x, y, side) {
+    ctx.fillStyle = "#8b5e3c";
+    roundRectPath(ctx, x - 3.5, y - 7, 7, 9, 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + side * 1.5, y + 1, 4.6, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5c3a22";
+    ctx.fillRect(x - side * 3 - 1, y + 1, 2.5, 2.2); // heel
+    ctx.fillStyle = "#e0b84c";
+    ctx.fillRect(x - 0.8, y - 5, 1.6, 1.6); // a little star stitch
+  },
+
+  rollerSkates(ctx, x, y, side) {
+    ctx.fillStyle = "#c0554a";
+    roundRectPath(ctx, x - 4, y - 5, 8, 7, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f7f4ee";
+    ctx.fillRect(x - 4, y + 0.5, 8, 1.5);
+    ctx.fillStyle = "#6fc8ff";
+    for (const wx of [-2.5, 2.5]) {
+      ctx.beginPath();
+      ctx.arc(x + wx, y + 3.4, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+};
+
 // Draws one player's body (used for yourself and everyone else): a soft
 // shadow, two little feet, and a round body lit from above (lighter on
 // top, darker underneath) like everything else, with their hat on top.
@@ -2127,12 +2495,19 @@ function drawPlayerBody(ctx, p) {
   ctx.ellipse(foot.x, foot.y, r * 0.85 - bob * 0.6, r * 0.35, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Feet, peeking out under the body.
+  // Feet, peeking out under the body (or shoes, if they're wearing some).
+  const shoe = Object.hasOwn(SHOE_DRAWERS, p.shoes) ? SHOE_DRAWERS[p.shoes] : null;
   ctx.fillStyle = shadeColor(p.color, -70);
   for (const [side, lift] of [[-1, Math.max(0, step) * 3], [1, Math.max(0, -step) * 3]]) {
-    ctx.beginPath();
-    ctx.ellipse(cx + side * 5.5, foot.y - 2.5 - lift, 4, 2.6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    const fx = cx + side * 5.5, fy = foot.y - 2.5 - lift;
+    if (shoe) {
+      shoe(ctx, fx, fy, side);
+    } else {
+      ctx.fillStyle = shadeColor(p.color, -70);
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, 4, 2.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   const body = ctx.createLinearGradient(0, cy - r, 0, cy + r);
@@ -2163,15 +2538,15 @@ function drawPlayerBody(ctx, p) {
   ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
   ctx.stroke();
 
-  (HAT_DRAWERS[p.hat] || HAT_DRAWERS.none)(ctx, cx, cy, r);
+  (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
 }
 
 // Draws a character by itself, centered in a small canvas, for the
 // preview on the Join screen.
-function drawCharacterPreview(canvas, color, hat) {
+function drawCharacterPreview(canvas, color, hat, shoes) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const p = { x: 0, y: 0, color, hat, moving: false };
+  const p = { x: 0, y: 0, color, hat, shoes, moving: false };
   const foot = playerFeet(p);
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height - 13);

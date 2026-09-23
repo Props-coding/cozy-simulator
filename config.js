@@ -105,6 +105,12 @@ const CONFIG = {
     kxiven: "scholar",
   },
 
+  // --- Crumbs (the house money) ---
+  // You earn crumbs just for hanging out, and spend them at the raccoons'
+  // shop in the hallway on hats and shoes.
+  crumbsPerMinute: 1,
+  focusBonusCrumbs: 10, // extra crumbs for finishing a Study focus session
+
   // --- Study focus timer ---
   // Press F in the Study to start a shared focus session for everyone.
   // After the focus time there's a short break, then it ends. In minutes.

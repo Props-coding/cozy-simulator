@@ -96,6 +96,61 @@ export function playChatSound() {
   playTone(1174.66, 70, { gain: 0.05, duration: 0.1, type: "sine" });
 }
 
+// One "syllable" of a raccoon talking: a short, slightly hoarse blip at a
+// wobbly pitch. Played for each letter as their words type out, so it
+// sounds like chattering in a made-up language. `pitch` sets the voice
+// (high for Pip, middle for Reginald, low for Bean).
+export function playBabble(pitch, letter) {
+  if (!toneContext || currentRoomId === "dinner" || masterMuted) return;
+  const vowel = "aeiouy".includes(letter.toLowerCase());
+  const freq = pitch * (vowel ? 1.18 : 1) * (0.88 + Math.random() * 0.24);
+  const now = toneContext.currentTime;
+  const osc = toneContext.createOscillator();
+  const filter = toneContext.createBiquadFilter();
+  const gain = toneContext.createGain();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.linearRampToValueAtTime(freq * (vowel ? 1.08 : 0.94), now + 0.05);
+  filter.type = "lowpass";
+  filter.frequency.value = pitch * 3.2; // softens the buzzy square wave
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(0.05 * masterVolume, now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(toneContext.destination);
+  osc.start(now);
+  osc.stop(now + 0.07);
+}
+
+// A soft "fwoosh" of fabric, for the raccoons flinging their coat open.
+export function playCoatWhoosh() {
+  if (!toneContext || currentRoomId === "dinner" || masterMuted) return;
+  const now = toneContext.currentTime;
+  const length = Math.floor(toneContext.sampleRate * 0.35);
+  const buffer = toneContext.createBuffer(1, length, toneContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.sin((Math.PI * i) / length);
+  const noise = toneContext.createBufferSource();
+  noise.buffer = buffer;
+  const filter = toneContext.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(500, now);
+  filter.frequency.exponentialRampToValueAtTime(1800, now + 0.3);
+  const gain = toneContext.createGain();
+  gain.gain.value = 0.12 * masterVolume;
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(toneContext.destination);
+  noise.start(now);
+}
+
+// A happy little "cha-ching" for buying something (or earning crumbs).
+export function playCrumbSound() {
+  playTone(987.77, 0, { gain: 0.07, duration: 0.09, type: "triangle" });
+  playTone(1318.51, 80, { gain: 0.07, duration: 0.16, type: "triangle" });
+}
+
 // A tiny, soft click for buttons and toggles.
 export function playClickSound() {
   playTone(600, 0, { gain: 0.06, duration: 0.05, type: "triangle" });

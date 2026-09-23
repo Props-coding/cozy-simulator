@@ -59,6 +59,41 @@ body:has(#game-screen:not([hidden])) {
   margin: 0;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The crumb counter in the header, with a little bounce when crumbs arrive. */
+#crumb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #9a6a1e;
+  background: #fffaf3;
+  padding: 4px 14px 4px 8px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(122, 92, 62, 0.15);
+}
+
+#crumb-pill.bump {
+  animation: crumb-bump 0.5s ease-out;
+}
+
+@keyframes crumb-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18) rotate(-4deg); }
+  100% { transform: scale(1); }
+}
+
+.crumb-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
 /* The current room, as a small pill in the same card style as the sidebar. */
 #room-label {
   font-weight: 700;
@@ -229,6 +264,308 @@ canvas {
 
 #whiteboard-tools .tools-gap {
   flex: 1;
+}
+
+/* Talking to the raccoons: a big, soft speech box along the bottom of the
+   house, with the speaker's name on a tilted tag and a bouncing arrow. */
+#talk-box:not([hidden]) {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(620px, calc(100% - 40px));
+  box-sizing: border-box;
+  min-height: 96px;
+  padding: 26px 30px 22px;
+  background: #fff7e6;
+  border: 4px solid #ecd7ae;
+  border-radius: 30px;
+  box-shadow: 0 10px 28px rgba(60, 40, 20, 0.35);
+  text-align: left;
+  cursor: pointer;
+  animation: pop-in 0.18s ease-out;
+}
+
+#talk-name {
+  position: absolute;
+  top: -17px;
+  left: 26px;
+  padding: 4px 16px;
+  border-radius: 999px;
+  background: var(--speaker, var(--accent));
+  color: white;
+  font-weight: 700;
+  transform: rotate(-3deg);
+  box-shadow: 0 3px 8px rgba(60, 40, 20, 0.25);
+}
+
+#talk-text {
+  margin: 0;
+  font-size: 1.15em;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #4a3a2c;
+  min-height: 1.45em;
+}
+
+#talk-next {
+  position: absolute;
+  right: 26px;
+  bottom: 10px;
+  color: var(--accent);
+  animation: talk-bounce 0.8s ease-in-out infinite;
+}
+
+@keyframes talk-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+#talk-choices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+#talk-choices:empty {
+  display: none;
+}
+
+#talk-choices button {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95em;
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: 3px solid #ecd7ae;
+  background: white;
+  color: #6b4a2e;
+  cursor: pointer;
+}
+
+#talk-choices button:hover,
+#talk-choices button:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff3d6;
+}
+
+/* The raccoons' shop: the plaid lining inside their coat, with the two tan
+   coat flaps swinging open when it appears. */
+#shop-panel:not([hidden]) {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(700px, calc(100% - 28px));
+  perspective: 900px;
+}
+
+.shop-inner {
+  padding: 14px 16px 16px;
+  border: 6px solid #c8a878;
+  border-radius: 20px;
+  background-color: #7a2e2e;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 214, 150, 0.14) 0 5px, transparent 5px 30px),
+    repeating-linear-gradient(90deg, rgba(255, 214, 150, 0.14) 0 5px, transparent 5px 30px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 15px, transparent 15px 30px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0 15px, transparent 15px 30px);
+  box-shadow: 0 12px 34px rgba(40, 20, 10, 0.5);
+  color: #fff3d6;
+}
+
+.coat-flap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: linear-gradient(180deg, #d6b98a, #a88a5c);
+  border: 6px solid #b99a6a;
+  box-sizing: border-box;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.coat-flap.left {
+  left: 0;
+  border-radius: 20px 0 0 20px;
+  transform-origin: left center;
+}
+
+.coat-flap.right {
+  right: 0;
+  border-radius: 0 20px 20px 0;
+  transform-origin: right center;
+}
+
+#shop-panel.opening .coat-flap.left {
+  animation: flap-left 0.65s ease-in forwards;
+}
+
+#shop-panel.opening .coat-flap.right {
+  animation: flap-right 0.65s ease-in forwards;
+}
+
+@keyframes flap-left {
+  0% { opacity: 1; transform: rotateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: rotateY(-100deg); }
+}
+
+@keyframes flap-right {
+  0% { opacity: 1; transform: rotateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: rotateY(100deg); }
+}
+
+.shop-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shop-title {
+  font-size: 1.2em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-style: italic;
+}
+
+.shop-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #6b4a2e;
+  background: #fffaf3;
+  padding: 3px 12px 3px 6px;
+  border-radius: 999px;
+}
+
+#shop-quip {
+  margin: 8px 0 10px;
+  min-height: 1.4em;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(255, 247, 230, 0.95);
+  color: #4a3a2c;
+  font-weight: 600;
+  text-align: left;
+}
+
+#shop-quip-name {
+  font-weight: 700;
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.shop-tabs button {
+  font-family: inherit;
+  font-weight: 700;
+  padding: 5px 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 243, 214, 0.6);
+  background: transparent;
+  color: #fff3d6;
+  cursor: pointer;
+}
+
+.shop-tabs button.active {
+  background: #fff3d6;
+  color: #7a2e2e;
+}
+
+/* Each item is a cream price tag hanging from a little string. */
+#shop-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: 16px 12px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 10px 4px 4px;
+}
+
+.shop-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px 10px;
+  background: #fffaf3;
+  border-radius: 12px;
+  color: #4a3a2c;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.shop-item::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 2px;
+  height: 14px;
+  background: #e8d2a8;
+}
+
+.shop-item::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c8a878;
+}
+
+.shop-item.wearing {
+  box-shadow: 0 0 0 3px var(--accent), 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.shop-item canvas {
+  border: none;
+  border-radius: 50%;
+  background: #f3e6d0;
+  box-shadow: none;
+}
+
+.shop-item-name {
+  font-weight: 700;
+  font-size: 0.9em;
+}
+
+.shop-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: #9a6a1e;
+}
+
+.shop-price .crumb-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.shop-item button {
+  margin-top: 2px;
+  padding: 4px 16px;
+  font-size: 0.85em;
+}
+
+.shop-bottom {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 /* The in-game "are you sure?" card: dims the house a little and shows a

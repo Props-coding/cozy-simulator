@@ -10,6 +10,24 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- The crumb icon: a happy little cookie crumb with chocolate chips,
+       drawn once here and reused wherever crumbs are shown. -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <symbol id="crumb-icon" viewBox="0 0 32 32">
+      <path d="M7 12 C6 7 11 4 16 5 C18 3.5 21 4 22 6 C23.5 5.5 25 7 24.5 8.5 C27.5 11 28.5 16 26 20 C25.5 25 20 28 15 27 C10 28.5 5.5 25 5 20.5 C3.5 18 4.5 14 7 12 Z" fill="#e3a954" stroke="#b9832a" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M9.5 11 C11.5 8.5 14.5 7.5 17 7.6" stroke="#f7d69a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="9.5" cy="21.5" r="1.8" fill="#6b4226"/>
+      <circle cx="22.5" cy="12" r="1.5" fill="#6b4226"/>
+      <circle cx="23" cy="21" r="1.3" fill="#6b4226"/>
+      <circle cx="13.2" cy="16" r="1.35" fill="#3a2a1e"/>
+      <circle cx="18.8" cy="16" r="1.35" fill="#3a2a1e"/>
+      <path d="M14.3 18.7 Q16 20.3 17.7 18.7" stroke="#3a2a1e" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="11" cy="18.6" rx="1.5" ry="0.9" fill="#f08a7a" opacity="0.65"/>
+      <ellipse cx="21" cy="18.6" rx="1.5" ry="0.9" fill="#f08a7a" opacity="0.65"/>
+      <circle cx="28.3" cy="27" r="1.4" fill="#e3a954" stroke="#b9832a" stroke-width="0.8"/>
+      <circle cx="4.5" cy="28" r="1" fill="#e3a954" stroke="#b9832a" stroke-width="0.7"/>
+    </symbol>
+  </svg>
   <!-- Title for the Join screen (the house view has its own header). -->
   <h1 id="join-title">Cozy House</h1>
 
@@ -23,16 +41,15 @@
       Your color:
       <input id="color-input" type="color" value="#e05a47">
     </label>
+    <!-- The hat and shoes lists are filled in by main.js: the free hats,
+         plus anything you've bought from the raccoons. -->
     <label>
       Your hat:
-      <select id="hat-input">
-        <option value="none">No hat</option>
-        <option value="beanie">Beanie</option>
-        <option value="cap">Cap</option>
-        <option value="bow">Bow</option>
-        <option value="headphones">Headphones</option>
-        <option value="flower">Flower</option>
-      </select>
+      <select id="hat-input"></select>
+    </label>
+    <label>
+      Your shoes:
+      <select id="shoes-input"></select>
     </label>
     <!-- A little preview of how you'll look, updated as you pick. -->
     <canvas id="character-preview" width="96" height="96"></canvas>
@@ -46,7 +63,13 @@
     <div id="game-container">
       <header id="game-header">
         <h1>Cozy House</h1>
-        <span id="room-label">📍 Hallway</span>
+        <div class="header-right">
+          <span id="crumb-pill" title="Crumbs: you earn them by hanging out, and spend them at the raccoons' shop in the hallway">
+            <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
+            <span id="crumb-count">0</span>
+          </span>
+          <span id="room-label">📍 Hallway</span>
+        </div>
       </header>
     <div id="game-layout">
       <div id="house-column">
@@ -77,6 +100,37 @@
               <button id="whiteboard-save" type="button" class="soft-button">Save picture</button>
               <button id="whiteboard-clear" type="button" class="soft-button">Clear</button>
               <button id="whiteboard-close" type="button" class="warm-button">Close</button>
+            </div>
+          </div>
+          <!-- Talking to the raccoons: a speech box along the bottom, with
+               the speaker's name on a little tag. shop.js runs it. -->
+          <div id="talk-box" hidden>
+            <span id="talk-name"></span>
+            <p id="talk-text"></p>
+            <div id="talk-choices"></div>
+            <span id="talk-next" hidden>▼</span>
+          </div>
+          <!-- The raccoons' shop: the inside of their coat, swinging open. -->
+          <div id="shop-panel" hidden>
+            <div class="coat-flap left"></div>
+            <div class="coat-flap right"></div>
+            <div class="shop-inner">
+              <div class="shop-top">
+                <span class="shop-title">psst... the wares</span>
+                <span class="shop-balance">
+                  <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
+                  <span id="shop-crumbs">0</span>
+                </span>
+              </div>
+              <p id="shop-quip"><span id="shop-quip-name"></span> <span id="shop-quip-text"></span></p>
+              <div class="shop-tabs">
+                <button type="button" data-tab="hat" class="active">Hats</button>
+                <button type="button" data-tab="shoes">Shoes</button>
+              </div>
+              <div id="shop-items"></div>
+              <div class="shop-bottom">
+                <button id="shop-bye" type="button" class="warm-button">Bye!</button>
+              </div>
             </div>
           </div>
           <!-- A cozy in-game "are you sure?" card, shown over the house. -->

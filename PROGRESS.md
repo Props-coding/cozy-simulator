@@ -84,9 +84,15 @@
 
 - Not pushed yet: the south rooms' name signs hung over the hallway's walkway, so people walked through them. Theater, Study and Dinner now have a doormat with their name on the hallway floor in front of their door instead, which people walk over like a rug. North rooms keep their signs over the doorway.
 
+- Not pushed yet: crumbs and the raccoon shop.
+  - Crumbs are the house money, with a cute crumb icon (a little cookie crumb with chocolate chips and a happy face). The counter sits in the header next to the room pill and bounces when crumbs come in. You earn 1 crumb a minute for being in the house, plus 10 for finishing a Study focus session (both in `config.js`).
+  - Three raccoons in a trenchcoat (Reginald on top, Pip peeking between the buttons, Bean at the bottom with the tail) lurk in the hallway's east corner, gently swaying. Walk up and press E to talk: a big soft speech box with each raccoon's name on a colored tag, words typing out with a babbling voice (each raccoon has its own pitch), and a bouncing arrow to continue (E, Enter, Space or click). Pick "Show me the goods" and their coat swings open to a plaid-lined shop.
+  - For sale: 8 hats (party hat, chef hat, top hat, cowboy hat, witch hat, frog hat, crown, halo) and 5 shoes (sneakers, rain boots, bunny slippers, cowboy boots, roller skates), each on a hanging price tag with a preview of you wearing it. Buy, wear or take off; the raccoons comment on every purchase. What you own shows up on the Join screen too, which now has a shoes picker. Friends see your hat and shoes.
+  - Crumbs and purchases are saved in your own browser (no server), so they don't carry over to another computer.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.
+- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements, pets, a Library with rain sounds, and emotes (crumbs and the raccoon shop are done).
 - Decisions needed before starting: where bedrooms go; what the conference room replaces or where it's added; which extras beyond hats and shoes to unlock.
 
 ## Open questions

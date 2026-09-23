@@ -93,6 +93,9 @@ const BASE_FURNITURE = [
   { kind: "picture", x: 16.85, y: 0, w: 0.9, art: "hills", solid: false },
   { kind: "umbrellaStand", x: 16.75, y: 0.2, w: 0.4, h: 0.4 },
   { kind: "plant", x: 17.3, y: 0.3, w: 0.6, h: 0.6 },
+  // Three raccoons in a trenchcoat, lurking in the east corner. They sell
+  // hats and shoes for crumbs (walk up and press E; see shop.js).
+  { kind: "raccoons", x: 17.0, y: 1.95, w: 0.7, h: 0.5 },
 
   // Conference Room: a rolling whiteboard at the front, a big table with
   // seats all round (stand on one to sit), a plant, and a coffee cart.
@@ -333,6 +336,14 @@ function lockedDoorInFront(player) {
   const cx = player.x + PLAYER_SIZE / 2;
   const nearDoor = (r) => cx >= r.rect.x + 1 && cx <= r.rect.x + 2.6 && player.y < 0.9;
   return ROOMS.find((r) => r.office?.locked && !r.office.mine && nearDoor(r)) || null;
+}
+
+// True if the player is close enough to the raccoons to talk to them.
+function isNearRaccoons(player) {
+  const r = FURNITURE.find((f) => f.kind === "raccoons");
+  const dx = player.x + PLAYER_SIZE / 2 - (r.x + r.w / 2);
+  const dy = player.y + PLAYER_SIZE / 2 - (r.y + r.h / 2);
+  return Math.hypot(dx, dy) < 1.4;
 }
 
 // True if the player's center is inside some room (false means a room
