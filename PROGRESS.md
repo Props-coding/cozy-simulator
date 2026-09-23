@@ -191,6 +191,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Previews no longer cut off tall things: in Reginald's shop (hats, shoes, pets), on the Join screen and on profile cards, the round backdrop now sits at the bottom of a taller picture, so the Party Hat, Chef Hat, Witch Hat, Top Hat, the Halo and wide pets (fox, raccoon kit) show in full above and beside the circle. The character's body stays inside the circle.
   - New plants at Nest & Nook: Monstera Adansonii (on a moss pole), Hoya Finlaysonii (with pink star flowers), and Red and Pink Anthuriums.
   - Crumbs you earn while Nest & Nook is open now show up right away (the wallet and the "crumbs short" buttons update without reopening the store).
+  - Wren's notes: every Nest & Nook item has its own short line in Wren's voice. Hover over a card and the note fades in over its picture. Wren's pick of the day now quotes that item's note, instead of the same few lines for everything.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

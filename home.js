@@ -146,7 +146,144 @@ const WREN_THANKS = [
   "Oh, that one's a favorite. Enjoy!",
   "Delivered straight to your bedroom. Free of charge!",
 ];
-const WREN_PICK_LINES = ["I'd put this by a window.", "Everyone's asking about this one.", "Trust me on this.", "It just makes a room, you know?"];
+// What Wren says about each item: shown when you hover over its card, and
+// on the "Wren's pick" card when it's the pick of the day.
+const WREN_NOTES = {
+  quiltBed: "Hand-stitched quilt in your own color. Sleep like a loaf.",
+  canopyBed: "Gauzy drapes and tiny lights. You'll feel like royalty.",
+  nightstand: "A little lamp for late-night reading. Glows so softly.",
+  wardrobe: "Room for every sweater you swear you'll fold.",
+  dresser: "Drawers for socks, secrets and spare hair ties.",
+  vanity: "Bulb mirror for getting ready like a movie star.",
+  clothesRack: "Show off your favorite outfits. Very boutique of you.",
+  cloudSofa: "Like sitting on a cloud, but it holds your tea.",
+  loveseatSage: "A sage little sofa for two, or one plus a cat.",
+  loveseatRose: "Rosy and plush, made for long phone calls.",
+  armchair: "Deep cushions for losing whole afternoons to a book.",
+  velvetChair: "Velvet chair. The cat came with it. She stays.",
+  papasanChair: "A big round nest. You'll never want to get up.",
+  eggChair: "Hang out, literally. Swings ever so gently.",
+  rockingChair: "Rock, knit, repeat. Grandma approved.",
+  beanbag: "Flop right in. It catches you every time.",
+  poufCream: "Chunky knit pouf. A footrest, a seat, a vibe.",
+  poufPink: "The pink one. Soft as a strawberry milkshake.",
+  mushroomStool: "Straight from the forest. No gnomes were harmed.",
+  bench: "Cushioned bench for pulling on boots.",
+  coffeeTable: "For mugs, magazines and mid-game snacks.",
+  sideTable: "Small, round, and exactly where your drink should go.",
+  writingDesk: "For letters, journaling and the occasional doodle.",
+  aestheticDesk: "The desk from your mood board, now in real life.",
+  teaCart: "Roll the tea to wherever the cozy is.",
+  barCart: "Gold and glam. Holds lemonade beautifully.",
+  fireplace: "A crackling fire for your very own room. Toasty!",
+  recordPlayer: "Spins your favorite records, crackles and all.",
+  piano: "Plays soft melodies. Chopsticks counts.",
+  fishTank: "Little fish, big personality. They wave at you.",
+  arcade: "One more game. Okay, one more. Okay, one more.",
+  telescope: "For stargazing and spotting the neighbor's cat.",
+  globe: "Spin it and pick your next daydream.",
+  toyChest: "Keep the clutter hidden and the fun close.",
+  catBed: "A plush bed. A cat is already asleep in it.",
+  catTree: "A tower for climbing. The cat is in charge now.",
+  plant: "A cheerful little plant. Good starter friend.",
+  monstera: "Big, dramatic split leaves. The queen of plants.",
+  monsteraAdansonii: "Swiss cheese vine, holes and all, climbing a moss pole.",
+  hoyaFinlaysonii: "Netted leaves and tiny pink stars. A collector's darling.",
+  anthuriumRed: "Glossy hearts and waxy red blooms. So romantic.",
+  anthuriumPink: "The pink anthurium: a whole valentine in a pot.",
+  fiddleFig: "Tall, leafy and a little fussy. Worth it.",
+  birdOfParadise: "Huge paddle leaves for tropical vibes indoors.",
+  oliveTree: "Silvery leaves that make any corner feel Mediterranean.",
+  rubberPlant: "Shiny, dark leaves and zero drama.",
+  moneyTree: "A braided trunk. Said to bring good fortune.",
+  palm: "A graceful palm for a sunny spot.",
+  lemonTree: "Real lemons! Well, pretend ones. Still smells nice.",
+  snakePlant: "Nearly unkillable. Perfect if you forget to water.",
+  zzPlant: "Glossy and tough. Thrives on neglect, honestly.",
+  alocasia: "Elephant-ear leaves with bold white veins.",
+  calathea: "Painted leaves that fold up at night. Sleepy plant!",
+  peaceLily: "White blooms that bring calm to a room.",
+  pilea: "Round pancake leaves. Everyone's favorite gift plant.",
+  philodendron: "Heart-shaped leaves, trailing just so.",
+  spiderPlant: "Sprouts little babies you can share with friends.",
+  fern: "Lush and feathery. Loves a bit of humidity.",
+  ivyPlant: "Trailing ivy for a dark cottage feel.",
+  bamboo: "Lucky bamboo stalks. Calm, green and tidy.",
+  bonsai: "A tiny tree with a very old soul.",
+  jadePlant: "Chubby little leaves. A symbol of good luck.",
+  aloeVera: "Soothing, spiky and very practical.",
+  cactus: "Tall and proud. Please don't hug it.",
+  succulents: "A dish of tiny succulents. Cute in any light.",
+  orchid: "Elegant pink orchid. Very fancy, very calm.",
+  lavenderPot: "Smells like a summer field in France.",
+  herbGarden: "Basil, mint and thyme, right in your room.",
+  terrarium: "A whole tiny world under glass.",
+  pampasVase: "Fluffy pampas grass. Boho in a vase.",
+  tulipVase: "A cheerful bunch of spring tulips.",
+  sunflowerVase: "A jug of sunflowers. Instant sunshine.",
+  eucalyptusVase: "Fresh eucalyptus. Smells like a spa day.",
+  cherryBlossom: "A branch of spring blossoms. Blink and it's gone.",
+  macramePothos: "Golden pothos in a hand-knotted macramé hanger.",
+  stringOfPearls: "Little green pearls spilling down the wall.",
+  hangingFern: "A fern hanging from the wall, feathery and green.",
+  pothosShelf: "A wall shelf with pothos trailing over the edge.",
+  airPlants: "Air plants on a rack. No soil needed, just vibes.",
+  driedHerbs: "Bundles of drying herbs. Very witchy kitchen.",
+  bookshelf: "A sturdy shelf for your favorite stories.",
+  libraryShelf: "Tall enough for a whole series and then some.",
+  cubeShelf: "Cubbies and woven baskets for tidy storage.",
+  ladderShelf: "Leaning shelves for plants, books and knick-knacks.",
+  recordCrate: "A crate of vinyl to flip through on slow nights.",
+  floatingBooks: "Books that seem to float on the wall.",
+  candleShelf: "Candles in a row, glowing gently.",
+  crystalShelf: "Amethyst, quartz and good energy.",
+  teaShelf: "Your mug collection, on proud display.",
+  jarShelf: "Jars of beans, pasta and pickled things.",
+  rugBerry: "A warm berry rug to wiggle your toes on.",
+  rugSage: "Soft sage green. Calm as a meadow.",
+  rugHoney: "Golden honey tones. Like a sunny afternoon.",
+  rugPlum: "Deep plum for a moody, cozy room.",
+  roundRugCream: "A round cream rug. Soft and simple.",
+  roundRugTeal: "A round teal rug. A pop of color underfoot.",
+  heartRug: "A heart-shaped rug. Say it with the floor.",
+  checkerRug: "Soft green checks. Very cottage chic.",
+  fluffyRug: "Fluffy like a cloud. Toes will thank you.",
+  floorLamp: "A tall lamp for a warm, cozy corner.",
+  mushroomLamp: "A glowing little mushroom. Fairy approved.",
+  moonLamp: "A tiny moon for your nightstand.",
+  lavaLamp: "Blobs that float and wobble forever. Groovy.",
+  candles: "A cluster of candles for a warm glow.",
+  discoBall: "A little disco ball. Throws sparkles around.",
+  wavyMirror: "A wavy mirror for your best angles.",
+  archMirror: "A tall arched mirror. Outfit checks, perfected.",
+  teddyBear: "A big, huggable teddy with a bow.",
+  blanketBasket: "Throw blankets rolled up and ready.",
+  yarnBasket: "Yarn for knitting. Or for the cat to steal.",
+  bookStacks: "Piles of books you'll totally read someday.",
+  floorCushions: "Big cushions for sitting on the floor with friends.",
+  pumpkins: "Pumpkins and a candle. Autumn all year long.",
+  rainWindow: "A window with rain tapping on the glass.",
+  lakeWindow: "A window onto a calm lake at sunset.",
+  moonWindow: "A round window with the moon peeking through.",
+  leafWindow: "Autumn leaves drifting past the window.",
+  stringLights: "Warm fairy lights strung across the wall.",
+  fairyCurtain: "A curtain of twinkling lights. Pure magic.",
+  polaroidWall: "Polaroids on a string. Memories on display.",
+  tapestry: "A boho sunset tapestry for your wall.",
+  neonSign: "A glowing \"cozy\" sign. Says it all.",
+  heartNeon: "A pink neon heart. Glows all night.",
+  paintingFlowers: "A cheerful painting of blooms in a vase.",
+  paintingSea: "A little boat on a calm blue sea.",
+  paintingHills: "Rolling hills and a sleepy sunset.",
+  posterStars: "A starry night sky for dreamy nights.",
+  posterMountains: "Mountains to remind you of the fresh air.",
+  posterCat: "A very serious cat. Watching you. Lovingly.",
+  worldMap: "A map for planning adventures.",
+  corkBoard: "Pin up notes, doodles and to-do lists.",
+  clock: "A wall clock. Tells time and looks nice doing it.",
+  mirror: "A simple mirror for a quick hello to yourself.",
+  scroll: "A calligraphy scroll. Calm, wise words.",
+};
 const pickLine = (list) => list[Math.floor(Math.random() * list.length)];
 
 let storeTab = "furniture";
@@ -294,7 +431,7 @@ function pickCard(page, id, item) {
   const name = document.createElement("h4");
   name.textContent = item.name;
   const line = document.createElement("p");
-  line.textContent = `"${WREN_PICK_LINES[Math.floor(Date.now() / 86_400_000) % WREN_PICK_LINES.length]}"`;
+  line.textContent = `"${WREN_NOTES[id] ?? "One of my very favorites."}"`;
   const row = document.createElement("div");
   row.className = "nook-pick-row";
   row.append(priceTag(item.price), basketButton(page, id, item));
@@ -322,6 +459,13 @@ function itemCard(page, id, item) {
   const art = document.createElement("div");
   art.className = "nook-art";
   art.appendChild(preview(item, 120, 90));
+  if (WREN_NOTES[id]) {
+    // Wren's note about it, shown over the picture when you hover.
+    const note = document.createElement("p");
+    note.className = "nook-note";
+    note.textContent = WREN_NOTES[id];
+    art.appendChild(note);
+  }
   const name = document.createElement("div");
   name.className = "nook-name";
   name.textContent = item.name;
