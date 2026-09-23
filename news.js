@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.48",
+    title: "The Workshop, a whiteboard that remembers, and more dances",
+    text: "Upstairs, south of the landing, there's a new Workshop! Press E at the big corkboard to open the house's project boards: add cards, claim them (your face gets pinned on), drag them from To do to Doing to Done, and watch the done jar on the workbench fill up. New and finished cards show up in the house chat. The Conference Room whiteboard is now saved, so your doodles are still there tomorrow. And there are nine more dances in your wardrobe: Disco, Rave, Boom Bap, Mosh, Pop, Two-Step, Reggaeton, Swing and Synthwave.",
+  },
+  {
     build: "0.47",
     title: "Turn your furniture, and dance your way",
     text: "While decorating, press R to turn beds, wardrobes, dressers, shelves, sofas and desks so they sit flush against the side walls. Your wardrobe got a makeover too: a big preview with your pet beside you, color swatches, picture tiles and a Random outfit button. And the 4 key is now your own dance, picked on the wardrobe's new Dances tab: Jig, Headbang (trap and dubstep), Glitch (breakcore), Sway (ambient) or Shuffle. Friends in the room hear your music.",
