@@ -7314,21 +7314,43 @@ function drawCharacterPreview(canvas, color, hat, shoes) {
 
 // Name tag and optional badge (like "eating"). Drawn in a last pass so
 // they stay readable even when the player is behind furniture or a wall.
+// How far each player's name tag is lifted to clear their hat right now
+// (eased, so it glides when they change hats). Keyed by player id.
+const tagLifts = {};
+let lastTagTime = performance.now();
+
+// How much to lift a name tag for a hat: the name normally has 8 pixels
+// of room above the head, so only hats taller than that (plus a small
+// gap, which also covers the little bob while walking) push it up. Hat
+// heights come from shop.js.
+function tagLiftFor(hat) {
+  const height = globalThis.hatHeights?.[hat] ?? 0;
+  return Math.max(0, height + 5 - 8);
+}
+
 function drawPlayerTag(ctx, p) {
   const foot = playerFeet(p);
   const cx = foot.x;
-  const headTop = foot.y - PLAYER_RADIUS * 2 - 10; // a little room above for hats
+  const now = performance.now();
+  const step = Math.min(1, ((now - lastTagTime) / 1000) * 10);
+  lastTagTime = now;
+  const target = tagLiftFor(p.hat);
+  const lift = (tagLifts[p.id] ??= target);
+  tagLifts[p.id] = lift + (target - lift) * step;
+  // The top of their head plus room for their hat. The name, badge, speech
+  // bubbles and emotes all sit above this, so none of them cover the hat.
+  const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id];
 
   if (p.emote) drawEmoteFloaters(ctx, p, cx, headTop);
 
-  ctx.font = "600 12px 'Quicksand', sans-serif";
+  ctx.font = "600 11px 'Quicksand', sans-serif";
   ctx.textAlign = "center";
-  const tagWidth = ctx.measureText(p.name).width + 14;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  roundRectPath(ctx, cx - tagWidth / 2, headTop - 20, tagWidth, 16, 8);
+  const tagWidth = ctx.measureText(p.name).width + 12;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  roundRectPath(ctx, cx - tagWidth / 2, headTop - 18, tagWidth, 14, 7);
   ctx.fill();
   ctx.fillStyle = "#333";
-  ctx.fillText(p.name, cx, headTop - 8);
+  ctx.fillText(p.name, cx, headTop - 7.5);
 
   if (p.badge) {
     ctx.font = "13px sans-serif";

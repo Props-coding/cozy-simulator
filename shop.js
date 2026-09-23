@@ -20,26 +20,29 @@ const RACCOONS = {
 };
 
 // --- What's for sale ---
-// Hats everyone has for free (they're on the Join screen from the start).
+// Hats everyone has for free (they're on the Join screen from the start):
+// [id, name, height]. A hat's height is how many pixels it reaches above
+// the top of your head, so name tags can sit just above it (0 for none).
 export const FREE_HATS = [
-  ["none", "No hat"],
-  ["beanie", "Beanie"],
-  ["cap", "Cap"],
-  ["bow", "Bow"],
-  ["headphones", "Headphones"],
-  ["flower", "Flower"],
+  ["none", "No hat", 0],
+  ["beanie", "Beanie", 5],
+  ["cap", "Cap", 2],
+  ["bow", "Bow", 4],
+  ["headphones", "Headphones", 3],
+  ["flower", "Flower", 2],
 ];
 
-// The raccoons' stock. `line` is what they say when you buy it.
+// The raccoons' stock. `line` is what they say when you buy it. A hat's
+// `height` is how far it reaches above your head, in pixels (see FREE_HATS).
 const CATALOG = [
-  { id: "partyHat", type: "hat", name: "Party Hat", price: 15, line: "it's always somebody's birthday. probably." },
-  { id: "chefHat", type: "hat", name: "Chef Hat", price: 25, line: "we found it. near a kitchen. unrelated." },
-  { id: "topHat", type: "hat", name: "Top Hat", price: 40, line: "very fancy. very legal. extremely legal." },
-  { id: "cowboyHat", type: "hat", name: "Cowboy Hat", price: 40, line: "yeehaw, as the humans say." },
-  { id: "witchHat", type: "hat", name: "Witch Hat", price: 50, line: "only slightly cursed. no refunds." },
-  { id: "frogHat", type: "hat", name: "Frog Hat", price: 60, line: "ribbit. that's the whole sales pitch." },
-  { id: "crown", type: "hat", name: "Crown", price: 120, line: "fell off a king. we think. don't ask." },
-  { id: "halo", type: "hat", name: "Halo", price: 200, line: "for when you've been good. very rare." },
+  { id: "partyHat", type: "hat", name: "Party Hat", price: 15, height: 18, line: "it's always somebody's birthday. probably." },
+  { id: "chefHat", type: "hat", name: "Chef Hat", price: 25, height: 17, line: "we found it. near a kitchen. unrelated." },
+  { id: "topHat", type: "hat", name: "Top Hat", price: 40, height: 14, line: "very fancy. very legal. extremely legal." },
+  { id: "cowboyHat", type: "hat", name: "Cowboy Hat", price: 40, height: 9, line: "yeehaw, as the humans say." },
+  { id: "witchHat", type: "hat", name: "Witch Hat", price: 50, height: 20, line: "only slightly cursed. no refunds." },
+  { id: "frogHat", type: "hat", name: "Frog Hat", price: 60, height: 6, line: "ribbit. that's the whole sales pitch." },
+  { id: "crown", type: "hat", name: "Crown", price: 120, height: 7, line: "fell off a king. we think. don't ask." },
+  { id: "halo", type: "hat", name: "Halo", price: 200, height: 22, line: "for when you've been good. very rare." },
   { id: "sneakers", type: "shoes", name: "Sneakers", price: 15, line: "zoom zoom. that's a feature." },
   { id: "rainBoots", type: "shoes", name: "Rain Boots", price: 25, line: "puddles fear you now." },
   { id: "bunnySlippers", type: "shoes", name: "Bunny Slippers", price: 30, line: "they're not real bunnies. we checked." },
@@ -82,6 +85,12 @@ function store() {
     // Storage blocked (e.g. a private window): crumbs just won't be remembered.
   }
 }
+
+// Every hat's height, for drawing name tags above hats (render.js).
+globalThis.hatHeights = Object.fromEntries([
+  ...FREE_HATS.map(([id, , height]) => [id, height]),
+  ...CATALOG.filter((item) => item.type === "hat").map((item) => [item.id, item.height]),
+]);
 
 // The hats and shoes you own, as [id, name] lists (for the Join screen).
 export function ownedHats() {

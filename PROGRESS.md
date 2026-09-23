@@ -199,6 +199,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Server change for this: profiles now include `lofi` (deployed with the release).
 
 - After 0.44:
+  - Name tags sit above hats: every hat has a `height` in shop.js (0 for none, up to 22 for the Halo), and each player's name tag is lifted just above their hat with a small gap (it glides when someone changes hats). Tags are a bit more compact (smaller text, see-through background). Badges, speech bubbles and emotes sit above the name as before. With no hat, the name stays where it was.
   - Two more hoyas at Nest & Nook: Hoya Polyneura (the fishtail hoya, in a pot that hangs on the wall) and Hoya Compacta (Hindu rope, curly ropes of leaves spilling over a blue pot, with pink star flowers). Both with Wren's notes and "New!" ribbons.
   - Slimmer elevator doors (1.1 tiles wide instead of 1.6).
   - Seasonal garlands are now one continuous, full strand along each hallway's back wall (over the doorways too), with leaves, needles, flowers or flags packed evenly, instead of short sparse pieces between doors.
