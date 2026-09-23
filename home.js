@@ -648,9 +648,8 @@ function renderBar() {
 
 // Starts holding a new piece, in the middle of your room.
 function pickUpNew(id) {
-  const item = DECOR[id];
-  const width = bedroomWidth(home.size);
-  held = { item: id, x: snap((width - item.w) / 2), y: item.wall ? 0 : snap((BEDROOM_DEPTH - item.h) / 2), from: null };
+  held = { item: id, x: 0, y: 0, from: null };
+  moveHeldCenter(bedroomWidth(home.size) / 2, BEDROOM_DEPTH / 2);
   playClickSound();
   renderBar();
 }
@@ -663,15 +662,40 @@ function pickUpPlaced(index) {
   renderBar();
 }
 
-function snap(v) {
-  return Math.round(v / STEP) * STEP;
+// Pieces snap by their center, on a grid lined up with the middle of your
+// room, so any two pieces (whatever their widths) can share a center line,
+// and so can a piece and the room itself. Snapping by the left edge used
+// to make that impossible: a 1.8-wide bed and a 1.5-wide bench always
+// ended up with their centers a little apart.
+const MAGNET = 0.15; // how close a center has to be to another to click onto it
+const round3 = (v) => Math.round(v * 1000) / 1000; // tidy numbers for saving
+
+// The center lines a piece can line up with: the room's middle, and the
+// middles of the pieces already placed (floor and wall alike).
+function centerLines() {
+  return [bedroomWidth(home.size) / 2, ...home.placed.map((p) => p.x + DECOR[p.item].w / 2)];
 }
 
-// Keeps the held piece inside the room.
-function clampHeld() {
+// Puts the held piece's center at (cx, cy): snapped to the grid, pulled
+// onto a nearby center line, and kept inside the room.
+function moveHeldCenter(cx, cy) {
   const item = DECOR[held.item];
-  held.x = Math.min(Math.max(0, held.x), bedroomWidth(home.size) - item.w);
-  held.y = item.wall ? 0 : Math.min(Math.max(0, held.y), BEDROOM_DEPTH - item.h);
+  const mid = bedroomWidth(home.size) / 2;
+  let x = mid + Math.round((cx - mid) / STEP) * STEP;
+  const near = centerLines().find((line) => Math.abs(line - cx) < MAGNET);
+  if (near !== undefined) x = near;
+  held.x = round3(Math.min(Math.max(0, x - item.w / 2), bedroomWidth(home.size) - item.w));
+  if (item.wall) {
+    held.y = 0;
+  } else {
+    const y = Math.round(cy / STEP) * STEP;
+    held.y = round3(Math.min(Math.max(0, y - item.h / 2), BEDROOM_DEPTH - item.h));
+  }
+}
+
+function heldCenter() {
+  const item = DECOR[held.item];
+  return { x: held.x + item.w / 2, y: held.y + (item.wall ? 0 : item.h / 2) };
 }
 
 function placeHeld() {
@@ -720,7 +744,13 @@ function putAwayHeld() {
 export function heldPiece() {
   const room = decorating && held ? hooks.myRoom() : null;
   if (!room) return null;
-  return { f: decorPiece(held, room.x, room.y, { color: hooks.color(), mine: true }, -1), ok: decorFits(home.size, home.placed, held) };
+  // Guides: the room's center line (faint), made bright when the held
+  // piece is right on it, plus any other piece's center it lines up with.
+  const cx = heldCenter().x, mid = bedroomWidth(home.size) / 2;
+  const onLine = (line) => Math.abs(line - cx) < 0.001;
+  const lines = [...new Set(centerLines().map(round3))];
+  const guides = lines.filter((line) => line === round3(mid) || onLine(line)).map((line) => ({ x: room.x + line, top: room.y, bottom: room.y + BEDROOM_DEPTH, strong: onLine(line) }));
+  return { f: decorPiece(held, room.x, room.y, { color: hooks.color(), mine: true }, -1), ok: decorFits(home.size, home.placed, held), guides };
 }
 
 document.getElementById("decorate-done").addEventListener("click", (e) => {
@@ -746,9 +776,8 @@ window.addEventListener(
     const moves = { arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0], arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1] };
     if (Object.hasOwn(moves, key)) {
       e.preventDefault();
-      held.x += moves[key][0] * STEP;
-      held.y += moves[key][1] * STEP;
-      clampHeld();
+      const c = heldCenter();
+      moveHeldCenter(c.x + moves[key][0] * STEP * 1.01, c.y + moves[key][1] * STEP); // (a hair past a step, so the magnet can't hold it back)
     } else if (key === "enter" || key === " ") {
       e.preventDefault();
       placeHeld();
@@ -776,10 +805,7 @@ canvas.addEventListener("mousemove", (e) => {
   if (!decorating || !held) return;
   const p = roomPoint(e);
   if (!p) return;
-  const item = DECOR[held.item];
-  held.x = snap(p.x - item.w / 2);
-  held.y = item.wall ? 0 : snap(p.y - item.h / 2);
-  clampHeld();
+  moveHeldCenter(p.x, p.y);
 });
 
 canvas.addEventListener("click", (e) => {

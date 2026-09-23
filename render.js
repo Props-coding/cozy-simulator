@@ -7864,6 +7864,18 @@ function drawHeldPiece(ctx, held) {
     ctx.fillRect(a.x, a.y, w, h);
     ctx.strokeRect(a.x, a.y, w, h);
   }
+  // Center line guides: the room's middle (faint) and any center the piece
+  // is lined up on (bright).
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  for (const g of held.guides ?? []) {
+    const top = toScreen(g.x, g.top), bottom = toScreen(g.x, g.bottom);
+    ctx.strokeStyle = g.strong ? "rgba(255, 250, 235, 0.9)" : "rgba(255, 250, 235, 0.3)";
+    ctx.beginPath();
+    ctx.moveTo(top.x, top.y - WALL_HEIGHT);
+    ctx.lineTo(bottom.x, bottom.y);
+    ctx.stroke();
+  }
   ctx.setLineDash([]);
   ctx.globalAlpha = 0.7;
   drawPiece(ctx, f);
