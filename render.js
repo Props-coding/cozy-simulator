@@ -707,40 +707,6 @@ const FURNITURE_DRAWERS = {
     ctx.lineCap = "butt";
   },
 
-  // A window set into a side wall (the house's outside wall, seen from
-  // above), with rain running down the glass. y and h say where along the
-  // wall it sits.
-  sidePane(ctx, f) {
-    const left = toScreen(f.x, 0).x, right = toScreen(f.x + WALL_THICKNESS, 0).x;
-    const top = toScreen(0, f.y).y - WALL_HEIGHT * 0.6, bottom = toScreen(0, f.y + f.h).y - WALL_HEIGHT * 0.6;
-    ctx.fillStyle = "#8b6b4a"; // frame
-    ctx.fillRect(left - 1, top - 2, right - left + 2, bottom - top + 4);
-    const glass = ctx.createLinearGradient(left, 0, right, 0);
-    glass.addColorStop(0, "#7f97aa");
-    glass.addColorStop(1, "#4f6478");
-    ctx.fillStyle = glass;
-    ctx.fillRect(left + 2, top + 1, right - left - 4, bottom - top - 2);
-    const t = performance.now() / 1000;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(left + 2, top + 1, right - left - 4, bottom - top - 2);
-    ctx.clip();
-    ctx.strokeStyle = "rgba(220, 235, 245, 0.65)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 7; i++) {
-      const x = left + 3 + (i * 2.1) % (right - left - 5);
-      const fall = (t * (0.4 + noise(i + f.y) * 0.8) + noise(i * 2.7 + f.y)) % 1;
-      const y = top - 4 + fall * (bottom - top + 8);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y + 5);
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.fillStyle = "#8b6b4a"; // the bar across the middle
-    ctx.fillRect(left, (top + bottom) / 2 - 1, right - left, 2);
-  },
-
   // Hung on a wall face: a window on a rainy evening, with raindrops
   // running down the glass, green curtains and a little sill.
   rainWindow(ctx, f) {
@@ -2247,9 +2213,6 @@ function drawLights(ctx) {
     if (f.kind === "readingTable") {
       const p = toScreen(f.x, f.y + f.h / 2);
       for (const frac of [0.33, 0.67]) drawGlow(ctx, p.x + f.w * TILE * frac, p.y - 22 - 8, 34, "rgba(255, 220, 140, 0.45)");
-    } else if (f.kind === "sidePane") {
-      const p = toScreen(f.x, f.y + f.h / 2);
-      drawGlow(ctx, p.x - 16, p.y - 10, 50, "rgba(150, 185, 215, 0.3)");
     } else if (f.kind === "rainWindow") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x, p.y - WALL_HEIGHT + 18, 34, "rgba(150, 185, 215, 0.25)");
@@ -2333,7 +2296,7 @@ function getStaticSprites() {
       // The Hallway's plaque on the wall (every other room has a doormat).
       ...ROOMS.filter((room) => room.sign?.plaque).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
-        sortY: f.kind === "sidePane" ? 11 + WALL_THICKNESS + 0.001 : f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
+        sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
       })),
     ];

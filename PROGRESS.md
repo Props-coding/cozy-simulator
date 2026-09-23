@@ -99,6 +99,8 @@
 
 - Build 0.30: rain fixes. The Library's windows moved from the wall it shares with the hallway (which made no sense) to its outside east wall, set into the wall with rain running down the glass and cool light spilling in; the hallway-side wall now has a painting and a clock showing your real time. The rain sound is now a real recording, "Rain against the Window" by cori (public domain, via Wikimedia Commons), in `sounds/`, looping with a slow crossfade. And it now rains outside: the lawn gets a gloomy tint, falling rain and little ripples, so the hallway's window onto the lawn matches the weather.
 
+- Not pushed yet: the Library is now a tall room at the hallway's east end, entered through a door in its west wall, so its north wall is an outside wall: three rainy windows and a clock there (rain falling past the glass looks right now), with the reading nook (armchair turned to the window, beanbag, floor lamps) underneath. The side-wall windows are gone. The raccoons stepped a little left to leave room for the new door. Sound settings moved into a cozy cog button in the header (a honey-colored cog with a little heart): it opens a small card with Mute everyone, Volume, Lo-fi volume and Rain volume. The sidebar now just has Who's here, the mic note and Emotes.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements and pets (crumbs, the raccoon shop, the Library and emotes are done).

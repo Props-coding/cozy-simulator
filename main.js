@@ -437,6 +437,29 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// --- Sound settings ---
+// The cog in the header opens a little card with all the volume controls.
+// Clicking anywhere else, or pressing Escape, closes it.
+const settingsButton = document.getElementById("settings-button");
+const settingsPanel = document.getElementById("settings-panel");
+
+function setSettingsOpen(open) {
+  settingsPanel.hidden = !open;
+  settingsButton.setAttribute("aria-expanded", String(open));
+}
+
+settingsButton.addEventListener("click", () => {
+  setSettingsOpen(settingsPanel.hidden);
+  settingsButton.blur(); // give the keyboard back to walking
+  playClickSound();
+});
+document.addEventListener("click", (e) => {
+  if (!settingsPanel.hidden && !settingsPanel.contains(e.target) && !settingsButton.contains(e.target)) setSettingsOpen(false);
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !settingsPanel.hidden) setSettingsOpen(false);
+});
+
 // --- Fitting the house to the window ---
 // The house is scaled up (or down) so the whole thing fits beside the
 // sidebar and under the header with no scrolling, and redrawn at the

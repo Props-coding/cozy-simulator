@@ -27,6 +27,23 @@
       <circle cx="28.3" cy="27" r="1.4" fill="#e3a954" stroke="#b9832a" stroke-width="0.8"/>
       <circle cx="4.5" cy="28" r="1" fill="#e3a954" stroke="#b9832a" stroke-width="0.7"/>
     </symbol>
+    <symbol id="gear-icon" viewBox="0 0 32 32">
+      <g fill="#e0ad4a" stroke="#b9832a" stroke-width="1.2">
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(45 16 16)"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(90 16 16)"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(135 16 16)"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(180 16 16)"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(225 16 16)"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(270 16 16)"/>
+        <rect x="13" y="1.8" width="6" height="7" rx="1.8" transform="rotate(315 16 16)"/>
+        <circle cx="16" cy="16" r="10"/>
+      </g>
+      <circle cx="16" cy="16" r="10" fill="#e0ad4a"/>
+      <circle cx="16" cy="16" r="5.6" fill="#fff7e6" stroke="#b9832a" stroke-width="1.2"/>
+      <path d="M16 19.4 C13.2 17.4 12.8 15.7 13.8 14.7 C14.7 13.8 15.6 14.3 16 15 C16.4 14.3 17.3 13.8 18.2 14.7 C19.2 15.7 18.8 17.4 16 19.4 Z" fill="#e37aa0"/>
+      <path d="M9.5 10.5 C11 8.8 13 7.9 15 7.8" stroke="#f7d69a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    </symbol>
   </svg>
   <!-- Title for the Join screen (the house view has its own header). -->
   <h1 id="join-title">Cozy House</h1>
@@ -69,6 +86,32 @@
             <span id="crumb-count">0</span>
           </span>
           <span id="room-label">📍 Hallway</span>
+          <button id="settings-button" type="button" title="Sound settings" aria-label="Sound settings" aria-expanded="false">
+            <svg class="gear-icon" aria-hidden="true"><use href="#gear-icon"></use></svg>
+          </button>
+          <!-- Sound settings, in a little card that drops down from the cog. -->
+          <div id="settings-panel" hidden>
+            <h2>Sound</h2>
+            <label class="voice-row toggle-row">
+              Mute everyone
+              <span class="toggle">
+                <input id="mute-toggle" type="checkbox">
+                <span class="toggle-track"></span>
+              </span>
+            </label>
+            <label class="voice-row">
+              Volume
+              <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+            </label>
+            <label class="voice-row">
+              Lo-fi volume (Study)
+              <input id="lofi-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
+            </label>
+            <label class="voice-row">
+              Rain volume (Library)
+              <input id="rain-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
+            </label>
+          </div>
         </div>
       </header>
     <div id="game-layout">
@@ -152,32 +195,11 @@
       <div id="sidebar">
         <h2>Who's here</h2>
         <ul id="peer-list"></ul>
-        <hr>
-        <h2>Voice</h2>
         <p id="mic-status" class="hint" hidden>
           Your mic is off, so friends can't hear you (you can still hear them).
           To fix it, click the icon at the left of the address bar, allow the
           microphone, then reload the page.
         </p>
-        <label class="voice-row toggle-row">
-          Mute everyone
-          <span class="toggle">
-            <input id="mute-toggle" type="checkbox">
-            <span class="toggle-track"></span>
-          </span>
-        </label>
-        <label class="voice-row">
-          Volume
-          <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
-        </label>
-        <label class="voice-row">
-          Lo-fi volume (Study)
-          <input id="lofi-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
-        </label>
-        <label class="voice-row">
-          Rain volume (Library)
-          <input id="rain-volume-slider" type="range" min="0" max="1" step="0.05" value="0.5">
-        </label>
         <hr>
         <h2>Emotes</h2>
         <!-- Emote buttons (or press the number keys). -->
