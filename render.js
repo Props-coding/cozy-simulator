@@ -2223,6 +2223,101 @@ const FURNITURE_DRAWERS = {
     }
   },
 
+  // Hoya polyneura (the fishtail hoya), hung on the wall in a white pot:
+  // long, thin, pointed leaves with dark "fishbone" veins, trailing down.
+  hoyaPolyneura(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const cx = a.x + (f.w * TILE) / 2, top = a.y - WALL_HEIGHT + 3;
+    ctx.strokeStyle = "#5c4530"; // hanging cords
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    for (const dx of [-7, 0, 7]) {
+      ctx.moveTo(cx, top);
+      ctx.lineTo(cx + dx, top + 10);
+    }
+    ctx.stroke();
+    const leaf = (x, y, angle, len) => {
+      drawLeaf(ctx, x, y, angle, len, 3.4, "#6aa85a", null);
+      ctx.save(); // the fishbone veins
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.strokeStyle = "rgba(40, 80, 30, 0.45)";
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -1);
+      ctx.lineTo(0, -len + 1.5);
+      for (let k = 2.5; k < len - 2; k += 2.8) {
+        ctx.moveTo(0, -k);
+        ctx.lineTo(-1.6, -k - 1.2);
+        ctx.moveTo(0, -k);
+        ctx.lineTo(1.6, -k - 1.2);
+      }
+      ctx.stroke();
+      ctx.restore();
+    };
+    // Leaves trailing down from the pot on both sides, then a few upright ones.
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 4; k++) leaf(cx + side * (6 + k * 1.5), top + 14 + k * 4, side * (2.3 + k * 0.12), 9);
+    }
+    ctx.fillStyle = "#f2ede4"; // the pot
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, top + 10);
+    ctx.lineTo(cx + 8, top + 10);
+    ctx.lineTo(cx + 6, top + 18);
+    ctx.lineTo(cx - 6, top + 18);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.fillRect(cx - 6.5, top + 16, 13, 2);
+    for (const [dx, ang] of [[-3, -0.4], [0, 0], [3, 0.4], [-5, -0.8], [5, 0.8]]) leaf(cx + dx, top + 11, ang, 10);
+  },
+
+  // Hoya carnosa 'Compacta' (Hindu rope): ropes of curled, twisted waxy
+  // leaves spilling over a pot, with a cluster of pink star flowers.
+  hoyaCompacta(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "glazed", 10, 14);
+    // A rope: a chain of curled leaves along a curve.
+    const rope = (x0, y0, x1, y1, bend) => {
+      const n = Math.max(4, Math.round(Math.hypot(x1 - x0, y1 - y0) / 2.6));
+      for (let k = 0; k <= n; k++) {
+        const t = k / n;
+        const x = x0 + (x1 - x0) * t + Math.sin(t * Math.PI) * bend;
+        const y = y0 + (y1 - y0) * t;
+        const tilt = (k % 2 ? 0.7 : -0.7) + t; // curled leaves, turning this way and that
+        ctx.fillStyle = k % 2 ? "#4f8a4a" : "#5f9a55";
+        ctx.strokeStyle = "#2f5a32";
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 2.4, 1.7, tilt, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(230, 245, 210, 0.45)"; // the waxy curl catching the light
+        ctx.beginPath();
+        ctx.ellipse(x, y, 1.4, 0.8, tilt, Math.PI, Math.PI * 1.8);
+        ctx.stroke();
+      }
+    };
+    rope(b.x - 5, soil - 1, b.x - 12, soil + 19, -2); // ropes spilling over the sides
+    rope(b.x - 2, soil, b.x - 7, soil + 14, -3);
+    rope(b.x + 5, soil - 1, b.x + 13, soil + 17, 2);
+    rope(b.x + 2, soil, b.x + 8, soil + 12, 3);
+    rope(b.x - 1, soil - 1, b.x - 5, soil - 13, -2); // a couple arching up
+    rope(b.x + 2, soil - 1, b.x + 5, soil - 11, 2);
+    const fx = b.x + 7, fy = soil - 13; // a cluster of pink star flowers
+    for (let s = 0; s < 8; s++) {
+      const ang = (s / 8) * Math.PI * 2;
+      ctx.fillStyle = "#f4c6d2";
+      ctx.beginPath();
+      ctx.arc(fx + Math.cos(ang) * 3, fy + Math.sin(ang) * 2.6, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#b8405e";
+    ctx.beginPath();
+    ctx.arc(fx, fy, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
   // Hung on a wall: a macramé hanger holding a golden pothos, trailing down.
   macramePothos(ctx, f) {
     const a = toScreen(f.x, f.y);

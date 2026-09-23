@@ -127,7 +127,7 @@ const STORE_TABS = [
 ];
 // Items added in builds 0.42 and 0.44 get a "New!" ribbon.
 const NEW_ITEMS = new Set([
-  "monsteraAdansonii", "hoyaFinlaysonii", "anthuriumRed", "anthuriumPink",
+  "monsteraAdansonii", "hoyaFinlaysonii", "anthuriumRed", "anthuriumPink", "hoyaCompacta", "hoyaPolyneura",
   "canopyBed", "vanity", "clothesRack", "cloudSofa", "papasanChair", "eggChair", "poufCream", "poufPink", "mushroomStool", "sideTable", "aestheticDesk", "barCart", "catTree",
   "birdOfParadise", "oliveTree", "rubberPlant", "moneyTree", "zzPlant", "alocasia", "calathea", "peaceLily", "pilea", "philodendron", "spiderPlant", "jadePlant", "aloeVera",
   "orchid", "lavenderPot", "herbGarden", "terrarium", "pampasVase", "tulipVase", "sunflowerVase", "eucalyptusVase", "cherryBlossom", "macramePothos", "stringOfPearls", "hangingFern", "airPlants",
@@ -189,6 +189,7 @@ const WREN_NOTES = {
   monstera: "Big, dramatic split leaves. The queen of plants.",
   monsteraAdansonii: "Swiss cheese vine, holes and all, climbing a moss pole.",
   hoyaFinlaysonii: "Netted leaves and tiny pink stars. A collector's darling.",
+  hoyaCompacta: "Curly Hindu rope vines. Twisty, waxy and so charming.",
   anthuriumRed: "Glossy hearts and waxy red blooms. So romantic.",
   anthuriumPink: "The pink anthurium: a whole valentine in a pot.",
   fiddleFig: "Tall, leafy and a little fussy. Worth it.",
@@ -226,6 +227,7 @@ const WREN_NOTES = {
   macramePothos: "Golden pothos in a hand-knotted macramé hanger.",
   stringOfPearls: "Little green pearls spilling down the wall.",
   hangingFern: "A fern hanging from the wall, feathery and green.",
+  hoyaPolyneura: "The fishtail hoya, trailing from the wall. Look at those veins!",
   pothosShelf: "A wall shelf with pothos trailing over the edge.",
   airPlants: "Air plants on a rack. No soil needed, just vibes.",
   driedHerbs: "Bundles of drying herbs. Very witchy kitchen.",
