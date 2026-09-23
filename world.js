@@ -74,7 +74,7 @@ const BASE_WALLS = [
   { x: 20.8, y: 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true }, // drawn short so it doesn't hide the stairs
 
   // Upstairs: the landing's sides and bottom (with a doorway into its
   // stairwell, x 19.2 to 20.8), and the stairwell's walls. The landing's

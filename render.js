@@ -2030,43 +2030,120 @@ const FURNITURE_DRAWERS = {
 
   // --- Upstairs and bedrooms ---
 
-  // A wooden staircase seen from above, with the steps lighter toward the
-  // top of the screen (going up, they rise toward the light upstairs;
-  // going down, `down`, they sink into the shade below). A banister runs
-  // along the open side, and an arrow shows which way it goes.
+  // A wooden staircase seen from above, set into an opening in the floor
+  // and lit from above like everything else. Going down (upstairs, `down`)
+  // the top step matches the floor and each step below is a little darker,
+  // until the last one fades into shadow. Going up (downstairs), the bottom
+  // step matches the floor and each step above catches a little more light.
+  // Each tread has a lit front edge with a shadow band just below it (the
+  // drop to the next step), low dark walls line both sides of the opening,
+  // a runner with a brass rod on every step runs up the middle, and a
+  // proper banister with round newel posts runs along the open side.
   staircase(ctx, f) {
     const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
     const w = b.x - a.x, h = b.y - a.y;
-    const steps = 7;
-    ctx.fillStyle = "rgba(40, 25, 10, 0.3)"; // the stairwell opening
-    ctx.fillRect(a.x - 2, a.y - 2, w + 4, h + 4);
+    const steps = 7, stepH = h / steps;
+    const floorColor = CONFIG.roomFloors.stairs.color;
+    const side = 5; // width of the low side walls
+    // How much each step is shaded: 0 at floor level, getting darker (down)
+    // or lighter (up) step by step.
+    const shadeFor = (i) => (f.down ? -i * 11 : (steps - 1 - i) * 6);
+
+    // The treads.
     for (let i = 0; i < steps; i++) {
-      const sy = a.y + (i * h) / steps;
-      ctx.fillStyle = shadeColor("#a0764e", 22 - i * 8);
-      ctx.fillRect(a.x, sy, w, h / steps + 1);
-      ctx.fillStyle = "rgba(255, 235, 200, 0.25)"; // lit front edge of each step
-      ctx.fillRect(a.x, sy, w, 1.5);
-      ctx.fillStyle = "rgba(40, 25, 10, 0.35)"; // shadow line under each step's nose
-      ctx.fillRect(a.x, sy + h / steps - 1.5, w, 1.5);
+      const sy = a.y + i * stepH;
+      ctx.fillStyle = shadeColor(floorColor, shadeFor(i));
+      ctx.fillRect(a.x, sy, w, stepH + 0.5);
+      // Faint wood grain along each tread.
+      ctx.fillStyle = "rgba(60, 35, 15, 0.12)";
+      ctx.fillRect(a.x, sy + stepH * 0.45, w, 1);
     }
-    // A runner carpet up the middle.
-    ctx.fillStyle = "rgba(111, 90, 140, 0.55)";
-    ctx.fillRect(a.x + w * 0.3, a.y, w * 0.4, h);
-    ctx.fillStyle = "rgba(201, 162, 74, 0.6)";
-    for (let i = 1; i < steps; i++) ctx.fillRect(a.x + w * 0.3, a.y + (i * h) / steps - 1, w * 0.4, 1);
-    // Banister along the west (open) side, with posts.
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x - 3, a.y - 8, 4, h + 8);
-    for (let i = 0; i <= steps; i += 2) {
-      const py = a.y + (i * h) / steps;
-      ctx.fillRect(a.x - 4, py - 10, 6, 10);
+    // The runner up the middle, shaded with its steps, with a brass rod
+    // holding it at the back of each tread.
+    const rx = a.x + w * 0.3, rw = w * 0.4;
+    for (let i = 0; i < steps; i++) {
+      const sy = a.y + i * stepH;
+      ctx.fillStyle = shadeColor("#6f5a8c", shadeFor(i));
+      ctx.fillRect(rx, sy, rw, stepH + 0.5);
+      ctx.fillStyle = "#c9a24a"; // brass rod
+      ctx.fillRect(rx - 2, sy + 1.5, rw + 4, 1.4);
+      ctx.fillStyle = "rgba(255, 240, 190, 0.6)";
+      ctx.fillRect(rx - 2, sy + 1.5, rw + 4, 0.5);
     }
-    ctx.fillStyle = "#c9a24a"; // newel post cap
-    ctx.beginPath();
-    ctx.arc(a.x - 1, a.y + h - 10, 3.2, 0, Math.PI * 2);
+
+    if (f.down) {
+      // The bottom of a staircase going down sinks into shadow.
+      const fade = ctx.createLinearGradient(0, a.y + h * 0.45, 0, b.y);
+      fade.addColorStop(0, "rgba(25, 15, 8, 0)");
+      fade.addColorStop(1, "rgba(25, 15, 8, 0.55)");
+      ctx.fillStyle = fade;
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+
+    // Depth: a lit front edge on each tread, and a shadow band just below
+    // it where the step drops to the next one.
+    for (let i = 0; i < steps; i++) {
+      const edge = a.y + (i + 1) * stepH;
+      if (i < steps - 1) {
+        ctx.fillStyle = "rgba(255, 240, 210, 0.35)";
+        ctx.fillRect(a.x, edge - 2, w, 1.5);
+      }
+      ctx.fillStyle = "rgba(30, 18, 8, 0.35)";
+      ctx.fillRect(a.x, edge - 0.5, w, 2.5);
+    }
+
+    // Low dark walls down both sides, so it reads as an opening in the
+    // floor rather than a mat laid on it. Their tops catch the light.
+    for (const x of [a.x - side, b.x]) {
+      const wall = ctx.createLinearGradient(0, a.y, 0, b.y);
+      wall.addColorStop(0, "#5c4530");
+      wall.addColorStop(1, f.down ? "#2e2118" : "#4a3626");
+      ctx.fillStyle = wall;
+      ctx.fillRect(x, a.y - 2, side, h + 2);
+      ctx.fillStyle = "rgba(255, 235, 200, 0.25)";
+      ctx.fillRect(x, a.y - 2, side, 1.5);
+    }
+    // The floor's edge along the top of the opening.
+    ctx.fillStyle = "#5c4530";
+    ctx.fillRect(a.x - side, a.y - 3, w + side * 2, 3);
+    ctx.fillStyle = "rgba(255, 235, 200, 0.3)";
+    ctx.fillRect(a.x - side, a.y - 3, w + side * 2, 1);
+
+    // The banister along the open (west) side: a soft shadow on the steps
+    // just below it, a thick rounded handrail, and a round newel post with
+    // a brass cap at the top and bottom.
+    const hx = a.x - side - 1;
+    ctx.fillStyle = "rgba(30, 18, 8, 0.25)";
+    roundRectPath(ctx, hx + 3, a.y - 4, 8, h + 6, 4);
     ctx.fill();
-    // A little arrow on the landing step showing which way it goes.
-    ctx.fillStyle = "rgba(255, 245, 225, 0.75)";
+    const rail = ctx.createLinearGradient(hx - 4, 0, hx + 4, 0);
+    rail.addColorStop(0, "#5c3d2a");
+    rail.addColorStop(0.45, "#9a6a45");
+    rail.addColorStop(1, "#5c3d2a");
+    ctx.fillStyle = rail;
+    roundRectPath(ctx, hx - 4, a.y - 8, 8, h + 6, 4);
+    ctx.fill();
+    for (const py of [a.y - 7, b.y - 4]) {
+      ctx.fillStyle = "rgba(30, 18, 8, 0.3)"; // post shadow
+      ctx.beginPath();
+      ctx.ellipse(hx + 1.5, py + 4, 6, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#6b4630";
+      ctx.beginPath();
+      ctx.arc(hx, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#c9a24a";
+      ctx.beginPath();
+      ctx.arc(hx, py - 1, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 245, 210, 0.7)";
+      ctx.beginPath();
+      ctx.arc(hx - 1, py - 2, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // A little arrow showing which way the stairs go.
+    ctx.fillStyle = "rgba(255, 245, 225, 0.8)";
     const ax = a.x + w / 2, ay = f.down ? a.y + h - 10 : a.y + 10;
     ctx.beginPath();
     if (f.down) {
