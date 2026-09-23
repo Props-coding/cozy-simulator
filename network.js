@@ -30,6 +30,10 @@ let externalOnBoard = null;
 let boardAction = null;
 let externalOnEmote = null;
 let emoteAction = null;
+let externalOnDecor = null;
+let decorAction = null;
+let externalOnMail = null;
+let mailAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -95,6 +99,26 @@ export function sendEmote(id) {
   emoteAction?.send(id);
 }
 
+// Bedroom decor: the list of pieces a friend has placed in their bedroom.
+export function onDecor(callback) {
+  externalOnDecor = callback;
+}
+
+// Sends your bedroom's decor to everyone, or to one friend if peerId is given.
+export function sendDecor(message, peerId) {
+  decorAction?.send(message, peerId ? { target: peerId } : undefined);
+}
+
+// Laptop mail: a letter, or a note saying a letter arrived.
+export function onMail(callback) {
+  externalOnMail = callback;
+}
+
+// Sends a mail message to one friend.
+export function sendMail(message, peerId) {
+  mailAction?.send(message, { target: peerId });
+}
+
 // Whiteboard messages (strokes, clear, or a picture of the whole board).
 export function onBoard(callback) {
   externalOnBoard = callback;
@@ -154,6 +178,12 @@ export function connectToRoom(myName, myColor) {
 
   emoteAction = room.makeAction("emote");
   emoteAction.onMessage = (id, { peerId }) => externalOnEmote?.(id, peerId);
+
+  decorAction = room.makeAction("decor");
+  decorAction.onMessage = (message, { peerId }) => externalOnDecor?.(message, peerId);
+
+  mailAction = room.makeAction("mail");
+  mailAction.onMessage = (message, { peerId }) => externalOnMail?.(message, peerId);
 
   boardAction = room.makeAction("board");
   boardAction.onMessage = (message, { peerId }) => externalOnBoard?.(message, peerId);

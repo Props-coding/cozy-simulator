@@ -196,6 +196,37 @@
               </div>
             </div>
           </div>
+          <!-- The bedroom laptop (laptop.js): a screen with four apps. -->
+          <div id="laptop" hidden>
+            <div class="laptop-lid">
+              <div class="laptop-screen">
+                <div class="laptop-bar">
+                  <button id="laptop-back" type="button" hidden>‹ Back</button>
+                  <span id="laptop-title">Home</span>
+                  <button id="laptop-close" type="button" aria-label="Close the laptop">✕</button>
+                </div>
+                <div id="laptop-home" class="laptop-page">
+                  <button type="button" class="app" data-app="mail"><span class="app-icon">✉️</span>Mail<span id="mail-badge" class="app-badge" hidden></span></button>
+                  <button type="button" class="app" data-app="news"><span class="app-icon">📰</span>News</button>
+                  <button type="button" class="app" data-app="store"><span class="app-icon">🪺</span>Nest &amp; Nook</button>
+                  <button type="button" class="app" data-app="decorate"><span class="app-icon">🛋️</span>Decorate</button>
+                </div>
+                <div id="laptop-mail" class="laptop-page" hidden></div>
+                <div id="laptop-news" class="laptop-page" hidden></div>
+                <div id="laptop-store" class="laptop-page" hidden></div>
+              </div>
+            </div>
+            <div class="laptop-base"></div>
+          </div>
+          <!-- Decorating your bedroom (home.js): what you own, and tips. -->
+          <div id="decorate-bar" hidden>
+            <div class="decorate-top">
+              <strong>Decorating</strong>
+              <span id="decorate-tip"></span>
+              <button id="decorate-done" type="button" class="warm-button">Done</button>
+            </div>
+            <div id="decorate-items"></div>
+          </div>
           <!-- The pop-up card for a new achievement. -->
           <div id="achievement-toast" hidden>
             <span class="toast-icon"></span>
@@ -319,7 +350,10 @@
         "./whiteboard.js": "./whiteboard.js?v=0.37",
         "./shop.js": "./shop.js?v=0.37",
         "./emoji.js": "./emoji.js?v=0.37",
-        "./achievements.js": "./achievements.js?v=0.37"
+        "./achievements.js": "./achievements.js?v=0.37",
+        "./home.js": "./home.js?v=0.37",
+        "./laptop.js": "./laptop.js?v=0.37",
+        "./news.js": "./news.js?v=0.37"
       }
     }
   </script>

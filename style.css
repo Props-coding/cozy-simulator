@@ -1434,3 +1434,479 @@ input[type="range"]::-moz-range-thumb {
   color: #9a6a1e;
   font-style: italic;
 }
+
+/* --- The bedroom laptop --- */
+/* A laptop sitting open over the house: a dark lid around a warm screen,
+   and a keyboard base below. The screen scrolls if its page is long. */
+#laptop:not([hidden]) {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40, 28, 18, 0.35);
+  border-radius: 12px;
+  animation: pop-in 0.15s ease-out;
+}
+
+.laptop-lid {
+  width: min(680px, calc(100% - 40px));
+  height: min(440px, calc(100% - 70px));
+  box-sizing: border-box;
+  padding: 12px;
+  background: #3a3a44;
+  border-radius: 16px 16px 6px 6px;
+  box-shadow: 0 12px 30px rgba(20, 12, 5, 0.4);
+  display: flex;
+}
+
+.laptop-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fffaf3;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.laptop-base {
+  width: min(760px, calc(100% - 10px));
+  height: 14px;
+  background: linear-gradient(180deg, #c8c8d0, #9a9aa6);
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 6px 14px rgba(20, 12, 5, 0.3);
+}
+
+.laptop-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #e9dcc6;
+  color: var(--wood-dark);
+  font-weight: 700;
+  flex: none;
+}
+
+#laptop-title {
+  flex: 1;
+}
+
+.laptop-bar button {
+  font-family: inherit;
+  font-weight: 700;
+  border: none;
+  background: #fffaf3;
+  color: var(--wood);
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+
+.laptop-page:not([hidden]) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #d9c3a5 transparent;
+}
+
+/* The home screen: four big app icons. */
+#laptop-home:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  align-content: center;
+}
+
+#laptop-home .app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 6px;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--wood-dark);
+  background: #fbefd9;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+#laptop-home .app:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+
+.app-icon {
+  font-size: 38px;
+}
+
+.app-badge {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  min-width: 20px;
+  padding: 1px 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #c0554a;
+  color: white;
+  font-size: 0.8em;
+}
+
+/* News */
+.news-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.news-list li {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fbefd9;
+}
+
+.news-list li + li {
+  margin-top: 8px;
+}
+
+.news-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--wood-dark);
+}
+
+.news-build {
+  flex: none;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: #9a6a1e;
+}
+
+.news-list p {
+  margin: 4px 0 0;
+  font-size: 0.9em;
+  color: #6b5540;
+}
+
+/* Mail */
+.mail-write {
+  margin-bottom: 6px;
+}
+
+.mail-heading {
+  margin: 12px 0 6px;
+  font-size: 0.95em;
+  color: var(--wood);
+}
+
+.mail-empty,
+.mail-note {
+  color: #9c8770;
+  font-style: italic;
+  font-size: 0.9em;
+  margin: 4px 0;
+}
+
+.mail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mail-list li {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: #6b5540;
+}
+
+.mail-list li:hover {
+  background: #fbefd9;
+}
+
+.mail-list li.unread {
+  font-weight: 700;
+  color: var(--wood-dark);
+}
+
+.mail-list li.unread .mail-from::before {
+  content: "● ";
+  color: #c0554a;
+}
+
+.mail-list.outbox li {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.mail-from {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mail-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mail-when {
+  font-size: 0.85em;
+  color: #9c8770;
+}
+
+.letter-paper {
+  padding: 14px 18px;
+  background: repeating-linear-gradient(180deg, #fffdf6 0 23px, #efe4cf 23px 24px);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px #eadcc3;
+}
+
+.letter-from {
+  font-weight: 700;
+}
+
+.letter-when {
+  font-size: 0.85em;
+  color: #9c8770;
+}
+
+.letter-subject {
+  margin: 8px 0 4px;
+  color: var(--wood-dark);
+}
+
+.letter-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #4a3a2c;
+  line-height: 24px;
+  margin: 0;
+}
+
+.mail-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mail-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mail-field {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  font-weight: 700;
+  color: var(--wood);
+}
+
+.mail-compose input,
+.mail-compose textarea {
+  font-family: inherit;
+  font-size: 0.95em;
+  padding: 6px 10px;
+  border: 1px solid #d9c3a5;
+  border-radius: 8px;
+  background: white;
+  color: #4a3a2c;
+}
+
+.mail-compose textarea {
+  resize: vertical;
+  line-height: 1.4;
+}
+
+/* Nest & Nook */
+.nook-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nook-title {
+  display: flex;
+  flex-direction: column;
+  color: var(--wood-dark);
+}
+
+.nook-title strong {
+  font-size: 1.2em;
+  color: #5f7a4a;
+}
+
+.nook-title span {
+  font-size: 0.85em;
+  color: #9c8770;
+}
+
+.nook-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #9a6a1e;
+}
+
+.nook-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.nook-tabs button {
+  font-family: inherit;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid #b9cfa4;
+  background: white;
+  color: #5f7a4a;
+  cursor: pointer;
+}
+
+.nook-tabs button.active {
+  background: #5f7a4a;
+  border-color: #5f7a4a;
+  color: white;
+}
+
+.nook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 10px;
+}
+
+.nook-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px;
+  background: #f1f5e9;
+  border: 2px solid #dbe6cc;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.nook-item.wide {
+  grid-column: 1 / -1;
+}
+
+.nook-item canvas {
+  width: 110px;
+  height: 84px;
+  border: none;
+  border-radius: 10px;
+  background: #fffaf3;
+  box-shadow: none;
+}
+
+.nook-icon {
+  font-size: 44px;
+}
+
+.nook-name {
+  font-weight: 700;
+  font-size: 0.88em;
+  color: var(--wood-dark);
+}
+
+.nook-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.85em;
+  color: #9a6a1e;
+}
+
+.nook-price .crumb-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.nook-note {
+  min-height: 1em;
+  font-size: 0.78em;
+  color: #7a8f6a;
+}
+
+.nook-item button {
+  margin-top: 2px;
+  padding: 4px 14px;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* --- Decorating --- */
+/* A bar along the bottom of the house: tips, what you can place, and Done. */
+#decorate-bar:not([hidden]) {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 11;
+  padding: 10px 14px;
+  background: rgba(255, 250, 243, 0.96);
+  border: 3px solid var(--accent);
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(60, 40, 20, 0.3);
+  text-align: left;
+}
+
+.decorate-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--wood-dark);
+}
+
+#decorate-tip {
+  flex: 1;
+  font-size: 0.88em;
+  color: #7a6450;
+}
+
+#decorate-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 76px;
+  overflow-y: auto;
+}
+
+#decorate-items button {
+  padding: 4px 12px;
+  font-size: 0.85em;
+}
+
+.decorate-empty {
+  font-size: 0.88em;
+  font-style: italic;
+  color: #9c8770;
+}

@@ -53,6 +53,8 @@ import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theate
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
+import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
+import { initLaptop, openLaptop, isLaptopOpen } from "./laptop.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -91,6 +93,7 @@ onPeerStream(handlePeerStream);
 onPeerLeave((peerId) => {
   removePeerAudio(peerId);
   delete petTrails[peerId];
+  forgetFriendDecor(peerId);
   playLeaveSound();
 });
 onPeerJoin((peerId) => {
@@ -99,6 +102,8 @@ onPeerJoin((peerId) => {
   sendBoardTo(peerId);
   // Let a friend who just arrived see the Study timer, if one is running.
   if (focusTimer) sendFocus(focusMessage(), peerId);
+  // And how your bedroom is decorated.
+  sendMyDecorTo(peerId);
 });
 
 muteToggle.addEventListener("change", () => {
@@ -250,7 +255,10 @@ function saveMine(kind) {
 
 // What we tell friends about our office or bedroom (or null).
 function claimInfo(kind) {
-  return mine[kind] ? { since: mine[kind].since, locked: mine[kind].locked } : null;
+  if (!mine[kind]) return null;
+  const info = { since: mine[kind].since, locked: mine[kind].locked };
+  if (kind === "bedroom") info.size = myHome().size;
+  return info;
 }
 
 let privateRooms = { office: [], bedroom: [] }; // everyone's, as passed to buildHouse
@@ -271,10 +279,20 @@ function gatherClaims(kind, peers) {
   for (const p of peers) {
     if (!isValidClaim(p[kind])) continue;
     const ownerName = String(p.name).slice(0, 16);
-    claims.set(p[kind].since + "|" + ownerName, { since: p[kind].since, locked: !!p[kind].locked, ownerName, ownerId: p.id, color: safeColor(p.color), mine: false });
+    const claim = { since: p[kind].since, locked: !!p[kind].locked, ownerName, ownerId: p.id, color: safeColor(p.color), mine: false };
+    if (kind === "bedroom") {
+      claim.size = Object.hasOwn(BEDROOM_SIZES, p[kind].size) ? p[kind].size : "cozy";
+      claim.decor = friendDecor(p.id, claim.size);
+    }
+    claims.set(p[kind].since + "|" + ownerName, claim);
   }
   if (mine[kind]) {
-    claims.set(mine[kind].since + "|" + myName, { since: mine[kind].since, locked: !!mine[kind].locked, ownerName: myName, color: safeColor(myColor), mine: true });
+    const claim = { since: mine[kind].since, locked: !!mine[kind].locked, ownerName: myName, color: safeColor(myColor), mine: true };
+    if (kind === "bedroom") {
+      claim.size = myHome().size;
+      claim.decor = myHome().placed;
+    }
+    claims.set(mine[kind].since + "|" + myName, claim);
   }
   const sorted = [...claims.values()].sort((a, b) => a.since - b.since || a.ownerName.localeCompare(b.ownerName));
   const kept = sorted.slice(0, WINGS[kind].slots);
@@ -384,7 +402,7 @@ function studySignText() {
 // If there's nothing else to say and a pet is close by, it offers a pat.
 function actionHintFor(room) {
   const hint = roomHintFor(room);
-  if (hint || isShopBusy()) return hint;
+  if (hint || uiBusy()) return hint;
   const pet = petInReach();
   if (!pet) return "";
   const whose = pet.who === "me" ? "your" : `${pet.ownerName}'s`;
@@ -393,9 +411,10 @@ function actionHintFor(room) {
 
 function roomHintFor(room) {
   if (performance.now() < notice.until) return notice.text;
-  if (isShopBusy()) return "";
+  if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
+  if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   const lockedDoor = lockedDoorInFront(player);
   if (lockedDoor) return `${lockedDoor.owned.ownerName}'s ${lockedDoor.owned.kind} is locked. Press K to knock.`;
   if (room.owned?.mine) {
@@ -425,8 +444,14 @@ function roomHintFor(room) {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || e.repeat || dialogOpen || isShopBusy() || isTyping(e)) return;
+  if (gameScreen.hidden || e.repeat || dialogOpen || uiBusy() || isTyping(e)) return;
   const key = e.key.toLowerCase();
+
+  if (key === "e" && nearestInteraction(player) === "laptop") {
+    for (const k in keysDown) keysDown[k] = false;
+    openLaptop();
+    return;
+  }
 
   if (key === "e" && nearestInteraction(player) === "raccoons") {
     for (const k in keysDown) keysDown[k] = false; // stop walking while you chat
@@ -661,8 +686,14 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 
 // True while you're typing in a text box (chat, or the Theater's link
 // box), so letters don't move you or trigger E, F, K, L or R.
+// True while the raccoons, the laptop or decorating has the keyboard (the
+// game's own keys and walking pause meanwhile).
+function uiBusy() {
+  return isShopBusy() || isLaptopOpen() || isDecorating();
+}
+
 function isTyping(e) {
-  return e.target instanceof HTMLInputElement && e.target.type === "text";
+  return (e.target instanceof HTMLInputElement && e.target.type === "text") || e.target instanceof HTMLTextAreaElement;
 }
 
 function bubbleFor(who) {
@@ -806,7 +837,7 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
 // Enter starts typing; Enter sends and goes back to walking; Escape goes
 // back to walking without sending.
 window.addEventListener("keydown", (e) => {
-  if (gameScreen.hidden || dialogOpen || isShopBusy()) return;
+  if (gameScreen.hidden || dialogOpen || uiBusy()) return;
   if (e.key === "Enter" && !isTyping(e)) {
     e.preventDefault();
     for (const k in keysDown) keysDown[k] = false; // stop walking while typing
@@ -875,6 +906,24 @@ onChat((message, peerId) => {
 });
 
 renderChat();
+
+// --- Your bedroom home and its laptop ---
+// home.js keeps your room's decor and runs Nest & Nook and decorating;
+// laptop.js runs the laptop (mail and news).
+initHome({
+  color: () => myColor,
+  myRoom: () => ROOMS.find((r) => r.owned?.mine && r.owned.kind === "bedroom")?.rect ?? null,
+  notice: (text) => showNotice(text),
+});
+initLaptop({
+  name: () => myName,
+  color: () => myColor,
+  onLetter: (letter) => {
+    showNotice(`📬 A letter from ${letter.from}! Read it on your bedroom laptop.`);
+    addChatLine({ channel: "house", system: true, text: `📬 You got a letter from ${letter.from}. Read it on your bedroom laptop.` });
+    playChatSound();
+  },
+});
 
 // --- Sleeping ---
 // Step into a bed and you fall asleep: you're drawn tucked in with your
@@ -1095,7 +1144,7 @@ window.addEventListener("keyup", (e) => {
 function readMovement(dt) {
   let dx = 0;
   let dy = 0;
-  if (dialogOpen || isShopBusy()) return { dx, dy }; // stay put while a pop-up is open
+  if (dialogOpen || uiBusy()) return { dx, dy }; // stay put while a pop-up is open
   const dist = CONFIG.playerSpeed * dt;
 
   if (keysDown["arrowleft"] || keysDown["a"]) dx -= dist;
@@ -1235,7 +1284,7 @@ function tick(now) {
   const myAt = myBed ? tuckedIn(myBed) : player;
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color } });
   updateChatTabs(currentRoom);
-  drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y));
+  drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece());
 
   updateSidebar(currentRoom.name);
 

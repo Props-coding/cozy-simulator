@@ -290,7 +290,7 @@ function stairsDestination(player) {
 //   doorX: where the doorway starts, from the room's left edge.
 const WINGS = {
   office: { slots: 3, width: 4, firstX: 6, floorY: 0, doorX: 1, name: "Office" },
-  bedroom: { slots: 4, width: 6, firstX: 0, floorY: UPSTAIRS, doorX: 2.2, name: "Bedroom" },
+  bedroom: { slots: 4, width: 6, firstX: 0, floorY: UPSTAIRS, doorX: 1, name: "Bedroom" },
 };
 const WING_DEPTH = 5; // how far north a private room reaches from its corridor
 const DOOR_WIDTH = 1.6;
@@ -336,7 +336,8 @@ function buildHouse(offices, bedrooms = []) {
     const top = wing.floorY - t - WING_DEPTH;
     for (const info of list) {
       const x0 = wingX(kind, info.slot);
-      const inner = wing.width - t;
+      // Bedrooms come in two sizes (see BEDROOM_SIZES); offices fill their spot.
+      const inner = kind === "bedroom" ? bedroomWidth(info.size) : wing.width - t;
       const theme = kind === "office" ? officeThemeFor(info.ownerName) : null;
       rooms.push({
         id: kind + "-" + info.since,
@@ -466,26 +467,154 @@ const OFFICE_FURNITURE = {
   ],
 };
 
-// --- Bedroom furniture ---
-// Bedrooms are 5.6 wide and 5 deep, with the doorway at the bottom between
-// x0 + 2.2 and x0 + 3.8. A big bed against the north wall (its blanket in
-// the owner's color; step into it to go to sleep), a nightstand with a lamp
-// on each side, a rainy window, a wardrobe, a rug, a bookshelf and a plant.
-const BEDROOM_FURNITURE = (x0, top, bedroom) => [
-  { kind: "rug", x: x0 + 1.3, y: top + 2.75, w: 3.0, h: 1.3, color: "#8a6a9a", solid: false },
-  { kind: "rainWindow", x: x0 + 4.25, y: top, w: 1.2, solid: false },
-  { kind: "wardrobe", x: x0 + 0.1, y: top + 0.1, w: 1.0, h: 0.6 },
-  { kind: "nightstand", x: x0 + 1.25, y: top + 0.15, w: 0.55, h: 0.45 },
-  { kind: "bed", x: x0 + 1.9, y: top + 0.1, w: 1.8, h: 2.3, color: bedroom.color, solid: false },
-  { kind: "nightstand", x: x0 + 3.8, y: top + 0.15, w: 0.55, h: 0.45 },
-  { kind: "bookshelf", x: x0 + 0.1, y: top + 3.9, w: 1.3, h: 0.5 },
-  { kind: "plant", x: x0 + 4.85, y: top + 3.9, w: 0.6, h: 0.6 },
-];
+// --- Bedrooms: the starter room, and Nest & Nook decor ---
+// A new bedroom is "cozy": 3.6 wide, with a partition wall on its right.
+// The "Roomy" upgrade (bought at Nest & Nook) takes the wall down, making
+// it 5.6 wide. Either way it's 5 deep, with the doorway at the bottom
+// between x0 + 1 and x0 + 2.6.
+const BEDROOM_SIZES = { cozy: 3.6, roomy: 5.6 };
+const ROOMY_PRICE = 150; // crumbs
 
-// The bed a player is lying in (their center is on it), or null.
+function bedroomWidth(size) {
+  return Object.hasOwn(BEDROOM_SIZES, size) ? BEDROOM_SIZES[size] : BEDROOM_SIZES.cozy;
+}
+
+// Everything Nest & Nook sells. `kind` is how it's drawn (see render.js),
+// w and h its footprint in grid units, `tab` where it's listed in the
+// store. `wall` items hang on the back wall. `sleep` means you can sleep
+// in it. `ownerColor` uses the bedroom owner's color. Other fields (like
+// color or art) are passed on to the drawing.
+const DECOR = {
+  // Furniture
+  quiltBed: { name: "Quilted Bed", tab: "furniture", price: 60, kind: "bed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true },
+  nightstand: { name: "Nightstand & Lamp", tab: "furniture", price: 20, kind: "nightstand", w: 0.55, h: 0.45 },
+  wardrobe: { name: "Wardrobe", tab: "furniture", price: 45, kind: "wardrobe", w: 1.0, h: 0.6 },
+  bookshelf: { name: "Bookshelf", tab: "furniture", price: 35, kind: "bookshelf", w: 1.3, h: 0.5 },
+  armchair: { name: "Reading Armchair", tab: "furniture", price: 40, kind: "armchair", w: 1.1, h: 0.8 },
+  velvetChair: { name: "Velvet Chair (cat included)", tab: "furniture", price: 60, kind: "cottageChair", w: 1.0, h: 0.8 },
+  beanbag: { name: "Beanbag", tab: "furniture", price: 25, kind: "beanbag", w: 0.9, h: 0.8 },
+  bench: { name: "Cushioned Bench", tab: "furniture", price: 25, kind: "bench", w: 1.5, h: 0.5 },
+  teaCart: { name: "Tea Cart", tab: "furniture", price: 30, kind: "teaCart", w: 1.2, h: 0.6 },
+  floorLamp: { name: "Floor Lamp", tab: "furniture", price: 25, kind: "floorLamp", w: 0.4, h: 0.4 },
+  fireplace: { name: "Stone Fireplace", tab: "furniture", price: 120, kind: "fireplace", w: 1.1, h: 0.6 },
+  catBed: { name: "Cat Bed (cat included)", tab: "furniture", price: 50, kind: "catBed", w: 0.75, h: 0.5, solid: false },
+
+  // Plants, rugs and cozy bits
+  plant: { name: "Potted Plant", tab: "cozy", price: 10, kind: "plant", w: 0.6, h: 0.6 },
+  ivyPlant: { name: "Trailing Ivy", tab: "cozy", price: 18, kind: "ivyPlant", w: 0.6, h: 0.5 },
+  bamboo: { name: "Potted Bamboo", tab: "cozy", price: 22, kind: "bamboo", w: 0.6, h: 0.5 },
+  bonsai: { name: "Bonsai", tab: "cozy", price: 30, kind: "bonsai", w: 0.6, h: 0.5 },
+  pumpkins: { name: "Pumpkins & Candle", tab: "cozy", price: 15, kind: "pumpkins", w: 0.6, h: 0.5 },
+  yarnBasket: { name: "Yarn Basket", tab: "cozy", price: 15, kind: "yarnBasket", w: 0.55, h: 0.4 },
+  rugBerry: { name: "Berry Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#a8473a", solid: false },
+  rugSage: { name: "Sage Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f8a6a", solid: false },
+  rugHoney: { name: "Honey Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#c98f3c", solid: false },
+  rugPlum: { name: "Plum Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f5a8c", solid: false },
+
+  // On the wall
+  rainWindow: { name: "Rainy Window", tab: "wall", price: 40, kind: "rainWindow", w: 1.2, wall: true },
+  lakeWindow: { name: "Lake Window", tab: "wall", price: 45, kind: "lakeWindow", w: 1.0, wall: true },
+  moonWindow: { name: "Moon Window", tab: "wall", price: 50, kind: "moonWindow", w: 0.8, wall: true },
+  leafWindow: { name: "Autumn Window", tab: "wall", price: 50, kind: "leafWindow", w: 0.9, wall: true },
+  paintingFlowers: { name: "Flower Painting", tab: "wall", price: 15, kind: "picture", art: "flowers", w: 0.9, wall: true },
+  paintingSea: { name: "Sea Painting", tab: "wall", price: 15, kind: "picture", art: "sea", w: 0.9, wall: true },
+  paintingHills: { name: "Hills Painting", tab: "wall", price: 15, kind: "picture", art: "hills", w: 0.9, wall: true },
+  stringLights: { name: "String Lights", tab: "wall", price: 20, kind: "lights", w: 2.0, wall: true },
+  clock: { name: "Wall Clock", tab: "wall", price: 20, kind: "clock", w: 0.5, wall: true, centered: true },
+  mirror: { name: "Mirror", tab: "wall", price: 25, kind: "mirror", w: 0.7, wall: true, short: true },
+  driedHerbs: { name: "Dried Herbs", tab: "wall", price: 12, kind: "driedHerbs", w: 0.9, wall: true },
+  scroll: { name: "Calligraphy Scroll", tab: "wall", price: 15, kind: "scroll", w: 0.55, wall: true },
+};
+
+// The starter pieces every bedroom has, as spots inside the room (x, y
+// from its top-left corner): the laptop desk, and a plain mattress that
+// gets put away once you place a real bed.
+const DESK_SPOT = { x: 0.15, y: 0.1, w: 1.3, h: 0.6 };
+const MATTRESS_SPOT = { x: 2.05, y: 0.15, w: 1.4, h: 2.1 };
+const hasBed = (placed) => placed.some((p) => DECOR[p.item]?.sleep);
+const DOOR_LANE = { x: 0.8, y: WING_DEPTH - 1.1, w: 2.0, h: 1.1 }; // kept clear so you can always get in
+
+const MAX_DECOR = 40; // pieces per bedroom
+
+// True if a piece of decor { item, x, y } can go at that spot in a bedroom
+// of this size, given what's already placed (skipping index `skip`, the
+// piece being moved). Pieces must be inside the room, and floor pieces
+// can't overlap each other, the starter pieces or the doorway (rugs can
+// go under anything). Wall pieces can't overlap each other.
+function decorFits(size, placed, piece, skip = -1) {
+  const item = Object.hasOwn(DECOR, piece?.item) ? DECOR[piece.item] : null;
+  if (!item || !Number.isFinite(piece.x) || (!item.wall && !Number.isFinite(piece.y))) return false;
+  const width = bedroomWidth(size);
+  if (piece.x < 0 || piece.x + item.w > width + 1e-9) return false;
+  const others = placed.filter((p, i) => i !== skip && Object.hasOwn(DECOR, p.item));
+  if (item.wall) {
+    return !others.some((p) => DECOR[p.item].wall && piece.x < p.x + DECOR[p.item].w && piece.x + item.w > p.x);
+  }
+  if (piece.y < 0 || piece.y + item.h > WING_DEPTH + 1e-9) return false;
+  if (item.kind === "rug") return true;
+  const box = { x: piece.x, y: piece.y, w: item.w, h: item.h };
+  const spots = item.sleep || hasBed(others) ? [DESK_SPOT, DOOR_LANE] : [DESK_SPOT, MATTRESS_SPOT, DOOR_LANE];
+  if (spots.some((spot) => rectsOverlap(box, spot))) return false;
+  return !others.some((p) => {
+    const o = DECOR[p.item];
+    return !o.wall && o.kind !== "rug" && rectsOverlap(box, { x: p.x, y: p.y, w: o.w, h: o.h });
+  });
+}
+
+// Keeps only the pieces that fit, in order (used for decor that comes in
+// from friends, and when a room shrinks).
+function tidyDecor(size, placed) {
+  const kept = [];
+  // Beds first, since a bed frees up the mattress's spot for other pieces.
+  const pieces = Array.isArray(placed) ? placed.slice(0, MAX_DECOR) : [];
+  const bedsFirst = [...pieces.filter((p) => DECOR[p?.item]?.sleep), ...pieces.filter((p) => !DECOR[p?.item]?.sleep)];
+  for (const piece of bedsFirst) {
+    const clean = { item: String(piece?.item), x: Number(piece?.x), y: Number(piece?.y) };
+    if (decorFits(size, kept, clean)) kept.push(clean);
+  }
+  return kept;
+}
+
+// Turns a placed piece of decor { item, x, y } (x and y from the room's
+// top-left corner) into furniture at (x0, top), the room's corner.
+// `owner` is the bedroom's info (for its color, and whether it's yours).
+function decorPiece(piece, x0, top, owner, index) {
+  const { name, tab, price, wall, centered, ownerColor, ...look } = DECOR[piece.item];
+  return {
+    ...look,
+    x: x0 + piece.x + (centered ? look.w / 2 : 0),
+    y: wall ? top : top + piece.y,
+    h: wall ? undefined : look.h,
+    color: ownerColor ? owner.color : look.color,
+    solid: wall ? false : look.solid,
+    decor: { index, mine: owner.mine }, // so its owner can pick it back up
+  };
+}
+
+// What's in a bedroom: the laptop desk, a plain mattress (until a real
+// bed is placed), and whatever the owner has placed from Nest & Nook.
+const BEDROOM_FURNITURE = (x0, top, bedroom) => {
+  const decor = bedroom.decor || [];
+  const at = (spot) => ({ x: x0 + spot.x, y: top + spot.y, w: spot.w, h: spot.h });
+  return [
+    { kind: "laptopDesk", ...at(DESK_SPOT), mine: bedroom.mine },
+    ...(hasBed(decor) ? [] : [{ kind: "mattress", ...at(MATTRESS_SPOT), color: bedroom.color, sleep: true, solid: false }]),
+    ...decor.map((piece, index) => decorPiece(piece, x0, top, bedroom, index)),
+  ];
+};
+
+// The bed (or mattress) a player is lying in (their center is on it), or null.
 function bedAt(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
-  return FURNITURE.find((f) => f.kind === "bed" && cx >= f.x + 0.15 && cx <= f.x + f.w - 0.15 && cy >= f.y + 0.5 && cy <= f.y + f.h) || null;
+  return FURNITURE.find((f) => f.sleep && cx >= f.x + 0.15 && cx <= f.x + f.w - 0.15 && cy >= f.y + 0.5 && cy <= f.y + f.h) || null;
+}
+
+// True if the player is standing at their own bedroom's laptop desk.
+function isNearMyLaptop(player) {
+  const desk = FURNITURE.find((f) => f.kind === "laptopDesk" && f.mine);
+  if (!desk) return false;
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return cx > desk.x - 0.3 && cx < desk.x + desk.w + 0.3 && cy > desk.y && cy < desk.y + desk.h + 1.0;
 }
 
 // The secret office theme for a name, or null for a normal office.
@@ -532,8 +661,8 @@ function isNearRaccoons(player) {
   return Math.hypot(dx, dy) < 1.4;
 }
 
-// What pressing E would do right here: talk to the raccoons, make an
-// office or bedroom at a "+" door, or nothing. If both are in reach (the
+// What pressing E would do right here: talk to the raccoons, open your
+// laptop, make an office or bedroom at a "+" door, or nothing. If both are in reach (the
 // raccoons stand near the third office's doorway), whichever is closer wins.
 function nearestInteraction(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
@@ -542,6 +671,7 @@ function nearestInteraction(player) {
     const r = FURNITURE.find((f) => f.kind === "raccoons");
     options.push(["raccoons", Math.hypot(cx - (r.x + r.w / 2), cy - (r.y + r.h / 2))]);
   }
+  if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   const kind = isNearBuildDoor(player);
   if (kind) options.push(["buildDoor", Math.hypot(cx - (buildDoors[kind] + WINGS[kind].doorX + 0.8), cy - (WINGS[kind].floorY + 0.3))]);
   options.sort((a, b) => a[1] - b[1]);

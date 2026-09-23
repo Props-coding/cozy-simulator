@@ -248,6 +248,30 @@ function paintRoof(ctx) {
   }
 }
 
+function drawRug(ctx, f) {
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, h = f.h * TILE;
+  roundRectPath(ctx, a.x, a.y, w, h, 10);
+  ctx.fillStyle = f.color;
+  ctx.fill();
+  roundRectPath(ctx, a.x + 6, a.y + 6, w - 12, h - 12, 7);
+  ctx.strokeStyle = shadeColor(f.color, 45);
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = shadeColor(f.color, 30);
+  const count = Math.floor((w - 30) / 26);
+  for (let i = 0; i < count; i++) {
+    const cx = a.x + w / 2 + (i - (count - 1) / 2) * 26, cy = a.y + h / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 8);
+    ctx.lineTo(cx + 8, cy);
+    ctx.lineTo(cx, cy + 8);
+    ctx.lineTo(cx - 8, cy);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
 function paintFloors(ctx) {
   paintYard(ctx);
   for (const room of ROOMS) {
@@ -268,28 +292,7 @@ function paintFloors(ctx) {
   // Rugs lie flat on the floor: a main color, a lighter inner border,
   // and a row of diamonds down the middle.
   for (const f of FURNITURE) {
-    if (f.kind !== "rug") continue;
-    const a = toScreen(f.x, f.y);
-    const w = f.w * TILE, h = f.h * TILE;
-    roundRectPath(ctx, a.x, a.y, w, h, 10);
-    ctx.fillStyle = f.color;
-    ctx.fill();
-    roundRectPath(ctx, a.x + 6, a.y + 6, w - 12, h - 12, 7);
-    ctx.strokeStyle = shadeColor(f.color, 45);
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = shadeColor(f.color, 30);
-    const count = Math.floor((w - 30) / 26);
-    for (let i = 0; i < count; i++) {
-      const cx = a.x + w / 2 + (i - (count - 1) / 2) * 26, cy = a.y + h / 2;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - 8);
-      ctx.lineTo(cx + 8, cy);
-      ctx.lineTo(cx, cy + 8);
-      ctx.lineTo(cx - 8, cy);
-      ctx.closePath();
-      ctx.fill();
-    }
+    if (f.kind === "rug") drawRug(ctx, f);
   }
 
   // Name doormats in front of the south rooms' doors, flat on the hallway
@@ -2159,6 +2162,56 @@ const FURNITURE_DRAWERS = {
     ctx.fill();
   },
 
+  // The starter desk every bedroom has: a small wooden desk with an open
+  // laptop (its screen glowing), a mug, and a little chair tucked in.
+  // Press E at your own to open the laptop.
+  laptopDesk(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#9a6a45");
+    const { x, y, w, h } = d.top;
+    const lx = x + w / 2 - 16, ly = y + 2;
+    ctx.fillStyle = "#3a3a44"; // screen lid
+    roundRectPath(ctx, lx, ly - 16, 32, 20, 3);
+    ctx.fill();
+    const glow = ctx.createLinearGradient(0, ly - 14, 0, ly + 2);
+    glow.addColorStop(0, "#bfe3f2");
+    glow.addColorStop(1, "#7fb2d6");
+    ctx.fillStyle = glow;
+    ctx.fillRect(lx + 2, ly - 14, 28, 15);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)"; // little app icons
+    for (let i = 0; i < 4; i++) ctx.fillRect(lx + 5 + i * 6, ly - 10, 4, 4);
+    ctx.fillStyle = "#c8c8d0"; // keyboard base
+    ctx.fillRect(lx, ly + 4, 32, h - 10);
+    ctx.fillStyle = "rgba(60, 60, 70, 0.35)";
+    for (let i = 0; i < 3; i++) ctx.fillRect(lx + 3, ly + 6 + i * 2.5, 26, 1);
+    ctx.fillStyle = "#f2ece2"; // mug
+    ctx.fillRect(x + w - 11, y + h / 2 - 6, 6, 7);
+    ctx.fillStyle = "#6b3a1e";
+    ctx.fillRect(x + w - 10.5, y + h / 2 - 6, 5, 1.5);
+  },
+
+  // A plain mattress on the floor, with a pillow and a blanket in the
+  // owner's color. Step onto it to sleep.
+  mattress(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const m = drawBlock(ctx, f.x, f.y, f.w, f.h, 7, "#e9e1d3");
+    const { x, y, w, h } = m.top;
+    ctx.fillStyle = "#fffaf3";
+    roundRectPath(ctx, x + 6, y + 4, w - 12, 15, 6);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    ctx.fillRect(x + 9, y + 15, w - 18, 2);
+    const top = y + 24;
+    const blanket = ctx.createLinearGradient(0, top, 0, y + h);
+    blanket.addColorStop(0, shadeColor(f.color, 30));
+    blanket.addColorStop(1, shadeColor(f.color, -10));
+    ctx.fillStyle = blanket;
+    roundRectPath(ctx, x + 1, top, w - 2, y + h - top + m.face.h - 2, 4);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(f.color, 55);
+    ctx.fillRect(x + 1, top, w - 2, 5);
+  },
+
   // A big cozy bed: a wooden headboard against the wall, pillows, and a
   // puffy blanket in the owner's color folded back at the top. It isn't
   // solid: step into it to go to sleep (you're drawn tucked in).
@@ -2923,6 +2976,9 @@ function drawLights(ctx) {
       drawFluorescent(ctx, f, now);
     } else if (f.kind === "paperLantern") {
       drawPaperLantern(ctx, f);
+    } else if (f.kind === "laptopDesk") {
+      const p = toScreen(f.x + f.w / 2, f.y);
+      drawGlow(ctx, p.x, p.y - 26, 26, "rgba(170, 215, 245, 0.35)");
     } else if (f.kind === "nightstand") {
       const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
       drawGlow(ctx, p.x, p.y - 18 - 17, 34, "rgba(255, 205, 130, 0.5)");
@@ -4217,6 +4273,73 @@ function lawnAreas() {
   return [...north, belowStairs, { x: -t - 1, y: base + 3 + t / 2, w: 18 + 1 + t / 2, h: 9 }];
 }
 
+// --- Decorating helpers ---
+
+// Turns a point on the canvas (in CSS pixels from its top-left corner)
+// into a grid position on the floor being drawn.
+function screenToGrid(canvas, px, py) {
+  const { left, top } = houseBounds();
+  const perPixel = canvas.width / canvas.clientWidth / viewScale; // house pixels per CSS pixel
+  return { x: (px * perPixel + left - ORIGIN_X) / TILE, y: (py * perPixel + top - ORIGIN_Y) / TILE };
+}
+
+// Draws any furniture piece (or rug).
+function drawPiece(ctx, f) {
+  if (f.kind === "rug") drawRug(ctx, f);
+  else if (FURNITURE_DRAWERS[f.kind]) FURNITURE_DRAWERS[f.kind](ctx, f);
+}
+
+// While decorating: the piece you're holding, see-through, with its
+// footprint outlined in green (fits) or red (doesn't fit there).
+function drawHeldPiece(ctx, held) {
+  const f = held.f;
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, h = (f.h ?? 0.2) * TILE;
+  ctx.save();
+  ctx.fillStyle = held.ok ? "rgba(120, 200, 120, 0.25)" : "rgba(220, 90, 80, 0.3)";
+  ctx.strokeStyle = held.ok ? "rgba(70, 150, 70, 0.9)" : "rgba(190, 60, 50, 0.9)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  if (f.h === undefined) {
+    // Wall pieces: outline the stretch of wall they'd hang on.
+    ctx.fillRect(a.x, a.y - WALL_HEIGHT, w, WALL_HEIGHT);
+    ctx.strokeRect(a.x, a.y - WALL_HEIGHT, w, WALL_HEIGHT);
+  } else {
+    ctx.fillRect(a.x, a.y, w, h);
+    ctx.strokeRect(a.x, a.y, w, h);
+  }
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 0.7;
+  drawPiece(ctx, f);
+  ctx.restore();
+}
+
+// Draws a piece of decor by itself, fitted into a small canvas (for the
+// Nest & Nook store). Wall pieces get a little stretch of wall behind them.
+function drawDecorPreview(canvas, item, color) {
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const f = { kind: item.kind, x: 0, y: 0, w: item.w, h: item.wall ? undefined : item.h, color: item.ownerColor ? color : item.color, art: item.art, short: item.short };
+  if (item.centered) f.x = item.w / 2;
+  const a = toScreen(0, 0);
+  const w = item.w * TILE, h = item.wall ? 0 : item.h * TILE;
+  const tall = item.wall ? WALL_HEIGHT : item.kind === "rug" ? 0 : 70; // room above the footprint for tall things
+  const boxW = w + 16, boxH = h + tall + 16;
+  const scale = Math.min(2.2, (canvas.width - 8) / boxW, (canvas.height - 8) / boxH);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(scale, scale);
+  ctx.translate(-(a.x + w / 2), -(a.y + (h - tall) / 2));
+  if (item.wall) {
+    ctx.fillStyle = CONFIG.roomWallColors.bedroom;
+    ctx.fillRect(a.x - 8, a.y - WALL_HEIGHT, w + 16, WALL_HEIGHT);
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(a.x - 8, a.y - 5, w + 16, 5);
+  }
+  drawPiece(ctx, f);
+  ctx.restore();
+}
+
 // It's raining outside: a slightly gloomy tint over the lawn, streaks of
 // rain falling, and little ripples where drops land.
 function drawOutsideRain(ctx) {
@@ -4263,7 +4386,7 @@ function drawOutsideRain(ctx) {
 // including yourself, and `pets` the pets following them (see drawPet).
 // Name tags and labels are drawn in the house's own pixels too, so they
 // grow and shrink with it.
-function drawScene(ctx, players, studySign, pets = [], floor = 0) {
+function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null) {
   viewFloor = floor;
   players = players.filter((p) => floorOf(p.y) === floor);
   pets = pets.filter((pet) => floorOf(pet.y) === floor);
@@ -4286,6 +4409,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0) {
   for (const sprite of sprites) sprite.draw(ctx);
 
   drawLights(ctx);
+  if (held) drawHeldPiece(ctx, held);
   if (studySign) drawStudySign(ctx, studySign); // under name tags, so names stay readable
   for (const p of players) drawPlayerTag(ctx, p);
   for (const pet of pets) drawPetHearts(ctx, pet);

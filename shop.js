@@ -123,6 +123,20 @@ export function addCrumbs(amount) {
   crumbPill.classList.add("bump");
 }
 
+// Spends crumbs if you have enough (for Nest & Nook). Returns true if it
+// went through.
+export function spendCrumbs(amount) {
+  if (save.crumbs < amount) return false;
+  save.crumbs -= amount;
+  store();
+  showCrumbs();
+  return true;
+}
+
+export function crumbBalance() {
+  return save.crumbs;
+}
+
 // Starts earning crumbs for time spent in the house. Call once, on joining.
 let earning = null;
 export function startEarningCrumbs() {

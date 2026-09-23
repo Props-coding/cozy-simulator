@@ -24,6 +24,12 @@ export const ACHIEVEMENTS = [
   { id: "goodnight", icon: "🌙", name: "Goodnight", desc: "Get into bed.", crumbs: 5 },
   { id: "wellRested", icon: "😴", name: "Well Rested", desc: "Sleep for 30 minutes in total.", crumbs: 25 },
   { id: "sleepover", icon: "🧸", name: "Sleepover", desc: "Hang out in a bedroom with a friend.", crumbs: 15 },
+  { id: "decorator", icon: "🪴", name: "Making It Home", desc: "Place something in your bedroom.", crumbs: 10 },
+  { id: "designer", icon: "🛋️", name: "Interior Designer", desc: "Have 10 pieces placed in your bedroom.", crumbs: 40 },
+  { id: "roomy", icon: "🔨", name: "Moving On Up", desc: "Buy the Roomy upgrade at Nest & Nook.", crumbs: 30 },
+  { id: "penPal", icon: "✉️", name: "Pen Pal", desc: "Write a letter on your laptop.", crumbs: 10 },
+  { id: "gotMail", icon: "📬", name: "You've Got Mail", desc: "Receive a letter.", crumbs: 10 },
+  { id: "newsReader", icon: "📰", name: "Well Informed", desc: "Read the news on your laptop.", crumbs: 5 },
   { id: "focus", icon: "⏳", name: "Deep Focus", desc: "Finish a focus session in the Study.", crumbs: 10 },
   { id: "scholar", icon: "🎓", name: "Scholar", desc: "Finish 5 focus sessions.", crumbs: 40 },
 

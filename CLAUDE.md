@@ -44,7 +44,7 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Conference Room (north of the hallway) | On, with others in the room | Friends' voices | Big table, shared whiteboard (press B) |
 | Offices (north of the hallway) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
 | Stairs and Upstairs landing | Off | Silence | Stairs south of the hallway's east end lead to a second floor |
-| Bedrooms (upstairs, north of the landing) | On, only with others in the same bedroom | Friends' voices; in bed: soft white noise only | Personal like offices. Step into bed to sleep: mic off, hear nobody, "sleeping" badge |
+| Bedrooms (upstairs, north of the landing) | On, only with others in the same bedroom | Friends' voices; in bed: soft white noise only | Personal like offices. Start small with a laptop desk and a mattress; decorate with Nest & Nook items (laptop). Step into bed to sleep: mic off, hear nobody, "sleeping" badge |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner | Off | Nothing, all sound muted | Means "I'm away eating". Show a small "eating" badge over the character |
 
