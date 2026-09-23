@@ -349,12 +349,6 @@ function paintFloors(ctx) {
   for (const f of FURNITURE) {
     if (f.kind === "rug") drawRug(ctx, f);
   }
-
-  // Name doormats in front of the south rooms' doors, flat on the hallway
-  // floor so people walk over them (see "sign" in world.js).
-  for (const room of ROOMS) {
-    if (room.sign?.matY !== undefined) drawNameMat(ctx, room);
-  }
 }
 
 // Which floor is being drawn (0 downstairs, 1 upstairs): the one you're
@@ -5639,9 +5633,8 @@ function getStaticSprites() {
   if (spritesVersion !== version) {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
-      // Name signs sort just after the wall they're on (and after a locked door).
-      // The Hallway's plaque on the wall (every other room has a doormat).
-      ...ROOMS.filter((room) => room.sign?.plaque).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
+      // Door signs sort just after the wall they're on (and a locked door).
+      ...ROOMS.filter((room) => room.sign).map((room) => ({ sortY: room.sign.y + WALL_THICKNESS / 2 + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
         sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
@@ -6756,48 +6749,230 @@ function drawPlayerTag(ctx, p) {
   ctx.textAlign = "left";
 }
 
-// A doormat with a room's name on it, on the hallway floor just in front
-// of the room's door.
-function drawNameMat(ctx, room) {
-  const p = toScreen(room.sign.x, room.sign.matY);
-  ctx.font = "700 12px 'Quicksand', sans-serif";
-  const w = ctx.measureText(room.name).width + 26, h = 20;
-  roundRectPath(ctx, p.x - w / 2, p.y - h / 2, w, h, 5);
+// A room's sign: a little wooden board hanging over its doorway, all the
+// same size. It shows the room's icon (CONFIG.roomIcons), or for an office
+// or bedroom its owner's name. Drawn in the same front-to-back order as
+// the wall, so people walk in front of or behind it like any wall.
+const SIGN_W = 40, SIGN_H = 22;
+
+// Where a room's sign hangs: its middle, in screen pixels.
+function signCenter(room) {
+  const p = toScreen(room.sign.x, room.sign.y + WALL_THICKNESS / 2); // the wall's front edge
+  return { x: p.x, y: p.y - WALL_HEIGHT + 6 };
+}
+
+function drawRoomSign(ctx, room) {
+  const c = signCenter(room);
+  const x = c.x - SIGN_W / 2, y = c.y - SIGN_H / 2;
+  ctx.fillStyle = "rgba(40, 25, 10, 0.3)"; // soft shadow on the wall behind
+  roundRectPath(ctx, x + 1, y + 3, SIGN_W, SIGN_H, 5);
+  ctx.fill();
+  roundRectPath(ctx, x, y, SIGN_W, SIGN_H, 5);
   ctx.fillStyle = "#8a5a3c";
   ctx.fill();
-  roundRectPath(ctx, p.x - w / 2 + 3, p.y - h / 2 + 3, w - 6, h - 6, 3);
+  ctx.fillStyle = "rgba(255, 235, 200, 0.18)"; // lit from above
+  ctx.fillRect(x + 3, y + 1.5, SIGN_W - 6, 2);
+  roundRectPath(ctx, x + 2.5, y + 2.5, SIGN_W - 5, SIGN_H - 5, 3);
   ctx.strokeStyle = "#c9955f";
   ctx.lineWidth = 1.2;
   ctx.stroke();
-  ctx.fillStyle = "#f3e6d0";
   ctx.textAlign = "center";
-  ctx.fillText(room.name, p.x, p.y + 4);
+  if (room.owned) {
+    // A nameplate: the owner's name, shrunk to fit if it's long.
+    let size = 10;
+    do {
+      ctx.font = `700 ${size}px 'Quicksand', sans-serif`;
+    } while (ctx.measureText(room.owned.ownerName).width > SIGN_W - 9 && --size > 6);
+    ctx.fillStyle = "#f3e6d0";
+    ctx.fillText(room.owned.ownerName, c.x, c.y + size / 2 - 1, SIGN_W - 9);
+  } else {
+    const icon = CONFIG.roomIcons?.[room.id] || "door";
+    ctx.fillStyle = ctx.strokeStyle = "#f3e6d0";
+    if (Object.hasOwn(SIGN_ICONS, icon)) SIGN_ICONS[icon](ctx, c.x, c.y);
+    else {
+      ctx.font = "13px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+      ctx.fillText(icon, c.x, c.y + 5);
+    }
+  }
   ctx.textAlign = "left";
 }
 
-// A room's name sign, mounted at the top of the wall over its doorway (on
-// the hallway side). Drawn in the same front-to-back order as the wall, so
-// people walk in front of or behind it like any wall, never through it.
-// The hallway's own sign is a darker carved wooden plaque hanging on the
-// wall itself.
-function drawRoomSign(ctx, room) {
-  const { x, y, plaque, onWall } = room.sign;
-  const p = toScreen(x, y - WALL_THICKNESS / 2); // the middle of the wall's top edge
-  const cy = onWall ? toScreen(x, y).y - WALL_HEIGHT + 17 : p.y - WALL_HEIGHT;
-  ctx.font = "700 12px 'Quicksand', sans-serif";
-  const w = ctx.measureText(room.name).width + 18, h = 17;
-  ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // small shadow below the sign
-  roundRectPath(ctx, p.x - w / 2 + 1, cy - h / 2 + 2, w, h, 6);
-  ctx.fill();
-  roundRectPath(ctx, p.x - w / 2, cy - h / 2, w, h, 6);
-  ctx.fillStyle = plaque ? "#6b4a32" : "#fffaf3";
-  ctx.fill();
-  ctx.strokeStyle = plaque ? "#c9a24a" : WOOD;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.fillStyle = plaque ? "#f3e6d0" : "#5c4530";
+// Little cream icons for door signs, each drawn around (cx, cy) in about
+// a 16 by 14 pixel box, like they were burned into the wood.
+const SIGN_ICONS = {
+  film(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a3c"; // the reel's holes
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * 3.6, cy + Math.sin(a) * 3.6, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f3e6d0";
+    ctx.fillRect(cx + 4, cy + 5, 6, 1.6); // film trailing off
+  },
+  pencil(ctx, cx, cy) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-Math.PI / 4);
+    ctx.fillRect(-7, -2, 10, 4);
+    ctx.beginPath();
+    ctx.moveTo(3, -2);
+    ctx.lineTo(7.5, 0);
+    ctx.lineTo(3, 2);
+    ctx.fill();
+    ctx.fillStyle = "#e8a0a0"; // eraser
+    ctx.fillRect(-9, -2, 2, 4);
+    ctx.restore();
+  },
+  books(ctx, cx, cy) {
+    ctx.fillRect(cx - 7, cy - 5, 3.5, 11);
+    ctx.fillRect(cx - 2.5, cy - 7, 3.5, 13);
+    ctx.save();
+    ctx.translate(cx + 3, cy + 6);
+    ctx.rotate(0.3);
+    ctx.fillRect(0, -11, 3.5, 11); // one leaning over
+    ctx.restore();
+  },
+  openBook(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 3);
+    ctx.quadraticCurveTo(cx - 4, cy - 6, cx - 8, cy - 5);
+    ctx.lineTo(cx - 8, cy + 5);
+    ctx.quadraticCurveTo(cx - 4, cy + 4, cx, cy + 6);
+    ctx.quadraticCurveTo(cx + 4, cy + 4, cx + 8, cy + 5);
+    ctx.lineTo(cx + 8, cy - 5);
+    ctx.quadraticCurveTo(cx + 4, cy - 6, cx, cy - 3);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a3c";
+    ctx.fillRect(cx - 0.5, cy - 3, 1, 9);
+  },
+  lamp(ctx, cx, cy) {
+    ctx.beginPath(); // the shade
+    ctx.moveTo(cx - 3.5, cy - 7);
+    ctx.lineTo(cx + 3.5, cy - 7);
+    ctx.lineTo(cx + 6.5, cy - 1);
+    ctx.lineTo(cx - 6.5, cy - 1);
+    ctx.fill();
+    ctx.fillRect(cx - 0.8, cy - 1, 1.6, 6);
+    ctx.fillRect(cx - 4, cy + 5, 8, 2);
+  },
+  forkKnife(ctx, cx, cy) {
+    for (const dx of [-6, -4, -2]) ctx.fillRect(cx + dx, cy - 7, 1.2, 5); // tines
+    ctx.fillRect(cx - 6, cy - 3, 5.2, 1.6);
+    ctx.fillRect(cx - 4.2, cy - 2, 1.6, 9);
+    ctx.beginPath(); // the knife
+    ctx.moveTo(cx + 3, cy - 7);
+    ctx.quadraticCurveTo(cx + 7, cy - 4, cx + 5, cy + 1);
+    ctx.lineTo(cx + 3, cy + 1);
+    ctx.fill();
+    ctx.fillRect(cx + 3, cy, 1.8, 7);
+  },
+  stairs(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy + 6);
+    for (let i = 0; i < 4; i++) {
+      ctx.lineTo(cx - 8 + i * 4, cy + 6 - (i + 1) * 3);
+      ctx.lineTo(cx - 8 + (i + 1) * 4, cy + 6 - (i + 1) * 3);
+    }
+    ctx.lineTo(cx + 8, cy + 6);
+    ctx.closePath();
+    ctx.fill();
+  },
+  gamepad(ctx, cx, cy) {
+    roundRectPath(ctx, cx - 8, cy - 4.5, 16, 9, 4.5);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a3c";
+    ctx.fillRect(cx - 5.5, cy - 0.7, 5, 1.4); // the d-pad
+    ctx.fillRect(cx - 3.7, cy - 2.5, 1.4, 5);
+    for (const [dx, dy] of [[3.5, -1], [5.5, 1]]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, 1.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+  music(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.ellipse(cx - 3, cy + 4, 3, 2.2, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(cx - 0.4, cy - 7, 1.6, 11);
+    ctx.beginPath();
+    ctx.moveTo(cx + 1.2, cy - 7);
+    ctx.quadraticCurveTo(cx + 6, cy - 5, cx + 5, cy - 1);
+    ctx.quadraticCurveTo(cx + 4, cy - 4, cx + 1.2, cy - 4);
+    ctx.fill();
+  },
+  heart(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 6);
+    ctx.bezierCurveTo(cx - 9, cy, cx - 5, cy - 8, cx, cy - 3);
+    ctx.bezierCurveTo(cx + 5, cy - 8, cx + 9, cy, cx, cy + 6);
+    ctx.fill();
+  },
+  leaf(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 6, cy + 6);
+    ctx.quadraticCurveTo(cx - 6, cy - 6, cx + 7, cy - 6);
+    ctx.quadraticCurveTo(cx + 6, cy + 5, cx - 6, cy + 6);
+    ctx.fill();
+  },
+  moon(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a3c";
+    ctx.beginPath();
+    ctx.arc(cx + 3.5, cy - 2.5, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+  door(ctx, cx, cy) {
+    roundRectPath(ctx, cx - 4.5, cy - 7, 9, 14, 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a3c";
+    ctx.beginPath();
+    ctx.arc(cx + 2, cy, 1, 0, Math.PI * 2);
+    ctx.fill();
+  },
+};
+
+// A room's full name fades in as a small tag under its sign while you're
+// near its doorway, and fades out as you walk away.
+const signFade = {}; // room id -> how visible its tag is (0 to 1)
+let lastFadeTime = 0;
+const NEAR_DOOR = 1.7; // grid units from the doorway
+
+function drawDoorTags(ctx, me) {
+  const now = performance.now();
+  const step = Math.min(0.1, (now - lastFadeTime) / 1000) * 5; // about a fifth of a second to fade
+  lastFadeTime = now;
+  ctx.font = "700 11px 'Quicksand', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(room.name, p.x, cy + 4);
+  for (const room of ROOMS) {
+    if (!room.sign || floorOf(room.sign.y) !== viewFloor) continue;
+    const near = me && Math.abs(me.x + PLAYER_SIZE / 2 - room.sign.x) < NEAR_DOOR && Math.abs(me.y + PLAYER_SIZE / 2 - room.sign.y) < NEAR_DOOR;
+    const fade = Math.max(0, Math.min(1, (signFade[room.id] || 0) + (near ? step : -step)));
+    signFade[room.id] = fade;
+    if (fade === 0) continue;
+    const c = signCenter(room);
+    const w = ctx.measureText(room.name).width + 14, h = 17;
+    const x = c.x - w / 2, y = c.y + SIGN_H / 2 + 4;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    roundRectPath(ctx, x + 1, y + 2, w, h, 8);
+    ctx.fill();
+    roundRectPath(ctx, x, y, w, h, 8);
+    ctx.fillStyle = "#fffaf3";
+    ctx.fill();
+    ctx.strokeStyle = "#c9955f";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#5c4530";
+    ctx.fillText(room.name, c.x, y + 12.5);
+  }
+  ctx.globalAlpha = 1;
   ctx.textAlign = "left";
 }
 
@@ -6971,7 +7146,7 @@ function drawOutsideRain(ctx) {
 // including yourself, and `pets` the pets following them (see drawPet).
 // Name tags and labels are drawn in the house's own pixels too, so they
 // grow and shrink with it.
-function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null) {
+function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, me = null) {
   viewFloor = floor;
   players = players.filter((p) => floorOf(p.y) === floor);
   pets = pets.filter((pet) => floorOf(pet.y) === floor);
@@ -6998,5 +7173,6 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null) {
   if (studySign) drawStudySign(ctx, studySign); // under name tags, so names stay readable
   for (const p of players) drawPlayerTag(ctx, p);
   for (const pet of pets) drawPetHearts(ctx, pet);
+  drawDoorTags(ctx, me); // on top: it's only there because you walked up to a door
   ctx.restore();
 }

@@ -1345,7 +1345,7 @@ function tick(now) {
   const myAt = myBed ? tuckedIn(myBed) : player;
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color } });
   updateChatTabs(currentRoom);
-  drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece());
+  drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 
   updateSidebar(currentRoom.name);
 

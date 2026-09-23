@@ -34,22 +34,21 @@ function floorOf(y) {
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
-// match wins. "sign" is where the room's name goes: a doormat with the
-// name on it, on the hallway floor in front of the room's door (x is its
-// center, matY how far down the hallway it lies). People walk over mats
-// like rugs, so names never float over anyone.
+// match wins. "sign" is where the room's little wooden sign hangs, over
+// its doorway: x is the doorway's middle, y the middle of the wall it's in.
+// (The icon on it comes from CONFIG.roomIcons.)
 const BASE_ROOMS = [
-  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, matY: 2.12 } },
-  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, matY: 2.12 } },
-  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, matY: 2.12 } },
+  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3 } },
+  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3 } },
+  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3 } },
   // North side: the Conference Room at the west end and the Library at the
   // east end (same depth as the offices between them).
-  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, matY: 0.74 }, north: true },
-  { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, matY: 0.74 }, north: true },
+  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: -WALL_THICKNESS / 2 }, north: true },
+  { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, y: -WALL_THICKNESS / 2 }, north: true },
   // The stairs, south of the hallway's east end (the same spot on both floors).
-  { id: "stairs", name: CONFIG.roomNames.stairs, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, matY: 2.12 } },
-  // Upstairs: the landing (its sign is added in buildHouse) and its stairs.
-  { id: "stairsUp", name: CONFIG.roomNames.stairs, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, matY: LANDING + 2.12 } },
+  { id: "stairs", name: CONFIG.roomNames.stairs, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, y: 3 } },
+  // Upstairs: the landing (added in buildHouse) and its stairs.
+  { id: "stairsUp", name: CONFIG.roomNames.stairs, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -121,7 +120,7 @@ const BASE_FURNITURE = [
   // Hallway: a long runner rug, and along the back wall (west to east):
   // coat hooks with boots underneath, a cushioned bench under a flower
   // painting between warm wall lamps, a side table with a lamp and flowers
-  // under a mirror, the Hallway's name plaque between lamps, and a hills
+  // under a mirror, more lamps, and a hills
   // painting in the east corner where the raccoons hang out. A fiddle-leaf fig sits
   // in the bottom-right corner. They're spaced to leave the doorways
   // clear: Conference Room (x 2 to 3.6) and the three office spots (7 to
@@ -246,8 +245,7 @@ const BASE_FURNITURE = [
   // Upstairs: a runner down the landing, lamps and paintings between the
   // bedroom doors (x0 + 1 to x0 + 2.6 for x0 = 0, 6, 12, 18), a side
   // table, a bench, a cactus and a fern, and the staircase down in its
-  // stairwell. The landing's "Upstairs" plaque hangs at x 11.8, between
-  // two lamps.
+  // stairwell.
   { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
   { kind: "sconce", x: 3.0, y: LANDING, solid: false },
   { kind: "picture", x: 4.4, y: LANDING, w: 1.0, art: "flowers", solid: false },
@@ -352,7 +350,7 @@ function buildHouse(offices, bedrooms = []) {
         theme,
         north: true,
         door: { x: x0 + wing.doorX, y: wing.floorY },
-        sign: { x: x0 + wing.doorX + 0.8, matY: wing.floorY + 0.74 },
+        sign: { x: x0 + wing.doorX + DOOR_WIDTH / 2, y: wing.floorY - t / 2 },
       });
       walls.push(
         { x: x0 - t, y: top - t, w: wing.width + t, h: t }, // north wall
@@ -380,11 +378,10 @@ function buildHouse(offices, bedrooms = []) {
   add("office", offices);
   add("bedroom", bedrooms);
 
-  // The hallway's sign is a carved wooden plaque hanging on its back wall,
-  // between two lamps on the right (onWall: on the wall, not on its top).
-  // The landing gets one too, between the second and third bedroom doors.
-  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 }, sign: { x: 13.72, y: 0, plaque: true, onWall: true } });
-  rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 }, sign: { x: 11.8, y: LANDING, plaque: true, onWall: true } });
+  // The hallway and landing are last, so rooms off them are found first.
+  // They have no sign: the header already says where you are.
+  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 } });
+  rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 } });
 
   ROOMS = rooms;
   WALLS = walls;

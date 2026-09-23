@@ -17,6 +17,22 @@ const CONFIG = {
     landing: "Upstairs",
   },
 
+  // The little wooden sign over each room's doorway shows an icon. Keyed
+  // by room id. Built-in icons (drawn to match the house): "film",
+  // "pencil", "books", "openBook", "lamp", "forkKnife", "stairs",
+  // "gamepad", "music", "heart", "leaf", "moon", "door". Anything else is
+  // shown as written (an emoji works). A new room without one gets a door.
+  // Offices and bedrooms show their owner's name instead of an icon.
+  roomIcons: {
+    theater: "film",
+    conference: "pencil",
+    library: "books",
+    study: "lamp",
+    dinner: "forkKnife",
+    stairs: "stairs",
+    stairsUp: "stairs",
+  },
+
   // Each room's floor: a style ("planks" for wood boards, "carpet", or
   // "checker" for tiles) and a main color.
   roomFloors: {
