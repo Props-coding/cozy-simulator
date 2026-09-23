@@ -21,6 +21,12 @@ It's plain Node.js with no extra packages, behind Caddy (which handles HTTPS) at
 | Voice relay | service `coturn`, settings in `/etc/turnserver.conf` (made from `turnserver.conf` here, with the secret filled in). Ports 3478 (UDP/TCP), 5349 (TLS) and 50000 to 50500 (UDP) are open in the firewall |
 | Relay certificate | copied from Caddy daily by `cozy-turn-certs` (a timer), so it renews along with Caddy's |
 
+## Who can get in
+
+- SSH logins: only the `props` user, only with the key on the house owner's PC (`C:\Users\justk\.ssh\id_ed25519`). Password and root logins are off.
+- `props` can run admin commands without a password (`/etc/sudoers.d/90-props-admin`), so Claude Code can maintain the server during a session with the owner. That makes the key file the real lock: keep the PC locked, and don't copy the key anywhere. To require the password again: `sudo rm /etc/sudoers.d/90-props-admin`.
+- If the key is ever lost: DigitalOcean website → Droplet → Access → Reset root password → Recovery Console.
+
 ## Things you might need
 
 Log in with `ssh props@142.93.3.149`, then:

@@ -154,8 +154,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 
 - Phase 3 done (2026-09-23): our own voice relay. coturn 4.6.1 (from Ubuntu) runs on the droplet at api.thecozy.world, reachable three ways: plain UDP and TCP on port 3478, and encrypted TLS on 5349 (using Caddy's certificate, copied over daily so it renews too). The house server now hands each logged-in friend a relay login that expires after a day, instead of the shared Metered login, which has been removed. Safety settings: it only relays for our logins, won't relay into private networks, has per-person and overall limits, and allows TLS 1.2 or newer only. Tested in a browser forced to use only the relay: messages got through over all three, and wrong or expired logins were refused. You can delete the old credential in the Metered dashboard now; it's still visible in GitHub's history.
 
+- Server access decided (2026-09-23): you chose to keep Claude Code's admin access. `props` can use sudo without a password (`/etc/sudoers.d/90-props-admin`), only `props` may log in over SSH, and only with the key on your PC. Details in `server/README.md`.
+
 ## Next
-- Remove or narrow the temporary setup access (`/etc/sudoers.d/90-props-setup`).
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog (`CLAUDE.md`): weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
