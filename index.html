@@ -64,7 +64,7 @@
       <input id="color-input" type="color" value="#e05a47">
     </label>
     <!-- The hat and shoes lists are filled in by main.js: the free hats,
-         plus anything you've bought from the raccoons. -->
+         plus anything you've bought from the raccoons (pets too). -->
     <label>
       Your hat:
       <select id="hat-input"></select>
@@ -72,6 +72,10 @@
     <label>
       Your shoes:
       <select id="shoes-input"></select>
+    </label>
+    <label>
+      Your pet:
+      <select id="pet-input"></select>
     </label>
     <!-- A little preview of how you'll look, updated as you pick. -->
     <canvas id="character-preview" width="96" height="96"></canvas>
@@ -91,6 +95,12 @@
             <span id="crumb-count">0</span>
           </span>
           <span id="room-label">📍 Hallway</span>
+          <button id="trophy-button" type="button" title="Achievements" aria-label="Achievements" aria-expanded="false">🏆</button>
+          <!-- The trophy shelf: every achievement, and which ones you have. -->
+          <div id="trophy-panel" hidden>
+            <h2>Achievements <span id="trophy-count"></span></h2>
+            <ul id="trophy-list"></ul>
+          </div>
           <button id="settings-button" type="button" title="Sound settings" aria-label="Sound settings" aria-expanded="false">
             <svg class="gear-icon" aria-hidden="true"><use href="#gear-icon"></use></svg>
           </button>
@@ -174,12 +184,26 @@
               <div class="shop-tabs">
                 <button type="button" data-tab="hat" class="active">Hats</button>
                 <button type="button" data-tab="shoes">Shoes</button>
+                <button type="button" data-tab="pet">Pets</button>
               </div>
               <div id="shop-items"></div>
               <div class="shop-bottom">
                 <button id="shop-bye" type="button" class="warm-button">Bye!</button>
               </div>
             </div>
+          </div>
+          <!-- The pop-up card for a new achievement. -->
+          <div id="achievement-toast" hidden>
+            <span class="toast-icon"></span>
+            <span class="toast-text">
+              <span class="toast-label">Achievement!</span>
+              <strong class="toast-name"></strong>
+              <span class="toast-desc"></span>
+            </span>
+            <span class="toast-reward">
+              <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
+              <span class="toast-crumbs"></span>
+            </span>
           </div>
           <!-- A cozy in-game "are you sure?" card, shown over the house. -->
           <div id="confirm-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -290,7 +314,8 @@
         "./theater.js": "./theater.js?v=0.34",
         "./whiteboard.js": "./whiteboard.js?v=0.34",
         "./shop.js": "./shop.js?v=0.34",
-        "./emoji.js": "./emoji.js?v=0.34"
+        "./emoji.js": "./emoji.js?v=0.34",
+        "./achievements.js": "./achievements.js?v=0.34"
       }
     }
   </script>

@@ -3,6 +3,7 @@
 // sync, and anyone who walks in mid-movie jumps to the right spot. Each
 // person's browser streams the video from YouTube itself, so it costs
 // nothing extra. Only people in the Theater get these messages.
+import { unlock } from "./achievements.js";
 import { sendTheater, onTheater } from "./network.js";
 import { loadYouTubeApi, getMasterLevel } from "./audio.js";
 
@@ -178,6 +179,7 @@ form.addEventListener("submit", (e) => {
   urlInput.blur();
   loadVideo(id, 0, true);
   share({ type: "state", videoId: id, playing: true, time: 0 });
+  unlock("movie");
 });
 
 // Big screen over the house, or a small one in the corner so you can see

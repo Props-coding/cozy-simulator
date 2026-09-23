@@ -2667,6 +2667,477 @@ const SHOE_DRAWERS = {
   },
 };
 
+// --- Pets ---
+// Little companions sold by the raccoons. Each drawer draws its pet
+// facing right with its feet at (0, 0); drawPet moves it into place,
+// flips it to face the way it's walking, and adds the shadow. `t` is the
+// time in seconds, `moving` is true while it's trotting after its owner,
+// and `blink` is true for the split second its eyes close.
+
+// A round body shape, lit from above like everything else: lighter on
+// top, darker underneath, with a soft darker outline.
+function petBlob(ctx, x, y, rx, ry, color) {
+  const g = ctx.createLinearGradient(0, y - ry, 0, y + ry);
+  g.addColorStop(0, shadeColor(color, 30));
+  g.addColorStop(1, shadeColor(color, -25));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = shadeColor(color, -55);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// A small shiny eye (or a closed line when blinking).
+function petEye(ctx, x, y, blink, size = 1.4) {
+  if (blink) {
+    ctx.strokeStyle = "#2b2b2b";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - size, y);
+    ctx.lineTo(x + size, y);
+    ctx.stroke();
+    return;
+  }
+  ctx.fillStyle = "#2b2b2b";
+  ctx.beginPath();
+  ctx.arc(x, y, size, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x - size * 0.2, y - size * 0.7, size * 0.6, size * 0.6);
+}
+
+// Pink blush on a cheek.
+function petCheek(ctx, x, y) {
+  ctx.fillStyle = "rgba(240, 120, 120, 0.4)";
+  ctx.beginPath();
+  ctx.ellipse(x, y, 1.8, 1.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Two little legs that take turns while walking.
+function petLegs(ctx, color, t, moving, xs = [-3.5, 3.5]) {
+  ctx.fillStyle = shadeColor(color, -40);
+  xs.forEach((x, i) => {
+    const lift = moving ? Math.max(0, Math.sin(t * 14 + i * Math.PI)) * 1.5 : 0;
+    ctx.beginPath();
+    ctx.ellipse(x, -1.2 - lift, 1.8, 1.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// A pointy triangle ear.
+function petEar(ctx, x, y, w, h, color, inner) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y);
+  ctx.lineTo(x, y - h);
+  ctx.lineTo(x + w / 2, y);
+  ctx.closePath();
+  ctx.fill();
+  if (inner) {
+    ctx.fillStyle = inner;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 4, y);
+    ctx.lineTo(x, y - h * 0.6);
+    ctx.lineTo(x + w / 4, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+const PET_DRAWERS = {
+  // An orange tabby with a curly tail.
+  cat(ctx, t, moving, blink) {
+    const c = "#e8a15a";
+    ctx.strokeStyle = shadeColor(c, -20);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-7, -6);
+    ctx.quadraticCurveTo(-13, -10, -10 + Math.sin(t * 3) * 2, -16);
+    ctx.stroke();
+    petLegs(ctx, c, t, moving);
+    petBlob(ctx, -1, -6, 7.5, 5, c);
+    ctx.fillStyle = shadeColor(c, -25);
+    for (const x of [-4, -1, 2]) ctx.fillRect(x, -10.5, 1.4, 3);
+    petEar(ctx, 3.5, -14, 4, 5, c, "#f3b8b8");
+    petEar(ctx, 8.5, -14, 4, 5, c, "#f3b8b8");
+    petBlob(ctx, 6, -12, 5, 4.3, c);
+    petEye(ctx, 4.8, -12.5, blink, 1.1);
+    petEye(ctx, 8.4, -12.5, blink, 1.1);
+    ctx.fillStyle = "#e37aa0";
+    ctx.fillRect(6.2, -10.8, 1.2, 0.9);
+    petCheek(ctx, 9.8, -10.6);
+  },
+
+  // A happy pup with floppy ears and a very waggy tail.
+  dog(ctx, t, moving, blink) {
+    const c = "#c99a64";
+    ctx.strokeStyle = shadeColor(c, -15);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-7, -7);
+    ctx.lineTo(-11 + Math.sin(t * 16) * 2, -12);
+    ctx.stroke();
+    petLegs(ctx, c, t, moving);
+    petBlob(ctx, -1, -6, 7.5, 5, c);
+    petBlob(ctx, 6, -12, 5, 4.5, c);
+    ctx.fillStyle = "#f3e2c6"; // snout
+    ctx.beginPath();
+    ctx.ellipse(9, -10.5, 2.6, 1.9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+    ctx.beginPath();
+    ctx.arc(10.6, -11.2, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(c, -45); // floppy ear
+    ctx.beginPath();
+    ctx.ellipse(3, -12.5, 1.8, 3.6, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    petEye(ctx, 6.5, -13.5, blink, 1.1);
+    if (!moving) {
+      ctx.fillStyle = "#e37aa0"; // tongue out while sitting
+      ctx.fillRect(8.5, -9, 1.5, 2);
+    }
+  },
+
+  // A round bunny that hops instead of walking.
+  bunny(ctx, t, moving, blink) {
+    const c = "#f2ece2";
+    const hop = moving ? Math.abs(Math.sin(t * 9)) * 3 : 0;
+    ctx.translate(0, -hop);
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(-7, -5, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    petBlob(ctx, -1, -5.5, 7, 5.5, c);
+    for (const [x, lean] of [[3.5, -0.15], [6.5, 0.15]]) {
+      ctx.save();
+      ctx.translate(x, -14);
+      ctx.rotate(lean + Math.sin(t * 2 + x) * 0.05);
+      petBlob(ctx, 0, -5, 1.7, 5, c);
+      ctx.fillStyle = "#f3b8c8";
+      ctx.beginPath();
+      ctx.ellipse(0, -5, 0.8, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    petBlob(ctx, 5, -11.5, 4.5, 4, c);
+    petEye(ctx, 6.8, -12, blink, 1.1);
+    ctx.fillStyle = "#e37aa0";
+    ctx.fillRect(8.6, -10.8, 1.1, 0.9);
+    petCheek(ctx, 7, -9.8);
+  },
+
+  // A fluffy yellow duckling that waddles.
+  duck(ctx, t, moving, blink) {
+    const c = "#f6d55c";
+    if (moving) ctx.rotate(Math.sin(t * 12) * 0.12);
+    ctx.fillStyle = "#e8913a";
+    for (const x of [-3, 2]) {
+      ctx.beginPath();
+      ctx.ellipse(x, -1, 2.4, 1.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    petBlob(ctx, -1, -6, 6.5, 5, c);
+    ctx.fillStyle = shadeColor(c, -15); // wing
+    ctx.beginPath();
+    ctx.ellipse(-2, -6, 3.5, 2.2, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    petBlob(ctx, 4, -12, 4.2, 4, c);
+    ctx.fillStyle = "#e8913a"; // beak
+    ctx.beginPath();
+    ctx.ellipse(8.4, -11.4, 2.3, 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petEye(ctx, 5.6, -13, blink, 1);
+    petCheek(ctx, 5, -10.4);
+  },
+
+  // A little green frog that hops, with big eyes on top.
+  frog(ctx, t, moving, blink) {
+    const c = "#79b85b";
+    const hop = moving ? Math.abs(Math.sin(t * 8)) * 3.5 : 0;
+    ctx.translate(0, -hop);
+    petBlob(ctx, 0, -5, 8, 5, c);
+    ctx.fillStyle = "#e6f0c8"; // pale belly
+    ctx.beginPath();
+    ctx.ellipse(1, -3, 5, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const x of [-2, 4]) {
+      petBlob(ctx, x, -10, 2.8, 2.8, c);
+      petEye(ctx, x + 0.4, -10.3, blink, 1.2);
+    }
+    ctx.strokeStyle = shadeColor(c, -50);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(2, -6.5, 3, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.stroke();
+    petCheek(ctx, -3, -5.5);
+    petCheek(ctx, 7, -5.5);
+  },
+
+  // A hedgehog: a spiky round back and a little pointed face.
+  hedgehog(ctx, t, moving, blink) {
+    const c = "#8a6a4c";
+    petLegs(ctx, "#c9a987", t, moving);
+    ctx.fillStyle = shadeColor(c, -20); // spikes
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI * (1.05 + i * 0.11);
+      const x = -1 + Math.cos(a) * 7.5, y = -6 + Math.sin(a) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x - 1.6, y + 1);
+      ctx.lineTo(-1 + Math.cos(a) * 10.5, -6 + Math.sin(a) * 9);
+      ctx.lineTo(x + 1.6, y + 1);
+      ctx.closePath();
+      ctx.fill();
+    }
+    petBlob(ctx, -1, -6, 7.5, 5.5, c);
+    ctx.fillStyle = "#e6cfae"; // face
+    ctx.beginPath();
+    ctx.moveTo(4, -10);
+    ctx.quadraticCurveTo(10, -8, 11, -5);
+    ctx.quadraticCurveTo(7, -2, 4, -3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+    ctx.beginPath();
+    ctx.arc(11, -5.2, 1, 0, Math.PI * 2);
+    ctx.fill();
+    petEye(ctx, 6.5, -7, blink, 1);
+    petCheek(ctx, 6.5, -4.6);
+  },
+
+  // A fox with a big bushy white-tipped tail.
+  fox(ctx, t, moving, blink) {
+    const c = "#e27b3c";
+    ctx.save();
+    ctx.translate(-6, -6);
+    ctx.rotate(-0.5 + Math.sin(t * 2.5) * 0.15);
+    petBlob(ctx, -4, 0, 6, 3.2, c);
+    ctx.fillStyle = "#fbf3e6";
+    ctx.beginPath();
+    ctx.ellipse(-8.5, 0, 2.2, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    petLegs(ctx, "#5a3a2a", t, moving);
+    petBlob(ctx, 0, -6, 6.5, 4.5, c);
+    ctx.fillStyle = "#fbf3e6"; // white chest
+    ctx.beginPath();
+    ctx.ellipse(4, -5, 2.5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petEar(ctx, 3.5, -14, 3.6, 5, c, "#5a3a2a");
+    petEar(ctx, 8, -14, 3.6, 5, c, "#5a3a2a");
+    petBlob(ctx, 6, -11.5, 4.5, 3.8, c);
+    ctx.fillStyle = "#fbf3e6";
+    ctx.beginPath();
+    ctx.moveTo(6, -11);
+    ctx.lineTo(11.5, -10.5);
+    ctx.lineTo(7, -8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+    ctx.beginPath();
+    ctx.arc(11.3, -10.6, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+    petEye(ctx, 7, -12.6, blink, 1);
+  },
+
+  // A penguin standing up tall, waddling side to side.
+  penguin(ctx, t, moving, blink) {
+    const c = "#3a3f4a";
+    if (moving) ctx.rotate(Math.sin(t * 12) * 0.14);
+    ctx.fillStyle = "#e8913a";
+    for (const x of [-2.5, 2.5]) {
+      ctx.beginPath();
+      ctx.ellipse(x, -0.8, 2.2, 1.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    petBlob(ctx, 0, -9, 6, 8.5, c);
+    ctx.fillStyle = "#f7f4ee"; // white front
+    ctx.beginPath();
+    ctx.ellipse(1.5, -7.5, 3.8, 6.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(c, -15); // flipper
+    ctx.beginPath();
+    ctx.ellipse(-4.5, -8, 1.6, 4, 0.3 + (moving ? Math.sin(t * 12) * 0.3 : 0), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e8913a";
+    ctx.beginPath();
+    ctx.moveTo(4, -14);
+    ctx.lineTo(8, -13);
+    ctx.lineTo(4, -12);
+    ctx.closePath();
+    ctx.fill();
+    petEye(ctx, 2.8, -15, blink, 1);
+    petCheek(ctx, 3.5, -11.5);
+  },
+
+  // A friendly little ghost that floats (so it gets a fainter shadow).
+  ghost(ctx, t, moving, blink) {
+    const float = 6 + Math.sin(t * 2.5) * 2;
+    ctx.translate(0, -float);
+    ctx.globalAlpha *= 0.88;
+    const g = ctx.createLinearGradient(0, -16, 0, 0);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(1, "#dfe3f0");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, -9, 6.5, Math.PI, 0);
+    ctx.lineTo(6.5, 0);
+    for (let i = 0; i < 4; i++) {
+      const x = 6.5 - (i + 1) * 3.25;
+      ctx.quadraticCurveTo(x + 1.6, 2.5 + Math.sin(t * 6 + i) * 0.8, x, 0);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha /= 0.88;
+    petEye(ctx, 1, -9.5, blink, 1.2);
+    petEye(ctx, 4.5, -9.5, blink, 1.2);
+    ctx.fillStyle = "#2b2b2b";
+    ctx.beginPath();
+    ctx.ellipse(2.8, -6, 1.1, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petCheek(ctx, -0.8, -7.2);
+    petCheek(ctx, 6.3, -7.2);
+  },
+
+  // A tiny dragon with flapping wings and little horns.
+  dragon(ctx, t, moving, blink) {
+    const c = "#6fae8e";
+    ctx.strokeStyle = c; // tail
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-6, -4);
+    ctx.quadraticCurveTo(-11, -3, -12, -7 + Math.sin(t * 3) * 1.5);
+    ctx.stroke();
+    ctx.fillStyle = "#e0a84c";
+    ctx.beginPath();
+    ctx.moveTo(-12, -9 + Math.sin(t * 3) * 1.5);
+    ctx.lineTo(-14.5, -6.5 + Math.sin(t * 3) * 1.5);
+    ctx.lineTo(-11, -5.5 + Math.sin(t * 3) * 1.5);
+    ctx.closePath();
+    ctx.fill();
+    const flap = Math.sin(t * (moving ? 14 : 4)) * 0.35;
+    ctx.save(); // wing
+    ctx.translate(-2, -10);
+    ctx.rotate(-0.6 + flap);
+    ctx.fillStyle = "#b286c9";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-3, -8);
+    ctx.lineTo(-7, -5);
+    ctx.lineTo(-6, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    petLegs(ctx, c, t, moving);
+    petBlob(ctx, -1, -6, 6.5, 5, c);
+    ctx.fillStyle = "#e9e0b0"; // belly
+    ctx.beginPath();
+    ctx.ellipse(2, -5, 3, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petBlob(ctx, 5, -12, 4.8, 4.2, c);
+    ctx.fillStyle = "#f3e6c0"; // horns
+    for (const x of [2.5, 5.5]) {
+      ctx.beginPath();
+      ctx.moveTo(x - 1, -15.5);
+      ctx.lineTo(x - 1.6, -19);
+      ctx.lineTo(x + 1, -15.8);
+      ctx.closePath();
+      ctx.fill();
+    }
+    petEye(ctx, 6.5, -12.8, blink, 1.2);
+    petCheek(ctx, 8, -10.5);
+  },
+
+  // A baby raccoon (the shopkeepers' cousin), with a mask and a stripy tail.
+  raccoonKit(ctx, t, moving, blink) {
+    const c = "#9a9aa2";
+    for (let i = 0; i < 5; i++) {
+      ctx.fillStyle = i % 2 ? "#3a3a40" : c;
+      ctx.beginPath();
+      ctx.arc(-7 - i * 1.8, -5 - i * 1.6 + Math.sin(t * 3) * i * 0.3, 2.6 - i * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    petLegs(ctx, "#4a4a52", t, moving);
+    petBlob(ctx, -1, -6, 7, 5, c);
+    petEar(ctx, 3.5, -14.5, 3.8, 4, c, "#3a3a40");
+    petEar(ctx, 8.5, -14.5, 3.8, 4, c, "#3a3a40");
+    petBlob(ctx, 6, -12, 5, 4.2, c);
+    ctx.fillStyle = "#f2f0ea"; // white face patch
+    ctx.beginPath();
+    ctx.ellipse(7, -11, 3.8, 2.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3a3a40"; // the mask
+    ctx.beginPath();
+    ctx.ellipse(6.2, -12.5, 3.8, 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petEye(ctx, 5, -12.5, blink, 0.9);
+    petEye(ctx, 8.4, -12.5, blink, 0.9);
+    ctx.fillStyle = "#2b2b2b";
+    ctx.beginPath();
+    ctx.arc(10.8, -10.8, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+  },
+};
+
+const PET_SCALE = 1.45; // pets are drawn small, then scaled up to sit nicely beside a character
+
+// Draws one pet: `pet` is { kind, x, y, facing, moving } where x, y is the
+// spot on the floor (grid units) its feet touch.
+function drawPet(ctx, pet) {
+  const drawer = Object.hasOwn(PET_DRAWERS, pet.kind) ? PET_DRAWERS[pet.kind] : null;
+  if (!drawer) return;
+  const at = toScreen(pet.x, pet.y);
+  const t = performance.now() / 1000 + (pet.seed ?? 0); // so two pets don't blink in step
+  const bob = pet.moving ? Math.abs(Math.sin(t * 14)) * 1.2 : 0;
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  ctx.scale(PET_SCALE, PET_SCALE);
+  ctx.fillStyle = pet.kind === "ghost" ? "rgba(40, 25, 10, 0.12)" : "rgba(40, 25, 10, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(0, -0.5, 9, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.translate(0, -bob);
+  ctx.scale(pet.facing < 0 ? -1 : 1, 1);
+  drawer(ctx, t, pet.moving, t % 4.3 < 0.13);
+  ctx.restore();
+}
+
+// Hearts floating up from a pet that was just petted (drawn with the name
+// tags, so they're never hidden). `pet.petted` is seconds since petting.
+function drawPetHearts(ctx, pet) {
+  if (pet.petted === null || pet.petted === undefined || pet.petted > 1.6) return;
+  const at = toScreen(pet.x, pet.y);
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = "11px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+  for (let i = 0; i < 2; i++) {
+    const tt = pet.petted - i * 0.35;
+    if (tt <= 0 || tt >= 1.2) continue;
+    ctx.globalAlpha = 1 - tt / 1.2;
+    ctx.fillText("💕", at.x + (i ? 6 : -5) + Math.sin(tt * 6) * 3, at.y - 32 - tt * 18);
+  }
+  ctx.restore();
+}
+
+// Draws a pet by itself, big, in a small canvas (for the shop).
+function drawPetPreview(canvas, kind) {
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height - 16);
+  ctx.scale(1.8, 1.8);
+  const origin = toScreen(0, 0);
+  ctx.translate(-origin.x, -origin.y);
+  drawPet(ctx, { kind, x: 0, y: 0, facing: 1, moving: false });
+  ctx.restore();
+}
+
 // Draws one player's body (used for yourself and everyone else): a soft
 // shadow, two little feet, and a round body lit from above (lighter on
 // top, darker underneath) like everything else, with their hat on top.
@@ -3094,9 +3565,10 @@ function drawOutsideRain(ctx) {
 
 // Draws the whole house for one frame, scaled to fit the view (see
 // setViewScale). `players` is an array of { x, y, color, name, badge },
-// including yourself. Name tags and labels are drawn in the house's own
-// pixels too, so they grow and shrink with it.
-function drawScene(ctx, players, studySign) {
+// including yourself, and `pets` the pets following them (see drawPet).
+// Name tags and labels are drawn in the house's own pixels too, so they
+// grow and shrink with it.
+function drawScene(ctx, players, studySign, pets = []) {
   ctx.save();
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   ctx.imageSmoothingEnabled = false;
@@ -3111,11 +3583,13 @@ function drawScene(ctx, players, studySign) {
   for (const p of players) {
     sprites.push({ sortY: p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) });
   }
+  for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
   sprites.sort((a, b) => a.sortY - b.sortY);
   for (const sprite of sprites) sprite.draw(ctx);
 
   drawLights(ctx);
   if (studySign) drawStudySign(ctx, studySign); // under name tags, so names stay readable
   for (const p of players) drawPlayerTag(ctx, p);
+  for (const pet of pets) drawPetHearts(ctx, pet);
   ctx.restore();
 }

@@ -1,7 +1,7 @@
 // Crumbs (the house money) and the raccoons' shop.
 //
 // You earn crumbs just for being in the house (see config.js), and spend
-// them on hats and shoes sold by three raccoons in a trenchcoat who lurk
+// them on hats, shoes and pets sold by three raccoons in a trenchcoat who lurk
 // in the hallway. Talking to them opens a chatty speech box: their words
 // type out letter by letter with a babbling voice. Then the coat swings
 // open to show the wares.
@@ -9,6 +9,7 @@
 // Crumbs and what you own are saved in this browser only (there's no
 // server), so they don't follow you to another computer.
 import { playBabble, playCoatWhoosh, playCrumbSound, playClickSound } from "./audio.js";
+import { unlock } from "./achievements.js";
 
 // --- The raccoons ---
 // Three voices: `pitch` is how high their babble sounds.
@@ -44,6 +45,18 @@ const CATALOG = [
   { id: "bunnySlippers", type: "shoes", name: "Bunny Slippers", price: 30, line: "they're not real bunnies. we checked." },
   { id: "cowboyBoots", type: "shoes", name: "Cowboy Boots", price: 40, line: "pairs well with a hat. we sell hats." },
   { id: "rollerSkates", type: "shoes", name: "Roller Skates", price: 75, line: "wheeee. sorry. professional voice. wheee." },
+  // Pets follow you around the house (one at a time).
+  { id: "duck", type: "pet", name: "Duckling", price: 50, line: "it imprinted on us first. awkward. it's yours now." },
+  { id: "frog", type: "pet", name: "Frog", price: 50, line: "ribbit. same pitch as the hat. we're consistent." },
+  { id: "cat", type: "pet", name: "Cat", price: 60, line: "technically it adopted you. we just did the paperwork." },
+  { id: "dog", type: "pet", name: "Pup", price: 60, line: "good boy. very good boy. best boy. okay bye boy." },
+  { id: "bunny", type: "pet", name: "Bunny", price: 70, line: "hop hop. mind the cables." },
+  { id: "hedgehog", type: "pet", name: "Hedgehog", price: 80, line: "pointy but polite." },
+  { id: "fox", type: "pet", name: "Fox", price: 100, line: "what does it say? nobody knows. not even us." },
+  { id: "penguin", type: "pet", name: "Penguin", price: 110, line: "formal wear included. no extra charge." },
+  { id: "ghost", type: "pet", name: "Ghost", price: 150, line: "found it in the library. it followed us out. boo." },
+  { id: "dragon", type: "pet", name: "Baby Dragon", price: 250, line: "small now. keep it away from the curtains." },
+  { id: "raccoonKit", type: "pet", name: "Raccoon Kit", price: 300, line: "our cousin. very trustworthy. unlike us." },
 ];
 
 // --- Saved progress ---
@@ -79,6 +92,15 @@ export function ownedShoes() {
   return CATALOG.filter((item) => item.type === "shoes" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
+// An item's name, like "Baby Dragon" for "dragon".
+export function itemName(id) {
+  return CATALOG.find((item) => item.id === id)?.name ?? id;
+}
+
+export function ownedPets() {
+  return CATALOG.filter((item) => item.type === "pet" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+}
+
 // --- Crumbs ---
 const crumbPill = document.getElementById("crumb-pill");
 const crumbCount = document.getElementById("crumb-count");
@@ -95,6 +117,7 @@ export function addCrumbs(amount) {
   save.crumbs += amount;
   store();
   showCrumbs();
+  if (save.crumbs >= 500) unlock("hoarder");
   crumbPill.classList.remove("bump");
   void crumbPill.offsetWidth; // restart the bounce animation
   crumbPill.classList.add("bump");
@@ -108,7 +131,7 @@ export function startEarningCrumbs() {
 
 // --- Connecting to main.js ---
 // main.js tells us how to read and change what you're wearing.
-let look = { get: () => ({ color: "#e05a47", hat: "none", shoes: "none" }), wear: () => {} };
+let look = { get: () => ({ color: "#e05a47", hat: "none", shoes: "none", pet: "none" }), wear: () => {} };
 export function initShop(options) {
   look = options;
 }
@@ -236,13 +259,15 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 function mainChoices() {
   offerChoices([
     ["Show me the goods", openShop],
-    ["Who are you, really?", () =>
+    ["Who are you, really?", () => {
+      unlock("whoAreYou");
       say([
         ["reginald", "a tall gentleman. obviously."],
         ["pip", "definitely NOT three raccoons."],
         ["bean", "...three raccoons."],
         ["reginald", "BEAN."],
-      ], mainChoices)],
+      ], mainChoices);
+    }],
     ["Never mind", () => say(pick(GOODBYES))],
   ]);
 }
@@ -251,6 +276,7 @@ function mainChoices() {
 export function talkToRaccoons() {
   if (isShopBusy()) return;
   const intro = save.met ? pick(INTROS) : FIRST_MEETING;
+  unlock("raccoons");
   save.met = true;
   store();
   say(intro, mainChoices);
@@ -294,7 +320,7 @@ function renderShop() {
   const current = look.get();
   for (const item of CATALOG.filter((i) => i.type === shopTab)) {
     const owned = save.owned.includes(item.id);
-    const wearing = (item.type === "hat" ? current.hat : current.shoes) === item.id;
+    const wearing = current[item.type] === item.id;
     const tag = document.createElement("div");
     tag.className = "shop-item" + (wearing ? " wearing" : "");
 
@@ -302,7 +328,8 @@ function renderShop() {
     const preview = document.createElement("canvas");
     preview.width = 88;
     preview.height = 88;
-    drawCharacterPreview(preview, current.color, item.type === "hat" ? item.id : current.hat, item.type === "shoes" ? item.id : current.shoes);
+    if (item.type === "pet") drawPetPreview(preview, item.id);
+    else drawCharacterPreview(preview, current.color, item.type === "hat" ? item.id : current.hat, item.type === "shoes" ? item.id : current.shoes);
 
     const name = document.createElement("div");
     name.className = "shop-item-name";
@@ -317,11 +344,11 @@ function renderShop() {
     button.type = "button";
     if (wearing) {
       button.className = "soft-button";
-      button.textContent = "Take off";
+      button.textContent = item.type === "pet" ? "Send home" : "Take off";
       button.addEventListener("click", () => wearItem(item, false));
     } else if (owned) {
       button.className = "soft-button";
-      button.textContent = "Wear";
+      button.textContent = item.type === "pet" ? "Bring along" : "Wear";
       button.addEventListener("click", () => wearItem(item, true));
     } else {
       button.className = "warm-button";
@@ -348,6 +375,20 @@ function buy(item) {
   playCrumbSound();
   wearItem(item, true, false);
   quip(pick(["reginald", "pip", "bean"]), item.line);
+  checkShopAchievements();
+}
+
+// Achievements for what you own. Also run on joining, so things bought
+// before achievements existed still count.
+export function checkShopAchievements() {
+  const ownsAll = (type) => CATALOG.filter((i) => i.type === type).every((i) => save.owned.includes(i.id));
+  if (save.owned.length > 0) unlock("firstBuy");
+  if (ownedPets().length >= 1) unlock("firstPet");
+  if (ownedPets().length >= 5) unlock("menagerie");
+  if (ownsAll("hat")) unlock("allHats");
+  if (ownsAll("shoes")) unlock("allShoes");
+  if (save.met) unlock("raccoons");
+  if (save.crumbs >= 500) unlock("hoarder");
 }
 
 function wearItem(item, on, withSound = true) {

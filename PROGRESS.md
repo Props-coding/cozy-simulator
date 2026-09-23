@@ -109,10 +109,16 @@
 
 - Build 0.34: the Library moved to the north side, above the hallway's east end (next to the offices), with its door opening down into the hallway. Its three rainy windows and clock are on its outside north wall, with the reading nook underneath, a bookshelf on each side of the aisle, and a reading table with banker's lamps. The hallway is full length again, the corner south of its east end is now garden (with rain), and the raccoons stand in the hallway's east corner. New rain sound: "Rain" by ezwa (public domain), picked by measuring several recordings for the steadiest, least jumpy one (no sudden splats), played slightly muffled like rain through a window, with a lower default volume. Also fixed walls shared by several rooms (like the hallway's back wall with two offices built) being painted in the wrong room's color: each stretch of wall now matches the room it faces.
 
+- Achievements and pets (not pushed yet):
+  - Pets: the raccoons now have a Pets tab with 11 pets: Duckling, Frog, Cat, Pup, Bunny, Hedgehog, Fox, Penguin, Ghost, Baby Dragon and Raccoon Kit (50 to 300 crumbs). Your pet trots along the path you walked (so it uses doorways, not walls), sits when it catches up and looks at you, and each has its own little moves (the bunny and frog hop, the duck and penguin waddle, the ghost floats, the dragon flaps, tails wag). Friends see your pet. Walk up to any pet (yours or a friend's) and press E to give it a pat: little hearts float up. Pick your pet on the Join screen, or "Bring along" / "Send home" in the shop.
+  - Achievements: 35 of them (32 listed, 3 secret), each worth some crumbs. A trophy button in the header opens the list, showing which you have. Unlocking one pops up a card over the house with a little fanfare, and friends see "Sam earned ..." in the House chat. Things you already had (like hats you bought) count the first time you join.
+  - Like crumbs, pets and achievements are saved in your own browser only.
+  - Also fixed: after opening the shop, the page could scroll a little, because the coat flaps stayed swung open (invisibly) below the house.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements and pets (crumbs, the raccoon shop, the Library and emotes are done).
-- Decisions needed before starting: where bedrooms go; what the conference room replaces or where it's added; which extras beyond hats and shoes to unlock.
+- Still in the backlog (`CLAUDE.md`): bedrooms (needs a spot), house key (security), crumb backup code, weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
+- Decision needed before bedrooms: where they go, since the north side is full.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.

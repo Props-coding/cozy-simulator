@@ -129,7 +129,7 @@ Do these in order. Stop after each one for the user to test.
 
 Add one at a time and ask the user which to do next.
 
-Already done: study focus timer (body-doubling), knock on locked offices, personal offices with lock and secret themes, house and office chat.
+Already done: study focus timer (body-doubling), knock on locked offices, personal offices with lock and secret themes, house and office chat, and big ideas 1, 3, 4, 5, 6, 7, 8, 9 and 10 (only bedrooms are left).
 
 ### Big ideas (added 2026-09-22)
 

@@ -5,6 +5,7 @@
 // the drawing lasts only while someone is in the house (the "Save
 // picture" button downloads a copy).
 import { sendBoard, onBoard } from "./network.js";
+import { unlock } from "./achievements.js";
 
 const BOARD_W = 960; // the board's size in its own pixels (the panel scales it)
 const BOARD_H = 400;
@@ -63,6 +64,7 @@ board.addEventListener("pointerdown", (e) => {
   lastPoint = boardPoint(e);
   outbox = [...lastPoint, ...lastPoint];
   drawStroke(pen, outbox); // a dot, if you just click
+  unlock("doodle");
 });
 
 board.addEventListener("pointermove", (e) => {

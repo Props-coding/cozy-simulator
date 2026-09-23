@@ -38,6 +38,7 @@ import {
   playTimerChime,
   playChatSound,
   playJigTune,
+  playPetSound,
   enterLibrary,
   leaveLibrary,
   setRainVolume,
@@ -45,7 +46,8 @@ import {
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
-import { FREE_HATS, ownedHats, ownedShoes, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
+import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
+import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -65,6 +67,7 @@ const nameInput = document.getElementById("name-input");
 const colorInput = document.getElementById("color-input");
 const hatInput = document.getElementById("hat-input");
 const shoesInput = document.getElementById("shoes-input");
+const petInput = document.getElementById("pet-input");
 const characterPreview = document.getElementById("character-preview");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
@@ -81,6 +84,7 @@ const confirmDialog = document.getElementById("confirm-dialog");
 onPeerStream(handlePeerStream);
 onPeerLeave((peerId) => {
   removePeerAudio(peerId);
+  delete petTrails[peerId];
   playLeaveSound();
 });
 onPeerJoin((peerId) => {
@@ -113,11 +117,13 @@ let myName = "Friend";
 let myColor = "#e05a47";
 let myHat = "none";
 let myShoes = "none";
+let myPet = "none";
 
 // The hats and shoes you can pick: the free hats, plus whatever you've
 // bought from the raccoons.
 const hatChoices = () => [...FREE_HATS, ...ownedHats()];
 const shoeChoices = () => [["none", "Plain feet"], ...ownedShoes()];
+const petChoices = () => [["none", "No pet"], ...ownedPets()];
 
 function fillSelect(select, choices, chosen) {
   select.innerHTML = "";
@@ -139,10 +145,11 @@ if (savedProfile) {
 }
 fillSelect(hatInput, hatChoices(), savedProfile?.hat);
 fillSelect(shoesInput, shoeChoices(), savedProfile?.shoes);
+fillSelect(petInput, petChoices(), savedProfile?.pet);
 
 function saveProfile() {
   try {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes }));
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet }));
   } catch {
     // Storage blocked (e.g. private window): just won't be remembered.
   }
@@ -156,13 +163,15 @@ updatePreview();
 
 // The raccoons' shop can read and change what you're wearing.
 initShop({
-  get: () => ({ color: myColor, hat: myHat, shoes: myShoes }),
+  get: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet }),
   wear: (type, id) => {
     if (type === "hat") myHat = id;
-    else myShoes = id;
+    else if (type === "shoes") myShoes = id;
+    else myPet = id;
     saveProfile();
     fillSelect(hatInput, hatChoices(), myHat);
     fillSelect(shoesInput, shoeChoices(), myShoes);
+    fillSelect(petInput, petChoices(), myPet);
   },
 });
 
@@ -174,6 +183,7 @@ joinButton.addEventListener("click", async () => {
   myColor = colorInput.value;
   myHat = hatChoices().some(([id]) => id === hatInput.value) ? hatInput.value : "none";
   myShoes = shoeChoices().some(([id]) => id === shoesInput.value) ? shoesInput.value : "none";
+  myPet = petChoices().some(([id]) => id === petInput.value) ? petInput.value : "none";
   saveProfile();
   startEarningCrumbs();
 
@@ -186,6 +196,9 @@ joinButton.addEventListener("click", async () => {
   // instead of waiting for you to answer the browser's microphone question.
   fitHouse();
   requestAnimationFrame(tick);
+  unlock("welcome");
+  checkShopAchievements();
+  setInterval(checkTimeAchievements, 5000);
 
   try {
     connectToRoom(myName, myColor);
@@ -326,6 +339,9 @@ function updateFocusTimer(roomId) {
     if (roomId === "study") {
       addCrumbs(CONFIG.focusBonusCrumbs);
       showNotice(`Focus session done! +${CONFIG.focusBonusCrumbs} crumbs. Time for a break.`);
+      const sessions = count("focusSessions");
+      unlock("focus");
+      if (sessions >= 5) unlock("scholar");
     }
   } else {
     focusTimer = null;
@@ -345,7 +361,17 @@ function studySignText() {
 }
 
 // The short prompt under the room name, like "Press E to build your office".
+// If there's nothing else to say and a pet is close by, it offers a pat.
 function actionHintFor(room) {
+  const hint = roomHintFor(room);
+  if (hint || isShopBusy()) return hint;
+  const pet = petInReach();
+  if (!pet) return "";
+  const whose = pet.who === "me" ? "your" : `${pet.ownerName}'s`;
+  return `Press E to pet ${whose} ${itemName(pet.kind).toLowerCase()}.`;
+}
+
+function roomHintFor(room) {
   if (performance.now() < notice.until) return notice.text;
   if (isShopBusy()) return "";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
@@ -381,16 +407,27 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
+  // Petting a pet (yours or a friend's), when nothing else is in reach.
+  const pet = key === "e" && !nearestInteraction(player) ? petInReach() : null;
+  if (pet) {
+    pet.trail.pettedAt = performance.now();
+    playPetSound();
+    unlock("patPat");
+    if (pet.who !== "me") unlock("pettingZoo");
+  }
+
   if (key === "e" && !myOffice && isNearBuildDoor(player) && offices.length < OFFICE_SLOTS) {
     myOffice = { since: Date.now(), locked: false };
     saveMyOffice();
     playClickSound();
+    unlock("office");
   }
 
   if (key === "l" && getCurrentRoom(player).office?.mine) {
     myOffice.locked = !myOffice.locked;
     saveMyOffice();
     playClickSound();
+    if (myOffice.locked) unlock("lock");
   }
 
   // Number keys 1 to 5: emotes.
@@ -418,6 +455,7 @@ window.addEventListener("keydown", (e) => {
     sendKnock(lockedDoor.office.ownerId);
     playKnockSound();
     showNotice(`You knocked. ${lockedDoor.office.ownerName} will hear it.`);
+    unlock("knock");
   }
 
   // Removing asks first, since it can't be undone (though you can always
@@ -523,6 +561,16 @@ function startEmote(id) {
   myEmote = { id, start: performance.now() };
   sendEmote(id);
   if (id === "jig") playJigTune();
+
+  // Achievements for emotes.
+  const room = getCurrentRoom(player).id;
+  if (collect("emotes", id).length >= Object.keys(EMOTE_KEYS).length) unlock("expressive");
+  if (id === "sleepy" && room === "dinner") unlock("foodComa");
+  if (id === "jig") {
+    unlock("jig");
+    if (room === "theater") unlock("danceFloor");
+    if (Object.values(peerEmotes).some((e) => emoteNow(e)?.id === "jig")) unlock("jigParty");
+  }
 }
 
 function stopMyEmote() {
@@ -546,6 +594,7 @@ onEmote((id, peerId) => {
   }
   if (typeof id !== "string" || !Object.hasOwn(EMOTE_LENGTHS, id)) return;
   peerEmotes[peerId] = { id, start: performance.now() };
+  if (id === "jig" && emoteNow(myEmote)?.id === "jig") unlock("jigParty");
   // A friend hitting the jig in the same room as you: you hear the tune too.
   const peer = getPeers().find((p) => p.id === peerId);
   if (id === "jig" && peer?.room === getCurrentRoom(player).id) playJigTune();
@@ -627,6 +676,13 @@ function renderChat({ toBottom = false, newMessage = false } = {}) {
     // Built with textContent (never innerHTML), since friends' names and
     // messages come over the network.
     const li = document.createElement("li");
+    if (line.system) {
+      // A note from the house, like "Sam earned an achievement".
+      li.className = "chat-system";
+      li.textContent = line.text;
+      chatLog.appendChild(li);
+      continue;
+    }
     const name = document.createElement("span");
     name.className = "chat-name";
     name.style.color = safeColor(line.color);
@@ -701,6 +757,9 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
   if (!text || performance.now() - lastChatSent < 400) return;
   lastChatSent = performance.now();
   chatInput.value = "";
+  const sent = count("chats");
+  unlock("hello");
+  if (sent >= 100) unlock("chatterbox");
 
   if (chatTab === "office" && lastOfficeRoomId) {
     const inThisOffice = getPeers().filter((p) => p.room === lastOfficeRoomId).map((p) => p.id);
@@ -757,6 +816,14 @@ document.addEventListener("click", (e) => {
 });
 
 onChat((message, peerId) => {
+  const peer = getPeers().find((p) => p.id === peerId);
+  const peerName = String(peer?.name ?? "Someone").slice(0, 16);
+  // A friend unlocked an achievement.
+  const earned = ACHIEVEMENTS.find((a) => a.id === message?.achievement);
+  if (earned) {
+    addChatLine({ channel: "house", system: true, text: `🏆 ${peerName} earned "${earned.name}"` });
+    return;
+  }
   if (typeof message?.text !== "string") return;
   const text = clipText(message.text.trim(), CHAT_MAX_LENGTH);
   if (!text) return;
@@ -766,13 +833,129 @@ onChat((message, peerId) => {
     if (message.office !== getCurrentRoom(player).id) return;
     channel = message.office;
   }
-  const peer = getPeers().find((p) => p.id === peerId);
-  addChatLine({ channel, name: String(peer?.name ?? "Someone").slice(0, 16), color: peer?.color, text });
+  addChatLine({ channel, name: peerName, color: peer?.color, text });
   bubbles[peerId] = { text, until: performance.now() + 6000 };
   playChatSound();
 });
 
 renderChat();
+
+// --- Achievements ---
+// Each one gives crumbs, and friends see a line in the House chat.
+initAchievements({
+  reward: (crumbs) => addCrumbs(crumbs),
+  announce: (id) => {
+    const a = ACHIEVEMENTS.find((x) => x.id === id);
+    sendChat({ achievement: id });
+    addChatLine({ channel: "house", system: true, text: `🏆 You earned "${a.name}" (+${a.crumbs} crumbs)` });
+  },
+});
+
+// Every room counts for the Grand Tour (any office will do).
+const TOUR_ROOMS = ["hallway", "theater", "study", "dinner", "conference", "library", "office"];
+
+// Checked every 5 seconds while you're in the house: time spent, time of
+// day, and who's around.
+function checkTimeAchievements() {
+  const room = getCurrentRoom(player).id;
+  const peers = getPeers();
+  const seconds = count("seconds", 5);
+  if (seconds >= 60 * 60) unlock("hour");
+  if (seconds >= 10 * 60 * 60) unlock("homebody");
+  if (seconds >= 50 * 60 * 60) unlock("resident");
+  if (room === "library" && count("librarySeconds", 5) >= 15 * 60) unlock("bookworm");
+  if (room === "dinner" && count("dinnerSeconds", 5) >= 10 * 60) unlock("snack");
+  const hour = new Date().getHours();
+  if (hour >= 1 && hour < 4) unlock("nightOwl");
+  if (hour >= 5 && hour < 7) unlock("earlyBird");
+  if (peers.length >= 3) unlock("fullHouse");
+  if (peers.some((p) => p.room === room)) unlock("roommates");
+}
+
+// --- Pets ---
+// Each pet trots along the path its owner walked, so it goes through
+// doorways (not walls) just like they did, and sits down once it's close
+// enough. Every browser works this out for itself from where people are,
+// so pets need no extra messages: only which pet you have is sent.
+const PET_GAP = 0.85; // how close a pet likes to stay to its owner (grid units)
+const PET_REACH = 1.0; // how close you need to be to pet one
+const petTrails = {}; // "me" or a peer id -> { points, x, y, facing, moving, pettedAt }
+let petsNow = []; // the pets drawn this frame
+
+// Moves one pet for this frame. (fx, fy) is where the owner's feet are.
+function followOwner(who, fx, fy, dt) {
+  let trail = petTrails[who];
+  if (!trail || Math.hypot(fx - trail.x, fy - trail.y) > 4) {
+    // A new pet, or the owner jumped (like popping back to the hallway):
+    // start just beside them.
+    trail = petTrails[who] = { points: [], x: fx - PET_GAP, y: fy, facing: 1, moving: false, pettedAt: trail?.pettedAt ?? -Infinity };
+  }
+  const startX = trail.x, startY = trail.y;
+  const distance = Math.hypot(fx - trail.x, fy - trail.y);
+  if (distance <= PET_GAP) {
+    // Close enough: sit, and follow from here next time they walk off.
+    trail.points = [{ x: fx, y: fy }];
+  } else {
+    const last = trail.points.at(-1);
+    if (!last || Math.hypot(fx - last.x, fy - last.y) > 0.05) trail.points.push({ x: fx, y: fy });
+    // A little faster than walking, and faster still if it's fallen behind.
+    let step = CONFIG.playerSpeed * (1.05 + Math.max(0, distance - PET_GAP - 0.6)) * dt;
+    while (step > 0 && trail.points.length > 0) {
+      const target = trail.points[0];
+      const d = Math.hypot(target.x - trail.x, target.y - trail.y);
+      if (d <= step) {
+        trail.x = target.x;
+        trail.y = target.y;
+        trail.points.shift();
+        step -= d;
+      } else {
+        trail.x += ((target.x - trail.x) * step) / d;
+        trail.y += ((target.y - trail.y) * step) / d;
+        step = 0;
+      }
+      if (Math.hypot(fx - trail.x, fy - trail.y) <= PET_GAP) break;
+    }
+  }
+  const dx = trail.x - startX;
+  trail.moving = Math.hypot(dx, trail.y - startY) > 0.001;
+  // Face the way it walks, or look at its owner while sitting.
+  const look = trail.moving ? dx : fx - trail.x;
+  if (Math.abs(look) > 0.001) trail.facing = Math.sign(look);
+  return trail;
+}
+
+// Works out every pet's spot for this frame, from the players being drawn.
+function updatePets(scenePlayers, dt) {
+  petsNow = [];
+  for (const p of scenePlayers) {
+    if (!Object.hasOwn(PET_DRAWERS, p.pet)) continue;
+    const trail = followOwner(p.id, p.x + PLAYER_SIZE / 2, p.y + PLAYER_SIZE, dt);
+    petsNow.push({
+      who: p.id,
+      ownerName: p.name,
+      kind: p.pet,
+      trail,
+      x: trail.x,
+      y: trail.y,
+      facing: trail.facing,
+      moving: trail.moving,
+      seed: p.id === "me" ? 0 : (p.id.charCodeAt(0) % 10) * 0.7, // so pets don't blink in step
+      petted: (performance.now() - trail.pettedAt) / 1000,
+    });
+  }
+  return petsNow;
+}
+
+// The closest pet you could pet right now, or null.
+function petInReach() {
+  const fx = player.x + PLAYER_SIZE / 2, fy = player.y + PLAYER_SIZE;
+  let best = null, bestDistance = PET_REACH;
+  for (const pet of petsNow) {
+    const d = Math.hypot(pet.x - fx, pet.y - fy);
+    if (d < bestDistance) [best, bestDistance] = [pet, d];
+  }
+  return best;
+}
 
 // --- In-game "are you sure?" card ---
 // Shows the cozy card over the house and resolves to true or false.
@@ -916,6 +1099,8 @@ function tick(now) {
     if (currentRoom.id === "theater") enterTheater();
     if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
     previousRoomId = currentRoom.id;
+    const visited = collect("rooms", currentRoom.office ? "office" : currentRoom.id);
+    if (TOUR_ROOMS.every((r) => visited.includes(r))) unlock("tour");
   }
   updateLofi(dt);
   updateTheater();
@@ -926,7 +1111,7 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const officeInfo = myOffice ? { since: myOffice.since, locked: myOffice.locked } : null;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo, typing: amTyping(), build: MY_BUILD });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo, typing: amTyping(), build: MY_BUILD });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -934,11 +1119,12 @@ function tick(now) {
     // A friend's hat name comes over the network, so only accept known hats.
     const hat = Object.hasOwn(HAT_DRAWERS, peer.hat) ? peer.hat : "none";
     const shoes = Object.hasOwn(SHOE_DRAWERS, peer.shoes) ? peer.shoes : "none";
-    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id), emote: emoteNow(peerEmotes[peer.id]), typing: peer.typing === true };
+    const pet = Object.hasOwn(PET_DRAWERS, peer.pet) ? peer.pet : "none";
+    return { id: peer.id, pet, x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id), emote: emoteNow(peerEmotes[peer.id]), typing: peer.typing === true };
   });
-  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me"), emote: emoteNow(myEmote), typing: amTyping() });
+  scenePlayers.push({ id: "me", pet: myPet, x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me"), emote: emoteNow(myEmote), typing: amTyping() });
   updateChatTabs(currentRoom);
-  drawScene(ctx, scenePlayers, studySignText());
+  drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt));
 
   updateSidebar(currentRoom.name);
 

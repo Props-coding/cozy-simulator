@@ -152,6 +152,21 @@ export function playCrumbSound() {
   playTone(1318.51, 80, { gain: 0.07, duration: 0.16, type: "triangle" });
 }
 
+// A little "ta-da!" for unlocking an achievement: four bright notes
+// climbing up, the last one ringing out.
+export function playAchievementSound() {
+  playTone(523.25, 0, { gain: 0.08, duration: 0.14, type: "triangle" });
+  playTone(659.25, 110, { gain: 0.08, duration: 0.14, type: "triangle" });
+  playTone(783.99, 220, { gain: 0.08, duration: 0.14, type: "triangle" });
+  playTone(1046.5, 330, { gain: 0.09, duration: 0.6, type: "triangle" });
+}
+
+// A soft, happy chirp for petting a pet.
+export function playPetSound() {
+  playTone(1046.5, 0, { gain: 0.05, duration: 0.08, type: "sine" });
+  playTone(1396.91, 70, { gain: 0.05, duration: 0.12, type: "sine" });
+}
+
 // A short, jaunty fiddle jig for the "jig" emote: a buzzy sawtooth note,
 // softened a little, with a touch of wobble like a bow on a string.
 function playFiddleNote(freq, delayMs, duration) {
