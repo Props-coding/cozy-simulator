@@ -289,7 +289,7 @@ function renderBar() {
 function pickUpNew(id) {
   const item = DECOR[id];
   const width = bedroomWidth(home.size);
-  held = { item: id, x: snap((width - item.w) / 2), y: item.wall ? 0 : snap((WING_DEPTH - item.h) / 2), from: null };
+  held = { item: id, x: snap((width - item.w) / 2), y: item.wall ? 0 : snap((BEDROOM_DEPTH - item.h) / 2), from: null };
   playClickSound();
   renderBar();
 }
@@ -310,7 +310,7 @@ function snap(v) {
 function clampHeld() {
   const item = DECOR[held.item];
   held.x = Math.min(Math.max(0, held.x), bedroomWidth(home.size) - item.w);
-  held.y = item.wall ? 0 : Math.min(Math.max(0, held.y), WING_DEPTH - item.h);
+  held.y = item.wall ? 0 : Math.min(Math.max(0, held.y), BEDROOM_DEPTH - item.h);
 }
 
 function placeHeld() {

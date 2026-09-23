@@ -313,7 +313,7 @@ function gatherClaims(kind, peers) {
 // Where you pop back to if the room you're in disappears: the middle of
 // the hallway, or of the landing if you're upstairs.
 function spawnPoint(floor) {
-  return { x: 8.7, y: floor ? UPSTAIRS + 1.2 : 1.2 };
+  return { x: 8.7, y: floor ? LANDING + 1.2 : 1.2 };
 }
 
 // Rebuilds the house if anyone's office or bedroom appeared, disappeared,

@@ -5198,12 +5198,15 @@ function lawnAreas() {
     from = Math.max(from, end);
   }
   if (from < HOUSE_WIDTH + t) areas.push({ x: from, w: HOUSE_WIDTH + t - from });
-  const north = areas.map((a) => ({ ...a, y: base + houseTopY - 1.5, h: -t - (houseTopY - 1.5) }));
+  // The corridor the north rooms open onto: the hallway, or the landing
+  // (which sits lower upstairs).
+  const corridor = viewFloor === 0 ? 0 : LANDING;
+  const north = areas.map((a) => ({ ...a, y: base + houseTopY - 1.5, h: corridor - t - (base + houseTopY - 1.5) }));
   // Plus the garden below the stairs (downstairs), or the roof south of
   // the landing (upstairs).
-  const belowStairs = { x: 18, y: base + 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 };
+  const belowStairs = { x: 18, y: corridor + 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 };
   if (viewFloor === 0) return [...north, belowStairs];
-  return [...north, belowStairs, { x: -t - 1, y: base + 3 + t / 2, w: 18 + 1 + t / 2, h: 9 }];
+  return [...north, belowStairs, { x: -t - 1, y: corridor + 3 + t / 2, w: 18 + 1 + t / 2, h: 9 }];
 }
 
 // --- Decorating helpers ---

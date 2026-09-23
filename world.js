@@ -22,6 +22,10 @@
 const WALL_THICKNESS = 0.4;
 const HOUSE_WIDTH = 24; // how far east the house (and hallway) reaches
 const UPSTAIRS = 40; // how much further down the grid the upstairs floor is kept
+// Upstairs, the landing sits lower than the hallway does downstairs, which
+// leaves room for deep bedrooms above it. This is the landing's top edge
+// (the wall with the bedroom doors).
+const LANDING = UPSTAIRS + 3;
 
 // Which floor a grid y position is on: 0 downstairs, 1 upstairs.
 function floorOf(y) {
@@ -45,7 +49,7 @@ const BASE_ROOMS = [
   // The stairs, south of the hallway's east end (the same spot on both floors).
   { id: "stairs", name: CONFIG.roomNames.stairs, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, matY: 2.12 } },
   // Upstairs: the landing (its sign is added in buildHouse) and its stairs.
-  { id: "stairsUp", name: CONFIG.roomNames.stairs, rect: { x: 18, y: UPSTAIRS + 3, w: 6, h: 4 }, sign: { x: 20, matY: UPSTAIRS + 2.12 } },
+  { id: "stairsUp", name: CONFIG.roomNames.stairs, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, matY: LANDING + 2.12 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -79,12 +83,12 @@ const BASE_WALLS = [
   // Upstairs: the landing's sides and bottom (with a doorway into its
   // stairwell, x 19.2 to 20.8), and the stairwell's walls. The landing's
   // top wall has the bedroom doorways, so it's made in buildHouse.
-  { x: -WALL_THICKNESS, y: UPSTAIRS - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
-  { x: HOUSE_WIDTH, y: UPSTAIRS - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
-  { x: -WALL_THICKNESS, y: UPSTAIRS + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 20.8, y: UPSTAIRS + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: UPSTAIRS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: UPSTAIRS + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+  { x: -WALL_THICKNESS, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
+  { x: HOUSE_WIDTH, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
+  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 20.8, y: LANDING + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: LANDING + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
 
   // Dividers between rooms (no doors between rooms directly). They start
   // at the same line as the walls above the rooms so the tops line up.
@@ -134,7 +138,6 @@ const BASE_FURNITURE = [
   { kind: "console", x: 8.9, y: 0.1, w: 1.8, h: 0.45 },
   { kind: "sconce", x: 12.85, y: 0, solid: false },
   { kind: "sconce", x: 14.6, y: 0, solid: false },
-  { kind: "sconce", x: 14.35, y: 0, solid: false },
   { kind: "sconce", x: 17.1, y: 0, solid: false },
   { kind: "picture", x: 18.6, y: 0, w: 1.1, art: "sea", solid: false },
   { kind: "sconce", x: 22.3, y: 0, solid: false },
@@ -241,31 +244,34 @@ const BASE_FURNITURE = [
   { kind: "palm", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
 
   // Upstairs: a runner down the landing, lamps and paintings between the
-  // bedroom doors (x0 + 2.2 to x0 + 3.8 for x0 = 0, 6, 12, 18), a side
-  // table, a bench, a cactus and a fern, and the staircase down in its stairwell.
-  // The landing's "Upstairs" plaque hangs at x 12, between two lamps.
-  { kind: "rug", x: 1.5, y: UPSTAIRS + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
-  { kind: "sconce", x: 1.2, y: UPSTAIRS, solid: false },
-  { kind: "picture", x: 4.4, y: UPSTAIRS, w: 1.0, art: "flowers", solid: false },
-  { kind: "bench", x: 4.2, y: UPSTAIRS + 0.1, w: 1.5, h: 0.5 },
-  { kind: "sconce", x: 7.3, y: UPSTAIRS, solid: false },
-  { kind: "sconce", x: 10.6, y: UPSTAIRS, solid: false },
-  { kind: "sconce", x: 13.3, y: UPSTAIRS, solid: false },
-  { kind: "picture", x: 16.4, y: UPSTAIRS, w: 1.0, art: "sea", solid: false },
-  { kind: "console", x: 16.0, y: UPSTAIRS + 0.1, w: 1.8, h: 0.45 },
-  { kind: "sconce", x: 19.3, y: UPSTAIRS, solid: false },
-  { kind: "picture", x: 22.4, y: UPSTAIRS, w: 0.9, art: "hills", solid: false },
-  { kind: "cactus", x: 0.15, y: UPSTAIRS + 2.05, w: 0.6, h: 0.6 },
-  { kind: "staircase", x: 21.3, y: UPSTAIRS + 3.3, w: 2.4, h: 2.7, down: true, solid: false },
-  { kind: "sconce", x: 18.7, y: UPSTAIRS + 3.2, solid: false },
-  { kind: "fern", x: 18.3, y: UPSTAIRS + 6.0, w: 0.6, h: 0.6 },
+  // bedroom doors (x0 + 1 to x0 + 2.6 for x0 = 0, 6, 12, 18), a side
+  // table, a bench, a cactus and a fern, and the staircase down in its
+  // stairwell. The landing's "Upstairs" plaque hangs at x 11.8, between
+  // two lamps.
+  { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
+  { kind: "sconce", x: 3.0, y: LANDING, solid: false },
+  { kind: "picture", x: 4.4, y: LANDING, w: 1.0, art: "flowers", solid: false },
+  { kind: "bench", x: 4.2, y: LANDING + 0.1, w: 1.5, h: 0.5 },
+  { kind: "sconce", x: 6.4, y: LANDING, solid: false },
+  { kind: "sconce", x: 10.6, y: LANDING, solid: false },
+  { kind: "sconce", x: 12.75, y: LANDING, solid: false },
+  { kind: "sconce", x: 15.4, y: LANDING, solid: false },
+  { kind: "picture", x: 16.4, y: LANDING, w: 1.0, art: "sea", solid: false },
+  { kind: "console", x: 16.0, y: LANDING + 0.1, w: 1.8, h: 0.45 },
+  { kind: "sconce", x: 18.4, y: LANDING, solid: false },
+  { kind: "sconce", x: 21.4, y: LANDING, solid: false },
+  { kind: "picture", x: 22.4, y: LANDING, w: 0.9, art: "hills", solid: false },
+  { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
+  { kind: "staircase", x: 21.3, y: LANDING + 3.3, w: 2.4, h: 2.7, down: true, solid: false },
+  { kind: "sconce", x: 18.7, y: LANDING + 3.2, solid: false },
+  { kind: "fern", x: 18.3, y: LANDING + 6.0, w: 0.6, h: 0.6 },
 ];
 
 // Where the stairs take you: step onto a staircase (the middle of it, so
 // brushing its edge doesn't count) and you arrive beside the other one.
 const STAIRS = [
-  { from: { x: 21.5, y: 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: UPSTAIRS + 4.6 } },
-  { from: { x: 21.5, y: UPSTAIRS + 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: 4.6 } },
+  { from: { x: 21.5, y: 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: LANDING + 4.6 } },
+  { from: { x: 21.5, y: LANDING + 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: 4.6 } },
 ];
 
 // Where a player's center is on the stairs, the spot they arrive at on the
@@ -285,14 +291,15 @@ function stairsDestination(player) {
 //   slots: how many can exist at once. width: grid units per room,
 //   including its wall. firstX: left edge of the first spot. floorY: the y
 //   of the corridor wall they open onto (the hallway, or the landing).
-//   doorX: where the doorway starts, from the room's left edge.
+//   doorX: where the doorway starts, from the room's left edge. depth: how
+//   far north it reaches from the corridor.
 const WINGS = {
-  office: { slots: 3, width: 4, firstX: 6, floorY: 0, doorX: 1, name: "Office" },
-  bedroom: { slots: 4, width: 6, firstX: 0, floorY: UPSTAIRS, doorX: 1, name: "Bedroom" },
+  office: { slots: 3, width: 4, firstX: 6, floorY: 0, doorX: 1, depth: 5, name: "Office" },
+  bedroom: { slots: 4, width: 6, firstX: 0, floorY: LANDING, doorX: 1, depth: 8, name: "Bedroom" },
 };
-const WING_DEPTH = 5; // how far north a private room reaches from its corridor
+const BEDROOM_DEPTH = WINGS.bedroom.depth;
 const DOOR_WIDTH = 1.6;
-const OFFICE_TOP = -WALL_THICKNESS - WING_DEPTH; // the office floor's north edge
+const OFFICE_TOP = -WALL_THICKNESS - WINGS.office.depth; // the office floor's north edge
 
 // Left edge of spot 1, 2, 3... for a kind of room.
 function wingX(kind, slot) {
@@ -331,7 +338,7 @@ function buildHouse(offices, bedrooms = []) {
 
   const add = (kind, list) => {
     const wing = WINGS[kind];
-    const top = wing.floorY - t - WING_DEPTH;
+    const top = wing.floorY - t - wing.depth;
     for (const info of list) {
       const x0 = wingX(kind, info.slot);
       // Bedrooms come in two sizes (see BEDROOM_SIZES); offices fill their spot.
@@ -340,7 +347,7 @@ function buildHouse(offices, bedrooms = []) {
       rooms.push({
         id: kind + "-" + info.since,
         name: `${info.ownerName}'s ${wing.name}`,
-        rect: { x: x0, y: top, w: inner, h: WING_DEPTH },
+        rect: { x: x0, y: top, w: inner, h: wing.depth },
         owned: { ...info, kind },
         theme,
         north: true,
@@ -349,8 +356,8 @@ function buildHouse(offices, bedrooms = []) {
       });
       walls.push(
         { x: x0 - t, y: top - t, w: wing.width + t, h: t }, // north wall
-        { x: x0 - t, y: top - t, w: t, h: WING_DEPTH + t }, // left side, down to the corridor wall
-        { x: x0 + inner, y: top - t, w: t, h: WING_DEPTH + t } // right side
+        { x: x0 - t, y: top - t, w: t, h: wing.depth + t }, // left side, down to the corridor wall
+        { x: x0 + inner, y: top - t, w: t, h: wing.depth + t } // right side
       );
       const pieces = kind === "office" ? OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default : BEDROOM_FURNITURE;
       furniture.push(...pieces(x0, top, info));
@@ -369,7 +376,7 @@ function buildHouse(offices, bedrooms = []) {
   // 3.6), the Library (x 20.2 to 21.8) and each office. The landing's has
   // one for each bedroom.
   corridorWall(0, [2, 20.2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
-  corridorWall(UPSTAIRS, bedrooms.map((b) => wingX("bedroom", b.slot) + WINGS.bedroom.doorX));
+  corridorWall(LANDING, bedrooms.map((b) => wingX("bedroom", b.slot) + WINGS.bedroom.doorX));
   add("office", offices);
   add("bedroom", bedrooms);
 
@@ -377,7 +384,7 @@ function buildHouse(offices, bedrooms = []) {
   // between two lamps on the right (onWall: on the wall, not on its top).
   // The landing gets one too, between the second and third bedroom doors.
   rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 }, sign: { x: 13.72, y: 0, plaque: true, onWall: true } });
-  rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: UPSTAIRS, w: HOUSE_WIDTH, h: 3 }, sign: { x: 12, y: UPSTAIRS, plaque: true, onWall: true } });
+  rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 }, sign: { x: 11.8, y: LANDING, plaque: true, onWall: true } });
 
   ROOMS = rooms;
   WALLS = walls;
@@ -466,11 +473,11 @@ const OFFICE_FURNITURE = {
 };
 
 // --- Bedrooms: the starter room, and Nest & Nook decor ---
-// A new bedroom is "cozy": 3.6 wide, with a partition wall on its right.
+// A new bedroom is "cozy": 4.1 wide, with a partition wall on its right.
 // The "Roomy" upgrade (bought at Nest & Nook) takes the wall down, making
-// it 5.6 wide. Either way it's 5 deep, with the doorway at the bottom
+// it 5.6 wide. Either way it's 8 deep, with the doorway at the bottom
 // between x0 + 1 and x0 + 2.6.
-const BEDROOM_SIZES = { cozy: 3.6, roomy: 5.6 };
+const BEDROOM_SIZES = { cozy: 4.1, roomy: 5.6 };
 const ROOMY_PRICE = 150; // crumbs
 
 function bedroomWidth(size) {
@@ -565,7 +572,7 @@ const DECOR = {
 const DESK_SPOT = { x: 0.15, y: 0.1, w: 1.3, h: 0.6 };
 const MATTRESS_SPOT = { x: 2.05, y: 0.15, w: 1.4, h: 2.1 };
 const hasBed = (placed) => placed.some((p) => DECOR[p.item]?.sleep);
-const DOOR_LANE = { x: 0.8, y: WING_DEPTH - 1.1, w: 2.0, h: 1.1 }; // kept clear so you can always get in
+const DOOR_LANE = { x: 0.8, y: BEDROOM_DEPTH - 1.1, w: 2.0, h: 1.1 }; // kept clear so you can always get in
 
 const MAX_DECOR = 40; // pieces per bedroom
 
@@ -583,7 +590,7 @@ function decorFits(size, placed, piece, skip = -1) {
   if (item.wall) {
     return !others.some((p) => DECOR[p.item].wall && piece.x < p.x + DECOR[p.item].w && piece.x + item.w > p.x);
   }
-  if (piece.y < 0 || piece.y + item.h > WING_DEPTH + 1e-9) return false;
+  if (piece.y < 0 || piece.y + item.h > BEDROOM_DEPTH + 1e-9) return false;
   if (item.kind === "rug") return true;
   const box = { x: piece.x, y: piece.y, w: item.w, h: item.h };
   const spots = item.sleep || hasBed(others) ? [DESK_SPOT, DOOR_LANE] : [DESK_SPOT, MATTRESS_SPOT, DOOR_LANE];
