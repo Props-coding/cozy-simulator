@@ -269,6 +269,12 @@ function paintFloors(ctx) {
       ctx.fill();
     }
   }
+
+  // Name doormats in front of the south rooms' doors, flat on the hallway
+  // floor so people walk over them (see "sign" in world.js).
+  for (const room of ROOMS) {
+    if (room.sign?.mat) drawNameMat(ctx, room);
+  }
 }
 
 // The house's full width in screen pixels, from the far west end of the
@@ -303,6 +309,12 @@ function setViewScale(scale) {
 
 let floorCanvas = null;
 let floorVersion = -1;
+
+// The doormats have writing on them, so repaint the floor once the cozy
+// font has finished loading (in case the first paint happened before).
+document.fonts?.ready.then(() => {
+  floorVersion = -1;
+});
 
 function drawFloors(ctx) {
   // Repaint only when the house has changed (an office was added, removed
@@ -1988,7 +2000,7 @@ function getStaticSprites() {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
       // Name signs sort just after the wall they're on (and after a locked door).
-      ...ROOMS.filter((room) => room.sign).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
+      ...ROOMS.filter((room) => room.sign && !room.sign.mat).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
         sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
@@ -2219,6 +2231,28 @@ function drawPlayerTag(ctx, p) {
     ctx.fillStyle = "#4a3a2c";
     ctx.fillText(text, cx, bottom - 7);
   }
+  ctx.textAlign = "left";
+}
+
+// A doormat with a room's name on it, on the hallway floor just in front
+// of the room's door.
+function drawNameMat(ctx, room) {
+  const { x, y } = room.sign;
+  // Centered a little way into the hallway, where the floor isn't hidden
+  // behind the wall standing in front of it.
+  const p = toScreen(x, y - 1.08);
+  ctx.font = "700 12px 'Quicksand', sans-serif";
+  const w = ctx.measureText(room.name).width + 26, h = 20;
+  roundRectPath(ctx, p.x - w / 2, p.y - h / 2, w, h, 5);
+  ctx.fillStyle = "#8a5a3c";
+  ctx.fill();
+  roundRectPath(ctx, p.x - w / 2 + 3, p.y - h / 2 + 3, w - 6, h - 6, 3);
+  ctx.strokeStyle = "#c9955f";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.fillStyle = "#f3e6d0";
+  ctx.textAlign = "center";
+  ctx.fillText(room.name, p.x, p.y + 4);
   ctx.textAlign = "left";
 }
 

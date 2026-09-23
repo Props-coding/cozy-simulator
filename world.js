@@ -15,13 +15,15 @@ const WALL_THICKNESS = 0.4;
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
-// match wins. "sign" is where the room's name sign hangs: over its
-// doorway, on the hallway side (x is the sign's center, y is the bottom
-// edge of the wall it's mounted on).
+// match wins. "sign" is where the room's name goes, centered on x. For
+// rooms north of the hallway it's a sign over the doorway (y is the bottom
+// edge of the wall it's on). Rooms south of the hallway get a doormat with
+// their name on the hallway floor in front of their door instead ("mat"),
+// since the hallway side of their wall can't be seen from above.
 const BASE_ROOMS = [
-  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3.2 } },
-  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3.2 } },
-  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3.2 } },
+  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3.2, mat: true } },
+  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3.2, mat: true } },
+  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3.2, mat: true } },
   // North side, at the west end (same depth as the offices next to it).
   { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: 0 } },
 ];
@@ -76,7 +78,7 @@ const BASE_FURNITURE = [
   // and a plant under a hills painting. They're spaced to leave the
   // doorways clear: Conference Room (x 2 to 3.6) and the three office
   // spots (7 to 8.6, 11 to 12.6, 15 to 16.6).
-  { kind: "rug", x: 1.5, y: 1.0, w: 15, h: 1.1, color: "#b5603c", solid: false },
+  { kind: "rug", x: 1.5, y: 0.95, w: 15, h: 0.95, color: "#b5603c", solid: false },
   { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
   { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
   { kind: "sconce", x: 1.7, y: 0, solid: false },
