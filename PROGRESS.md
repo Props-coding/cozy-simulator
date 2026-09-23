@@ -76,6 +76,8 @@
 
 - Build 0.26: Conference Room, on the north side at the west end (the office spots moved one place east to make room). A big walnut table with laptops, notepads and water glasses, eight seats all around (stand on one to sit), a plant and a coffee cart. Voice on. A rolling whiteboard at the front: press B to open it big over the house and draw together (four pen colors and an eraser). Every stroke shows up for everyone right away, the whiteboard in the room shows the live drawing, people who join later get the drawing so far, "Clear" asks first and wipes it for everyone, and "Save picture" downloads it. The drawing lasts as long as anyone is in the house. Hallway decorations re-spaced around the new doorway.
 
+- Not pushed yet: emoji codes in chat, like Discord. Type :joy: and it turns into 😂 the moment you type the closing colon (also :sob:, :heart:, :fire:, :skull:, :thumbsup:, :eyes:, :pray:, :tada:, :raccoon: and about 60 more). Text faces like :) :D <3 xD turn into emoji when you send. The list lives in `emoji.js`, easy to add to.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.

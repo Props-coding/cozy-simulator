@@ -37,6 +37,7 @@ import {
   playChatSound,
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
+import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -420,7 +421,7 @@ function renderChat() {
   if (lines.length === 0) {
     const empty = document.createElement("li");
     empty.className = "chat-empty";
-    empty.textContent = chatTab === "house" ? "Say hi to everyone! Press Enter to start typing." : "Only people in this office can see this chat.";
+    empty.textContent = chatTab === "house" ? "Say hi to everyone! Press Enter to start typing. Emoji codes like :joy: and :sob: work too." : "Only people in this office can see this chat.";
     chatLog.appendChild(empty);
   }
   for (const line of lines) {
@@ -473,7 +474,7 @@ function updateChatTabs(room) {
 
 document.getElementById("chat-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  const text = clipText(chatInput.value.trim(), CHAT_MAX_LENGTH);
+  const text = clipText(expandEmoticons(expandShortcodes(chatInput.value.trim())), CHAT_MAX_LENGTH);
   chatInput.blur(); // sending takes you straight back to walking
   if (!text || performance.now() - lastChatSent < 400) return;
   lastChatSent = performance.now();
@@ -503,6 +504,9 @@ window.addEventListener("keydown", (e) => {
     e.target.blur();
   }
 });
+
+// Emoji codes like :joy: turn into 😂 as you type.
+chatInput.addEventListener("input", () => expandAsYouType(chatInput));
 
 // The 😊 button: a small grid of emoji. Clicking one puts it where your
 // cursor is in the chat box and keeps you typing. (Windows key + period
