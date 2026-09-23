@@ -196,7 +196,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- Still in the backlog (`CLAUDE.md`): weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
+- Still in the backlog: seasonal decorations, distance voice, a guestbook. (Weather station, porch, fireplace room, music room and leaderboards were scrapped for now, 0.40.)
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
