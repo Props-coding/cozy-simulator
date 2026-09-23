@@ -631,6 +631,150 @@ function drawWallPattern(ctx, pattern, x, y, w, h) {
   }
 }
 
+// --- Helpers for turned furniture (see the "...Side" drawers) ---
+
+// Draws a turned piece: as is when it faces right, mirrored when it faces
+// left (light comes from above, so a mirror image still looks right).
+function sideView(ctx, f, draw) {
+  if (f.facing !== "left") {
+    draw();
+    return;
+  }
+  const mid = toScreen(f.x + f.w / 2, f.y).x;
+  ctx.save();
+  ctx.translate(mid, 0);
+  ctx.scale(-1, 1);
+  ctx.translate(-mid, 0);
+  draw();
+  ctx.restore();
+}
+
+// A shelf seen from the side: a plain side panel, and a row of book (or
+// basket) edges along its front.
+function drawShelfSide(ctx, f, height, color, fronts = ["#c0554a", "#4a90a4", "#e0a84c", "#7a9e5c", "#9a6fb0", "#d98c6a"]) {
+  drawShadow(ctx, f.x, f.y, f.w, f.h);
+  const s = drawBlock(ctx, f.x, f.y, f.w, f.h, height, color);
+  const { x, y, w, h } = s.face;
+  ctx.strokeStyle = "rgba(40, 25, 10, 0.25)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 3, y + 4, w - 10, h - 10);
+  // Book spines (or baskets) peeking out along the front edge, shelf by shelf.
+  for (let row = 0, rows = Math.max(2, Math.round(height / 26)); row < rows; row++) {
+    const rowY = y + 5 + (row * (h - 10)) / rows;
+    for (let k = 0; k * 5 < s.top.h + h / rows - 6 && k < 8; k++) {
+      ctx.fillStyle = fronts[(k + row) % fronts.length];
+      ctx.fillRect(x + w - 4, rowY + k * 3, 3, 2.5);
+    }
+  }
+  // Seen from above, the tops of the books (or baskets) line the front edge.
+  const t = s.top;
+  ctx.fillStyle = shadeColor(color, -25);
+  ctx.fillRect(t.x + t.w - 8, t.y, 8, t.h);
+  for (let by = t.y + 2, k = 0; by < t.y + t.h - 3; k++) {
+    const bh = 3 + (k * 7) % 4;
+    ctx.fillStyle = fronts[k % fronts.length];
+    ctx.fillRect(t.x + t.w - 7, by, 6, Math.min(bh, t.y + t.h - 2 - by));
+    by += bh + 0.8;
+  }
+}
+
+// A bed seen from the side, headboard against the wall (on the left):
+// pillows by the headboard and the blanket over the rest.
+function drawBedSide(ctx, f, height, frameColor, headboard) {
+  drawShadow(ctx, f.x, f.y, f.w, f.h);
+  const board = 0.25;
+  const frame = drawBlock(ctx, f.x + (headboard ? board : 0), f.y, f.w - (headboard ? board : 0), f.h, height, frameColor);
+  if (headboard) {
+    const head = drawBlock(ctx, f.x, f.y - 0.05, board, f.h + 0.1, 34, "#6b4630");
+    ctx.fillStyle = "rgba(255, 235, 200, 0.18)";
+    ctx.fillRect(head.face.x + 2, head.face.y + 5, head.face.w - 4, head.face.h - 12);
+  }
+  const { x, y, w, h } = frame.top;
+  ctx.fillStyle = "#f5eee2"; // sheet
+  ctx.fillRect(x + 2, y + 3, w - 4, h - 6);
+  for (const py of [y + 6, y + h / 2 + 2]) { // two pillows, side by side along the headboard
+    ctx.fillStyle = "#fffaf3";
+    roundRectPath(ctx, x + 4, py, 15, h / 2 - 9, 6);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    ctx.fillRect(x + 15, py + 3, 2, h / 2 - 15);
+  }
+  const left = x + 24; // the blanket, with its folded-back cuff
+  const blanket = ctx.createLinearGradient(left, 0, x + w, 0);
+  blanket.addColorStop(0, shadeColor(f.color, 30));
+  blanket.addColorStop(1, shadeColor(f.color, -10));
+  ctx.fillStyle = blanket;
+  roundRectPath(ctx, left, y + 1, x + w - left - 1, h - 2 + frame.face.h - 3, 5);
+  ctx.fill();
+  ctx.fillStyle = shadeColor(f.color, 55);
+  ctx.fillRect(left, y + 1, 6, h - 2);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // quilted lines
+  for (let qx = left + 14; qx < x + w - 4; qx += 12) ctx.fillRect(qx, y + 3, 1, h - 6);
+}
+
+// A sofa seen from the side, back against the wall (on the left), arms at
+// both ends, and throw pillows against the back.
+function drawSofaSide(ctx, f, c) {
+  drawShadow(ctx, f.x, f.y, f.w, f.h);
+  drawBlock(ctx, f.x, f.y + 0.05, 0.28, f.h - 0.1, 30, shadeColor(c, -15)); // back
+  const seat = drawBlock(ctx, f.x + 0.22, f.y + 0.15, f.w - 0.22, f.h - 0.3, 13, c);
+  drawBlock(ctx, f.x + 0.1, f.y, f.w - 0.1, 0.18, 19, shadeColor(c, -15)); // arms
+  drawBlock(ctx, f.x + 0.1, f.y + f.h - 0.18, f.w - 0.1, 0.18, 19, shadeColor(c, -15));
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.15)"; // the seam between the cushions
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(seat.top.x + 2, seat.top.y + seat.top.h / 2);
+  ctx.lineTo(seat.top.x + seat.top.w - 2, seat.top.y + seat.top.h / 2);
+  ctx.stroke();
+  for (const [fy, color] of [[0.25, "#f2d9a0"], [0.75, "#e0845a"]]) {
+    ctx.fillStyle = color; // throw pillows against the back
+    roundRectPath(ctx, seat.top.x - 2, seat.top.y + seat.top.h * fy - 8, 9, 14, 4);
+    ctx.fill();
+  }
+}
+
+// A desk seen from the side, against the wall (on the left), with a lamp,
+// flowers or the laptop (its screen turned to face into the room).
+function drawDeskSide(ctx, f, color, topper) {
+  drawShadow(ctx, f.x, f.y, f.w, f.h);
+  const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, color);
+  const { x, y, w, h } = d.top;
+  if (topper === "laptop") {
+    const lx = x + 4, ly = y + h / 2;
+    ctx.fillStyle = "#c8c8d0"; // keyboard base, lying flat
+    ctx.fillRect(lx + 4, ly - 14, w - 12, 28);
+    ctx.fillStyle = "#3a3a44"; // the lid, standing up at the back, screen facing the room
+    ctx.fillRect(lx, ly - 30, 5, 34);
+    const glow = ctx.createLinearGradient(lx + 5, 0, lx + 9, 0);
+    glow.addColorStop(0, "#bfe3f2");
+    glow.addColorStop(1, "rgba(127, 178, 214, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(lx + 5, ly - 28, 4, 30);
+    ctx.fillStyle = "#f2ece2"; // mug
+    ctx.fillRect(x + w - 10, y + 5, 6, 7);
+  } else if (topper === "lamp") {
+    ctx.fillStyle = "#f4ecdc"; // paper
+    ctx.fillRect(x + w / 2 - 6, y + h / 2 - 4, 12, 16);
+    const lx = x + 8, ly = y + 12;
+    ctx.fillStyle = "#4f7a48"; // a green banker's lamp by the wall
+    ctx.fillRect(lx - 1, ly - 10, 2, 10);
+    ctx.beginPath();
+    ctx.ellipse(lx, ly - 11, 7, 3.5, 0, Math.PI, 0);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "#e8e0d0"; // a little vase of flowers and a notebook
+    ctx.fillRect(x + 6, y + 8, 6, 9);
+    for (const [dx, c] of [[-2, "#f2a0b8"], [2, "#fff2a8"], [0, "#c8b0e8"]]) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(x + 9 + dx, y + 5, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e98ac0";
+    ctx.fillRect(x + w / 2 - 5, y + h / 2, 12, 16);
+  }
+}
+
 // The shapes for wall cutouts, each drawn around (0, 0), about 16 pixels
 // across (see wallCutout).
 function drawBat(ctx, s = 1) {
@@ -5033,6 +5177,139 @@ const FURNITURE_DRAWERS = {
     drawIvySprig(ctx, b.x + 1, b.y - 18, 11, 1);
   },
 
+  // --- Turned furniture: side views ---
+  // A piece turned to face right (against the left wall) or left (against
+  // the right wall; the same drawing, mirrored). Its footprint is turned
+  // too, so f.w is the piece's depth and f.h its width. See `turn` in
+  // DECOR (world.js).
+
+  wardrobeSide(ctx, f) {
+    sideView(ctx, f, () => {
+      drawShadow(ctx, f.x, f.y, f.w, f.h);
+      const wd = drawBlock(ctx, f.x, f.y, f.w, f.h, 58, "#8b5e3c");
+      const { x, y, w, h } = wd.face;
+      ctx.strokeStyle = "rgba(40, 25, 10, 0.35)"; // the side panel
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 4, y + 5, w - 11, h - 12);
+      // The two doors, seen edge-on along the front (the side facing the
+      // room), with their knobs.
+      const t = wd.top;
+      ctx.fillStyle = "#7a5234";
+      ctx.fillRect(t.x + t.w - 7, t.y, 7, t.h);
+      ctx.fillRect(x + w - 7, y, 7, h);
+      ctx.fillStyle = "rgba(40, 25, 10, 0.45)"; // the gap between the doors
+      ctx.fillRect(t.x + t.w - 7, t.y + t.h / 2 - 0.5, 7, 1);
+      ctx.fillStyle = "#c9a24a";
+      ctx.fillRect(t.x + t.w - 4, t.y + t.h / 2 - 5, 3, 3);
+      ctx.fillRect(t.x + t.w - 4, t.y + t.h / 2 + 2, 3, 3);
+      ctx.fillStyle = WOOD_DARK; // crown on top
+      ctx.fillRect(wd.top.x - 2, wd.top.y - 2, wd.top.w + 4, 3);
+    });
+  },
+
+  dresserSide(ctx, f) {
+    sideView(ctx, f, () => {
+      drawShadow(ctx, f.x, f.y, f.w, f.h);
+      const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 30, "#9a6a45");
+      const { x, y, w, h } = d.face;
+      ctx.strokeStyle = "rgba(40, 25, 10, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 3, y + 3, w - 9, h - 8);
+      ctx.fillStyle = "#7d5436"; // the drawer fronts along the front edge
+      ctx.fillRect(x + w - 4, y, 4, h);
+      ctx.fillStyle = "#c9a24a";
+      for (let row = 0; row < 3; row++) ctx.fillRect(x + w - 3, y + 4 + row * 8.5, 2, 3);
+      const cx = d.top.x + d.top.w * 0.4, cy = d.top.y + d.top.h * 0.55; // the lamp, near the wall
+      ctx.fillStyle = "#5c4530";
+      ctx.fillRect(cx - 1, cy - 12, 2, 12);
+      ctx.fillStyle = "#f2d9a0";
+      ctx.beginPath();
+      ctx.moveTo(cx - 7, cy - 10);
+      ctx.lineTo(cx + 7, cy - 10);
+      ctx.lineTo(cx + 4, cy - 19);
+      ctx.lineTo(cx - 4, cy - 19);
+      ctx.closePath();
+      ctx.fill();
+    });
+  },
+
+  bookshelfSide(ctx, f) {
+    sideView(ctx, f, () => drawShelfSide(ctx, f, 62, WOOD));
+  },
+
+  libraryShelfSide(ctx, f) {
+    sideView(ctx, f, () => drawShelfSide(ctx, f, 76, "#6b4630"));
+  },
+
+  cubeShelfSide(ctx, f) {
+    sideView(ctx, f, () => drawShelfSide(ctx, f, 44, "#e9e1d3", ["#c49a5c", "#b8906a", "#d9b67e"]));
+  },
+
+  bedSide(ctx, f) {
+    sideView(ctx, f, () => drawBedSide(ctx, f, 12, "#7a5238", true));
+  },
+
+  mattressSide(ctx, f) {
+    sideView(ctx, f, () => drawBedSide(ctx, f, 7, "#e9e1d3", false));
+  },
+
+  canopyBedSide(ctx, f) {
+    sideView(ctx, f, () => {
+      drawBedSide(ctx, f, 12, "#7a5238", true);
+      const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+      const topY = a.y - 58;
+      ctx.fillStyle = "#e9dcc2"; // posts at the four corners
+      for (const px of [a.x + 1, b.x - 4]) {
+        ctx.fillRect(px, topY, 3, a.y - topY);
+        ctx.fillRect(px, b.y - 40, 3, 30);
+      }
+      ctx.fillRect(a.x, topY - 2, b.x - a.x, 3);
+      ctx.fillStyle = "rgba(255, 250, 245, 0.45)"; // sheer drapes gathered at the corners
+      for (const [x1, dir] of [[a.x + 3, 1], [b.x - 3, -1]]) {
+        ctx.beginPath();
+        ctx.moveTo(x1, topY);
+        ctx.quadraticCurveTo(x1 + dir * 10, topY + 30, x1 + dir * 3, b.y - 12);
+        ctx.lineTo(x1, b.y - 12);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#ffe9a8"; // a few twinkly lights along the top
+      for (let lx = a.x + 6; lx < b.x - 4; lx += 9) {
+        ctx.beginPath();
+        ctx.arc(lx, topY + 2, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  },
+
+  loveseatSide(ctx, f) {
+    sideView(ctx, f, () => drawSofaSide(ctx, f, f.color || "#7a9e8c"));
+  },
+
+  cloudSofaSide(ctx, f) {
+    sideView(ctx, f, () => {
+      drawSofaSide(ctx, f, "#f4efe8");
+      const a = toScreen(f.x, f.y), b = toScreen(f.x, f.y + f.h);
+      ctx.fillStyle = "#fbf8f3"; // puffy cloud bumps along the back
+      for (let py = a.y + 6; py < b.y - 4; py += 11) {
+        ctx.beginPath();
+        ctx.arc(a.x + 8, py - 30, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  },
+
+  writingDeskSide(ctx, f) {
+    sideView(ctx, f, () => drawDeskSide(ctx, f, "#7a5238", "lamp"));
+  },
+
+  aestheticDeskSide(ctx, f) {
+    sideView(ctx, f, () => drawDeskSide(ctx, f, "#efe6d6", "flowers"));
+  },
+
+  laptopDeskSide(ctx, f) {
+    sideView(ctx, f, () => drawDeskSide(ctx, f, "#9a6a45", "laptop"));
+  },
+
   // --- Seasonal decorations (see SEASONAL in world.js) ---
 
   // A little seasonal decoration stuck on a hallway wall (see
@@ -6314,7 +6591,7 @@ function drawLights(ctx) {
     } else if (f.kind === "neonSign") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x, p.y - WALL_HEIGHT + 18, 32, "rgba(255, 120, 190, 0.3)");
-    } else if (f.kind === "laptopDesk") {
+    } else if (f.kind === "laptopDesk" || f.kind === "laptopDeskSide") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x, p.y - 26, 26, "rgba(170, 215, 245, 0.35)");
     } else if (f.kind === "nightstand") {
@@ -7390,6 +7667,26 @@ function drawPlayerBody(ctx, p) {
     bob = Math.abs(step) * 6;
     sway = Math.sin(et * 4.5) * 4;
     kick = 3.5;
+  } else if (emote === "headbang") {
+    // Headbanging to trap or dubstep: a hard nod forward on every beat
+    // (140 BPM), sinking into it, feet planted.
+    const hit = Math.pow(Math.abs(Math.sin(et * Math.PI * (140 / 60))), 4);
+    step = 0;
+    bob = -hit * 3;
+    tilt = hit * 0.18;
+  } else if (emote === "glitch") {
+    // Glitching to breakcore: jumpy, twitchy jitter that jumps every 60ms.
+    const n = Math.floor(et * 16);
+    sway = (noise(n * 1.7) - 0.5) * 7;
+    bob = noise(n * 2.3 + 5) * 5;
+    tilt = (noise(n * 3.1 + 9) - 0.5) * 0.25;
+    step = noise(n) > 0.5 ? 1 : -1;
+  } else if (emote === "sway") {
+    // Swaying to ambient: floating slowly up and down, drifting side to side.
+    step = 0;
+    sway = Math.sin(et * 1.3) * 4;
+    bob = (Math.sin(et * 2.6) + 1) * 2.5;
+    tilt = Math.sin(et * 1.3) * 0.07;
   } else if (emote === "wave") {
     tilt = Math.sin(et * 8) * 0.12; // rocking side to side while waving
   } else if (emote === "laugh") {
@@ -7453,15 +7750,15 @@ function drawPlayerBody(ctx, p) {
   ctx.strokeStyle = "#2b2b2b";
   ctx.fillStyle = "#2b2b2b";
   ctx.lineWidth = 1.5;
-  if (emote === "sleepy") {
-    // Closed, sleepy eyes.
+  if (emote === "sleepy" || emote === "sway") {
+    // Closed eyes: sleepy, or lost in the music.
     ctx.beginPath();
     ctx.moveTo(cx - 6, cy - 1.5);
     ctx.lineTo(cx - 2, cy - 1.5);
     ctx.moveTo(cx + 2, cy - 1.5);
     ctx.lineTo(cx + 6, cy - 1.5);
     ctx.stroke();
-  } else if (emote === "laugh" || emote === "jig") {
+  } else if (emote === "laugh" || emote === "jig" || emote === "headbang" || emote === "glitch") {
     // Happy squinting eyes, like ^ ^.
     for (const ex of [cx - 4, cx + 4]) {
       ctx.beginPath();
@@ -7548,7 +7845,7 @@ function drawPlayerBody(ctx, p) {
 }
 
 // How long each emote lasts, in seconds (walking stops one early).
-const EMOTE_LENGTHS = { wave: 2.5, heart: 3, laugh: 3, jig: 6, sleepy: 5 };
+const EMOTE_LENGTHS = { wave: 2.5, heart: 3, laugh: 3, jig: 6, headbang: 6, glitch: 5, sway: 6.5, sleepy: 5 };
 
 // The little things floating above someone doing an emote: hearts, notes,
 // Z's, or an emoji. Drawn with the name tags, so they're never hidden.
@@ -7578,6 +7875,41 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
       ctx.globalAlpha = 1 - tt;
       ctx.font = `700 ${Math.round(9 + tt * 8)}px 'Quicksand', sans-serif`;
       ctx.fillText("z", cx + 12 + tt * 14, headTop - 4 - tt * 22);
+    }
+  } else if (id === "headbang") {
+    // Bass rings pulsing out on the beat, and a lightning bolt now and then.
+    const beat = (t * (140 / 60)) % 1;
+    ctx.strokeStyle = `rgba(150, 80, 220, ${0.7 * (1 - beat)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, headTop + 44, 12 + beat * 20, 4 + beat * 7, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.font = emojiFont(14);
+    if (Math.floor(t * (140 / 60)) % 2 === 0) ctx.fillText("⚡", cx + 22, headTop + 20);
+    ctx.fillText("🔊", cx - 22, headTop + 22 + Math.sin(t * 15) * 1.5);
+  } else if (id === "glitch") {
+    // Flickering cyan and magenta glitch blocks around their head.
+    const n = Math.floor(t * 14);
+    for (let i = 0; i < 6; i++) {
+      if (noise(n * 7 + i) < 0.45) continue;
+      ctx.fillStyle = i % 2 ? "rgba(0, 230, 255, 0.75)" : "rgba(255, 40, 200, 0.75)";
+      const x = cx + (noise(n * 3 + i * 5) - 0.5) * 44, y = headTop - 4 + (noise(n * 11 + i) - 0.5) * 34;
+      ctx.fillRect(x, y, 3 + noise(i + n) * 10, 2 + noise(i * 2 + n) * 3);
+    }
+  } else if (id === "sway") {
+    // Soft glowing orbs drifting slowly upward.
+    const colors = ["rgba(170, 200, 255, ", "rgba(220, 180, 255, ", "rgba(180, 240, 220, "];
+    for (let i = 0; i < 5; i++) {
+      const tt = (t * 0.25 + i / 5) % 1;
+      const x = cx + Math.sin(t * 0.8 + i * 1.9) * 20, y = headTop + 20 - tt * 40;
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, 9);
+      glow.addColorStop(0, colors[i % 3] + (0.95 * (1 - tt)) + ")");
+      glow.addColorStop(0.4, colors[i % 3] + (0.6 * (1 - tt)) + ")");
+      glow.addColorStop(1, colors[i % 3] + "0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fill();
     }
   } else if (id === "jig") {
     const colors = ["#c0554a", "#3f6f9f", "#d9a441", "#4f7a48"];

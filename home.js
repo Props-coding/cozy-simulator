@@ -622,7 +622,7 @@ export function stopDecorating() {
 
 function renderBar() {
   barTip.textContent = held
-    ? "Move it with the arrow keys or the mouse. Enter or click puts it down. Delete puts it away. Escape cancels."
+    ? `Move it with the arrow keys or the mouse. ${DECOR[held.item].turn ? "R turns it to face another way. " : ""}Enter or click puts it down. Delete puts it away. Escape cancels.`
     : "Pick something to place, or click a piece in your room to move it.";
   barItems.innerHTML = "";
   const spare = Object.keys(home.owned).filter((id) => spareCount(id) > 0);
@@ -657,7 +657,7 @@ function pickUpNew(id) {
 // Picks up a placed piece (by its index in home.placed).
 function pickUpPlaced(index) {
   const [piece] = home.placed.splice(index, 1);
-  held = { ...piece, from: { x: piece.x, y: piece.y } };
+  held = { ...piece, from: { x: piece.x, y: piece.y, r: piece.r } };
   playClickSound();
   renderBar();
 }
@@ -673,29 +673,45 @@ const round3 = (v) => Math.round(v * 1000) / 1000; // tidy numbers for saving
 // The center lines a piece can line up with: the room's middle, and the
 // middles of the pieces already placed (floor and wall alike).
 function centerLines() {
-  return [bedroomWidth(home.size) / 2, ...home.placed.map((p) => p.x + DECOR[p.item].w / 2)];
+  return [bedroomWidth(home.size) / 2, ...home.placed.map((p) => p.x + decorSize(p).w / 2)];
 }
 
 // Puts the held piece's center at (cx, cy): snapped to the grid, pulled
 // onto a nearby center line, and kept inside the room.
 function moveHeldCenter(cx, cy) {
   const item = DECOR[held.item];
+  const { w, h } = decorSize(held);
   const mid = bedroomWidth(home.size) / 2;
   let x = mid + Math.round((cx - mid) / STEP) * STEP;
   const near = centerLines().find((line) => Math.abs(line - cx) < MAGNET);
   if (near !== undefined) x = near;
-  held.x = round3(Math.min(Math.max(0, x - item.w / 2), bedroomWidth(home.size) - item.w));
+  held.x = round3(Math.min(Math.max(0, x - w / 2), bedroomWidth(home.size) - w));
   if (item.wall) {
     held.y = 0;
   } else {
     const y = Math.round(cy / STEP) * STEP;
-    held.y = round3(Math.min(Math.max(0, y - item.h / 2), BEDROOM_DEPTH - item.h));
+    held.y = round3(Math.min(Math.max(0, y - h / 2), BEDROOM_DEPTH - h));
   }
 }
 
 function heldCenter() {
-  const item = DECOR[held.item];
-  return { x: held.x + item.w / 2, y: held.y + (item.wall ? 0 : item.h / 2) };
+  const { w, h } = decorSize(held);
+  return { x: held.x + w / 2, y: held.y + (DECOR[held.item].wall ? 0 : h / 2) };
+}
+
+// R: turns the held piece (if it can turn) to face the next way: forward,
+// then right (for the left wall), then left (for the right wall). It
+// turns around its middle.
+function turnHeld() {
+  if (!DECOR[held.item].turn) {
+    hooks.notice("This one only faces forward.");
+    return;
+  }
+  const c = heldCenter();
+  held.r = { 0: 1, 1: 3, 3: 0 }[held.r ?? 0];
+  if (!held.r) delete held.r;
+  moveHeldCenter(c.x, c.y);
+  playClickSound();
 }
 
 function placeHeld() {
@@ -704,7 +720,7 @@ function placeHeld() {
     hooks.notice("That doesn't fit there. Try another spot (it can't block the doorway).");
     return;
   }
-  home.placed.push({ item: held.item, x: held.x, y: held.y });
+  home.placed.push({ item: held.item, x: held.x, y: held.y, ...(held.r ? { r: held.r } : {}) });
   held = null;
   store();
   shareDecor();
@@ -717,7 +733,7 @@ function placeHeld() {
 // Escape: a piece that was already placed goes back where it was; a new
 // one goes back in the list.
 function cancelHeld() {
-  if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y });
+  if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y, ...(held.from.r ? { r: held.from.r } : {}) });
   held = null;
   renderBar();
 }
@@ -784,6 +800,9 @@ window.addEventListener(
     } else if (key === "delete" || key === "backspace") {
       e.preventDefault();
       putAwayHeld();
+    } else if (key === "r") {
+      e.preventDefault();
+      turnHeld();
     }
   },
   true
@@ -820,8 +839,9 @@ canvas.addEventListener("click", (e) => {
   for (let i = home.placed.length - 1; i >= 0; i--) {
     const piece = home.placed[i];
     const item = DECOR[piece.item];
-    const inX = p.x >= piece.x && p.x <= piece.x + item.w;
-    const inY = item.wall ? p.y >= -1.1 && p.y <= 0.1 : p.y >= piece.y - 0.6 && p.y <= piece.y + item.h;
+    const { w, h } = decorSize(piece);
+    const inX = p.x >= piece.x && p.x <= piece.x + w;
+    const inY = item.wall ? p.y >= -1.1 && p.y <= 0.1 : p.y >= piece.y - 0.6 && p.y <= piece.y + h;
     if (inX && inY) {
       pickUpPlaced(i);
       return;

@@ -570,6 +570,14 @@ function bedroomWidth(size) {
   return Object.hasOwn(BEDROOM_SIZES, size) ? BEDROOM_SIZES[size] : BEDROOM_SIZES.cozy;
 }
 
+// A piece of decor's footprint { w, h }. Pieces with `turn` can be turned
+// to face right (r: 1, against the left wall) or left (r: 3, against the
+// right wall), which swaps their width and depth.
+function decorSize(piece) {
+  const item = DECOR[piece.item];
+  return piece.r && item.turn ? { w: item.h, h: item.w } : { w: item.w, h: item.h };
+}
+
 // Everything Nest & Nook sells. `kind` is how it's drawn (see render.js),
 // w and h its footprint in grid units, `tab` where it's listed in the
 // store (furniture, plants, shelves or decor). `wall` items hang on the
@@ -578,16 +586,16 @@ function bedroomWidth(size) {
 // passed on to the drawing.
 const DECOR = {
   // --- Furniture ---
-  quiltBed: { name: "Quilted Bed", tab: "furniture", price: 60, kind: "bed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true },
-  canopyBed: { name: "Canopy Bed", tab: "furniture", price: 160, kind: "canopyBed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true },
+  quiltBed: { name: "Quilted Bed", tab: "furniture", price: 60, kind: "bed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true , turn: true },
+  canopyBed: { name: "Canopy Bed", tab: "furniture", price: 160, kind: "canopyBed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true , turn: true },
   nightstand: { name: "Nightstand & Lamp", tab: "furniture", price: 20, kind: "nightstand", w: 0.55, h: 0.45 },
-  wardrobe: { name: "Wardrobe", tab: "furniture", price: 45, kind: "wardrobe", w: 1.0, h: 0.6 },
-  dresser: { name: "Dresser", tab: "furniture", price: 45, kind: "dresser", w: 1.1, h: 0.5 },
+  wardrobe: { name: "Wardrobe", tab: "furniture", price: 45, kind: "wardrobe", w: 1.0, h: 0.6 , turn: true },
+  dresser: { name: "Dresser", tab: "furniture", price: 45, kind: "dresser", w: 1.1, h: 0.5 , turn: true },
   vanity: { name: "Vanity with Bulb Mirror", tab: "furniture", price: 85, kind: "vanity", w: 1.2, h: 0.5 },
   clothesRack: { name: "Clothes Rack", tab: "furniture", price: 40, kind: "clothesRack", w: 1.2, h: 0.45 },
-  cloudSofa: { name: "Cloud Sofa", tab: "furniture", price: 110, kind: "cloudSofa", w: 2.0, h: 0.85 },
-  loveseatSage: { name: "Sage Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#7a9e8c" },
-  loveseatRose: { name: "Rose Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#c98a8a" },
+  cloudSofa: { name: "Cloud Sofa", tab: "furniture", price: 110, kind: "cloudSofa", w: 2.0, h: 0.85 , turn: true },
+  loveseatSage: { name: "Sage Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#7a9e8c" , turn: true },
+  loveseatRose: { name: "Rose Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#c98a8a" , turn: true },
   armchair: { name: "Reading Armchair", tab: "furniture", price: 40, kind: "armchair", w: 1.1, h: 0.8 },
   velvetChair: { name: "Velvet Chair (cat included)", tab: "furniture", price: 60, kind: "cottageChair", w: 1.0, h: 0.8 },
   papasanChair: { name: "Papasan Chair", tab: "furniture", price: 65, kind: "papasanChair", w: 1.0, h: 0.8 },
@@ -600,8 +608,8 @@ const DECOR = {
   bench: { name: "Cushioned Bench", tab: "furniture", price: 25, kind: "bench", w: 1.5, h: 0.5 },
   coffeeTable: { name: "Coffee Table", tab: "furniture", price: 30, kind: "coffeeTable", w: 1.2, h: 0.6 },
   sideTable: { name: "Round Side Table", tab: "furniture", price: 22, kind: "sideTable", w: 0.6, h: 0.5 },
-  writingDesk: { name: "Writing Desk", tab: "furniture", price: 40, kind: "writingDesk", w: 1.3, h: 0.6 },
-  aestheticDesk: { name: "Aesthetic Desk", tab: "furniture", price: 75, kind: "aestheticDesk", w: 1.4, h: 0.6 },
+  writingDesk: { name: "Writing Desk", tab: "furniture", price: 40, kind: "writingDesk", w: 1.3, h: 0.6 , turn: true },
+  aestheticDesk: { name: "Aesthetic Desk", tab: "furniture", price: 75, kind: "aestheticDesk", w: 1.4, h: 0.6 , turn: true },
   teaCart: { name: "Tea Cart", tab: "furniture", price: 30, kind: "teaCart", w: 1.2, h: 0.6 },
   barCart: { name: "Gold Bar Cart", tab: "furniture", price: 45, kind: "barCart", w: 0.9, h: 0.5 },
   fireplace: { name: "Stone Fireplace", tab: "furniture", price: 120, kind: "fireplace", w: 1.1, h: 0.6 },
@@ -664,9 +672,9 @@ const DECOR = {
   driedHerbs: { name: "Dried Herbs", tab: "plants", price: 12, kind: "driedHerbs", w: 0.9, wall: true },
 
   // --- Shelves ---
-  bookshelf: { name: "Bookshelf", tab: "shelves", price: 35, kind: "bookshelf", w: 1.3, h: 0.5 },
-  libraryShelf: { name: "Tall Library Shelf", tab: "shelves", price: 50, kind: "libraryShelf", w: 1.5, h: 0.45 },
-  cubeShelf: { name: "Cube Shelf with Baskets", tab: "shelves", price: 40, kind: "cubeShelf", w: 1.0, h: 0.5 },
+  bookshelf: { name: "Bookshelf", tab: "shelves", price: 35, kind: "bookshelf", w: 1.3, h: 0.5 , turn: true },
+  libraryShelf: { name: "Tall Library Shelf", tab: "shelves", price: 50, kind: "libraryShelf", w: 1.5, h: 0.45 , turn: true },
+  cubeShelf: { name: "Cube Shelf with Baskets", tab: "shelves", price: 40, kind: "cubeShelf", w: 1.0, h: 0.5 , turn: true },
   ladderShelf: { name: "Ladder Shelf", tab: "shelves", price: 38, kind: "ladderShelf", w: 0.8, h: 0.4 },
   recordCrate: { name: "Record Crate", tab: "shelves", price: 25, kind: "recordCrate", w: 0.8, h: 0.5 },
   floatingBooks: { name: "Floating Book Shelf", tab: "shelves", price: 18, kind: "floatingBooks", w: 1.1, wall: true },
@@ -722,8 +730,8 @@ const DECOR = {
   scroll: { name: "Calligraphy Scroll", tab: "decor", price: 15, kind: "scroll", w: 0.55, wall: true },
 
   // --- Starter pieces every bedroom comes with (not sold) ---
-  starterDesk: { name: "Laptop Desk", tab: null, price: 0, kind: "laptopDesk", w: 1.3, h: 0.6, keep: true },
-  starterMattress: { name: "Plain Mattress", tab: null, price: 0, kind: "mattress", w: 1.4, h: 2.1, sleep: true, solid: false, ownerColor: true },
+  starterDesk: { name: "Laptop Desk", tab: null, price: 0, kind: "laptopDesk", w: 1.3, h: 0.6, keep: true , turn: true },
+  starterMattress: { name: "Plain Mattress", tab: null, price: 0, kind: "mattress", w: 1.4, h: 2.1, sleep: true, solid: false, ownerColor: true , turn: true },
 };
 
 // Where the starter pieces go in a brand new bedroom (from its top-left
@@ -755,18 +763,19 @@ function decorFits(size, placed, piece, skip = -1) {
   const item = Object.hasOwn(DECOR, piece?.item) ? DECOR[piece.item] : null;
   if (!item || !Number.isFinite(piece.x) || (!item.wall && !Number.isFinite(piece.y))) return false;
   const width = bedroomWidth(size);
-  if (piece.x < 0 || piece.x + item.w > width + 1e-9) return false;
+  const { w, h } = decorSize(piece);
+  if (piece.x < 0 || piece.x + w > width + 1e-9) return false;
   const others = placed.filter((p, i) => i !== skip && Object.hasOwn(DECOR, p.item));
   if (item.wall) {
-    return !others.some((p) => DECOR[p.item].wall && piece.x < p.x + DECOR[p.item].w && piece.x + item.w > p.x);
+    return !others.some((p) => DECOR[p.item].wall && piece.x < p.x + DECOR[p.item].w && piece.x + w > p.x);
   }
-  if (piece.y < 0 || piece.y + item.h > BEDROOM_DEPTH + 1e-9) return false;
+  if (piece.y < 0 || piece.y + h > BEDROOM_DEPTH + 1e-9) return false;
   if (item.kind === "rug") return true;
-  const box = { x: piece.x, y: piece.y, w: item.w, h: item.h };
+  const box = { x: piece.x, y: piece.y, w, h };
   if (rectsOverlap(box, DOOR_LANE)) return false;
   return !others.some((p) => {
     const o = DECOR[p.item];
-    return !o.wall && o.kind !== "rug" && rectsOverlap(box, { x: p.x, y: p.y, w: o.w, h: o.h });
+    return !o.wall && o.kind !== "rug" && rectsOverlap(box, { x: p.x, y: p.y, ...decorSize(p) });
   });
 }
 
@@ -777,21 +786,27 @@ function tidyDecor(size, placed) {
   const pieces = withStarters(Array.isArray(placed) ? placed.slice(0, MAX_DECOR) : []);
   for (const piece of pieces) {
     const clean = { item: String(piece?.item), x: Number(piece?.x), y: Number(piece?.y) };
+    if (piece?.r === 1 || piece?.r === 3) clean.r = piece.r; // turned to face right or left
     if (decorFits(size, kept, clean)) kept.push(clean);
   }
   return kept;
 }
 
-// Turns a placed piece of decor { item, x, y } (x and y from the room's
-// top-left corner) into furniture at (x0, top), the room's corner.
-// `owner` is the bedroom's info (for its color, and whether it's yours).
+// Turns a placed piece of decor { item, x, y, r } (x and y from the room's
+// top-left corner, r if it's turned) into furniture at (x0, top), the
+// room's corner. `owner` is the bedroom's info (for its color, and
+// whether it's yours). A turned piece is drawn by its side-view drawer
+// (like "wardrobeSide"), facing right or left.
 function decorPiece(piece, x0, top, owner, index) {
-  const { name, tab, price, wall, centered, ownerColor, keep, ...look } = DECOR[piece.item];
+  const { name, tab, price, wall, centered, ownerColor, keep, turn, ...look } = DECOR[piece.item];
+  const turned = turn && (piece.r === 1 || piece.r === 3);
+  const { w, h } = decorSize(piece);
   return {
     ...look,
+    ...(turned ? { kind: look.kind + "Side", facing: piece.r === 1 ? "right" : "left", w } : {}),
     x: x0 + piece.x + (centered ? look.w / 2 : 0),
     y: wall ? top : top + piece.y,
-    h: wall ? undefined : look.h,
+    h: wall ? undefined : h,
     color: ownerColor ? owner.color : look.color,
     solid: wall ? false : look.solid,
     mine: owner.mine, // (the laptop desk opens only for its owner)
@@ -806,14 +821,26 @@ const BEDROOM_FURNITURE = (x0, top, bedroom) => withStarters(bedroom.decor || []
 // The bed (or mattress) a player is lying in (their center is on it), or null.
 function bedAt(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
-  return FURNITURE.find((f) => f.sleep && cx >= f.x + 0.15 && cx <= f.x + f.w - 0.15 && cy >= f.y + 0.5 && cy <= f.y + f.h) || null;
+  return (
+    FURNITURE.find((f) => {
+      if (!f.sleep) return false;
+      // (Past the headboard: at the top, or at the side for a turned bed.)
+      if (f.facing === "right") return cx >= f.x + 0.5 && cx <= f.x + f.w && cy >= f.y + 0.15 && cy <= f.y + f.h - 0.15;
+      if (f.facing === "left") return cx >= f.x && cx <= f.x + f.w - 0.5 && cy >= f.y + 0.15 && cy <= f.y + f.h - 0.15;
+      return cx >= f.x + 0.15 && cx <= f.x + f.w - 0.15 && cy >= f.y + 0.5 && cy <= f.y + f.h;
+    }) || null
+  );
 }
 
 // True if the player is standing at their own bedroom's laptop desk.
 function isNearMyLaptop(player) {
-  const desk = FURNITURE.find((f) => f.kind === "laptopDesk" && f.mine);
+  const desk = FURNITURE.find((f) => (f.kind === "laptopDesk" || f.kind === "laptopDeskSide") && f.mine);
   if (!desk) return false;
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  // Stand in front of it: below it, or beside it if it's been turned.
+  const alongside = cy > desk.y - 0.3 && cy < desk.y + desk.h + 0.3;
+  if (desk.facing === "right") return alongside && cx > desk.x + desk.w - 0.2 && cx < desk.x + desk.w + 1.0;
+  if (desk.facing === "left") return alongside && cx < desk.x + 0.2 && cx > desk.x - 1.0;
   return cx > desk.x - 0.3 && cx < desk.x + desk.w + 0.3 && cy > desk.y && cy < desk.y + desk.h + 1.0;
 }
 
@@ -873,8 +900,10 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
-  const closet = FURNITURE.find((f) => f.kind === "wardrobe" && f.mine && floorOf(f.y) === floorOf(player.y) && Math.abs(cx - (f.x + f.w / 2)) < f.w / 2 + 0.3 && cy > f.y && cy < f.y + f.h + 1.0);
-  if (closet) options.push(["wardrobe", Math.hypot(cx - (closet.x + closet.w / 2), cy - (closet.y + closet.h))]);
+  // Your wardrobe (facing forward, or turned): within a step of it.
+  const reach = (f) => Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h));
+  const closet = FURNITURE.find((f) => (f.kind === "wardrobe" || f.kind === "wardrobeSide") && f.mine && floorOf(f.y) === floorOf(player.y) && reach(f) < 0.9);
+  if (closet) options.push(["wardrobe", reach(closet)]);
   const deck = FURNITURE.find((f) => f.kind === "turntable");
   const deckDistance = Math.hypot(cx - (deck.x + deck.w / 2), cy - (deck.y + deck.h / 2));
   if (deckDistance < 1.2) options.push(["turntable", deckDistance]);

@@ -218,6 +218,119 @@ export function playJigTune() {
   notes.forEach((freq, i) => playFiddleNote(freq, i * step, i === notes.length - 1 ? 0.5 : 0.16));
 }
 
+// --- Dance tunes (one for each dance style, see DANCES in main.js) ---
+// Short, quiet sketches made in code, like the jig: a taste of the genre,
+// not a whole song.
+function canPlayDanceTune() {
+  return toneContext && !isSilentSpot() && currentRoomId !== "library" && !masterMuted;
+}
+
+// A short burst of noise (for drums).
+function noiseHit(start, duration, { gain = 0.1, highpass = 2000 } = {}) {
+  const buffer = toneContext.createBuffer(1, Math.ceil(toneContext.sampleRate * duration), toneContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+  const src = toneContext.createBufferSource();
+  src.buffer = buffer;
+  const filter = toneContext.createBiquadFilter();
+  filter.type = "highpass";
+  filter.frequency.value = highpass;
+  const g = toneContext.createGain();
+  g.gain.value = gain * masterVolume;
+  src.connect(filter);
+  filter.connect(g);
+  g.connect(toneContext.destination);
+  src.start(start);
+}
+
+// A kick drum: a quick low "thump".
+function kick(start, gain = 0.35) {
+  const osc = toneContext.createOscillator();
+  const g = toneContext.createGain();
+  osc.frequency.setValueAtTime(120, start);
+  osc.frequency.exponentialRampToValueAtTime(40, start + 0.15);
+  g.gain.setValueAtTime(gain * masterVolume, start);
+  g.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+  osc.connect(g);
+  g.connect(toneContext.destination);
+  osc.start(start);
+  osc.stop(start + 0.32);
+}
+
+// Headbang (trap and dubstep): heavy kicks, a clap, and a wobbling bass.
+export function playHeadbangTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, beat = 60 / 140; // 140 BPM, half-time feel
+  for (let b = 0; b < 6; b++) {
+    kick(now + b * beat * 2);
+    noiseHit(now + b * beat * 2 + beat, 0.12, { gain: 0.08, highpass: 1500 }); // clap
+    for (let h = 0; h < 4; h++) noiseHit(now + b * beat * 2 + h * beat * 0.5, 0.03, { gain: 0.03, highpass: 7000 }); // hats
+  }
+  const osc = toneContext.createOscillator(); // the wobble bass
+  const filter = toneContext.createBiquadFilter();
+  const lfo = toneContext.createOscillator();
+  const lfoDepth = toneContext.createGain();
+  const g = toneContext.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.value = 49; // G1
+  filter.type = "lowpass";
+  filter.frequency.value = 400;
+  filter.Q.value = 8;
+  lfo.frequency.value = (140 / 60) * 2; // wub wub, on the eighth notes
+  lfoDepth.gain.value = 350;
+  lfo.connect(lfoDepth);
+  lfoDepth.connect(filter.frequency);
+  const end = now + beat * 12;
+  g.gain.setValueAtTime(0.0001, now + beat * 2);
+  g.gain.linearRampToValueAtTime(0.09 * masterVolume, now + beat * 2.1);
+  g.gain.setValueAtTime(0.09 * masterVolume, end - 0.3);
+  g.gain.exponentialRampToValueAtTime(0.0001, end);
+  osc.connect(filter);
+  filter.connect(g);
+  g.connect(toneContext.destination);
+  osc.start(now + beat * 2);
+  lfo.start(now + beat * 2);
+  osc.stop(end + 0.05);
+  lfo.stop(end + 0.05);
+}
+
+// Glitch (breakcore): fast, chopped-up drums that stutter and skip.
+export function playGlitchTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 180 / 4; // 180 BPM sixteenths
+  for (let i = 0; i < 64; i++) {
+    const t = now + i * step;
+    const roll = Math.random();
+    if (i % 8 === 0 || roll < 0.12) kick(t, 0.25);
+    else if (i % 8 === 4 || roll < 0.35) noiseHit(t, 0.06, { gain: 0.09, highpass: 1200 }); // snare
+    else if (roll < 0.8) noiseHit(t, 0.02, { gain: 0.03, highpass: 6000 }); // hat
+    if (roll > 0.93) for (let k = 1; k < 4; k++) noiseHit(t + (k * step) / 4, 0.02, { gain: 0.06, highpass: 1500 }); // stutter
+  }
+}
+
+// Sway (ambient): a slow, soft chord that swells and fades.
+export function playSwayTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02;
+  const chords = [[261.63, 329.63, 392, 493.88], [220, 261.63, 329.63, 392]]; // Cmaj7, Am7
+  chords.forEach((chord, c) => {
+    const start = now + c * 2.6;
+    for (const freq of chord) {
+      const osc = toneContext.createOscillator();
+      const g = toneContext.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.linearRampToValueAtTime(0.018 * masterVolume, start + 1.2);
+      g.gain.linearRampToValueAtTime(0.0001, start + 3.2);
+      osc.connect(g);
+      g.connect(toneContext.destination);
+      osc.start(start);
+      osc.stop(start + 3.3);
+    }
+  });
+}
+
 // --- Rain for the Library ---
 // A real recording: "Rain" by ezwa, public domain (from pdsounds.org, via
 // Wikimedia Commons), stored in sounds/. It's a soft, steady patter with no

@@ -39,6 +39,9 @@ import {
   playTimerChime,
   playChatSound,
   playJigTune,
+  playHeadbangTune,
+  playGlitchTune,
+  playSwayTune,
   playPetSound,
   enterLibrary,
   leaveLibrary,
@@ -58,7 +61,7 @@ import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchieve
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
-import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura } from "./wardrobe.js";
+import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
@@ -694,31 +697,40 @@ function refreshLook() {
 }
 
 // --- Emotes ---
-// Wave, heart, laugh, jig and sleepy: press 1 to 5, click the buttons in
-// the sidebar, or type /wave, /heart, /laugh, /jig (or /hit the jig) or
-// /sleepy in chat. Friends see them too. Walking stops yours early.
-const EMOTE_KEYS = { 1: "wave", 2: "heart", 3: "laugh", 4: "jig", 5: "sleepy" };
+// Wave, heart, laugh, dance and sleepy: press 1 to 5, click the buttons
+// in the sidebar, or type /wave, /heart, /laugh, /dance or /sleepy in
+// chat. Friends see them too. Walking stops yours early.
+// "dance" is your own dance style, picked in your wardrobe (jig, headbang,
+// glitch or sway, or shuffle for a random one); /jig, /headbang, /glitch
+// and /sway do a particular one.
+const EMOTE_KEYS = { 1: "wave", 2: "heart", 3: "laugh", 4: "dance", 5: "sleepy" };
 const EMOTE_COMMANDS = {
-  "/wave": "wave", "/heart": "heart", "/laugh": "laugh", "/lol": "laugh",
-  "/jig": "jig", "/hit the jig": "jig", "/hitthejig": "jig", "/sleepy": "sleepy", "/sleep": "sleepy", "/zzz": "sleepy",
+  "/wave": "wave", "/heart": "heart", "/laugh": "laugh", "/lol": "laugh", "/dance": "dance",
+  "/jig": "jig", "/hit the jig": "jig", "/hitthejig": "jig", "/headbang": "headbang", "/glitch": "glitch", "/sway": "sway",
+  "/sleepy": "sleepy", "/sleep": "sleepy", "/zzz": "sleepy",
 };
+// Each dance and the little tune that plays with it (you hear a friend's
+// too, if you're in the same room).
+const DANCE_TUNES = { jig: playJigTune, headbang: playHeadbangTune, glitch: playGlitchTune, sway: playSwayTune };
+const isDance = (id) => Object.hasOwn(DANCE_TUNES, id);
 let myEmote = null; // { id, start }
 const peerEmotes = {}; // peer id -> { id, start }
 
 function startEmote(id) {
+  if (id === "dance") id = myDance();
   if (!Object.hasOwn(EMOTE_LENGTHS, id)) return;
   myEmote = { id, start: performance.now() };
   sendEmote(id);
-  if (id === "jig") playJigTune();
+  if (isDance(id)) DANCE_TUNES[id]();
 
-  // Achievements for emotes.
+  // Achievements for emotes (any dance counts as one).
   const room = getCurrentRoom(player).id;
-  if (collect("emotes", id).length >= Object.keys(EMOTE_KEYS).length) unlock("expressive");
+  if (collect("emotes", isDance(id) ? "dance" : id).length >= Object.keys(EMOTE_KEYS).length) unlock("expressive");
   if (id === "sleepy" && room === "dinner") unlock("foodComa");
-  if (id === "jig") {
+  if (isDance(id)) {
     unlock("jig");
     if (room === "theater") unlock("danceFloor");
-    if (Object.values(peerEmotes).some((e) => emoteNow(e)?.id === "jig")) unlock("jigParty");
+    if (Object.values(peerEmotes).some((e) => isDance(emoteNow(e)?.id))) unlock("jigParty");
   }
 }
 
@@ -743,10 +755,10 @@ onEmote((id, peerId) => {
   }
   if (typeof id !== "string" || !Object.hasOwn(EMOTE_LENGTHS, id)) return;
   peerEmotes[peerId] = { id, start: performance.now() };
-  if (id === "jig" && emoteNow(myEmote)?.id === "jig") unlock("jigParty");
-  // A friend hitting the jig in the same room as you: you hear the tune too.
+  if (isDance(id) && isDance(emoteNow(myEmote)?.id)) unlock("jigParty");
+  // A friend dancing in the same room as you: you hear their music too.
   const peer = getPeers().find((p) => p.id === peerId);
-  if (id === "jig" && peer?.room === getCurrentRoom(player).id) playJigTune();
+  if (isDance(id) && peer?.room === getCurrentRoom(player).id) DANCE_TUNES[id]();
 });
 
 for (const button of document.querySelectorAll("#emote-bar button")) {
@@ -1083,6 +1095,9 @@ function statusBadge(roomId, bed) {
 // Where someone asleep is drawn: in the middle of the bed with their head
 // on the pillows (wherever they actually stepped in).
 function tuckedIn(bed) {
+  // Head on the pillow: by the headboard, which is at the side of a turned bed.
+  if (bed.facing === "right") return { x: bed.x + 0.35, y: bed.y + bed.h / 2 - PLAYER_SIZE / 2 };
+  if (bed.facing === "left") return { x: bed.x + bed.w - 0.35 - PLAYER_SIZE, y: bed.y + bed.h / 2 - PLAYER_SIZE / 2 };
   return { x: bed.x + bed.w / 2 - PLAYER_SIZE / 2, y: bed.y + 0.45 };
 }
 

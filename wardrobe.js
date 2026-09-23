@@ -73,6 +73,40 @@ export function cleanAura(aura, name) {
   return Object.fromEntries(AURA_PIECES.map(([piece]) => [piece, aura[piece] === true]));
 }
 
+// --- Your dance ---
+// Pressing 4 (or /dance) does your dance. Everyone likes different music,
+// so everyone picks their own style here. "Shuffle" picks one at random
+// each time.
+export const DANCES = [
+  ["jig", "🎻", "Jig", "Folk fiddle, bouncy hops"],
+  ["headbang", "🔊", "Headbang", "Trap and dubstep, heavy bass"],
+  ["glitch", "⚡", "Glitch", "Breakcore, twitchy and chopped"],
+  ["sway", "🌙", "Sway", "Ambient, floating slow"],
+  ["shuffle", "🎲", "Shuffle", "A different one each time"],
+];
+const DANCE_KEY = "cozy-house-dance";
+
+export function myDance() {
+  let chosen = "jig";
+  try {
+    chosen = JSON.parse(localStorage.getItem(DANCE_KEY)) ?? "jig";
+  } catch {
+    // Nothing saved yet: the jig.
+  }
+  if (!DANCES.some(([id]) => id === chosen)) chosen = "jig";
+  if (chosen !== "shuffle") return chosen;
+  const styles = DANCES.filter(([id]) => id !== "shuffle");
+  return styles[Math.floor(Math.random() * styles.length)][0];
+}
+
+function savedDance() {
+  try {
+    return JSON.parse(localStorage.getItem(DANCE_KEY)) ?? "jig";
+  } catch {
+    return "jig";
+  }
+}
+
 // --- Drawing ---
 const canvas = (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h });
 
@@ -157,7 +191,7 @@ function drawRuneTrail(ctx) {
 let tab = "hats";
 
 function tabsFor() {
-  const list = [["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["pets", "🐾 Pets"]];
+  const list = [["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
   if (myAura()) list.push(["exalted", "✦ Exalted"]);
   return list;
 }
@@ -232,7 +266,7 @@ function tile(picture, name, on, onClick, exalted = false) {
   if (on) {
     const badge = document.createElement("span");
     badge.className = "wardrobe-badge";
-    badge.textContent = exalted ? "On" : "Wearing";
+    badge.textContent = exalted ? "On" : tab === "dances" ? "Chosen" : "Wearing";
     el.appendChild(badge);
   }
   el.addEventListener("click", onClick);
@@ -241,6 +275,35 @@ function tile(picture, name, on, onClick, exalted = false) {
 
 function renderItems() {
   itemsGrid.innerHTML = "";
+  if (tab === "dances") {
+    const chosen = savedDance();
+    for (const [id, icon, name, blurb] of DANCES) {
+      const picture = document.createElement("span");
+      picture.className = "wardrobe-dance-icon";
+      picture.textContent = icon;
+      const onClick = () => {
+        try {
+          localStorage.setItem(DANCE_KEY, JSON.stringify(id));
+        } catch {
+          // Storage blocked: it just won't be remembered.
+        }
+        playClickSound();
+        render();
+      };
+      const card = tile(picture, name, id === chosen, onClick);
+      card.title = blurb;
+      const note = document.createElement("span");
+      note.className = "wardrobe-note";
+      note.textContent = blurb;
+      card.insertBefore(note, card.querySelector(".wardrobe-badge"));
+      itemsGrid.appendChild(card);
+    }
+    const hint = document.createElement("p");
+    hint.className = "wardrobe-empty";
+    hint.textContent = "Press 4 (or type /dance) to dance. Friends in the room hear your music too.";
+    itemsGrid.appendChild(hint);
+    return;
+  }
   if (tab === "exalted") {
     const aura = myAura();
     for (const [piece, name] of AURA_PIECES) {

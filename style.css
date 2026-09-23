@@ -3083,3 +3083,16 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   width: 100%;
 }
+
+/* The Dances tab: a big icon and a line about the music on each tile. */
+.wardrobe-dance-icon {
+  font-size: 34px;
+  line-height: 76px;
+}
+
+.wardrobe-note {
+  font-size: 0.7em;
+  color: #9c8770;
+  text-align: center;
+  line-height: 1.2;
+}

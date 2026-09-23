@@ -39,8 +39,8 @@ export const ACHIEVEMENTS = [
   { id: "roommates", icon: "🤝", name: "Roommates", desc: "Be in the same room as a friend.", crumbs: 5 },
   { id: "fullHouse", icon: "🎉", name: "Full House", desc: "Hang out with 3 friends at once.", crumbs: 25 },
   { id: "expressive", icon: "🎭", name: "Expressive", desc: "Use all five emotes.", crumbs: 10 },
-  { id: "jig", icon: "🕺", name: "Hit the Jig", desc: "Do the jig.", crumbs: 5 },
-  { id: "jigParty", icon: "🪩", name: "Jig Party", desc: "Jig at the same time as a friend.", crumbs: 20 },
+  { id: "jig", icon: "🕺", name: "Hit the Jig", desc: "Dance (any style).", crumbs: 5 },
+  { id: "jigParty", icon: "🪩", name: "Dance Party", desc: "Dance at the same time as a friend.", crumbs: 20 },
 
   // Time in the house
   { id: "hour", icon: "☕", name: "Regular", desc: "Spend 1 hour in the house.", crumbs: 15 },
@@ -63,7 +63,7 @@ export const ACHIEVEMENTS = [
   // Secrets
   { id: "whoAreYou", icon: "🧥", name: "Three Raccoons?", desc: "Ask the raccoons who they really are.", crumbs: 10, secret: true },
   { id: "foodComa", icon: "😴", name: "Food Coma", desc: "Get sleepy in the Dinner room.", crumbs: 10, secret: true },
-  { id: "danceFloor", icon: "🎬", name: "Dance Floor", desc: "Do the jig in the Theater.", crumbs: 10, secret: true },
+  { id: "danceFloor", icon: "🎬", name: "Dance Floor", desc: "Dance in the Theater.", crumbs: 10, secret: true },
 ];
 
 const byId = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
