@@ -34,6 +34,7 @@ import {
   playLeaveSound,
   playRoomChangeSound,
   playClickSound,
+  playElevatorDing,
   playKnockSound,
   playTimerChime,
   playChatSound,
@@ -439,8 +440,9 @@ function roomHintFor(room) {
     if (privateRooms[buildKind].length >= WINGS[buildKind].slots) return `All ${WINGS[buildKind].slots} ${buildKind}s are taken right now.`;
     return buildKind === "office" ? "Press E to build your office." : "Press E to make your bedroom.";
   }
-  if (room.id === "stairs") return "Walk onto the stairs to go up.";
-  if (room.id === "stairsUp") return "Walk onto the stairs to go down.";
+  if (ride) return "";
+  if (nearestInteraction(player) === "elevator") return `Press E to take the elevator ${elevatorInReach(player) === 0 ? "up" : "down"}.`;
+  if (room.id === "elevator" || room.id === "elevatorUp") return "Walk up to the elevator doors.";
   if (room.id === "conference") {
     return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
   }
@@ -459,6 +461,13 @@ window.addEventListener("keydown", (e) => {
   if (key === "e" && nearestInteraction(player) === "laptop") {
     for (const k in keysDown) keysDown[k] = false;
     openLaptop();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "elevator" && !ride) {
+    for (const k in keysDown) keysDown[k] = false;
+    ride = { from: elevatorInReach(player), t: 0, arrived: false };
+    playClickSound();
     return;
   }
 
@@ -740,7 +749,32 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen();
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || !!ride;
+}
+
+// Riding the elevator: the doors slide open, you step in, and they open
+// again on the other floor (with a ding) and close behind you. You can't
+// walk while it's moving.
+const DOORS_OPEN = 0.45, STEP_IN = 0.6, DOORS_CLOSE = 0.7; // seconds
+let ride = null; // { from: floor, t: seconds so far, arrived }
+function updateElevator(dt) {
+  if (!ride) return;
+  ride.t += dt;
+  const to = 1 - ride.from;
+  if (!ride.arrived) {
+    ELEVATOR_OPEN[ride.from] = Math.min(1, ride.t / DOORS_OPEN);
+    if (ride.t >= STEP_IN) {
+      Object.assign(player, elevatorArrival(ride.from));
+      ride.arrived = true;
+      ride.t = 0;
+      ELEVATOR_OPEN[ride.from] = 0;
+      ELEVATOR_OPEN[to] = 1;
+      playElevatorDing();
+    }
+    return;
+  }
+  ELEVATOR_OPEN[to] = Math.max(0, 1 - ride.t / DOORS_CLOSE);
+  if (ride.t >= DOORS_CLOSE) ride = null;
 }
 
 function isTyping(e) {
@@ -1179,18 +1213,11 @@ function askConfirm({ title, text, yes, no }) {
 
 // Tracks which movement keys are currently held down.
 const keysDown = {};
-// Keys you were holding when you took the stairs: ignored until you let
-// go of them, so holding an arrow key doesn't walk you straight back onto
-// the stairs on the other floor.
-const ignoreUntilUp = new Set();
 window.addEventListener("keydown", (e) => {
-  const key = e.key.toLowerCase();
-  if (!isTyping(e) && !ignoreUntilUp.has(key)) keysDown[key] = true;
+  if (!isTyping(e)) keysDown[e.key.toLowerCase()] = true;
 });
 window.addEventListener("keyup", (e) => {
-  const key = e.key.toLowerCase();
-  keysDown[key] = false;
-  ignoreUntilUp.delete(key);
+  keysDown[e.key.toLowerCase()] = false;
 });
 
 function readMovement(dt) {
@@ -1283,17 +1310,8 @@ function tick(now) {
   if (dx !== 0 || dy !== 0) {
     movePlayer(player, dx, dy);
     stopMyEmote(); // walking off ends an emote
-    // Walked onto the stairs: arrive on the other floor, standing still
-    // until you let go of the keys you were walking with.
-    const arrive = stairsDestination(player);
-    if (arrive) {
-      Object.assign(player, arrive);
-      for (const k in keysDown) {
-        if (keysDown[k]) ignoreUntilUp.add(k);
-        keysDown[k] = false;
-      }
-    }
   }
+  updateElevator(dt);
   updateSleep();
 
   const currentRoom = getCurrentRoom(player);

@@ -192,6 +192,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - New plants at Nest & Nook: Monstera Adansonii (on a moss pole), Hoya Finlaysonii (with pink star flowers), and Red and Pink Anthuriums.
   - Crumbs you earn while Nest & Nook is open now show up right away (the wallet and the "crumbs short" buttons update without reopening the store).
   - Wren's notes: every Nest & Nook item has its own short line in Wren's voice. Hover over a card and the note fades in over its picture. Wren's pick of the day now quotes that item's note, instead of the same few lines for everything.
+  - Elevator instead of stairs: the stairwell is now an elevator lobby on both floors (checkered floor, a round rug, a bench, a plant). Walk up to the brass doors and press E: they slide open, and you step out on the other floor with a soft "ding" as the doors close behind you. A little arrow over the doors shows which way it goes.
+  - Theater makeover: red velvet curtains with chasing marquee lights around the screen, a gold-star cinema carpet, floor cushions up front, a big back-row sofa you can sit on, glowing lights along the aisle, and a snack counter next to the popcorn machine.
+  - Seasonal decorations in the shared rooms (hallways, Theater, Study, Dinner, Library; not offices or bedrooms). Garlands along the hallway walls, plus a small and a big decoration in each room. Autumn: leaf garlands, pumpkins and a crate of pumpkins and apples. Winter: pine garlands with twinkling lights, presents and little decorated trees. Spring: flower garlands, egg baskets and planters of tulips and daffodils. Summer: colorful bunting, sunflowers and standing fans. It follows the calendar; `season` in `config.js` can pin one, and the admin panel has buttons to preview each season.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

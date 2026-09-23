@@ -8,10 +8,10 @@
 // and Dinner hang below it (south), each with a doorway up into the
 // hallway. The Conference Room, the offices and the Library hang above it
 // (north), each with a doorway down into the hallway. South of the
-// hallway's east end are the stairs, with a bit of garden below them.
+// hallway's east end is the elevator lobby, with a bit of garden below it.
 //
 // Upstairs is a landing (a second hallway) with bedrooms along its north
-// side and the stairs at its east end; the rest is roof. The upstairs is
+// side and the elevator at its east end; the rest is roof. The upstairs is
 // kept further down the same grid (UPSTAIRS units lower), so the two
 // floors never overlap and all the walking and room rules work the same
 // on both. Only the floor you're on is drawn.
@@ -45,10 +45,10 @@ const BASE_ROOMS = [
   // east end (same depth as the offices between them).
   { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: -WALL_THICKNESS / 2 }, north: true },
   { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, y: -WALL_THICKNESS / 2 }, north: true },
-  // The stairs, south of the hallway's east end (the same spot on both floors).
-  { id: "stairs", name: CONFIG.roomNames.stairs, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, y: 3 } },
-  // Upstairs: the landing (added in buildHouse) and its stairs.
-  { id: "stairsUp", name: CONFIG.roomNames.stairs, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
+  // The elevator lobby, south of the hallway's east end (the same spot on both floors).
+  { id: "elevator", name: CONFIG.roomNames.elevator, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, y: 3 } },
+  // Upstairs: the landing (added in buildHouse) and its elevator lobby.
+  { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -71,16 +71,16 @@ const BASE_WALLS = [
   { x: 18 - WALL_THICKNESS, y: -5.8, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
 
-  // The stairwell south of the hallway's east end (doorway x 19.2 to
+  // The elevator lobby south of the hallway's east end (doorway x 19.2 to
   // 20.8), with the garden below it.
   { x: 18, y: 3 - WALL_THICKNESS / 2, w: 1.2, h: WALL_THICKNESS },
   { x: 20.8, y: 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true }, // drawn short so it doesn't hide the stairs
+  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true }, // drawn short so it doesn't hide the lobby
 
   // Upstairs: the landing's sides and bottom (with a doorway into its
-  // stairwell, x 19.2 to 20.8), and the stairwell's walls. The landing's
+  // elevator lobby, x 19.2 to 20.8), and the lobby's walls. The landing's
   // top wall has the bedroom doorways, so it's made in buildHouse.
   { x: -WALL_THICKNESS, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
@@ -162,11 +162,16 @@ const BASE_FURNITURE = [
   { kind: "snakePlant", x: 0.15, y: -5.3, w: 0.6, h: 0.6 },
   { kind: "teaCart", x: 4.3, y: -1.5, w: 1.2, h: 0.6 },
 
-  // Theater: a big screen along the top wall, two rows of plush cinema
-  // seats facing it, and a popcorn machine by the door side. Seats aren't
+  // Theater: a big screen along the top wall between red velvet curtains
+  // with marquee lights, floor cushions up front, two rows of plush cinema
+  // seats, a big sofa in the back row, lights along the aisle, and a snack
+  // counter and popcorn machine at the back. Seats and the sofa aren't
   // solid: stand on one to "sit", and its back hides your lower half the
   // way a real cinema seat would.
   { kind: "bigScreen", x: 0.3, y: 3.3, w: 3.6, h: 0.3 },
+  { kind: "stageCurtains", x: 0.05, y: 3.61, w: 4.1, h: 0.05, solid: false }, // hung just in front of the screen
+  { kind: "floorCushions", x: 0.5, y: 4.3, w: 1.0, h: 0.6, solid: false },
+  { kind: "floorCushions", x: 2.6, y: 4.3, w: 1.0, h: 0.6, solid: false },
   { kind: "theaterSeat", x: 0.4, y: 5.4, w: 0.7, h: 0.6, solid: false },
   { kind: "theaterSeat", x: 1.3, y: 5.4, w: 0.7, h: 0.6, solid: false },
   { kind: "theaterSeat", x: 2.2, y: 5.4, w: 0.7, h: 0.6, solid: false },
@@ -175,7 +180,11 @@ const BASE_FURNITURE = [
   { kind: "theaterSeat", x: 1.3, y: 7.2, w: 0.7, h: 0.6, solid: false },
   { kind: "theaterSeat", x: 2.2, y: 7.2, w: 0.7, h: 0.6, solid: false },
   { kind: "theaterSeat", x: 3.1, y: 7.2, w: 0.7, h: 0.6, solid: false },
-  { kind: "popcorn", x: 4.5, y: 9.8, w: 0.9, h: 0.6 },
+  { kind: "cinemaSofa", x: 0.4, y: 8.6, w: 3.4, h: 0.8, solid: false },
+  { kind: "aisleLights", x: 4.3, y: 4.2, w: 0.2, h: 5.6, solid: false },
+  { kind: "candyCounter", x: 2.3, y: 10.2, w: 1.8, h: 0.55 },
+  { kind: "popcorn", x: 4.6, y: 10.1, w: 0.9, h: 0.6 },
+  { kind: "palm", x: 0.2, y: 10.1, w: 0.6, h: 0.6 },
 
   // Study
   // Study
@@ -236,16 +245,17 @@ const BASE_FURNITURE = [
   { kind: "chair", x: 18.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
   { kind: "fern", x: 23.2, y: -1.8, w: 0.6, h: 0.6 },
 
-  // Stairs (downstairs): the staircase up along the east side, a lamp
-  // and a palm. Walk onto the steps to go up.
-  { kind: "staircase", x: 21.3, y: 3.3, w: 2.4, h: 2.7, solid: false },
+  // Elevator lobby (downstairs): brass elevator doors on the back wall
+  // (walk up and press E), a lamp, a round rug, a bench and a palm.
+  { kind: "elevatorDoor", x: 21.4, y: 3 + WALL_THICKNESS / 2, w: 1.6, floor: 0, solid: false },
   { kind: "sconce", x: 18.7, y: 3.2, solid: false },
+  { kind: "rug", x: 20.8, y: 4.3, w: 2.8, h: 1.9, color: "#7a3b4a", round: true, solid: false },
+  { kind: "bench", x: 18.3, y: 4.2, w: 1.5, h: 0.5 },
   { kind: "palm", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
 
   // Upstairs: a runner down the landing, lamps and paintings between the
   // bedroom doors (x0 + 1 to x0 + 2.6 for x0 = 0, 6, 12, 18), a side
-  // table, a bench, a cactus and a fern, and the staircase down in its
-  // stairwell.
+  // table, a bench, a cactus and a fern, and the elevator lobby.
   { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
   { kind: "sconce", x: 3.0, y: LANDING, solid: false },
   { kind: "picture", x: 4.4, y: LANDING, w: 1.0, art: "flowers", solid: false },
@@ -260,24 +270,85 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 21.4, y: LANDING, solid: false },
   { kind: "picture", x: 22.4, y: LANDING, w: 0.9, art: "hills", solid: false },
   { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
-  { kind: "staircase", x: 21.3, y: LANDING + 3.3, w: 2.4, h: 2.7, down: true, solid: false },
+  { kind: "elevatorDoor", x: 21.4, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.6, floor: 1, solid: false },
   { kind: "sconce", x: 18.7, y: LANDING + 3.2, solid: false },
+  { kind: "rug", x: 20.8, y: LANDING + 4.3, w: 2.8, h: 1.9, color: "#4f5f7a", round: true, solid: false },
+  { kind: "bench", x: 18.3, y: LANDING + 4.2, w: 1.5, h: 0.5 },
   { kind: "fern", x: 18.3, y: LANDING + 6.0, w: 0.6, h: 0.6 },
 ];
 
-// Where the stairs take you: step onto a staircase (the middle of it, so
-// brushing its edge doesn't count) and you arrive beside the other one.
-const STAIRS = [
-  { from: { x: 21.5, y: 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: LANDING + 4.6 } },
-  { from: { x: 21.5, y: LANDING + 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: 4.6 } },
-];
+// The elevator: one set of doors on each floor, in the same spot. Stand
+// in front of the doors and press E to ride to the other floor.
+// ELEVATOR_OPEN is how open each floor's doors are right now (0 shut, 1
+// wide open), set by main.js while you ride and read when drawing.
+const ELEVATOR_OPEN = [0, 0];
 
-// Where a player's center is on the stairs, the spot they arrive at on the
-// other floor (as a player position), or null if they're not on the stairs.
-function stairsDestination(player) {
+// The floor (0 or 1) of the elevator you're standing in front of, or -1.
+function elevatorInReach(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
-  const hit = STAIRS.find(({ from: r }) => cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h);
-  return hit ? hit.to : null;
+  const door = FURNITURE.find((f) => f.kind === "elevatorDoor" && floorOf(f.y) === floorOf(player.y));
+  if (!door) return -1;
+  return cx > door.x - 0.2 && cx < door.x + door.w + 0.2 && cy > door.y && cy < door.y + 1.3 ? door.floor : -1;
+}
+
+// Where you step out on the other floor: just in front of its doors.
+function elevatorArrival(fromFloor) {
+  const door = FURNITURE.find((f) => f.kind === "elevatorDoor" && f.floor !== fromFloor);
+  return { x: door.x + door.w / 2 - PLAYER_SIZE / 2, y: door.y + 0.3 };
+}
+
+// --- Seasonal decorations ---
+// The shared rooms (hallways, Theater, Study, Dinner, Library) dress up
+// for the season: garlands along the hallway walls, and a small and a big
+// decoration in each room. Offices and bedrooms are left alone. The season
+// comes from today's date (or CONFIG.season, or the admin panel's preview).
+const SEASONS = ["spring", "summer", "autumn", "winter"];
+const SEASONAL = {
+  small: { autumn: "pumpkins", winter: "presents", spring: "eggBasket", summer: "sunflowerVase" },
+  big: { autumn: "autumnCrate", winter: "winterTree", spring: "flowerPlanter", summer: "floorFan" },
+  // Where they go (grid units), kept clear of doorways and furniture.
+  spots: [
+    { size: "small", x: 5.85, y: 0.12 }, // hallway, by the bench
+    { size: "big", x: 18.9, y: 0.1 }, // hallway, under the sea painting
+    { size: "small", x: 5.8, y: LANDING + 0.12 }, // landing, by the bench
+    { size: "big", x: 22.9, y: LANDING + 0.1 }, // landing, under the hills painting
+    { size: "small", x: 7.4, y: 9.8 }, // Study, by the beanbag
+    { size: "big", x: 10.9, y: 8.7 }, // Study, beside the rug
+    { size: "small", x: 13.8, y: 10.15 }, // Dinner, by the tea cart
+    { size: "big", x: 16.9, y: 8.9 }, // Dinner, by the lemon tree
+    { size: "small", x: 5.3, y: 9.2 }, // Theater, by the popcorn
+    { size: "big", x: 1.0, y: 10.0 }, // Theater, back corner
+    { size: "small", x: 20.8, y: -5.0 }, // Library, under the windows
+    { size: "big", x: 22.9, y: -2.6 }, // Library, by the fern
+  ],
+  // Garlands along the top of the hallway and landing walls, between doors.
+  garlands: [
+    [0.1, 0, 1.75], [3.75, 0, 3.15], [8.7, 0, 2.2], [12.7, 0, 2.2], [16.7, 0, 3.4], [21.9, 0, 2.0],
+    [2.7, LANDING, 4.2], [8.7, LANDING, 4.2], [14.7, LANDING, 4.2], [20.7, LANDING, 3.2],
+  ],
+};
+let seasonPreview = null; // set from the admin panel to try out a season
+
+function currentSeason() {
+  const pick = seasonPreview || CONFIG.season;
+  if (SEASONS.includes(pick)) return pick;
+  const month = new Date().getMonth(); // 0 is January
+  return month === 11 || month <= 1 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn";
+}
+
+// Shows a season in the house right now (or null to go back to the real
+// one). Only on this computer.
+function previewSeason(season) {
+  seasonPreview = season;
+  buildHouse(...lastBuild);
+}
+
+function seasonalFurniture() {
+  const season = currentSeason();
+  return [
+    ...SEASONAL.spots.map(({ size, x, y }) => ({ kind: SEASONAL[size][season], x, y, w: size === "big" ? 0.8 : 0.55, h: size === "big" ? 0.7 : 0.45 })),
+    ...SEASONAL.garlands.map(([x, y, w]) => ({ kind: "garland", style: season, x, y, w, solid: false })),
+  ];
 }
 
 // --- Private rooms: offices and bedrooms ---
@@ -318,11 +389,13 @@ const buildDoors = { office: null, bedroom: null }; // left edge of each kind's 
 // offices and bedrooms: lists of { slot, since, ownerName, color, locked,
 // mine }, already in order (slot 1 first). A room's id comes from when it
 // was made, so it stays the same when it slides to a different spot.
+let lastBuild = [[], []]; // what the house was last built with (see previewSeason)
 function buildHouse(offices, bedrooms = []) {
+  lastBuild = [offices, bedrooms];
   const t = WALL_THICKNESS;
   const rooms = [...BASE_ROOMS];
   const walls = [...BASE_WALLS];
-  const furniture = [...BASE_FURNITURE];
+  const furniture = [...BASE_FURNITURE, ...seasonalFurniture()];
 
   // A corridor's top wall, from x -t to the east end, with gaps for its doorways.
   const corridorWall = (y, doorways) => {
@@ -781,6 +854,7 @@ function nearestInteraction(player) {
     options.push(["raccoons", Math.hypot(cx - (r.x + r.w / 2), cy - (r.y + r.h / 2))]);
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
+  if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
   const kind = isNearBuildDoor(player);
   if (kind) options.push(["buildDoor", Math.hypot(cx - (buildDoors[kind] + WINGS[kind].doorX + 0.8), cy - (WINGS[kind].floorY + 0.3))]);
   options.sort((a, b) => a[1] - b[1]);

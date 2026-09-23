@@ -13,13 +13,18 @@ const CONFIG = {
     library: "Library",
     study: "Study",
     dinner: "Dinner",
-    stairs: "Stairs",
+    elevator: "Elevator",
     landing: "Upstairs",
   },
 
+  // Seasonal decorations in the shared rooms: "auto" follows the calendar
+  // (spring Mar to May, summer Jun to Aug, autumn Sep to Nov, winter Dec
+  // to Feb), or pick one: "spring", "summer", "autumn" or "winter".
+  season: "auto",
+
   // The little wooden sign over each room's doorway shows an icon. Keyed
   // by room id. Built-in icons (drawn to match the house): "film",
-  // "pencil", "books", "openBook", "lamp", "forkKnife", "stairs",
+  // "pencil", "books", "openBook", "lamp", "forkKnife", "elevator", "stairs",
   // "gamepad", "music", "heart", "leaf", "moon", "door". Anything else is
   // shown as written (an emoji works). A new room without one gets a door.
   // Offices and bedrooms show their owner's name instead of an icon.
@@ -29,22 +34,23 @@ const CONFIG = {
     library: "books",
     study: "lamp",
     dinner: "forkKnife",
-    stairs: "stairs",
-    stairsUp: "stairs",
+    elevator: "elevator",
+    elevatorUp: "elevator",
   },
 
-  // Each room's floor: a style ("planks" for wood boards, "carpet", or
-  // "checker" for tiles) and a main color.
+  // Each room's floor: a style ("planks" for wood boards, "carpet",
+  // "cinema" for carpet with little gold stars, or "checker" for tiles)
+  // and a main color.
   roomFloors: {
     hallway: { style: "planks", color: "#d4b48c" },
-    theater: { style: "carpet", color: "#5a2833" },
+    theater: { style: "cinema", color: "#5a2833" },
     conference: { style: "carpet", color: "#5f6b7a" },
     library: { style: "planks", color: "#6e4a32" },
     study: { style: "planks", color: "#9c6a45" },
     dinner: { style: "checker", color: "#dcae8c" },
     office: { style: "planks", color: "#b98a5e" }, // used for every office
-    stairs: { style: "planks", color: "#b08a64" },
-    stairsUp: { style: "planks", color: "#b08a64" },
+    elevator: { style: "checker", color: "#d9cbb4" },
+    elevatorUp: { style: "checker", color: "#d9cbb4" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
   },
@@ -58,8 +64,8 @@ const CONFIG = {
     study: "#6f8a6a",
     dinner: "#f0d9b8",
     office: "#8f7fa3", // used for every office
-    stairs: "#e3d2b8",
-    stairsUp: "#e3d2b8",
+    elevator: "#d8c3a0",
+    elevatorUp: "#d8c3a0",
     landing: "#e6d6c6",
     bedroom: "#a9b8cf", // used for every bedroom
   },

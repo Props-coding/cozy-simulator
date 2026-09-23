@@ -75,6 +75,18 @@ for (const tool of panel.querySelectorAll("[data-tool]")) {
   });
 }
 
+// --- Seasons ---
+// Try out a season's decorations (on this computer only, until you reload).
+for (const button of panel.querySelectorAll("[data-season]")) {
+  button.addEventListener("click", () => {
+    const season = button.dataset.season || null;
+    previewSeason(season);
+    say(season ? `Showing ${season} decorations (just for you, until you reload).` : `Back to the real season (${currentSeason()}).`);
+    playClickSound();
+    button.blur();
+  });
+}
+
 // --- Jump to a room ---
 const roomSelect = document.getElementById("admin-room");
 

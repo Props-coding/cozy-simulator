@@ -153,6 +153,12 @@ export function playCoatWhoosh() {
   noise.start(now);
 }
 
+// The elevator arriving: a soft two-note "ding-dong".
+export function playElevatorDing() {
+  playTone(1046.5, 0, { gain: 0.08, duration: 0.5, type: "sine" });
+  playTone(830.61, 260, { gain: 0.08, duration: 0.8, type: "sine" });
+}
+
 // A happy little "cha-ching" for buying something (or earning crumbs).
 export function playCrumbSound() {
   playTone(987.77, 0, { gain: 0.07, duration: 0.09, type: "triangle" });

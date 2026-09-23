@@ -192,7 +192,30 @@ function drawConcrete(ctx, box, color) {
   }
 }
 
-const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker, concrete: drawConcrete };
+// Cinema carpet: the room color with a scattered pattern of little gold
+// stars and swirls, like an old movie palace.
+function drawCinemaCarpet(ctx, box, color) {
+  drawCarpet(ctx, box, color);
+  const step = TILE * 0.9;
+  for (let row = 0, y = box.y + step / 2; y < box.y + box.h; row++, y += step) {
+    for (let x = box.x + step / 2 + (row % 2) * (step / 2); x < box.x + box.w; x += step) {
+      ctx.fillStyle = "rgba(224, 184, 76, 0.28)";
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) { // a little five-point star
+        const r = k % 2 ? 1.6 : 4, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+        ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      ctx.fill();
+      ctx.strokeStyle = "rgba(224, 184, 76, 0.14)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x + step / 2, y, 5, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+  }
+}
+
+const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker, concrete: drawConcrete, cinema: drawCinemaCarpet };
 
 // The look of each secret office theme: floor, wall color, a pattern on
 // the walls, and a tint over the whole room (warm or cold).
@@ -3687,6 +3710,125 @@ const FURNITURE_DRAWERS = {
     ctx.fill();
   },
 
+  // Red velvet stage curtains hung just in front of the Theater's screen,
+  // drawn open on both sides of it, under a gold-fringed valance with a
+  // row of little marquee bulbs.
+  stageCurtains(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, top = a.y - 80, bottom = a.y;
+    for (const side of [0, 1]) {
+      const cx = side ? x + w - 14 : x + 14; // each drape gathers toward its edge
+      const drape = ctx.createLinearGradient(cx - 14, 0, cx + 14, 0);
+      drape.addColorStop(0, "#5e1522");
+      drape.addColorStop(0.5, "#a3263a");
+      drape.addColorStop(1, "#5e1522");
+      ctx.fillStyle = drape;
+      ctx.beginPath();
+      ctx.moveTo(cx - 16, top);
+      ctx.lineTo(cx + 16, top);
+      ctx.quadraticCurveTo(cx + 6, bottom - 18, cx + 10, bottom);
+      ctx.lineTo(cx - 10, bottom);
+      ctx.quadraticCurveTo(cx - 6, bottom - 18, cx - 16, top);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(40, 5, 15, 0.35)"; // folds
+      ctx.lineWidth = 1;
+      for (const dx of [-6, 0, 6]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + dx * 1.5, top + 2);
+        ctx.quadraticCurveTo(cx + dx * 0.6, bottom - 18, cx + dx, bottom);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#e0b84c"; // gold tieback
+      ctx.fillRect(cx - 9, bottom - 20, 18, 3);
+    }
+    ctx.fillStyle = "#7d1c2c"; // the valance along the top
+    ctx.fillRect(x, top, w, 8);
+    ctx.fillStyle = "#e0b84c"; // its fringe
+    for (let fx = x + 2; fx < x + w - 2; fx += 4) ctx.fillRect(fx, top + 8, 2, 3);
+    const t = performance.now() / 1000;
+    for (let i = 0, bx = x + 6; bx < x + w - 4; i++, bx += 12) {
+      const on = Math.sin(t * 3 + i * 0.9) > -0.3; // chasing marquee lights
+      ctx.fillStyle = on ? "#ffe39a" : "#b89a5a";
+      ctx.beginPath();
+      ctx.arc(bx, top + 4, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A big plush back-row sofa, seen from behind (it faces the screen),
+  // with a blanket thrown over it. Stand on it to sit; its back hides your
+  // lower half like the cinema seats do.
+  cinemaSofa(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    drawBlock(ctx, f.x + 0.1, f.y, f.w - 0.2, f.h - 0.25, 12, "#6b2f45"); // seat cushions
+    drawBlock(ctx, f.x, f.y + 0.05, 0.18, f.h - 0.05, 18, "#56243a"); // arms
+    drawBlock(ctx, f.x + f.w - 0.18, f.y + 0.05, 0.18, f.h - 0.05, 18, "#56243a");
+    const back = drawBlock(ctx, f.x + 0.05, f.y + f.h - 0.25, f.w - 0.1, 0.25, 24, "#7d3a52");
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    const seats = 3, sw = (back.face.w - 8) / seats;
+    for (let i = 0; i < seats; i++) {
+      roundRectPath(ctx, back.face.x + 4 + i * sw + 1, back.face.y + 3, sw - 2, back.face.h - 8, 4);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e9c46a"; // a mustard blanket over one end
+    ctx.beginPath();
+    ctx.moveTo(back.face.x + back.face.w - 34, back.top.y);
+    ctx.lineTo(back.face.x + back.face.w - 10, back.top.y);
+    ctx.lineTo(back.face.x + back.face.w - 8, back.face.y + back.face.h - 2);
+    ctx.lineTo(back.face.x + back.face.w - 30, back.face.y + back.face.h - 5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(160, 110, 30, 0.35)";
+    for (let k = 0; k < 3; k++) ctx.fillRect(back.face.x + back.face.w - 30 + k * 7, back.top.y + 2, 1.5, back.face.h);
+  },
+
+  // A snack counter: a glass case of candy boxes, soda cups with straws,
+  // and a little "SNACKS" sign.
+  candyCounter(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#8a4a2e");
+    ctx.fillStyle = "rgba(200, 230, 240, 0.35)"; // glass front
+    ctx.fillRect(c.face.x + 4, c.face.y + 3, c.face.w - 8, c.face.h - 7);
+    const boxes = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#e98ac0", "#f28a3a"];
+    for (let i = 0, bx = c.face.x + 7; bx < c.face.x + c.face.w - 12; i++, bx += 9) {
+      ctx.fillStyle = boxes[i % boxes.length];
+      ctx.fillRect(bx, c.face.y + 6 + (i % 2) * 3, 7, 8);
+    }
+    for (let i = 0; i < 3; i++) {
+      const x = c.top.x + 8 + i * 9, y = c.top.y + c.top.h / 2;
+      ctx.fillStyle = i === 1 ? "#5aa0d8" : "#e04a5a"; // soda cups
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y - 11);
+      ctx.lineTo(x + 3, y - 11);
+      ctx.lineTo(x + 2, y);
+      ctx.lineTo(x - 2, y);
+      ctx.fill();
+      ctx.fillStyle = "#fffaf3";
+      ctx.fillRect(x - 3, y - 12, 6, 2);
+      ctx.fillRect(x + 0.5, y - 17, 1, 6); // straw
+    }
+    const sx = c.top.x + c.top.w - 34, sy = c.top.y - 10;
+    ctx.fillStyle = "#3a1f2a";
+    roundRectPath(ctx, sx, sy, 28, 11, 3);
+    ctx.fill();
+    ctx.fillStyle = "#ffcf6e";
+    ctx.font = "700 7px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SNACKS", sx + 14, sy + 8);
+    ctx.textAlign = "left";
+  },
+
+  // Little lights set into the floor along the aisle, like in a cinema.
+  aisleLights(ctx, f) {
+    const n = Math.max(2, Math.round(f.h / 0.9));
+    for (let i = 0; i < n; i++) {
+      const p = toScreen(f.x + f.w / 2, f.y + (i + 0.5) * (f.h / n));
+      ctx.fillStyle = "#3a1f2a";
+      ctx.fillRect(p.x - 4, p.y - 2, 8, 4);
+      ctx.fillStyle = "#ffd98a";
+      ctx.fillRect(p.x - 3, p.y - 1, 6, 2);
+    }
+  },
+
   // An old-timey popcorn machine: a red cart with a glass box of popcorn.
   popcorn(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
@@ -4568,134 +4710,329 @@ const FURNITURE_DRAWERS = {
     drawIvySprig(ctx, b.x + 1, b.y - 18, 11, 1);
   },
 
+  // --- Seasonal decorations (see SEASONAL in world.js) ---
+
+  // A garland swagged along the top of a wall: autumn leaves, a pine
+  // bough with berries and warm lights, spring flowers, or summer bunting.
+  garland(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, top = a.y - WALL_HEIGHT + 2;
+    const swags = Math.max(1, Math.round(w / 46));
+    const sw = w / swags;
+    const along = (i, t) => ({ x: x + i * sw + t * sw, y: top + Math.sin(t * Math.PI) * 9 }); // a point on swag i
+    ctx.strokeStyle = f.style === "summer" ? "#8a6a4a" : f.style === "winter" ? "#2f5a3a" : "#6b5a3a";
+    ctx.lineWidth = f.style === "winter" ? 4 : 1.2;
+    for (let i = 0; i < swags; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + i * sw, top);
+      ctx.quadraticCurveTo(x + i * sw + sw / 2, top + 18, x + (i + 1) * sw, top);
+      ctx.stroke();
+    }
+    const t0 = performance.now() / 1000;
+    for (let i = 0; i < swags; i++) {
+      for (let k = 1; k < 8; k++) {
+        const p = along(i, k / 8);
+        if (f.style === "autumn") {
+          const colors = ["#c8552e", "#e09a3a", "#a8392a", "#d9b44a"];
+          drawLeaf(ctx, p.x, p.y + 1, (k % 2 ? 1 : -1) * 2.4, 6, 3, colors[(i + k) % colors.length], null);
+        } else if (f.style === "winter") {
+          ctx.fillStyle = "#3f7a4a";
+          for (const d of [-2, 2]) drawLeaf(ctx, p.x, p.y, Math.PI + d * 0.4, 5, 1.6, "#3f7a4a", null);
+          ctx.fillStyle = k % 3 ? "#c0303a" : "#ffe08a";
+          if (!(k % 3)) ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t0 * 3 + k + i);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y + 1, 1.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        } else if (f.style === "spring") {
+          const colors = ["#f2a0b8", "#fff2a8", "#c8b0e8", "#f7f1e6"];
+          ctx.fillStyle = colors[(i + k) % colors.length];
+          for (let petal = 0; petal < 5; petal++) {
+            const ang = (petal / 5) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.arc(p.x + Math.cos(ang) * 1.8, p.y + Math.sin(ang) * 1.8, 1.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = "#e0a83a";
+          ctx.fillRect(p.x - 0.7, p.y - 0.7, 1.4, 1.4);
+        } else {
+          const colors = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#f28a3a"];
+          ctx.fillStyle = colors[(i * 7 + k) % colors.length]; // bunting flags
+          ctx.beginPath();
+          ctx.moveTo(p.x - 3, p.y);
+          ctx.lineTo(p.x + 3, p.y);
+          ctx.lineTo(p.x, p.y + 7);
+          ctx.fill();
+        }
+      }
+    }
+  },
+
+  // A little pile of wrapped presents with ribbons.
+  presents(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    for (const [dx, w, h, color, ribbon] of [[-6, 12, 12, "#c0303a", "#f2d07a"], [6, 10, 9, "#3f7a5a", "#f7f1e6"], [0, 9, 8, "#f2d07a", "#c0303a"]]) {
+      const x = b.x + dx - w / 2, y = b.y - 3 - h - (dx === 0 ? 8 : 0);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.fillRect(x, y, w, 2);
+      ctx.fillStyle = ribbon;
+      ctx.fillRect(x + w / 2 - 1, y, 2, h);
+      ctx.fillRect(x, y + h / 2 - 1, w, 2);
+      ctx.beginPath(); // bow
+      ctx.ellipse(x + w / 2 - 2.5, y - 1, 2.5, 1.6, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(x + w / 2 + 2.5, y - 1, 2.5, 1.6, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A woven basket of pastel eggs.
+  eggBasket(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const eggs = ["#f2a0b8", "#a8d8e8", "#fff2a8", "#c8b0e8", "#b9e0a4"];
+    eggs.forEach((c, i) => {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.ellipse(b.x - 9 + i * 4.5, b.y - 12 - (i % 2) * 2, 3, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = "#c49a5c";
+    ctx.beginPath();
+    ctx.moveTo(b.x - 12, b.y - 11);
+    ctx.lineTo(b.x + 12, b.y - 11);
+    ctx.lineTo(b.x + 9, b.y - 2);
+    ctx.lineTo(b.x - 9, b.y - 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(90, 60, 30, 0.35)"; // weave
+    for (let k = 0; k < 3; k++) ctx.fillRect(b.x - 11, b.y - 9 + k * 2.5, 22, 0.8);
+    ctx.strokeStyle = "#a07a42"; // handle
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y - 11, 10, Math.PI, 0);
+    ctx.stroke();
+  },
+
+  // A wooden crate spilling over with pumpkins, apples and fallen leaves.
+  autumnCrate(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const c = drawBlock(ctx, f.x + 0.05, f.y + 0.1, f.w - 0.1, f.h - 0.2, 13, "#a0703e");
+    ctx.fillStyle = "rgba(60, 35, 15, 0.35)";
+    for (let k = 1; k < 3; k++) ctx.fillRect(c.face.x, c.face.y + (c.face.h * k) / 3, c.face.w, 1);
+    const top = c.top.y + c.top.h / 2;
+    for (const [dx, r, color] of [[-9, 7, "#e07a2e"], [5, 8, "#d9682a"], [-1, 5, "#f0c05a"]]) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(c.top.x + c.top.w / 2 + dx, top - r * 0.6, r, r * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(120, 50, 10, 0.25)";
+      ctx.fillRect(c.top.x + c.top.w / 2 + dx - 0.5, top - r * 1.3, 1, r * 1.3);
+      ctx.fillStyle = "#5a7a3a";
+      ctx.fillRect(c.top.x + c.top.w / 2 + dx - 1, top - r * 1.45, 2, 3);
+    }
+    for (const dx of [12, 16]) {
+      ctx.fillStyle = "#b82a2a"; // apples
+      ctx.beginPath();
+      ctx.arc(c.top.x + c.top.w / 2 + dx, top - 3, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const b = toScreen(f.x, f.y + f.h);
+    for (const [dx, a, color] of [[4, 0.8, "#c8552e"], [30, -1.2, "#e09a3a"], [18, 2.2, "#a8392a"]]) drawLeaf(ctx, b.x + dx, b.y - 1, a, 6, 3, color, null);
+  },
+
+  // A little decorated tree: stacked green tiers, a star, twinkling
+  // lights and ornaments, with a present underneath.
+  winterTree(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#b86b4b"; // pot
+    ctx.fillRect(b.x - 6, b.y - 9, 12, 7);
+    ctx.fillStyle = "#6b4a2e";
+    ctx.fillRect(b.x - 1.5, b.y - 13, 3, 5);
+    const tiers = [[16, b.y - 12, 14], [13, b.y - 24, 13], [9.5, b.y - 35, 12]];
+    for (const [half, base, h] of tiers) {
+      ctx.fillStyle = "#2f6a42";
+      ctx.beginPath();
+      ctx.moveTo(b.x - half, base);
+      ctx.lineTo(b.x + half, base);
+      ctx.lineTo(b.x, base - h - 4);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; // lit from above
+      ctx.beginPath();
+      ctx.moveTo(b.x, base - h - 4);
+      ctx.lineTo(b.x - half * 0.5, base - h * 0.4);
+      ctx.lineTo(b.x, base - h * 0.5);
+      ctx.fill();
+    }
+    const t = performance.now() / 1000;
+    const bulbs = [[-9, -15], [7, -17], [-3, -21], [10, -13], [-6, -28], [5, -30], [0, -38], [-12, -14], [2, -25]];
+    bulbs.forEach(([dx, dy], i) => {
+      ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 2.5 + i * 1.7);
+      ctx.fillStyle = ["#ffe08a", "#ff9aa8", "#a8d8ff"][i % 3];
+      ctx.beginPath();
+      ctx.arc(b.x + dx, b.y + dy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    for (const [dx, dy] of [[-5, -16], [6, -24], [-2, -33]]) {
+      ctx.fillStyle = "#c0303a"; // ornaments
+      ctx.beginPath();
+      ctx.arc(b.x + dx, b.y + dy, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f2d07a"; // the star on top
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const r = k % 2 ? 2 : 4.5, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+      ctx.lineTo(b.x + Math.cos(a) * r, b.y - 52 + Math.sin(a) * r);
+    }
+    ctx.fill();
+    ctx.fillStyle = "#5a8ac8"; // a present under the tree
+    ctx.fillRect(b.x + 8, b.y - 9, 9, 7);
+    ctx.fillStyle = "#f7f1e6";
+    ctx.fillRect(b.x + 11.5, b.y - 9, 2, 7);
+  },
+
+  // A wooden planter box full of tulips and daffodils.
+  flowerPlanter(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x + 0.05, f.y + 0.25, f.w - 0.1, f.h - 0.3, 11, "#9a6a3e");
+    const cx = box.top.x + box.top.w / 2, soil = box.top.y + box.top.h / 2;
+    ctx.fillStyle = "#5a3f2a"; // soil
+    ctx.fillRect(box.top.x + 3, box.top.y + 2, box.top.w - 6, box.top.h - 4);
+    const colors = ["#f2c94c", "#e8607a", "#f7f1e6", "#f2a0b8", "#f2c94c", "#c8b0e8", "#e8607a"];
+    colors.forEach((color, i) => {
+      const x = cx - 14 + i * 4.7, h = 12 + ((i * 5) % 7), base = soil + (i % 2) * 2;
+      ctx.strokeStyle = "#4f8a4a";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x, base);
+      ctx.lineTo(x, base - h);
+      ctx.stroke();
+      drawLeaf(ctx, x, base, i % 2 ? 0.4 : -0.4, 8, 2, "#5a9a4a", null);
+      ctx.fillStyle = color;
+      ctx.beginPath(); // a little cup-shaped bloom
+      ctx.moveTo(x - 3, base - 2 - h);
+      ctx.lineTo(x - 2, base + 3 - h);
+      ctx.lineTo(x + 2, base + 3 - h);
+      ctx.lineTo(x + 3, base - 2 - h);
+      ctx.lineTo(x + 1, base - h);
+      ctx.lineTo(x, base - 3 - h);
+      ctx.lineTo(x - 1, base - h);
+      ctx.fill();
+    });
+  },
+
+  // A standing electric fan with a gently spinning blade.
+  floorFan(ctx, f) {
+    drawShadow(ctx, f.x + 0.15, f.y + 0.2, f.w - 0.3, f.h - 0.3);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#e9e3d6"; // base and pole
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 4, 9, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(b.x - 1.5, b.y - 34, 3, 30);
+    const cy = b.y - 42;
+    ctx.fillStyle = "#a8d8d0"; // mint cage
+    ctx.beginPath();
+    ctx.arc(b.x, cy, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    const spin = performance.now() / 120;
+    for (let k = 0; k < 3; k++) {
+      const a = spin + (k / 3) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(b.x + Math.cos(a) * 6, cy + Math.sin(a) * 6, 5.5, 3, a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "rgba(90, 130, 125, 0.6)";
+    ctx.lineWidth = 0.8;
+    for (let r = 5; r <= 13; r += 4) {
+      ctx.beginPath();
+      ctx.arc(b.x, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#e9e3d6";
+    ctx.beginPath();
+    ctx.arc(b.x, cy, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
   // --- Upstairs and bedrooms ---
 
-  // A wooden staircase seen from above, set into an opening in the floor
-  // and lit from above like everything else. Going down (upstairs, `down`)
-  // the top step matches the floor and each step below is a little darker,
-  // until the last one fades into shadow. Going up (downstairs), the bottom
-  // step matches the floor and each step above catches a little more light.
-  // Each tread has a lit front edge with a shadow band just below it (the
-  // drop to the next step), low dark walls line both sides of the opening,
-  // a runner with a brass rod on every step runs up the middle, and a
-  // proper banister with round newel posts runs along the open side.
-  staircase(ctx, f) {
-    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
-    const w = b.x - a.x, h = b.y - a.y;
-    const steps = 7, stepH = h / steps;
-    const floorColor = CONFIG.roomFloors.stairs.color;
-    const side = 5; // width of the low side walls
-    // How much each step is shaded: 0 at floor level, getting darker (down)
-    // or lighter (up) step by step.
-    const shadeFor = (i) => (f.down ? -i * 11 : (steps - 1 - i) * 6);
-
-    // The treads.
-    for (let i = 0; i < steps; i++) {
-      const sy = a.y + i * stepH;
-      ctx.fillStyle = shadeColor(floorColor, shadeFor(i));
-      ctx.fillRect(a.x, sy, w, stepH + 0.5);
-      // Faint wood grain along each tread.
-      ctx.fillStyle = "rgba(60, 35, 15, 0.12)";
-      ctx.fillRect(a.x, sy + stepH * 0.45, w, 1);
+  // Elevator doors set into the back wall: a brass frame, two brushed
+  // metal doors that slide apart (ELEVATOR_OPEN, set while someone rides)
+  // onto a warm lit car, a little arrow showing which way it goes, and a
+  // brass call button beside it.
+  elevatorDoor(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, bottom = a.y, top = a.y - WALL_HEIGHT + 3;
+    const h = bottom - top;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow of the frame on the wall
+    ctx.fillRect(x - 2, top + 2, w + 6, h);
+    ctx.fillStyle = "#b8904a"; // brass frame
+    ctx.fillRect(x - 3, top - 1, w + 6, h + 1);
+    ctx.fillStyle = "#e0bd6e"; // lit top edge
+    ctx.fillRect(x - 3, top - 1, w + 6, 1.5);
+    const inX = x + 1, inW = w - 2, inTop = top + 7;
+    // The car inside: warm light, a handrail and a patterned floor.
+    const car = ctx.createLinearGradient(0, inTop, 0, bottom);
+    car.addColorStop(0, "#f4d9a0");
+    car.addColorStop(1, "#c9965a");
+    ctx.fillStyle = car;
+    ctx.fillRect(inX, inTop, inW, bottom - inTop);
+    ctx.fillStyle = "#a5773f";
+    ctx.fillRect(inX, inTop + 14, inW, 1.5);
+    ctx.fillStyle = "#8a3b3b";
+    ctx.fillRect(inX, bottom - 5, inW, 5);
+    // The doors, sliding apart from the middle.
+    const open = ELEVATOR_OPEN[f.floor] || 0;
+    const half = inW / 2, slide = half * open * 0.92;
+    for (const side of [-1, 1]) {
+      const dx = side < 0 ? inX - slide : inX + half + slide;
+      const door = ctx.createLinearGradient(dx, 0, dx + half, 0);
+      door.addColorStop(0, "#cfd3d6");
+      door.addColorStop(0.5, "#eef0f1");
+      door.addColorStop(1, "#b9bec2");
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(inX, inTop, inW, bottom - inTop);
+      ctx.clip(); // doors slide into the wall, not past the frame
+      ctx.fillStyle = door;
+      ctx.fillRect(dx, inTop, half, bottom - inTop);
+      ctx.fillStyle = "rgba(90, 95, 100, 0.35)"; // the seam and a brass kick plate
+      ctx.fillRect(side < 0 ? dx + half - 1 : dx, inTop, 1, bottom - inTop);
+      ctx.fillStyle = "#c9a45a";
+      ctx.fillRect(dx, bottom - 4, half, 4);
+      ctx.restore();
     }
-    // The runner up the middle, shaded with its steps, with a brass rod
-    // holding it at the back of each tread.
-    const rx = a.x + w * 0.3, rw = w * 0.4;
-    for (let i = 0; i < steps; i++) {
-      const sy = a.y + i * stepH;
-      ctx.fillStyle = shadeColor("#6f5a8c", shadeFor(i));
-      ctx.fillRect(rx, sy, rw, stepH + 0.5);
-      ctx.fillStyle = "#c9a24a"; // brass rod
-      ctx.fillRect(rx - 2, sy + 1.5, rw + 4, 1.4);
-      ctx.fillStyle = "rgba(255, 240, 190, 0.6)";
-      ctx.fillRect(rx - 2, sy + 1.5, rw + 4, 0.5);
-    }
-
-    if (f.down) {
-      // The bottom of a staircase going down sinks into shadow.
-      const fade = ctx.createLinearGradient(0, a.y + h * 0.45, 0, b.y);
-      fade.addColorStop(0, "rgba(25, 15, 8, 0)");
-      fade.addColorStop(1, "rgba(25, 15, 8, 0.55)");
-      ctx.fillStyle = fade;
-      ctx.fillRect(a.x, a.y, w, h);
-    }
-
-    // Depth: a lit front edge on each tread, and a shadow band just below
-    // it where the step drops to the next one.
-    for (let i = 0; i < steps; i++) {
-      const edge = a.y + (i + 1) * stepH;
-      if (i < steps - 1) {
-        ctx.fillStyle = "rgba(255, 240, 210, 0.35)";
-        ctx.fillRect(a.x, edge - 2, w, 1.5);
-      }
-      ctx.fillStyle = "rgba(30, 18, 8, 0.35)";
-      ctx.fillRect(a.x, edge - 0.5, w, 2.5);
-    }
-
-    // Low dark walls down both sides, so it reads as an opening in the
-    // floor rather than a mat laid on it. Their tops catch the light.
-    for (const x of [a.x - side, b.x]) {
-      const wall = ctx.createLinearGradient(0, a.y, 0, b.y);
-      wall.addColorStop(0, "#5c4530");
-      wall.addColorStop(1, f.down ? "#2e2118" : "#4a3626");
-      ctx.fillStyle = wall;
-      ctx.fillRect(x, a.y - 2, side, h + 2);
-      ctx.fillStyle = "rgba(255, 235, 200, 0.25)";
-      ctx.fillRect(x, a.y - 2, side, 1.5);
-    }
-    // The floor's edge along the top of the opening.
-    ctx.fillStyle = "#5c4530";
-    ctx.fillRect(a.x - side, a.y - 3, w + side * 2, 3);
-    ctx.fillStyle = "rgba(255, 235, 200, 0.3)";
-    ctx.fillRect(a.x - side, a.y - 3, w + side * 2, 1);
-
-    // The banister along the open (west) side: a soft shadow on the steps
-    // just below it, a thick rounded handrail, and a round newel post with
-    // a brass cap at the top and bottom.
-    const hx = a.x - side - 1;
-    ctx.fillStyle = "rgba(30, 18, 8, 0.25)";
-    roundRectPath(ctx, hx + 3, a.y - 4, 8, h + 6, 4);
+    // Floor indicator: a small dark window with a glowing arrow.
+    const cx = x + w / 2;
+    ctx.fillStyle = "#3a2a22";
+    roundRectPath(ctx, cx - 7, top, 14, 6, 2);
     ctx.fill();
-    const rail = ctx.createLinearGradient(hx - 4, 0, hx + 4, 0);
-    rail.addColorStop(0, "#5c3d2a");
-    rail.addColorStop(0.45, "#9a6a45");
-    rail.addColorStop(1, "#5c3d2a");
-    ctx.fillStyle = rail;
-    roundRectPath(ctx, hx - 4, a.y - 8, 8, h + 6, 4);
-    ctx.fill();
-    for (const py of [a.y - 7, b.y - 4]) {
-      ctx.fillStyle = "rgba(30, 18, 8, 0.3)"; // post shadow
-      ctx.beginPath();
-      ctx.ellipse(hx + 1.5, py + 4, 6, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#6b4630";
-      ctx.beginPath();
-      ctx.arc(hx, py, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#c9a24a";
-      ctx.beginPath();
-      ctx.arc(hx, py - 1, 3.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255, 245, 210, 0.7)";
-      ctx.beginPath();
-      ctx.arc(hx - 1, py - 2, 1.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // A little arrow showing which way the stairs go.
-    ctx.fillStyle = "rgba(255, 245, 225, 0.8)";
-    const ax = a.x + w / 2, ay = f.down ? a.y + h - 10 : a.y + 10;
+    ctx.fillStyle = "#ffcf6e";
     ctx.beginPath();
-    if (f.down) {
-      ctx.moveTo(ax - 6, ay - 3);
-      ctx.lineTo(ax + 6, ay - 3);
-      ctx.lineTo(ax, ay + 4);
+    if (f.floor === 0) {
+      ctx.moveTo(cx - 3, top + 4.5);
+      ctx.lineTo(cx + 3, top + 4.5);
+      ctx.lineTo(cx, top + 1.2);
     } else {
-      ctx.moveTo(ax - 6, ay + 3);
-      ctx.lineTo(ax + 6, ay + 3);
-      ctx.lineTo(ax, ay - 4);
+      ctx.moveTo(cx - 3, top + 1.5);
+      ctx.lineTo(cx + 3, top + 1.5);
+      ctx.lineTo(cx, top + 4.8);
     }
-    ctx.closePath();
+    ctx.fill();
+    // The call button panel beside the doors.
+    const px = x + w + 6, py = top + 14;
+    ctx.fillStyle = "#b8904a";
+    roundRectPath(ctx, px, py, 7, 12, 2);
+    ctx.fill();
+    ctx.fillStyle = open > 0 ? "#ffd27a" : "#f3e6d0";
+    ctx.beginPath();
+    ctx.arc(px + 3.5, py + 6, 2, 0, Math.PI * 2);
     ctx.fill();
   },
 
@@ -5595,7 +5932,7 @@ function drawLamp(ctx, x, y) {
 function drawLights(ctx) {
   // Study, Dinner and the Hallway get a soft golden wash, like rooms lit
   // by lamps at night: warm in the middle, a little dimmer at the edges.
-  for (const id of ["study", "dinner", "hallway", "landing", "stairs", "stairsUp"]) {
+  for (const id of ["study", "dinner", "hallway", "landing", "elevator", "elevatorUp"]) {
     const rect = ROOMS.find((r) => r.id === id).rect;
     const s1 = toScreen(rect.x, rect.y - 1), s2 = toScreen(rect.x + rect.w, rect.y + rect.h);
     const cx = (s1.x + s2.x) / 2, cy = (s1.y + s2.y) / 2;
@@ -5645,6 +5982,15 @@ function drawLights(ctx) {
     } else if (f.kind === "rainWindow") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x, p.y - WALL_HEIGHT + 18, 34, "rgba(150, 185, 215, 0.25)");
+    } else if (f.kind === "aisleLights") {
+      const n = Math.max(2, Math.round(f.h / 0.9));
+      for (let i = 0; i < n; i++) {
+        const p = toScreen(f.x + f.w / 2, f.y + (i + 0.5) * (f.h / n));
+        drawGlow(ctx, p.x, p.y, 14, "rgba(255, 210, 130, 0.35)");
+      }
+    } else if (f.kind === "stageCurtains") {
+      const p = toScreen(f.x + f.w / 2, f.y);
+      drawGlow(ctx, p.x, p.y - 76, 90, "rgba(255, 220, 140, 0.18)");
     } else if (f.kind === "bigScreen") {
       const p = toScreen(f.x + f.w / 2, f.y + f.h);
       drawGlow(ctx, p.x, p.y - 30, 150, "rgba(170, 200, 255, 0.22)");
@@ -5748,7 +6094,7 @@ function drawLights(ctx) {
 // Seats whose back is toward you (cinema seats, and chairs you can sit in
 // that face away) draw over whoever sits in them.
 function coversSitter(f) {
-  return f.kind === "theaterSeat" || (f.kind === "chair" && f.sit && f.facing === "up");
+  return f.kind === "theaterSeat" || f.kind === "cinemaSofa" || (f.kind === "chair" && f.sit && f.facing === "up");
 }
 
 let staticSprites = [];
@@ -6996,6 +7342,20 @@ const SIGN_ICONS = {
     ctx.lineTo(cx + 3, cy + 1);
     ctx.fill();
     ctx.fillRect(cx + 3, cy, 1.8, 7);
+  },
+  elevator(ctx, cx, cy) {
+    ctx.fillRect(cx - 8, cy - 7, 10, 14); // two doors
+    ctx.fillStyle = "#8a5a3c";
+    ctx.fillRect(cx - 3.5, cy - 7, 1, 14);
+    ctx.fillStyle = "#f3e6d0";
+    ctx.beginPath(); // up and down arrows
+    ctx.moveTo(cx + 4, cy - 1.5);
+    ctx.lineTo(cx + 9, cy - 1.5);
+    ctx.lineTo(cx + 6.5, cy - 6);
+    ctx.moveTo(cx + 4, cy + 1.5);
+    ctx.lineTo(cx + 9, cy + 1.5);
+    ctx.lineTo(cx + 6.5, cy + 6);
+    ctx.fill();
   },
   stairs(ctx, cx, cy) {
     ctx.beginPath();
