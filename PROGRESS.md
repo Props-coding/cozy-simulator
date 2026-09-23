@@ -198,6 +198,10 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Study turntable: press E at the turntable (on a record cabinet under the bookshelf) to choose your lo-fi type: Asian, Christmas, Hip-Hop (the default), House, Jazz, Medieval, Sad or Summer. They're Lofi Girl's official 24/7 radio streams (all checked as allowed to embed). Your pick only plays for you, so everyone in the Study can listen to their own. It's remembered, saved to your account, shown on your profile ("Favorite lo-fi"), and the record on the turntable has your pick's color. Stations live in `config.js` (`lofiStations`).
   - Server change for this: profiles now include `lofi` (deployed with the release).
 
+- After 0.44 (not pushed yet):
+  - Slimmer elevator doors (1.1 tiles wide instead of 1.6).
+  - Seasonal garlands are now one continuous, full strand along each hallway's back wall (over the doorways too), with leaves, needles, flowers or flags packed evenly, instead of short sparse pieces between doors.
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

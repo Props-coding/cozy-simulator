@@ -4760,56 +4760,85 @@ const FURNITURE_DRAWERS = {
 
   // --- Seasonal decorations (see SEASONAL in world.js) ---
 
-  // A garland swagged along the top of a wall: autumn leaves, a pine
-  // bough with berries and warm lights, spring flowers, or summer bunting.
+  // A full garland swagged along the top of a wall, in even scallops:
+  // autumn leaves, a pine rope with berries and warm lights, spring
+  // flowers, or summer bunting. Packed tight so it reads as one lush strand.
   garland(ctx, f) {
     const a = toScreen(f.x, f.y);
-    const w = f.w * TILE, x = a.x, top = a.y - WALL_HEIGHT + 2;
-    const swags = Math.max(1, Math.round(w / 46));
-    const sw = w / swags;
-    const along = (i, t) => ({ x: x + i * sw + t * sw, y: top + Math.sin(t * Math.PI) * 9 }); // a point on swag i
-    ctx.strokeStyle = f.style === "summer" ? "#8a6a4a" : f.style === "winter" ? "#2f5a3a" : "#6b5a3a";
-    ctx.lineWidth = f.style === "winter" ? 4 : 1.2;
-    for (let i = 0; i < swags; i++) {
-      ctx.beginPath();
-      ctx.moveTo(x + i * sw, top);
-      ctx.quadraticCurveTo(x + i * sw + sw / 2, top + 18, x + (i + 1) * sw, top);
-      ctx.stroke();
-    }
+    const w = f.w * TILE, x = a.x, top = a.y - WALL_HEIGHT + 3;
+    const swags = Math.max(1, Math.round(w / 40));
+    const sw = w / swags, droop = 8;
+    const point = (i, t) => ({ x: x + (i + t) * sw, y: top + 4 * t * (1 - t) * droop }); // along swag i
     const t0 = performance.now() / 1000;
+    // The rope (a thick green bough in winter).
+    ctx.strokeStyle = { autumn: "#7a5a32", winter: "#2f5a3a", spring: "#5a8a4a", summer: "#caa878" }[f.style];
+    ctx.lineWidth = f.style === "winter" ? 5 : 1.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
     for (let i = 0; i < swags; i++) {
-      for (let k = 1; k < 8; k++) {
-        const p = along(i, k / 8);
-        if (f.style === "autumn") {
-          const colors = ["#c8552e", "#e09a3a", "#a8392a", "#d9b44a"];
-          drawLeaf(ctx, p.x, p.y + 1, (k % 2 ? 1 : -1) * 2.4, 6, 3, colors[(i + k) % colors.length], null);
-        } else if (f.style === "winter") {
-          ctx.fillStyle = "#3f7a4a";
-          for (const d of [-2, 2]) drawLeaf(ctx, p.x, p.y, Math.PI + d * 0.4, 5, 1.6, "#3f7a4a", null);
-          ctx.fillStyle = k % 3 ? "#c0303a" : "#ffe08a";
-          if (!(k % 3)) ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t0 * 3 + k + i);
+      for (let k = 0; k <= 12; k++) {
+        const p = point(i, k / 12);
+        if (i === 0 && k === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+    }
+    ctx.stroke();
+    ctx.lineCap = "butt";
+    for (let i = 0; i < swags; i++) {
+      if (f.style === "autumn") {
+        const colors = ["#c8552e", "#e09a3a", "#a8392a", "#d9b44a", "#b86a2a"];
+        for (let k = 0; k <= 11; k++) {
+          const p = point(i, k / 11), n = i * 12 + k;
+          drawLeaf(ctx, p.x, p.y + 1, (n % 2 ? 1 : -1) * (2.1 + (n % 3) * 0.25), 6.5, 3.2, colors[n % colors.length], null);
+        }
+      } else if (f.style === "winter") {
+        ctx.strokeStyle = "#3f7a4a"; // needles
+        ctx.lineWidth = 1;
+        for (let k = 0; k <= 16; k++) {
+          const p = point(i, k / 16);
           ctx.beginPath();
-          ctx.arc(p.x, p.y + 1, 1.6, 0, Math.PI * 2);
+          ctx.moveTo(p.x - 3, p.y - 3);
+          ctx.lineTo(p.x + 3, p.y + 3);
+          ctx.moveTo(p.x + 3, p.y - 3);
+          ctx.lineTo(p.x - 3, p.y + 3);
+          ctx.stroke();
+        }
+        for (let k = 1; k < 6; k++) {
+          const p = point(i, k / 6), n = i * 6 + k;
+          ctx.fillStyle = n % 2 ? "#c0303a" : "#ffe08a";
+          if (!(n % 2)) ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t0 * 3 + n);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y + 1.5, 1.8, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 1;
-        } else if (f.style === "spring") {
-          const colors = ["#f2a0b8", "#fff2a8", "#c8b0e8", "#f7f1e6"];
-          ctx.fillStyle = colors[(i + k) % colors.length];
+        }
+      } else if (f.style === "spring") {
+        for (let k = 0; k <= 10; k++) {
+          const p = point(i, k / 10);
+          drawLeaf(ctx, p.x, p.y, (k % 2 ? 1 : -1) * 2.2, 5, 2.4, "#6aa05a", null);
+        }
+        const colors = ["#f2a0b8", "#fff2a8", "#c8b0e8", "#f7f1e6"];
+        for (let k = 1; k < 7; k++) {
+          const p = point(i, k / 7), n = i * 7 + k;
+          ctx.fillStyle = colors[n % colors.length];
           for (let petal = 0; petal < 5; petal++) {
             const ang = (petal / 5) * Math.PI * 2;
             ctx.beginPath();
-            ctx.arc(p.x + Math.cos(ang) * 1.8, p.y + Math.sin(ang) * 1.8, 1.4, 0, Math.PI * 2);
+            ctx.arc(p.x + Math.cos(ang) * 2, p.y + 1 + Math.sin(ang) * 2, 1.6, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.fillStyle = "#e0a83a";
-          ctx.fillRect(p.x - 0.7, p.y - 0.7, 1.4, 1.4);
-        } else {
-          const colors = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#f28a3a"];
-          ctx.fillStyle = colors[(i * 7 + k) % colors.length]; // bunting flags
+          ctx.fillRect(p.x - 0.8, p.y + 0.2, 1.6, 1.6);
+        }
+      } else {
+        const colors = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#f28a3a"];
+        for (let k = 0; k < 5; k++) {
+          const p = point(i, (k + 0.5) / 5), n = i * 5 + k;
+          ctx.fillStyle = colors[n % colors.length]; // bunting flags
           ctx.beginPath();
-          ctx.moveTo(p.x - 3, p.y);
-          ctx.lineTo(p.x + 3, p.y);
-          ctx.lineTo(p.x, p.y + 7);
+          ctx.moveTo(p.x - 3.5, p.y);
+          ctx.lineTo(p.x + 3.5, p.y);
+          ctx.lineTo(p.x, p.y + 8);
           ctx.fill();
         }
       }

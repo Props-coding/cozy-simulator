@@ -249,7 +249,7 @@ const BASE_FURNITURE = [
 
   // Elevator lobby (downstairs): brass elevator doors on the back wall
   // (walk up and press E), a lamp, a round rug, a bench and a palm.
-  { kind: "elevatorDoor", x: 21.4, y: 3 + WALL_THICKNESS / 2, w: 1.6, floor: 0, solid: false },
+  { kind: "elevatorDoor", x: 21.65, y: 3 + WALL_THICKNESS / 2, w: 1.1, floor: 0, solid: false },
   { kind: "sconce", x: 18.7, y: 3.2, solid: false },
   { kind: "rug", x: 20.8, y: 4.3, w: 2.8, h: 1.9, color: "#7a3b4a", round: true, solid: false },
   { kind: "bench", x: 18.3, y: 4.2, w: 1.5, h: 0.5 },
@@ -272,7 +272,7 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 21.4, y: LANDING, solid: false },
   { kind: "picture", x: 22.4, y: LANDING, w: 0.9, art: "hills", solid: false },
   { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
-  { kind: "elevatorDoor", x: 21.4, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.6, floor: 1, solid: false },
+  { kind: "elevatorDoor", x: 21.65, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
   { kind: "sconce", x: 18.7, y: LANDING + 3.2, solid: false },
   { kind: "rug", x: 20.8, y: LANDING + 4.3, w: 2.8, h: 1.9, color: "#4f5f7a", round: true, solid: false },
   { kind: "bench", x: 18.3, y: LANDING + 4.2, w: 1.5, h: 0.5 },
@@ -323,10 +323,11 @@ const SEASONAL = {
     { size: "small", x: 20.8, y: -5.0 }, // Library, under the windows
     { size: "big", x: 22.9, y: -2.6 }, // Library, by the fern
   ],
-  // Garlands along the top of the hallway and landing walls, between doors.
+  // One long garland along the top of each hallway's back wall, running
+  // over the doorways too, so it reads as one unbroken strand.
   garlands: [
-    [0.1, 0, 1.75], [3.75, 0, 3.15], [8.7, 0, 2.2], [12.7, 0, 2.2], [16.7, 0, 3.4], [21.9, 0, 2.0],
-    [2.7, LANDING, 4.2], [8.7, LANDING, 4.2], [14.7, LANDING, 4.2], [20.7, LANDING, 3.2],
+    [0, 0, HOUSE_WIDTH],
+    [0, LANDING, HOUSE_WIDTH],
   ],
 };
 let seasonPreview = null; // set from the admin panel to try out a season
