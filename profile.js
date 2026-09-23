@@ -9,6 +9,7 @@ import { serverApi, accountName } from "./account.js";
 import { ACHIEVEMENTS } from "./achievements.js";
 import { itemName } from "./shop.js";
 import { playClickSound } from "./audio.js";
+import { lofiStation } from "./turntable.js";
 
 const card = document.getElementById("profile-card");
 const body = document.getElementById("profile-body");
@@ -85,7 +86,8 @@ export async function openProfile(name) {
   head.append(
     nameTag,
     el("p", "profile-meta", `In the house since ${since}`),
-    el("p", "profile-meta", hours ? `${hours} hour${hours === 1 ? "" : "s"} in the house` : `${minutes} minute${minutes === 1 ? "" : "s"} in the house`)
+    el("p", "profile-meta", hours ? `${hours} hour${hours === 1 ? "" : "s"} in the house` : `${minutes} minute${minutes === 1 ? "" : "s"} in the house`),
+    el("p", "profile-meta", `🎧 Favorite lo-fi: ${lofiStation(p.lofi).name}`)
   );
 
   // The bio (and, on your own card, a way to change it).

@@ -354,6 +354,7 @@ const routes = {
       hat: text(look.hat, 30),
       shoes: text(look.shoes, 30),
       pet: text(look.pet, 30),
+      lofi: text(saved("cozy-house-lofi"), 30), // their Study station (turntable.js)
       achievements: Object.keys(progress.unlocked ?? {}).slice(0, 200),
       seconds: Number.isFinite(progress.stats?.seconds) ? progress.stats.seconds : 0,
     };

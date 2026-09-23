@@ -204,6 +204,8 @@ const BASE_FURNITURE = [
   { kind: "stool", x: 9.6, y: 7.15, w: 0.6, h: 0.6, color: "#c0554a", solid: false },
   { kind: "beanbag", x: 6.4, y: 9.5, w: 0.9, h: 0.8 },
   { kind: "monstera", x: 11.1, y: 10.1, w: 0.6, h: 0.6 },
+  // A turntable on a little record cabinet: press E to pick your lo-fi.
+  { kind: "turntable", x: 6.25, y: 4.3, w: 1.1, h: 0.55 },
 
   // Dinner: a little kitchen along the back wall (stove counter under a
   // shelf of jars and spices, sink, fridge), a rug under the dining table with chairs facing
@@ -855,6 +857,9 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
+  const deck = FURNITURE.find((f) => f.kind === "turntable");
+  const deckDistance = Math.hypot(cx - (deck.x + deck.w / 2), cy - (deck.y + deck.h / 2));
+  if (deckDistance < 1.2) options.push(["turntable", deckDistance]);
   const kind = isNearBuildDoor(player);
   if (kind) options.push(["buildDoor", Math.hypot(cx - (buildDoors[kind] + WINGS[kind].doorX + 0.8), cy - (WINGS[kind].floorY + 0.3))]);
   options.sort((a, b) => a[1] - b[1]);

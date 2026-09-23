@@ -512,6 +512,7 @@ let lofiMode = "youtube"; // or "backup", if the embed fails
 let ytPlayer = null;
 let ytPlayerReady = false;
 let backupAudioEl = null;
+let lofiVideoId = null; // the station you picked (see setLofiStation)
 
 // Loads YouTube's player code once, however many things ask for it (the
 // Study's lo-fi and the Theater both use it).
@@ -558,7 +559,7 @@ function startYouTubeStream(containerEl) {
   loadYouTubeApi().catch(switchToBackup).then(() => {
     if (lofiMode === "backup") return;
     ytPlayer = new YT.Player(containerEl, {
-      videoId: CONFIG.lofiYouTubeVideoId,
+      videoId: lofiVideoId,
       playerVars: { autoplay: 1, controls: 0 },
       events: {
         onReady: () => {
@@ -586,6 +587,17 @@ export function enterStudy(containerEl) {
 // Call once, when you walk out of Study (to anywhere, including Dinner).
 export function leaveStudy() {
   inStudy = false;
+}
+
+// Switches the Study music to another YouTube stream (your pick at the
+// turntable). If the player is already going, it changes right away.
+export function setLofiStation(videoId) {
+  if (videoId === lofiVideoId) return;
+  lofiVideoId = videoId;
+  if (ytPlayer && ytPlayerReady) {
+    if (inStudy) ytPlayer.loadVideoById(videoId);
+    else ytPlayer.cueVideoById(videoId);
+  }
 }
 
 export function setLofiVolume(vol) {

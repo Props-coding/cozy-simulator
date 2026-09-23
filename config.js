@@ -96,9 +96,23 @@ const CONFIG = {
 
   // --- Study room lo-fi music ---
   // Plays locally for each person (not synced) while standing in Study.
-  // Primary: the official Lofi Girl 24/7 livestream, embedded via YouTube.
-  // Confirmed embeddable and it's the channel's own intended live stream.
-  lofiYouTubeVideoId: "rFZHOHl-L8A",
+  // Everyone picks their own station at the Study's turntable (press E),
+  // and it's remembered. These are Lofi Girl's official 24/7 radio
+  // streams on YouTube, all checked as allowed to embed (2026-09-23).
+  // id: a short name (saved with your choice), name: the lo-fi type shown on screen,
+  // videoId: the part after "watch?v=" in the YouTube link, color: the
+  // record sleeve. To add one, copy a line and change it.
+  lofiStations: [
+    { id: "hiphop", name: "Hip-Hop", videoId: "rFZHOHl-L8A", color: "#d9825b" },
+    { id: "house", name: "House", videoId: "3PFJ9SETS4M", color: "#7a6bc8" },
+    { id: "jazz", name: "Jazz", videoId: "E2vONfzoyRI", color: "#3f6f9f" },
+    { id: "summer", name: "Summer", videoId: "0muHFBSiybw", color: "#f2b84a" },
+    { id: "sad", name: "Sad", videoId: "CwPCy1GLS38", color: "#6f8aa8" },
+    { id: "asian", name: "Asian", videoId: "1Tl2FtV06qo", color: "#e07a8a" },
+    { id: "christmas", name: "Christmas", videoId: "XSXEaikz0Bc", color: "#3f7a4a" },
+    { id: "medieval", name: "Medieval", videoId: "IxPANmjPaek", color: "#8a6a3e" },
+  ],
+  defaultLofiStation: "hiphop",
 
   // Backup, in case the YouTube embed is ever blocked (e.g. strict
   // network or ad blocker): a direct radio stream from SomaFM, a free

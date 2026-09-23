@@ -3829,6 +3829,54 @@ const FURNITURE_DRAWERS = {
     }
   },
 
+  // The Study's turntable on a little record cabinet: a spinning record
+  // (its label is the color of the station you picked), a tonearm, and
+  // records filed in the cabinet below. Press E at it to pick a station.
+  turntable(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const cab = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#7a5238");
+    const sleeves = ["#d9825b", "#7a6bc8", "#3f6f9f", "#f2b84a", "#e07a8a", "#3f7a4a"];
+    sleeves.forEach((c, i) => { // records filed in the cabinet
+      ctx.fillStyle = c;
+      ctx.fillRect(cab.face.x + 4 + i * 5, cab.face.y + 4, 3.5, cab.face.h - 7);
+    });
+    const deck = drawBlock(ctx, f.x + 0.1, f.y + 0.02, f.w - 0.2, f.h - 0.12, 3, "#3a2a22");
+    const cx = deck.top.x + deck.top.w * 0.42, cy = deck.top.y + deck.top.h / 2;
+    const r = Math.min(deck.top.h, deck.top.w * 0.6) / 2 - 1;
+    ctx.fillStyle = "#1c1618"; // the record
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)"; // grooves
+    ctx.lineWidth = 0.6;
+    for (const k of [0.55, 0.75]) {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * k, r * k * 0.8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    const spin = performance.now() / 600; // a glint going round
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * 0.85, r * 0.68, 0, spin, spin + 0.6);
+    ctx.stroke();
+    ctx.fillStyle = globalThis.myLofiColor || "#d9825b"; // the label
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * 0.3, r * 0.24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c9c2b8"; // the tonearm
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(deck.top.x + deck.top.w - 5, deck.top.y + 3);
+    ctx.lineTo(deck.top.x + deck.top.w - 8, cy + 2);
+    ctx.lineTo(cx + r * 0.55, cy + 1);
+    ctx.stroke();
+    ctx.fillStyle = "#e0b84c";
+    ctx.beginPath();
+    ctx.arc(deck.top.x + deck.top.w - 5, deck.top.y + 3, 2, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
   // An old-timey popcorn machine: a red cart with a glass box of popcorn.
   popcorn(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);

@@ -57,6 +57,7 @@ import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
+import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
@@ -209,6 +210,7 @@ joinButton.addEventListener("click", async () => {
   myPet = petChoices().some(([id]) => id === petInput.value) ? petInput.value : "none";
   saveProfile();
   startEarningCrumbs();
+  applyMyLofi(); // your Study station (it may have come with your cloud save)
   startMail();
   initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
@@ -424,6 +426,7 @@ function roomHintFor(room) {
   if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
+  if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   const lockedDoor = lockedDoorInFront(player);
   if (lockedDoor) return `${lockedDoor.owned.ownerName}'s ${lockedDoor.owned.kind} is locked. Press K to knock.`;
@@ -468,6 +471,12 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     ride = { from: elevatorInReach(player), t: 0, arrived: false };
     playClickSound();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "turntable") {
+    for (const k in keysDown) keysDown[k] = false;
+    openTurntable();
     return;
   }
 
@@ -749,7 +758,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || !!ride;
 }
 
 // Riding the elevator: the doors slide open, you step in, and they open
