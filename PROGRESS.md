@@ -202,7 +202,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Name tags sit above hats: every hat has a `height` in shop.js (0 for none, up to 22 for the Halo), and each player's name tag is lifted just above their hat with a small gap (it glides when someone changes hats). Tags are a bit more compact (smaller text, see-through background). Badges, speech bubbles and emotes sit above the name as before. With no hat, the name stays where it was.
   - Two more hoyas at Nest & Nook: Hoya Polyneura (the fishtail hoya, in a pot that hangs on the wall) and Hoya Compacta (Hindu rope, curly ropes of leaves spilling over a blue pot, with pink star flowers). Both with Wren's notes and "New!" ribbons.
   - Slimmer elevator doors (1.1 tiles wide instead of 1.6).
-  - Seasonal garlands are now one continuous, full strand along each hallway's back wall (over the doorways too), with leaves, needles, flowers or flags packed evenly, instead of short sparse pieces between doors.
+  - Seasonal wall decor: the hanging garlands are gone. Instead, little cutouts are stuck along both hallways' walls (only on wall, clear of doors, lamps and pictures): Halloween in autumn (bats, ghosts, a trio of flying bats, jack-o'-lanterns), paper snowflakes in winter, butterflies in spring, suns and watermelon slices in summer.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

@@ -631,6 +631,184 @@ function drawWallPattern(ctx, pattern, x, y, w, h) {
   }
 }
 
+// The shapes for wall cutouts, each drawn around (0, 0), about 16 pixels
+// across (see wallCutout).
+function drawBat(ctx, s = 1) {
+  ctx.fillStyle = "#2a2230";
+  ctx.beginPath(); // wings: scalloped along the bottom edge
+  ctx.moveTo(0, -1 * s);
+  ctx.quadraticCurveTo(-4 * s, -5 * s, -8 * s, -3 * s);
+  ctx.quadraticCurveTo(-7 * s, 0, -8 * s, 2 * s);
+  ctx.quadraticCurveTo(-6 * s, 0.5 * s, -5 * s, 2.5 * s);
+  ctx.quadraticCurveTo(-3.5 * s, 1 * s, -2 * s, 2.5 * s);
+  ctx.lineTo(0, 1.5 * s);
+  ctx.lineTo(2 * s, 2.5 * s);
+  ctx.quadraticCurveTo(3.5 * s, 1 * s, 5 * s, 2.5 * s);
+  ctx.quadraticCurveTo(6 * s, 0.5 * s, 8 * s, 2 * s);
+  ctx.quadraticCurveTo(7 * s, 0, 8 * s, -3 * s);
+  ctx.quadraticCurveTo(4 * s, -5 * s, 0, -1 * s);
+  ctx.fill();
+  ctx.beginPath(); // body and ears
+  ctx.ellipse(0, 0, 1.8 * s, 2.6 * s, 0, 0, Math.PI * 2);
+  ctx.moveTo(-1.5 * s, -2 * s);
+  ctx.lineTo(-1 * s, -4 * s);
+  ctx.lineTo(-0.3 * s, -2.4 * s);
+  ctx.moveTo(1.5 * s, -2 * s);
+  ctx.lineTo(1 * s, -4 * s);
+  ctx.lineTo(0.3 * s, -2.4 * s);
+  ctx.fill();
+  if (s >= 1) {
+    ctx.fillStyle = "#f2d07a"; // little eyes
+    ctx.fillRect(-1 * s, -1 * s, 0.8 * s, 0.8 * s);
+    ctx.fillRect(0.3 * s, -1 * s, 0.8 * s, 0.8 * s);
+  }
+}
+
+const CUTOUTS = {
+  bat: (ctx) => drawBat(ctx, 1),
+  bats(ctx) {
+    for (const [x, y, s] of [[-5, 3, 0.55], [2, -3, 0.7], [7, 4, 0.5]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      drawBat(ctx, s);
+      ctx.restore();
+    }
+  },
+  ghost(ctx) {
+    ctx.fillStyle = "#fbf7f0";
+    ctx.beginPath();
+    ctx.moveTo(-6, 7);
+    ctx.lineTo(-6, -1);
+    ctx.arc(0, -1, 6, Math.PI, 0);
+    ctx.lineTo(6, 7);
+    for (let k = 0; k < 3; k++) { // wavy hem
+      ctx.quadraticCurveTo(6 - k * 4 - 1, 4, 6 - k * 4 - 2, 7);
+      ctx.quadraticCurveTo(6 - k * 4 - 3, 9, 6 - k * 4 - 4, 7);
+    }
+    ctx.fill();
+    ctx.strokeStyle = "rgba(90, 80, 100, 0.35)";
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+    ctx.fillStyle = "#2a2230"; // face
+    ctx.beginPath();
+    ctx.ellipse(-2.2, -1.5, 1, 1.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(2.2, -1.5, 1, 1.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 2.2, 1.1, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(240, 150, 170, 0.5)"; // rosy cheeks
+    ctx.fillRect(-4.2, 0.2, 1.6, 1);
+    ctx.fillRect(2.6, 0.2, 1.6, 1);
+  },
+  jack(ctx) {
+    ctx.fillStyle = "#e07a2e";
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 7, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(150, 70, 20, 0.5)";
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 3, 5.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#5a7a3a";
+    ctx.fillRect(-1, -6, 2, 2.5);
+    ctx.fillStyle = "#3a2418"; // carved face
+    ctx.beginPath();
+    ctx.moveTo(-4, -0.5);
+    ctx.lineTo(-2, -2.5);
+    ctx.lineTo(-1, -0.5);
+    ctx.moveTo(4, -0.5);
+    ctx.lineTo(2, -2.5);
+    ctx.lineTo(1, -0.5);
+    ctx.moveTo(-4, 2);
+    ctx.lineTo(-2, 4);
+    ctx.lineTo(0, 2.8);
+    ctx.lineTo(2, 4);
+    ctx.lineTo(4, 2);
+    ctx.fill();
+  },
+  snowflake(ctx, n) {
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.2;
+    const r = 6 + (n % 2);
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const ang = (k / 6) * Math.PI * 2;
+      const dx = Math.cos(ang), dy = Math.sin(ang);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(dx * r, dy * r);
+      for (const side of [-1, 1]) { // little branches
+        const bx = dx * r * 0.6, by = dy * r * 0.6;
+        const ba = ang + side * 0.7;
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + Math.cos(ba) * 2.4, by + Math.sin(ba) * 2.4);
+      }
+    }
+    ctx.stroke();
+  },
+  butterfly(ctx, n) {
+    const colors = ["#f2a0b8", "#c8b0e8", "#fff2a8", "#a8d8e8"];
+    ctx.fillStyle = colors[n % colors.length];
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(side * 3.5, -2, 3.8, 3, side * 0.5, 0, Math.PI * 2);
+      ctx.ellipse(side * 3, 2.5, 2.6, 2.2, -side * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.beginPath();
+    ctx.arc(-3.5, -2.5, 1, 0, Math.PI * 2);
+    ctx.arc(3.5, -2.5, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5a4636"; // body and feelers
+    ctx.fillRect(-0.6, -4, 1.2, 8);
+    ctx.strokeStyle = "#5a4636";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(-2, -7);
+    ctx.moveTo(0, -4);
+    ctx.lineTo(2, -7);
+    ctx.stroke();
+  },
+  sun(ctx) {
+    ctx.fillStyle = "#f2c94c";
+    ctx.beginPath();
+    for (let k = 0; k < 16; k++) {
+      const r = k % 2 ? 4.5 : 7.5, ang = (k / 16) * Math.PI * 2;
+      ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r);
+    }
+    ctx.fill();
+    ctx.fillStyle = "#f7dc7a";
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a3c"; // a happy face
+    ctx.fillRect(-1.8, -1.2, 0.9, 0.9);
+    ctx.fillRect(0.9, -1.2, 0.9, 0.9);
+    ctx.strokeStyle = "#8a5a3c";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.arc(0, 0.6, 1.6, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  },
+  melon(ctx) {
+    ctx.fillStyle = "#4f8a4a"; // rind
+    ctx.beginPath();
+    ctx.arc(0, -3, 8, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#e8e0b0";
+    ctx.beginPath();
+    ctx.arc(0, -3, 6.8, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#e8566a"; // fruit
+    ctx.beginPath();
+    ctx.arc(0, -3, 6, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#2a2230"; // seeds
+    for (const [x, y] of [[-3, -1], [0, 0.5], [3, -1], [-1.5, 1.5], [1.5, 1.5]]) ctx.fillRect(x - 0.4, y - 0.6, 0.8, 1.2);
+  },
+};
+
 // --- Furniture ---
 // One function per kind. Each gets the furniture entry from world.js,
 // draws its own shadow first, then its upright shape.
@@ -4855,89 +5033,27 @@ const FURNITURE_DRAWERS = {
 
   // --- Seasonal decorations (see SEASONAL in world.js) ---
 
-  // A full garland swagged along the top of a wall, in even scallops:
-  // autumn leaves, a pine rope with berries and warm lights, spring
-  // flowers, or summer bunting. Packed tight so it reads as one lush strand.
-  garland(ctx, f) {
-    const a = toScreen(f.x, f.y);
-    const w = f.w * TILE, x = a.x, top = a.y - WALL_HEIGHT + 3;
-    const swags = Math.max(1, Math.round(w / 40));
-    const sw = w / swags, droop = 8;
-    const point = (i, t) => ({ x: x + (i + t) * sw, y: top + 4 * t * (1 - t) * droop }); // along swag i
-    const t0 = performance.now() / 1000;
-    // The rope (a thick green bough in winter).
-    ctx.strokeStyle = { autumn: "#7a5a32", winter: "#2f5a3a", spring: "#5a8a4a", summer: "#caa878" }[f.style];
-    ctx.lineWidth = f.style === "winter" ? 5 : 1.4;
-    ctx.lineCap = "round";
+  // A little seasonal decoration stuck on a hallway wall (see
+  // seasonalWallDecor in world.js). `n` picks which one and how high it
+  // sits, so a row of them looks scattered, not lined up. Autumn is
+  // Halloween: bats, ghosts, a trio of flying bats, jack-o'-lanterns.
+  // Winter: paper snowflakes. Spring: butterflies. Summer: suns and
+  // watermelon slices.
+  wallCutout(ctx, f) {
+    const a = toScreen(f.x + f.w / 2, f.y);
+    const cx = a.x, cy = a.y - WALL_HEIGHT + 9 + ((f.n * 7) % 3) * 7;
+    const tilt = (((f.n * 13) % 5) - 2) * 0.08;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(tilt);
+    ctx.scale(1.25, 1.25);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.18)"; // a soft shadow on the wall, lit from above
     ctx.beginPath();
-    for (let i = 0; i < swags; i++) {
-      for (let k = 0; k <= 12; k++) {
-        const p = point(i, k / 12);
-        if (i === 0 && k === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-    }
-    ctx.stroke();
-    ctx.lineCap = "butt";
-    for (let i = 0; i < swags; i++) {
-      if (f.style === "autumn") {
-        const colors = ["#c8552e", "#e09a3a", "#a8392a", "#d9b44a", "#b86a2a"];
-        for (let k = 0; k <= 11; k++) {
-          const p = point(i, k / 11), n = i * 12 + k;
-          drawLeaf(ctx, p.x, p.y + 1, (n % 2 ? 1 : -1) * (2.1 + (n % 3) * 0.25), 6.5, 3.2, colors[n % colors.length], null);
-        }
-      } else if (f.style === "winter") {
-        ctx.strokeStyle = "#3f7a4a"; // needles
-        ctx.lineWidth = 1;
-        for (let k = 0; k <= 16; k++) {
-          const p = point(i, k / 16);
-          ctx.beginPath();
-          ctx.moveTo(p.x - 3, p.y - 3);
-          ctx.lineTo(p.x + 3, p.y + 3);
-          ctx.moveTo(p.x + 3, p.y - 3);
-          ctx.lineTo(p.x - 3, p.y + 3);
-          ctx.stroke();
-        }
-        for (let k = 1; k < 6; k++) {
-          const p = point(i, k / 6), n = i * 6 + k;
-          ctx.fillStyle = n % 2 ? "#c0303a" : "#ffe08a";
-          if (!(n % 2)) ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t0 * 3 + n);
-          ctx.beginPath();
-          ctx.arc(p.x, p.y + 1.5, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
-      } else if (f.style === "spring") {
-        for (let k = 0; k <= 10; k++) {
-          const p = point(i, k / 10);
-          drawLeaf(ctx, p.x, p.y, (k % 2 ? 1 : -1) * 2.2, 5, 2.4, "#6aa05a", null);
-        }
-        const colors = ["#f2a0b8", "#fff2a8", "#c8b0e8", "#f7f1e6"];
-        for (let k = 1; k < 7; k++) {
-          const p = point(i, k / 7), n = i * 7 + k;
-          ctx.fillStyle = colors[n % colors.length];
-          for (let petal = 0; petal < 5; petal++) {
-            const ang = (petal / 5) * Math.PI * 2;
-            ctx.beginPath();
-            ctx.arc(p.x + Math.cos(ang) * 2, p.y + 1 + Math.sin(ang) * 2, 1.6, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.fillStyle = "#e0a83a";
-          ctx.fillRect(p.x - 0.8, p.y + 0.2, 1.6, 1.6);
-        }
-      } else {
-        const colors = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#f28a3a"];
-        for (let k = 0; k < 5; k++) {
-          const p = point(i, (k + 0.5) / 5), n = i * 5 + k;
-          ctx.fillStyle = colors[n % colors.length]; // bunting flags
-          ctx.beginPath();
-          ctx.moveTo(p.x - 3.5, p.y);
-          ctx.lineTo(p.x + 3.5, p.y);
-          ctx.lineTo(p.x, p.y + 8);
-          ctx.fill();
-        }
-      }
-    }
+    ctx.ellipse(1, 2.5, 7, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const style = { autumn: ["bat", "ghost", "bats", "jack"], winter: ["snowflake"], spring: ["butterfly"], summer: ["sun", "melon"] }[f.style];
+    CUTOUTS[style[f.n % style.length]](ctx, f.n);
+    ctx.restore();
   },
 
   // A little pile of wrapped presents with ribbons.

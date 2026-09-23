@@ -301,8 +301,9 @@ function elevatorArrival(fromFloor) {
 
 // --- Seasonal decorations ---
 // The shared rooms (hallways, Theater, Study, Dinner, Library) dress up
-// for the season: garlands along the hallway walls, and a small and a big
-// decoration in each room. Offices and bedrooms are left alone. The season
+// for the season: little cutouts stuck along the hallway walls (bats and
+// ghosts for Halloween in autumn, snowflakes, butterflies, suns), and a
+// small and a big decoration in each room. Offices and bedrooms are left alone. The season
 // comes from today's date (or CONFIG.season, or the admin panel's preview).
 const SEASONS = ["spring", "summer", "autumn", "winter"];
 const SEASONAL = {
@@ -323,12 +324,6 @@ const SEASONAL = {
     { size: "small", x: 20.8, y: -5.0 }, // Library, under the windows
     { size: "big", x: 22.9, y: -2.6 }, // Library, by the fern
   ],
-  // One long garland along the top of each hallway's back wall, running
-  // over the doorways too, so it reads as one unbroken strand.
-  garlands: [
-    [0, 0, HOUSE_WIDTH],
-    [0, LANDING, HOUSE_WIDTH],
-  ],
 };
 let seasonPreview = null; // set from the admin panel to try out a season
 
@@ -348,10 +343,27 @@ function previewSeason(season) {
 
 function seasonalFurniture() {
   const season = currentSeason();
-  return [
-    ...SEASONAL.spots.map(({ size, x, y }) => ({ kind: SEASONAL[size][season], x, y, w: size === "big" ? 0.8 : 0.55, h: size === "big" ? 0.7 : 0.45 })),
-    ...SEASONAL.garlands.map(([x, y, w]) => ({ kind: "garland", style: season, x, y, w, solid: false })),
-  ];
+  return SEASONAL.spots.map(({ size, x, y }) => ({ kind: SEASONAL[size][season], x, y, w: size === "big" ? 0.8 : 0.55, h: size === "big" ? 0.7 : 0.45 }));
+}
+
+// Cutouts along both hallways' back walls: roughly one every 3/4 tile,
+// only on actual wall (not doorways) and clear of the lamps, pictures and
+// doors already hanging there.
+function seasonalWallDecor(walls, furniture) {
+  const style = currentSeason();
+  const decor = [];
+  for (const corridor of [0, LANDING]) {
+    const taken = furniture.filter((f) => f.y === corridor).map((f) => [f.x - 0.12, f.x + (f.w ?? 0.3) + 0.12]);
+    const stretches = walls.filter((w) => w.y === corridor - WALL_THICKNESS && w.h === WALL_THICKNESS);
+    for (const wall of stretches) {
+      for (let x = Math.max(0.1, wall.x + 0.15); x + 0.4 <= wall.x + wall.w - 0.05; x += 0.1) {
+        if (taken.some(([a, b]) => x + 0.4 > a && x < b)) continue;
+        decor.push({ kind: "wallCutout", style, n: decor.length, x, y: corridor, w: 0.4, solid: false });
+        taken.push([x - 0.35, x + 0.75]); // keep the next one a little way along
+      }
+    }
+  }
+  return decor;
 }
 
 // --- Private rooms: offices and bedrooms ---
@@ -459,6 +471,7 @@ function buildHouse(offices, bedrooms = []) {
   rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 } });
   rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 } });
 
+  furniture.push(...seasonalWallDecor(walls, furniture));
   ROOMS = rooms;
   WALLS = walls;
   FURNITURE = furniture;
