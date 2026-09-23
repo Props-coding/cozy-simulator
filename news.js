@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.46",
+    title: "A wardrobe that works",
+    text: "The Wardrobe from Nest & Nook now opens! Place it in your bedroom and press E at it to change your color, hat, shoes and pet anytime, without going back to the Join screen. The ghosts on the hallway walls also have proper faces now. And if you see a hooded figure with floating candles and glowing runes at their feet... that's just Props.",
+  },
+  {
     build: "0.45",
     title: "Spooky walls and a Nest & Nook search bar",
     text: "The hallways are decorated for Halloween with little bats, ghosts and jack-o'-lanterns on the walls. Nest & Nook has a search bar now, so try \"pink\", \"lamp\" or \"hoya\". There are two new hoyas too: the Hoya Polyneura hangs on the wall, and the Hoya Compacta is curly Hindu rope. Decorating lines up nicely now: pieces snap by their center, and a guide line shows your room's middle. Name tags also float above your hat instead of covering it.",
