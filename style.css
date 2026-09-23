@@ -1910,3 +1910,121 @@ input[type="range"]::-moz-range-thumb {
   font-style: italic;
   color: #9c8770;
 }
+
+/* --- Accounts: log in, create an account, the house phrase --- */
+#account-screen:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  margin-top: 6vh;
+}
+
+.account-card:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  box-sizing: border-box;
+  padding: 24px;
+  background: #fffaf3;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(122, 92, 62, 0.15);
+  color: var(--wood-dark);
+}
+
+.account-card p {
+  margin: 0;
+}
+
+.account-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-card label:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--wood);
+}
+
+.account-card input {
+  font-family: inherit;
+  font-size: 1em;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #d9c3a5;
+  background: white;
+  color: #4a3a2c;
+}
+
+.account-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.account-tabs button {
+  flex: 1;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 2px solid #d9c3a5;
+  background: white;
+  color: var(--wood);
+  cursor: pointer;
+}
+
+.account-tabs button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.account-note {
+  min-height: 1em;
+  font-size: 0.88em;
+  color: #9c8770;
+}
+
+.account-note.error {
+  color: #b5463a;
+  font-weight: 600;
+}
+
+.big-button {
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(217, 164, 65, 0.45);
+}
+
+.big-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.link-button:not([hidden]) {
+  align-self: center;
+  font-family: inherit;
+  font-size: 0.9em;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--wood);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-who {
+  margin: 0;
+  color: var(--wood);
+}

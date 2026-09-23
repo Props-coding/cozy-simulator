@@ -1,0 +1,11 @@
+# Caddy settings for the Cozy House server. Installed to /etc/caddy/Caddyfile.
+# Caddy gets and renews the HTTPS certificate by itself. Addresses under
+# /api/ go to the server program; anything else gets a small hello.
+api.thecozy.world {
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+	handle {
+		respond "Cozy House server is awake."
+	}
+}

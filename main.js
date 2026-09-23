@@ -55,6 +55,7 @@ import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchieve
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
 import { initLaptop, openLaptop, isLaptopOpen } from "./laptop.js";
+import { isHouseReady } from "./account.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -194,6 +195,7 @@ initShop({
 const player = { x: 8.7, y: 1.2 };
 
 joinButton.addEventListener("click", async () => {
+  if (!isHouseReady()) return; // still logging in (account.js)
   myName = nameInput.value.trim() || "Friend";
   myColor = colorInput.value;
   myHat = hatChoices().some(([id]) => id === hatInput.value) ? hatInput.value : "none";

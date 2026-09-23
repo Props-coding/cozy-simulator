@@ -144,8 +144,17 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 
 - Phase 0 done (2026-09-23): the server has its own address, https://api.thecozy.world (the domain thecozy.world is registered at Namecheap; an "api" record points at the droplet). Caddy 2.11.4 is installed from Caddy's official source, gets and renews its HTTPS certificate from Let's Encrypt by itself (valid now, renews automatically), sends plain http:// visits to https://, and answers "Cozy House server is awake." For setup, `props` can use sudo without a password (the file `/etc/sudoers.d/90-props-setup`); this gets removed or narrowed when setup is finished.
 
+- Accounts, house phrase and cloud saves (Phases 1 and 2 together; not pushed yet):
+  - The server program is running on the droplet (Node.js 24, as its own locked-down user, behind Caddy). How it works and the admin commands are in `server/README.md`.
+  - The Join screen now starts with Log in / Create account (name and password; no email, no personal data). The first time, you enter the house phrase; after that your account goes straight to the Join screen for the house on every visit. Your account name is the name over your character.
+  - The room name, room password and relay login are no longer in the public code: the server hands them out only to accounts that know the phrase. The room name and password are brand new (the old ones stay visible in GitHub's history, so they had to change).
+  - Cloud saves: crumbs, what you own, pets, achievements, your bedroom, letters and your look are saved to your account every 30 seconds and when you leave, and come back when you log in on any computer. The first time an existing player makes an account, the progress already in that browser moves onto the account. Logging out clears the browser so the next person starts fresh. If two computers are used at the same time, the newest save wins.
+  - Forgot password: you run `sudo cozy-admin reset NAME` and send them the code privately.
+  - Tested against the live server: sign-up, wrong/right phrase, progress carried over, two accounts meeting in the house, log out and back in with progress restored, password reset, and wrong-password guessing getting blocked.
+
 ## Next
-- Phase 1: the house key.
+- Before pushing: set the real house phrase (`sudo cozy-admin phrase` on the droplet).
+- Phase 3: our own voice relay on the droplet (the relay login is still the Metered one, now kept on the server only). Then remove or narrow the temporary setup access (`/etc/sudoers.d/90-props-setup`).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog (`CLAUDE.md`): weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
 

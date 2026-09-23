@@ -1,0 +1,26 @@
+# The Cozy House server, run by systemd on the droplet.
+# Installed to /etc/systemd/system/cozy-server.service.
+# It runs as the locked-down "cozy" user and can only write to its data folder.
+[Unit]
+Description=Cozy House server (accounts, house phrase, cloud saves)
+After=network.target
+
+[Service]
+User=cozy
+Group=cozy
+EnvironmentFile=/etc/cozy-server.env
+ExecStart=/usr/bin/node /opt/cozy-server/server.mjs
+WorkingDirectory=/var/lib/cozy-server
+Restart=on-failure
+RestartSec=3
+
+# Sandboxing: read-only system, no access to home folders, private /tmp,
+# and it can't gain new privileges.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/cozy-server
+
+[Install]
+WantedBy=multi-user.target

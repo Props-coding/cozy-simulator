@@ -53,12 +53,55 @@
   <!-- Title for the Join screen (the house view has its own header). -->
   <h1 id="join-title">Cozy House</h1>
 
-  <!-- Join screen: shown first, hidden once you click Join. -->
-  <div id="join-screen">
-    <label>
-      Your name:
-      <input id="name-input" type="text" maxlength="16" placeholder="e.g. Sam">
-    </label>
+  <!-- Accounts (account.js): log in or create an account, and the first
+       time, enter the house phrase. Then the Join screen appears. -->
+  <div id="account-screen">
+    <div id="account-loading" class="account-card">
+      <p class="account-note">Knocking on the door...</p>
+    </div>
+    <div id="account-login" class="account-card" hidden>
+      <div class="account-tabs">
+        <button type="button" data-mode="login" class="active">Log in</button>
+        <button type="button" data-mode="signup">Create account</button>
+      </div>
+      <form id="account-form" autocomplete="on">
+        <label>
+          Name
+          <input id="account-name" type="text" maxlength="16" autocomplete="username" required>
+        </label>
+        <label>
+          Password
+          <input id="account-password" type="password" maxlength="200" autocomplete="current-password" required>
+        </label>
+        <label id="account-confirm-row" hidden>
+          Password again
+          <input id="account-confirm" type="password" maxlength="200" autocomplete="new-password">
+        </label>
+        <label id="account-code-row" hidden>
+          Reset code
+          <input id="account-code" type="text" maxlength="20" autocomplete="off">
+        </label>
+        <p id="account-note" class="account-note"></p>
+        <button id="account-submit" type="submit" class="big-button">Log in</button>
+        <button id="account-forgot" type="button" class="link-button">Forgot password?</button>
+      </form>
+    </div>
+    <div id="account-phrase" class="account-card" hidden>
+      <p id="phrase-hello"></p>
+      <form id="phrase-form" autocomplete="off">
+        <input id="phrase-input" type="text" maxlength="200" placeholder="The house phrase" required>
+        <p id="phrase-note" class="account-note"></p>
+        <button type="submit" class="big-button">Come in</button>
+      </form>
+      <button type="button" class="link-button account-logout">Log out</button>
+    </div>
+  </div>
+
+  <!-- Join screen: shown once you're logged in, hidden once you click Join. -->
+  <div id="join-screen" hidden>
+    <p class="account-who">Hi, <strong id="account-who"></strong>! <button type="button" class="link-button account-logout">Log out</button></p>
+    <!-- Your name comes from your account (account.js fills this in). -->
+    <input id="name-input" type="hidden" maxlength="16">
     <label>
       Your color:
       <input id="color-input" type="color" value="#e05a47">
@@ -353,7 +396,8 @@
         "./achievements.js": "./achievements.js?v=0.38",
         "./home.js": "./home.js?v=0.38",
         "./laptop.js": "./laptop.js?v=0.38",
-        "./news.js": "./news.js?v=0.38"
+        "./news.js": "./news.js?v=0.38",
+        "./account.js": "./account.js?v=0.38"
       }
     }
   </script>

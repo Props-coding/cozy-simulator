@@ -1,13 +1,5 @@
 // Settings you might want to change. Comments explain each one.
 
-// --- Relay (TURN) login, from your free Metered account ---
-// Paste the username and password from the Metered dashboard between the
-// quote marks below (Dashboard > TURN Server > Show ICE Servers Array).
-// Only these two lines need to change; the relay settings further down
-// use them automatically.
-const TURN_USERNAME = "699927adb612d03f8a3cadf1";
-const TURN_PASSWORD = "K9PZnt1CKh6d65PN";
-
 const CONFIG = {
   // How fast your character walks, in grid units per second (a "grid
   // unit" is roughly one floor tile; each room is about 6 units wide).
@@ -64,35 +56,21 @@ const CONFIG = {
   // so we don't accidentally connect to someone else's Trystero app.
   trysteroAppId: "cozy-house-props-coding",
 
-  // The "room" friends need to be in to find each other. Change this to
-  // anything else if you want a fresh, empty house (e.g. after sharing
-  // the link somewhere you didn't mean to). Note: this repo is public,
-  // so this is "hard to stumble onto by accident," not a real secret.
-  trysteroRoomId: "cozy-house-e167e5847694",
-
-  // A shared password so only people with this exact value can connect.
-  // Everyone's copy of the site must have the same password to talk to
-  // each other. Change it any time you want to lock out old links.
-  trysteroPassword: "04dbc3b71a7fb3a9",
+  // The house server (on the droplet). After you log in and enter the
+  // house phrase, it tells the page which room to join, the room's
+  // password and the relay login, so those secrets aren't in this public
+  // file any more. To change the house phrase, run "sudo cozy-admin phrase"
+  // on the droplet.
+  serverUrl: "https://api.thecozy.world",
 
   // How many times per second we tell friends where we are.
   positionUpdatesPerSecond: 12,
 
-  // A relay server (called TURN) that steps in when two friends' home
-  // networks can't connect directly to each other. Without this, some
-  // pairs of friends may not see or hear each other at all.
-  // This is the Open Relay Project from Metered (metered.ca): free for
-  // 20 GB a month with a free account. (The old no-account shared login
-  // stopped working in 2026.) The login comes from TURN_USERNAME and
-  // TURN_PASSWORD at the top of this file. Note the site is public, so
-  // anyone reading the code could see this login; the worst case is a
-  // stranger using some of the free monthly allowance.
-  turnServers: [
-    { urls: "turn:global.relay.metered.ca:80", username: TURN_USERNAME, credential: TURN_PASSWORD },
-    { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: TURN_USERNAME, credential: TURN_PASSWORD },
-    { urls: "turn:global.relay.metered.ca:443", username: TURN_USERNAME, credential: TURN_PASSWORD },
-    { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: TURN_USERNAME, credential: TURN_PASSWORD },
-  ],
+  // The room, its password and the relay (TURN) login are filled in here
+  // by account.js, from the house server, once you've logged in.
+  trysteroRoomId: null,
+  trysteroPassword: null,
+  turnServers: [],
 
   // --- Study room lo-fi music ---
   // Plays locally for each person (not synced) while standing in Study.
