@@ -1,0 +1,8 @@
+# Copies Caddy's certificate to the voice relay (see cozy-turn-certs.sh).
+# Started once a day by cozy-turn-certs.timer.
+[Unit]
+Description=Copy Caddy's certificate to the voice relay
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cozy-turn-certs

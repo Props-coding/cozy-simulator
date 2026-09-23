@@ -152,8 +152,11 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Forgot password: you run `sudo cozy-admin reset NAME` and send them the code privately.
   - Tested against the live server: sign-up, wrong/right phrase, progress carried over, two accounts meeting in the house, log out and back in with progress restored, password reset, and wrong-password guessing getting blocked.
 
+- Phase 3 done (2026-09-23): our own voice relay. coturn 4.6.1 (from Ubuntu) runs on the droplet at api.thecozy.world, reachable three ways: plain UDP and TCP on port 3478, and encrypted TLS on 5349 (using Caddy's certificate, copied over daily so it renews too). The house server now hands each logged-in friend a relay login that expires after a day, instead of the shared Metered login, which has been removed. Safety settings: it only relays for our logins, won't relay into private networks, has per-person and overall limits, and allows TLS 1.2 or newer only. Tested in a browser forced to use only the relay: messages got through over all three, and wrong or expired logins were refused. You can delete the old credential in the Metered dashboard now; it's still visible in GitHub's history.
+
 ## Next
-- Phase 3: our own voice relay on the droplet (the relay login is still the Metered one, now kept on the server only). Then remove or narrow the temporary setup access (`/etc/sudoers.d/90-props-setup`).
+- Remove or narrow the temporary setup access (`/etc/sudoers.d/90-props-setup`).
+- Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog (`CLAUDE.md`): weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
 

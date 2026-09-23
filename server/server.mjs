@@ -10,7 +10,7 @@
 // come from /etc/cozy-server.env on the droplet, never from the public
 // repo. See server/README.md.
 import http from "node:http";
-import { scrypt as scryptCallback, randomBytes, timingSafeEqual, createHash } from "node:crypto";
+import { scrypt as scryptCallback, randomBytes, timingSafeEqual, createHash, createHmac } from "node:crypto";
 import { readFile, writeFile, rename, mkdir, readdir, unlink, copyFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -32,6 +32,8 @@ const MAX_USERS = 100;
 const MAX_SAVE_BYTES = 300_000;
 const SESSION_DAYS = 365;
 const RESET_HOURS = 24;
+const TURN_HOURS = 24; // how long a relay login lasts
+const TURN_HOST = env.TURN_HOST || "api.thecozy.world";
 
 // --- The data file ---
 // users: lowercase name -> { name, salt, hash, createdAt, member, save, reset }
@@ -92,6 +94,16 @@ function newSession(userKey) {
   const token = randomBytes(32).toString("base64url");
   db.sessions[sha256(token)] = { user: userKey, createdAt: Date.now(), lastUsed: Date.now() };
   return token;
+}
+
+// A login for our voice relay (coturn), good for a day. It's the standard
+// "TURN REST API" scheme: the name says when it runs out, and the password
+// is that name signed with the secret the relay shares with us.
+function relayLogin(userKey) {
+  if (!env.TURN_SECRET) return [];
+  const username = `${Math.floor(Date.now() / 1000) + TURN_HOURS * 3600}:${userKey.replace(/[^a-z0-9_-]/g, "_")}`;
+  const credential = createHmac("sha1", env.TURN_SECRET).update(username).digest("base64");
+  return [`turn:${TURN_HOST}:3478?transport=udp`, `turn:${TURN_HOST}:3478?transport=tcp`, `turns:${TURN_HOST}:5349?transport=tcp`].map((urls) => ({ urls, username, credential }));
 }
 
 // The house phrase is compared ignoring capitals and extra spaces.
@@ -230,12 +242,9 @@ const routes = {
 
   // How to reach the house: the room name and password, and the relay login.
   "GET /api/house": async (req) => {
-    const { user } = currentUser(req);
+    const { user, key } = currentUser(req);
     if (!user.member) throw new Oops(403, "Enter the house phrase first.");
-    const turn = env.TURN_USERNAME
-      ? ["turn:global.relay.metered.ca:80", "turn:global.relay.metered.ca:80?transport=tcp", "turn:global.relay.metered.ca:443", "turns:global.relay.metered.ca:443?transport=tcp"].map((urls) => ({ urls, username: env.TURN_USERNAME, credential: env.TURN_PASSWORD }))
-      : [];
-    return { roomId: env.ROOM_ID, password: env.ROOM_PASSWORD, turn };
+    return { roomId: env.ROOM_ID, password: env.ROOM_PASSWORD, turn: relayLogin(key) };
   },
 
   // Cloud saves: crumbs, what you own, achievements, your bedroom, letters.

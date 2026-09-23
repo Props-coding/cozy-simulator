@@ -1,0 +1,13 @@
+# Runs cozy-turn-certs once a day (and soon after each boot), so the voice
+# relay always has Caddy's latest certificate.
+# Installed to /etc/systemd/system/, alongside cozy-turn-certs.service.
+[Unit]
+Description=Copy Caddy's certificate to the voice relay daily
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1d
+Persistent=true
+
+[Install]
+WantedBy=timers.target

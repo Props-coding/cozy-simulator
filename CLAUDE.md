@@ -118,7 +118,7 @@ Do these in order. Stop after each one for the user to test.
 
 - You cannot fully test voice alone. Two windows on one PC are enough for movement. For voice, the user should use headphones to avoid feedback.
 - The real test is friends on different networks and different home internet.
-- If someone cannot connect or cannot hear others, the likely cause is a network that blocks direct connections. The fix is a relay called a TURN server. Add a spot for it in `config.js` (`iceServers`). Research a currently available free-tier option at that time, and ask the user before signing up for anything.
+- If someone cannot connect or cannot hear others, the likely cause is a network that blocks direct connections. That's what the relay (TURN server) is for: our own coturn on the droplet, with day-long logins handed out by the house server (see `server/README.md`). Strict networks that only allow port 443 may still fail, since the relay's encrypted port is 5349.
 
 ## Deployment (GitHub Pages)
 
