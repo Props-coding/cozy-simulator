@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.43",
+    title: "Tidier room signs",
+    text: "The big name plaques are gone. Every doorway now has a small wooden sign with a little picture on it: a film reel for the Theater, books for the Library, a lamp for the Study, a fork and knife for Dinner, and so on. Offices and bedrooms show their owner's name. Walk up to a door and the room's name fades in underneath.",
+  },
+  {
     build: "0.42",
     title: "A cozy girl's dream at Nest & Nook",
     text: "Nest & Nook now has 130 things to buy, sorted into Furniture, Plants, Shelves and Decor. There are over 20 new plants, from a bird of paradise and an olive tree to a pink orchid, a terrarium and a vase of pampas grass, plus hanging pothos and a string of pearls. You'll also find a canopy bed, a vanity with a bulb mirror, a cloud sofa, an egg chair, crystal and candle shelves, mushroom and moon lamps, a fluffy cloud rug, a neon heart and a big teddy bear. And your laptop desk and mattress can finally be moved while you decorate.",

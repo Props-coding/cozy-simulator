@@ -183,7 +183,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - The laptop desk and the plain mattress can now be moved like everything else while decorating. The mattress can be put away; the desk can't (it's how you get to decorating), but it can go anywhere. Existing bedrooms keep them where they were.
   - The store's item pictures now show round and heart-shaped rugs in their real shape.
 
-- Build 0.43 (not pushed yet):
+- Build 0.43:
   - Cleaner room signs: the brown name plaques and doormats (and the Hallway and Upstairs plaques) are gone. Each doorway has a small matching wooden sign above it with a hand-drawn icon: film reel (Theater), pencil (Conference Room), books (Library), lamp (Study), fork and knife (Dinner), stairs (Stairs). Offices and bedrooms get a nameplate with the owner's name. Walk near a doorway and the room's full name fades in on a little tag under its sign; it fades out as you walk away. The header still shows where you are.
   - Icons are set in `config.js` (`roomIcons`), keyed by room. Built-in choices: film, pencil, books, openBook, lamp, forkKnife, stairs, gamepad, music, heart, leaf, moon, door; anything else (like an emoji) is shown as written.
 
