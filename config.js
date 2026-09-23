@@ -105,11 +105,12 @@ const CONFIG = {
   // --- Secret office themes (an Easter egg) ---
   // If someone with one of these names builds an office, they get a
   // special themed one instead of the default. Names are matched without
-  // caring about capital letters. Themes: "lakehouse", "stalker", "scholar".
+  // caring about capital letters. Themes: "lakehouse", "stalker", "scholar", "cottage".
   officeThemes: {
     props: "lakehouse",
     brightness: "stalker",
     kxiven: "scholar",
+    lyss: "cottage",
   },
 
   // --- Crumbs (the house money) ---

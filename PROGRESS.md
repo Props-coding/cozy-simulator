@@ -115,6 +115,8 @@
   - Like crumbs, pets and achievements are saved in your own browser only.
   - Also fixed: after opening the shop, the page could scroll a little, because the coat flaps stayed swung open (invisibly) below the house.
 
+- Lyss's secret office (not pushed yet): anyone named Lyss who builds an office gets a dark cottage one. Deep green walls with ivy creeping along the top and dark wood paneling below, an arched window onto an autumn evening with leaves drifting past, dried lavender and herbs hanging on the wall, an ivy plant, a candlelit writing desk with an open book and a cup of tea, a velvet armchair with a knitted throw, pumpkins with a jar candle, a yarn basket with a ball rolling away, and four cats: one asleep on the desk, one on the armchair, a calico in a cat bed (little z's drifting up), and a black cat keeping watch from the cat tree.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog (`CLAUDE.md`): bedrooms (needs a spot), house key (security), crumb backup code, weather station, porch, fireplace room, music room, seasonal decorations, distance voice.

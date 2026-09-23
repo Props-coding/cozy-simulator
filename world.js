@@ -344,6 +344,24 @@ const OFFICE_FURNITURE = {
     { kind: "bonsai", x: x0 + 2.9, y: top + 3.8, w: 0.6, h: 0.5 },
     { kind: "paperLantern", x: x0 + 1.8, y: top + 2.6, solid: false },
   ],
+
+  // Dark cottage: deep green walls with ivy creeping along them, an arched
+  // window onto an autumn evening, dried herbs, a candlelit writing desk,
+  // pumpkins, a yarn basket, and cats everywhere (asleep on the desk, the
+  // armchair and the cat bed, and one keeping watch from the cat tree).
+  cottage: (x0, top, office) => [
+    { kind: "rug", x: x0 + 0.5, y: top + 1.3, w: 2.6, h: 2.2, color: "#7a3b1f", solid: false },
+    { kind: "driedHerbs", x: x0 + 0.1, y: top, w: 0.9, solid: false },
+    { kind: "leafWindow", x: x0 + 1.45, y: top, w: 0.9, solid: false },
+    { kind: "catTree", x: x0 + 2.85, y: top + 0.1, w: 0.6, h: 0.5 },
+    { kind: "cottageDesk", x: x0 + 0.9, y: top + 0.15, w: 1.8, h: 0.65 },
+    { kind: "stool", x: x0 + 1.5, y: top + 0.9, w: 0.6, h: 0.6, color: "#6e3a58", solid: false },
+    { kind: "ivyPlant", x: x0 + 0.1, y: top + 0.15, w: 0.6, h: 0.5 },
+    { kind: "cottageChair", x: x0 + 0.05, y: top + 2.2, w: 1.0, h: 0.8 },
+    { kind: "catBed", x: x0 + 2.75, y: top + 2.4, w: 0.75, h: 0.5, solid: false },
+    { kind: "yarnBasket", x: x0 + 0.1, y: top + 3.55, w: 0.55, h: 0.4 },
+    { kind: "pumpkins", x: x0 + 2.85, y: top + 3.45, w: 0.6, h: 0.5 },
+  ],
 };
 
 // The secret office theme for a name, or null for a normal office.
