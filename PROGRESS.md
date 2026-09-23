@@ -187,6 +187,11 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Cleaner room signs: the brown name plaques and doormats (and the Hallway and Upstairs plaques) are gone. Each doorway has a small matching wooden sign above it with a hand-drawn icon: film reel (Theater), pencil (Conference Room), books (Library), lamp (Study), fork and knife (Dinner), stairs (Stairs). Offices and bedrooms get a nameplate with the owner's name. Walk near a doorway and the room's full name fades in on a little tag under its sign; it fades out as you walk away. The header still shows where you are.
   - Icons are set in `config.js` (`roomIcons`), keyed by room. Built-in choices: film, pencil, books, openBook, lamp, forkKnife, stairs, gamepad, music, heart, leaf, moon, door; anything else (like an emoji) is shown as written.
 
+- Build 0.44 (not pushed yet):
+  - Previews no longer cut off tall things: in Reginald's shop (hats, shoes, pets), on the Join screen and on profile cards, the round backdrop now sits at the bottom of a taller picture, so the Party Hat, Chef Hat, Witch Hat, Top Hat, the Halo and wide pets (fox, raccoon kit) show in full above and beside the circle. The character's body stays inside the circle.
+  - New plants at Nest & Nook: Monstera Adansonii (on a moss pole), Hoya Finlaysonii (with pink star flowers), and Red and Pink Anthuriums.
+  - Crumbs you earn while Nest & Nook is open now show up right away (the wallet and the "crumbs short" buttons update without reopening the store).
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

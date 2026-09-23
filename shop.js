@@ -109,6 +109,8 @@ const shopCrumbs = document.getElementById("shop-crumbs");
 function showCrumbs() {
   crumbCount.textContent = save.crumbs;
   shopCrumbs.textContent = save.crumbs;
+  // Anything else showing crumbs (like Nest & Nook) listens for this.
+  window.dispatchEvent(new Event("crumbs-changed"));
 }
 showCrumbs();
 
@@ -350,10 +352,12 @@ function renderShop() {
     const tag = document.createElement("div");
     tag.className = "shop-item" + (wearing ? " wearing" : "");
 
-    // A little preview of you wearing it.
+    // A little preview of you wearing it. The canvas is taller than the
+    // round backdrop at its bottom (see style.css), so tall hats, the halo
+    // and big pets can poke out above the circle instead of being cut off.
     const preview = document.createElement("canvas");
     preview.width = 88;
-    preview.height = 88;
+    preview.height = 132;
     if (item.type === "pet") drawPetPreview(preview, item.id);
     else drawCharacterPreview(preview, current.color, item.type === "hat" ? item.id : current.hat, item.type === "shoes" ? item.id : current.shoes);
 

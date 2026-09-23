@@ -529,6 +529,10 @@ const DECOR = {
   // --- Plants ---
   plant: { name: "Potted Plant", tab: "plants", price: 10, kind: "plant", w: 0.6, h: 0.6 },
   monstera: { name: "Monstera", tab: "plants", price: 25, kind: "monstera", w: 0.6, h: 0.6 },
+  monsteraAdansonii: { name: "Monstera Adansonii", tab: "plants", price: 26, kind: "monsteraAdansonii", w: 0.6, h: 0.5 },
+  hoyaFinlaysonii: { name: "Hoya Finlaysonii", tab: "plants", price: 28, kind: "hoyaFinlaysonii", w: 0.6, h: 0.5 },
+  anthuriumRed: { name: "Red Anthurium", tab: "plants", price: 24, kind: "anthurium", w: 0.6, h: 0.5, color: "#e84a5a" },
+  anthuriumPink: { name: "Pink Anthurium", tab: "plants", price: 24, kind: "anthurium", w: 0.6, h: 0.5, color: "#f2a0b8" },
   fiddleFig: { name: "Fiddle-Leaf Fig", tab: "plants", price: 30, kind: "fiddleFig", w: 0.6, h: 0.6 },
   birdOfParadise: { name: "Bird of Paradise", tab: "plants", price: 40, kind: "birdOfParadise", w: 0.7, h: 0.6 },
   oliveTree: { name: "Olive Tree", tab: "plants", price: 40, kind: "oliveTree", w: 0.6, h: 0.6 },

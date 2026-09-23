@@ -65,13 +65,13 @@ export async function openProfile(name) {
   const look = el("div", "profile-look");
   const character = el("canvas", "profile-character");
   character.width = 96;
-  character.height = 96;
+  character.height = 136; // room above the circle for tall hats
   drawCharacterPreview(character, p.color, p.hat ?? "none", p.shoes ?? "none");
   look.appendChild(character);
   if (p.pet && Object.hasOwn(PET_DRAWERS, p.pet)) {
     const pet = el("canvas", "profile-pet");
-    pet.width = 72;
-    pet.height = 72;
+    pet.width = 88;
+    pet.height = 92; // room for tall or wide pets
     drawPetPreview(pet, p.pet);
     pet.title = itemName(p.pet);
     look.appendChild(pet);

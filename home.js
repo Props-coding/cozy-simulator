@@ -107,6 +107,13 @@ function spareCount(id) {
   return (home.owned[id] || 0) - placed - (held?.item === id ? 1 : 0);
 }
 
+// When your crumbs change while the store is open (earning them for
+// time in the house, say), redraw it so the wallet and the "crumbs short"
+// buttons stay right.
+window.addEventListener("crumbs-changed", () => {
+  if (storePage?.isConnected && storePage.getClientRects().length > 0) renderStore(storePage); // only while it's showing
+});
+
 // --- Nest & Nook ---
 // A little boutique website on the laptop: a striped awning, Wren the
 // shopkeeper bird (who picks something special each day and thanks you
@@ -118,8 +125,9 @@ const STORE_TABS = [
   ["decor", "🕯️", "Decor", "Rugs, lamps, mirrors, lights and things for your walls."],
   ["upgrades", "✨", "Upgrades", "Make your room itself a little bigger."],
 ];
-// Items added in build 0.42 get a "New!" ribbon.
+// Items added in builds 0.42 and 0.44 get a "New!" ribbon.
 const NEW_ITEMS = new Set([
+  "monsteraAdansonii", "hoyaFinlaysonii", "anthuriumRed", "anthuriumPink",
   "canopyBed", "vanity", "clothesRack", "cloudSofa", "papasanChair", "eggChair", "poufCream", "poufPink", "mushroomStool", "sideTable", "aestheticDesk", "barCart", "catTree",
   "birdOfParadise", "oliveTree", "rubberPlant", "moneyTree", "zzPlant", "alocasia", "calathea", "peaceLily", "pilea", "philodendron", "spiderPlant", "jadePlant", "aloeVera",
   "orchid", "lavenderPot", "herbGarden", "terrarium", "pampasVase", "tulipVase", "sunflowerVase", "eucalyptusVase", "cherryBlossom", "macramePothos", "stringOfPearls", "hangingFern", "airPlants",
@@ -147,7 +155,9 @@ let wrenSays = pickLine(WREN_HELLOS);
 // Draws the store into `page` (a laptop page). `onTab` hears which
 // section is showing (the laptop puts it in the address bar).
 let tellTab = () => {};
+let storePage = null; // where the store was last drawn
 export function renderStore(page, onTab = tellTab) {
+  storePage = page;
   tellTab = onTab;
   tellTab(storeTab);
   const scroll = page.scrollTop;
@@ -220,6 +230,9 @@ export function renderStore(page, onTab = tellTab) {
 // Buying something: pay, add it to your home, a heart pops up, and Wren
 // says thanks.
 function buy(page, id, item, button) {
+  // Where the button is, for the heart pop (measured first: spending
+  // crumbs redraws the store).
+  const rect = button.getBoundingClientRect(), box = page.getBoundingClientRect();
   if (!spendCrumbs(item.price)) {
     playClickSound();
     button.textContent = `${item.price - crumbBalance()} crumbs short`;
@@ -231,7 +244,6 @@ function buy(page, id, item, button) {
   playCrumbSound();
   wrenSays = pickLine(WREN_THANKS);
   hooks.notice(`${item.name} is yours! Open Decorate on the laptop to place it.`);
-  const rect = button.getBoundingClientRect(), box = page.getBoundingClientRect();
   renderStore(page);
   const heart = document.createElement("span");
   heart.className = "nook-heart";

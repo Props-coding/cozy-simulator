@@ -2074,6 +2074,132 @@ const FURNITURE_DRAWERS = {
     }
   },
 
+  // Hoya finlaysonii: long, pointed leaves with a pale net of veins,
+  // trailing over the pot's edge, with round clusters of little pink stars.
+  hoyaFinlaysonii(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "ceramic", 10, 15);
+    const leaf = (x, y, a, len) => {
+      drawLeaf(ctx, x, y, a, len, 3.2, "#3f6a3a", "rgba(215, 235, 170, 0.55)");
+      ctx.save(); // the netted veins
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.strokeStyle = "rgba(215, 235, 170, 0.35)";
+      ctx.lineWidth = 0.5;
+      for (let k = 2; k < len - 2; k += 2.5) {
+        ctx.beginPath();
+        ctx.moveTo(0, -k);
+        ctx.lineTo(-2, -k - 1.5);
+        ctx.moveTo(0, -k);
+        ctx.lineTo(2, -k - 1.5);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+    for (const [dx, a, len] of [[-3, -0.45, 19], [3, 0.4, 20], [0, -0.05, 22], [-6, -0.85, 16], [6, 0.85, 16], [-2, -0.2, 14], [2, 0.2, 15]]) leaf(b.x + dx, soil, a, len);
+    for (const side of [-1, 1]) {
+      ctx.strokeStyle = "#6b7a3a"; // vines trailing down
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(b.x + side * 8, soil);
+      ctx.quadraticCurveTo(b.x + side * 14, soil + 6, b.x + side * 12, soil + 18);
+      ctx.stroke();
+      for (let k = 0; k < 3; k++) leaf(b.x + side * 12.5, soil + 6 + k * 5, side * (2.4 + k * 0.1), 8);
+    }
+    for (const [dx, dy] of [[-9, -17], [9, -14]]) {
+      for (let s = 0; s < 7; s++) {
+        const a = (s / 7) * Math.PI * 2;
+        ctx.fillStyle = "#f2c4d0";
+        ctx.beginPath();
+        ctx.arc(b.x + dx + Math.cos(a) * 2.6, soil + dy + Math.sin(a) * 2.6, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#c0556e";
+      ctx.beginPath();
+      ctx.arc(b.x + dx, soil + dy, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // Monstera adansonii (Swiss cheese vine): small leaves full of oval
+  // holes, climbing a mossy pole.
+  monsteraAdansonii(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "basket", 11, 15);
+    ctx.fillStyle = "#6f7a4a"; // the moss pole
+    ctx.fillRect(b.x - 2, soil - 38, 4, 38);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.fillRect(b.x - 2, soil - 38, 1.5, 38);
+    const leaf = (x, y, a, s) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.fillStyle = "#3f8a4a";
+      ctx.beginPath();
+      ctx.ellipse(0, -s, s * 0.62, s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // lit from above
+      ctx.beginPath();
+      ctx.ellipse(-s * 0.2, -s * 1.3, s * 0.3, s * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e9dcc2"; // the holes (showing the wall's light behind)
+      ctx.globalAlpha = 0.85;
+      for (const [hx, hy] of [[-0.3, -0.6], [0.3, -0.9], [-0.28, -1.3], [0.28, -1.5]]) {
+        ctx.beginPath();
+        ctx.ellipse(hx * s, hy * s, s * 0.12, s * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    };
+    for (let k = 0; k < 5; k++) {
+      const side = k % 2 ? 1 : -1;
+      leaf(b.x + side * 2, soil - 4 - k * 7.5, side * 1.0, 7);
+    }
+    leaf(b.x, soil - 38, 0, 6); // the newest leaf at the top
+    for (const side of [-1, 1]) leaf(b.x + side * 8, soil + 2, side * 2.3, 6); // a couple spilling over the pot
+  },
+
+  // Anthurium: glossy heart-shaped leaves and waxy flowers (a heart-shaped
+  // bract with a little spike), red or pink (f.color).
+  anthurium(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, f.color === "#e84a5a" ? "black" : "ceramic", 10, 15);
+    ctx.strokeStyle = "#4f7a3a";
+    ctx.lineWidth = 1;
+    const stems = [[-8, -18, "leaf", -0.3], [8, -20, "leaf", 0.3], [0, -26, "leaf", 0], [-4, -30, "flower", -0.2], [6, -32, "flower", 0.25], [-10, -10, "leaf", -0.6], [10, -11, "leaf", 0.6]];
+    for (const [dx, dy] of stems) {
+      ctx.beginPath();
+      ctx.moveTo(b.x, soil);
+      ctx.quadraticCurveTo(b.x + dx * 0.3, soil + dy * 0.5, b.x + dx, soil + dy);
+      ctx.stroke();
+    }
+    for (const [dx, dy, kind, a] of stems) {
+      if (kind === "leaf") {
+        drawHeartLeaf(ctx, b.x + dx, soil + dy + 3.5, 7, "#2f6a3a", a); // hangs from its notch, tip down
+        ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // glossy shine
+        ctx.beginPath();
+        ctx.ellipse(b.x + dx - 2, soil + dy + 1.5, 1.2, 2.5, a, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        drawHeartLeaf(ctx, b.x + dx, soil + dy + 2.5, 5.5, f.color, a);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.beginPath();
+        ctx.ellipse(b.x + dx - 1.5, soil + dy + 1, 1, 2, a, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f2d07a"; // the little spike
+        ctx.save();
+        ctx.translate(b.x + dx, soil + dy - 1);
+        ctx.rotate(a + 0.5);
+        ctx.fillRect(-0.9, -7, 1.8, 7);
+        ctx.restore();
+      }
+    }
+  },
+
   // Hung on a wall: a macramé hanger holding a golden pothos, trailing down.
   macramePothos(ctx, f) {
     const a = toScreen(f.x, f.y);
