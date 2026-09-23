@@ -3,11 +3,19 @@
 // and you only hear a friend if you're both in the same voice room.
 
 // Rooms where voice chat is on: the Theater and the Conference Room, plus
-// every office (where you only hear the people in that same office).
+// every office and bedroom (where you only hear the people in that same
+// room). main.js passes "asleep" as the room while you're in bed, which
+// isn't a voice room: your mic is off and you hear nobody.
 const VOICE_ROOMS = ["theater", "conference"];
 
 function isVoiceRoom(roomId) {
-  return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-");
+  return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-") || roomId.startsWith("bedroom-");
+}
+
+// Dinner ("away eating") and being asleep: no sounds at all, not even
+// little chimes.
+function isSilentSpot() {
+  return currentRoomId === "dinner" || currentRoomId === "asleep";
 }
 
 let localTrack = null;
@@ -33,8 +41,7 @@ export function primeSoundEffects() {
 // seconds. type: the waveform shape, which changes the character of the
 // sound (sine = smooth and mellow, triangle = a bit softer and rounder).
 function playTone(freq, delayMs, { gain = 0.15, duration = 0.15, type = "sine" } = {}) {
-  // Dinner means "away eating": no sounds at all, not even little chimes.
-  if (!toneContext || currentRoomId === "dinner") return;
+  if (!toneContext || isSilentSpot()) return;
   setTimeout(() => {
     const osc = toneContext.createOscillator();
     const gainNode = toneContext.createGain();
@@ -102,7 +109,7 @@ export function playChatSound() {
 // sounds like chattering in a made-up language. `pitch` sets the voice
 // (high for Pip, middle for Reginald, low for Bean).
 export function playBabble(pitch, letter) {
-  if (!toneContext || currentRoomId === "dinner" || masterMuted) return;
+  if (!toneContext || isSilentSpot() || masterMuted) return;
   const vowel = "aeiouy".includes(letter.toLowerCase());
   const freq = pitch * (vowel ? 1.18 : 1) * (0.88 + Math.random() * 0.24);
   const now = toneContext.currentTime;
@@ -126,7 +133,7 @@ export function playBabble(pitch, letter) {
 
 // A soft "fwoosh" of fabric, for the raccoons flinging their coat open.
 export function playCoatWhoosh() {
-  if (!toneContext || currentRoomId === "dinner" || masterMuted) return;
+  if (!toneContext || isSilentSpot() || masterMuted) return;
   const now = toneContext.currentTime;
   const length = Math.floor(toneContext.sampleRate * 0.35);
   const buffer = toneContext.createBuffer(1, length, toneContext.sampleRate);
@@ -170,7 +177,7 @@ export function playPetSound() {
 // A short, jaunty fiddle jig for the "jig" emote: a buzzy sawtooth note,
 // softened a little, with a touch of wobble like a bow on a string.
 function playFiddleNote(freq, delayMs, duration) {
-  if (!toneContext || currentRoomId === "dinner" || currentRoomId === "library" || masterMuted) return;
+  if (!toneContext || isSilentSpot() || currentRoomId === "library" || masterMuted) return;
   const start = toneContext.currentTime + delayMs / 1000;
   const osc = toneContext.createOscillator();
   const vibrato = toneContext.createOscillator();
@@ -328,6 +335,82 @@ export function updateRain(dt) {
     rain.stop();
     rain = null;
   }
+}
+
+// --- White noise while you sleep ---
+// A soft, deep "shhh" (brown noise, made in code, so there's no file),
+// gently muffled, like a fan across the room. Fades in when you get into
+// bed and out when you get up, with its own volume slider.
+let whiteNoise = null; // { out, stop } while playing
+let asleep = false;
+let whiteNoiseLevel = 0;
+let whiteNoiseUserVolume = 0.3;
+
+function startWhiteNoise() {
+  if (!toneContext || whiteNoise) return;
+  const rate = toneContext.sampleRate;
+  const seconds = 8;
+  const buffer = toneContext.createBuffer(1, rate * seconds, rate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < data.length; i++) {
+    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; // brown noise: each sample drifts from the last
+    data[i] = last * 3.5;
+  }
+  // Blend the last half second into the start, so the loop has no seam.
+  const blend = Math.floor(rate * 0.5);
+  for (let i = 0; i < blend; i++) {
+    const k = i / blend;
+    data[i] = data[i] * k + data[data.length - blend + i] * (1 - k);
+  }
+  const source = toneContext.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.loopEnd = seconds - 0.5;
+  const muffle = toneContext.createBiquadFilter();
+  muffle.type = "lowpass";
+  muffle.frequency.value = 900;
+  const out = toneContext.createGain();
+  out.gain.value = 0;
+  source.connect(muffle);
+  muffle.connect(out);
+  out.connect(toneContext.destination);
+  source.start();
+  whiteNoise = { out, stop: () => source.stop() };
+}
+
+export function enterSleep() {
+  asleep = true;
+  startWhiteNoise();
+}
+
+export function leaveSleep() {
+  asleep = false;
+}
+
+export function setWhiteNoiseVolume(vol) {
+  whiteNoiseUserVolume = vol;
+}
+
+// Call every frame: fades the white noise toward where it should be, and
+// stops it once it has faded out after you get up.
+export function updateWhiteNoise(dt) {
+  if (!whiteNoise) return;
+  const target = asleep && !masterMuted ? whiteNoiseUserVolume * masterVolume : 0;
+  whiteNoiseLevel += (target - whiteNoiseLevel) * (1 - Math.pow(0.05, dt));
+  if (Math.abs(target - whiteNoiseLevel) < 0.001) whiteNoiseLevel = target;
+  whiteNoise.out.gain.value = whiteNoiseLevel;
+  if (!asleep && whiteNoiseLevel === 0) {
+    whiteNoise.stop();
+    whiteNoise = null;
+  }
+}
+
+// Three soft notes drifting down: "goodnight", as you get into bed.
+export function playGoodnightChime() {
+  playTone(659.25, 0, { gain: 0.07, duration: 0.6, type: "sine" });
+  playTone(523.25, 260, { gain: 0.07, duration: 0.6, type: "sine" });
+  playTone(392, 520, { gain: 0.07, duration: 1.2, type: "sine" });
 }
 
 // A tiny, soft click for buttons and toggles.

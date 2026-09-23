@@ -126,6 +126,10 @@
               Rain volume (Library)
               <input id="rain-volume-slider" type="range" min="0" max="1" step="0.05" value="0.35">
             </label>
+            <label class="voice-row">
+              White noise (asleep in bed)
+              <input id="white-noise-slider" type="range" min="0" max="1" step="0.05" value="0.3">
+            </label>
           </div>
         </div>
       </header>
@@ -241,12 +245,12 @@
         </div>
       </div>
 
-      <!-- Chat: "House" goes to everyone, "Office" only to people in the
-           same office as you. -->
+      <!-- Chat: "House" goes to everyone, "Room" only to people in the
+           same office or bedroom as you. -->
       <div id="chat-card">
         <div class="chat-tabs">
           <button id="chat-tab-house" class="chat-tab active" type="button">House<span class="unread-dot" hidden></span></button>
-          <button id="chat-tab-office" class="chat-tab" type="button" disabled>Office<span class="unread-dot" hidden></span></button>
+          <button id="chat-tab-office" class="chat-tab" type="button" disabled>Room<span class="unread-dot" hidden></span></button>
         </div>
         <!-- The messages scroll inside this box; the "New messages" button
              appears over its bottom edge when you've scrolled up. -->

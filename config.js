@@ -21,6 +21,8 @@ const CONFIG = {
     library: "Library",
     study: "Study",
     dinner: "Dinner",
+    stairs: "Stairs",
+    landing: "Upstairs",
   },
 
   // Each room's floor: a style ("planks" for wood boards, "carpet", or
@@ -33,6 +35,10 @@ const CONFIG = {
     study: { style: "planks", color: "#9c6a45" },
     dinner: { style: "checker", color: "#dcae8c" },
     office: { style: "planks", color: "#b98a5e" }, // used for every office
+    stairs: { style: "planks", color: "#b08a64" },
+    stairsUp: { style: "planks", color: "#b08a64" },
+    landing: { style: "planks", color: "#c9a57e" },
+    bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
   },
 
   // The color of the walls you see inside each room.
@@ -44,6 +50,10 @@ const CONFIG = {
     study: "#6f8a6a",
     dinner: "#f0d9b8",
     office: "#8f7fa3", // used for every office
+    stairs: "#e3d2b8",
+    stairsUp: "#e3d2b8",
+    landing: "#e6d6c6",
+    bedroom: "#a9b8cf", // used for every bedroom
   },
 
   // --- Multiplayer (Trystero) settings ---
@@ -101,6 +111,10 @@ const CONFIG = {
   // Starting volume for the rain in the Library (0 to 1). There's a slider too.
   // Kept low on purpose: it's meant to be a soft background, not a sound.
   defaultRainVolume: 0.35,
+
+  // Starting volume for the soft white noise you hear while asleep in a
+  // bed (0 to 1). There's a slider too.
+  defaultWhiteNoiseVolume: 0.3,
 
   // --- Secret office themes (an Easter egg) ---
   // If someone with one of these names builds an office, they get a

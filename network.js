@@ -43,7 +43,8 @@ export function onPeerJoin(callback) {
   externalOnPeerJoin = callback;
 }
 
-// Someone knocked on your office door. callback gets their peer id.
+// Someone knocked on your office or bedroom door. callback gets their
+// peer id and which room ("office" or "bedroom").
 export function onKnock(callback) {
   externalOnKnock = callback;
 }
@@ -104,9 +105,9 @@ export function sendBoard(message, peerId) {
   boardAction?.send(message, peerId ? { target: peerId } : undefined);
 }
 
-// Knock on one friend's office door (only they get the message).
-export function sendKnock(peerId) {
-  knockAction?.send(true, { target: peerId });
+// Knock on one friend's office or bedroom door (only they get the message).
+export function sendKnock(peerId, kind) {
+  knockAction?.send(kind, { target: peerId });
 }
 
 // Sends your mic audio to everyone in the room. Call once, after both
@@ -147,9 +148,9 @@ export function connectToRoom(myName, myColor) {
     peers[peerId] = { ...peers[peerId], ...data };
   };
 
-  // "knock" carries no information, the message arriving is the knock.
+  // A knock says which door: "office" or "bedroom".
   knockAction = room.makeAction("knock");
-  knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
+  knockAction.onMessage = (kind, { peerId }) => externalOnKnock?.(peerId, kind);
 
   emoteAction = room.makeAction("emote");
   emoteAction.onMessage = (id, { peerId }) => externalOnEmote?.(id, peerId);

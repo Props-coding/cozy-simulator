@@ -43,6 +43,8 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Library | Off | Soft rain, locally (own volume slider) | Quiet reading room at the east end |
 | Conference Room (north of the hallway) | On, with others in the room | Friends' voices | Big table, shared whiteboard (press B) |
 | Offices (north of the hallway) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
+| Stairs and Upstairs landing | Off | Silence | Stairs south of the hallway's east end lead to a second floor |
+| Bedrooms (upstairs, north of the landing) | On, only with others in the same bedroom | Friends' voices; in bed: soft white noise only | Personal like offices. Step into bed to sleep: mic off, hear nobody, "sleeping" badge |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner | Off | Nothing, all sound muted | Means "I'm away eating". Show a small "eating" badge over the character |
 
@@ -129,14 +131,14 @@ Do these in order. Stop after each one for the user to test.
 
 Add one at a time and ask the user which to do next.
 
-Already done: study focus timer (body-doubling), knock on locked offices, personal offices with lock and secret themes, house and office chat, and big ideas 1, 3, 4, 5, 6, 7, 8, 9 and 10 (only bedrooms are left).
+Already done: study focus timer (body-doubling), knock on locked offices, personal offices with lock and secret themes, house and office chat, and all ten big ideas (bedrooms went upstairs, on a second floor).
 
 ### Big ideas (added 2026-09-22)
 
 Suggested order, since later ideas build on earlier ones: 1 and 2 first (they reshape the map), then 3 and 4, then 5 to 8 and 10 as one "progression" group. The Library (9) and emotes (10) could come any time, since the Library doesn't depend on anything and the free emotes don't need coins.
 
 1. **Rooms on the north side of the hallway too, and offices that close the gap.** The hallway stays one corridor through the middle of the house, with rooms opening off both sides: the same way Gaming, Study and Dinner hang below it with doors in its bottom wall, new rooms hang above it with doors in its top wall. Offices move to the north side first. When an office is removed, the offices after it slide over to fill its spot instead of leaving a hole, and anyone standing in an office that slides moves with it. Note: the hallway's top wall currently holds the office-building door, coat hooks, paintings, lamps, the side table and the bench, so those get rearranged around the new doorways.
-2. **Bedrooms.** Built and owned like offices (one per person, lockable, gone while the owner is offline). Could carry the older bedroom idea: white noise, and a "goodnight" moment when you leave. Needs a decision on where they go (for example north wing next to offices, or their own wing).
+2. **Bedrooms.** Built and owned like offices (one per person, lockable, gone while the owner is offline). Could carry the older bedroom idea: white noise, and a "goodnight" moment when you leave. (Done: upstairs, on a second floor reached by stairs.)
 3. **Theater (replaces Gaming).** Voice stays on, like Gaming now. A big screen where everyone in the room watches the same YouTube video: play, pause and skipping stay in sync for everyone in the Theater. Each person streams the video from YouTube themselves, so it costs nothing extra. Some videos don't allow embedding and won't play.
 4. **Conference room with a whiteboard.** A large conference table, voice on. A whiteboard anyone in the room can draw on together, with a few pen colors and a clear button. Drawings are shared live and sent to people who walk in; they last only while someone is in the house (no server to store them), unless we add a "save as picture" button.
 5. **Currency.** Earn coins for time spent in the house (for example a few per minute, maybe a small bonus in Study focus sessions).

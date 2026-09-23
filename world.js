@@ -8,13 +8,25 @@
 // and Dinner hang below it (south), each with a doorway up into the
 // hallway. The Conference Room, the offices and the Library hang above it
 // (north), each with a doorway down into the hallway. South of the
-// hallway's east end is garden. The Conference Room and personal offices hang above it
-// (north), each with a doorway down into the hallway. Offices come and go as their owners join and
-// leave, so the room and wall lists below get rebuilt when that happens
-// (see buildHouse).
+// hallway's east end are the stairs, with a bit of garden below them.
+//
+// Upstairs is a landing (a second hallway) with bedrooms along its north
+// side and the stairs at its east end; the rest is roof. The upstairs is
+// kept further down the same grid (UPSTAIRS units lower), so the two
+// floors never overlap and all the walking and room rules work the same
+// on both. Only the floor you're on is drawn.
+//
+// Offices and bedrooms come and go as their owners join and leave, so the
+// room and wall lists below get rebuilt when that happens (see buildHouse).
 
 const WALL_THICKNESS = 0.4;
 const HOUSE_WIDTH = 24; // how far east the house (and hallway) reaches
+const UPSTAIRS = 40; // how much further down the grid the upstairs floor is kept
+
+// Which floor a grid y position is on: 0 downstairs, 1 upstairs.
+function floorOf(y) {
+  return y > UPSTAIRS / 2 ? 1 : 0;
+}
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
@@ -28,8 +40,12 @@ const BASE_ROOMS = [
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, matY: 2.12 } },
   // North side: the Conference Room at the west end and the Library at the
   // east end (same depth as the offices between them).
-  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, matY: 0.74 } },
-  { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, matY: 0.74 } },
+  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, matY: 0.74 }, north: true },
+  { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, matY: 0.74 }, north: true },
+  // The stairs, south of the hallway's east end (the same spot on both floors).
+  { id: "stairs", name: CONFIG.roomNames.stairs, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, matY: 2.12 } },
+  // Upstairs: the landing (its sign is added in buildHouse) and its stairs.
+  { id: "stairsUp", name: CONFIG.roomNames.stairs, rect: { x: 18, y: UPSTAIRS + 3, w: 6, h: 4 }, sign: { x: 20, matY: UPSTAIRS + 2.12 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -52,9 +68,23 @@ const BASE_WALLS = [
   { x: 18 - WALL_THICKNESS, y: -5.8, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
 
-  // Outside walls around the garden south of the hallway's east end
-  { x: 18, y: 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS, h: WALL_THICKNESS },
+  // The stairwell south of the hallway's east end (doorway x 19.2 to
+  // 20.8), with the garden below it.
+  { x: 18, y: 3 - WALL_THICKNESS / 2, w: 1.2, h: WALL_THICKNESS },
+  { x: 20.8, y: 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 },
+  { x: HOUSE_WIDTH, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS },
+
+  // Upstairs: the landing's sides and bottom (with a doorway into its
+  // stairwell, x 19.2 to 20.8), and the stairwell's walls. The landing's
+  // top wall has the bedroom doorways, so it's made in buildHouse.
+  { x: -WALL_THICKNESS, y: UPSTAIRS - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
+  { x: HOUSE_WIDTH, y: UPSTAIRS - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
+  { x: -WALL_THICKNESS, y: UPSTAIRS + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 20.8, y: UPSTAIRS + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: UPSTAIRS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: UPSTAIRS + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
 
   // Dividers between rooms (no doors between rooms directly). They start
   // at the same line as the walls above the rooms so the tops line up.
@@ -204,79 +234,151 @@ const BASE_FURNITURE = [
   { kind: "readingTable", x: 18.45, y: -2.2, w: 1.6, h: 0.6 },
   { kind: "chair", x: 18.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
   { kind: "plant", x: 23.2, y: -1.8, w: 0.6, h: 0.6 },
+
+  // Stairs (downstairs): the staircase up along the east side, a lamp
+  // and a plant. Walk onto the steps to go up.
+  { kind: "staircase", x: 21.3, y: 3.3, w: 2.4, h: 2.7, solid: false },
+  { kind: "sconce", x: 18.7, y: 3.2, solid: false },
+  { kind: "plant", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
+
+  // Upstairs: a runner down the landing, lamps and paintings between the
+  // bedroom doors (x0 + 2.2 to x0 + 3.8 for x0 = 0, 6, 12, 18), a side
+  // table, a bench and plants, and the staircase down in its stairwell.
+  // The landing's "Upstairs" plaque hangs at x 12, between two lamps.
+  { kind: "rug", x: 1.5, y: UPSTAIRS + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
+  { kind: "sconce", x: 1.2, y: UPSTAIRS, solid: false },
+  { kind: "picture", x: 4.4, y: UPSTAIRS, w: 1.0, art: "flowers", solid: false },
+  { kind: "bench", x: 4.2, y: UPSTAIRS + 0.1, w: 1.5, h: 0.5 },
+  { kind: "sconce", x: 7.3, y: UPSTAIRS, solid: false },
+  { kind: "sconce", x: 10.6, y: UPSTAIRS, solid: false },
+  { kind: "sconce", x: 13.3, y: UPSTAIRS, solid: false },
+  { kind: "picture", x: 16.4, y: UPSTAIRS, w: 1.0, art: "sea", solid: false },
+  { kind: "console", x: 16.0, y: UPSTAIRS + 0.1, w: 1.8, h: 0.45 },
+  { kind: "sconce", x: 19.3, y: UPSTAIRS, solid: false },
+  { kind: "picture", x: 22.4, y: UPSTAIRS, w: 0.9, art: "hills", solid: false },
+  { kind: "plant", x: 23.3, y: UPSTAIRS + 2.05, w: 0.6, h: 0.6 },
+  { kind: "plant", x: 0.15, y: UPSTAIRS + 2.05, w: 0.6, h: 0.6 },
+  { kind: "staircase", x: 21.3, y: UPSTAIRS + 3.3, w: 2.4, h: 2.7, down: true, solid: false },
+  { kind: "sconce", x: 18.7, y: UPSTAIRS + 3.2, solid: false },
+  { kind: "plant", x: 18.3, y: UPSTAIRS + 6.0, w: 0.6, h: 0.6 },
 ];
 
-// --- Offices ---
-// Offices sit north of the hallway in up to three spots, filled left to
-// right. When one is removed, the ones after it slide over to close the
-// gap. The door for building a new office is always on the hallway wall
-// at the next free spot.
-const OFFICE_SLOTS = 3; // how many offices can exist at once
-const OFFICE_WIDTH = 4; // grid units per office, including its wall
-const OFFICE_FIRST_X = 6; // left edge of the first office spot (right of the Conference Room)
-const OFFICE_DEPTH = 5; // how far north an office reaches from the hallway
-const OFFICE_TOP = -WALL_THICKNESS - OFFICE_DEPTH; // the office floor's north edge
+// Where the stairs take you: step onto a staircase (the middle of it, so
+// brushing its edge doesn't count) and you arrive beside the other one.
+const STAIRS = [
+  { from: { x: 21.5, y: 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: UPSTAIRS + 4.6 } },
+  { from: { x: 21.5, y: UPSTAIRS + 3.4, w: 2.0, h: 2.4 }, to: { x: 19.6, y: 4.6 } },
+];
 
-// Left edge of office spot 1, 2 or 3.
-function officeX(slot) {
-  return OFFICE_FIRST_X + (slot - 1) * OFFICE_WIDTH;
+// Where a player's center is on the stairs, the spot they arrive at on the
+// other floor (as a player position), or null if they're not on the stairs.
+function stairsDestination(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  const hit = STAIRS.find(({ from: r }) => cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h);
+  return hit ? hit.to : null;
 }
 
-// The current house: rebuilt by buildHouse whenever offices change.
-// houseVersion goes up by one each time, so render.js knows to redraw
-// its saved floor picture.
+// --- Private rooms: offices and bedrooms ---
+// Offices sit north of the hallway in up to three spots, and bedrooms
+// north of the upstairs landing in up to four, filled left to right. When
+// one is removed, the ones after it slide over to close the gap. The "+"
+// door for making a new one is always on the wall at the next free spot.
+// Each kind's layout:
+//   slots: how many can exist at once. width: grid units per room,
+//   including its wall. firstX: left edge of the first spot. floorY: the y
+//   of the corridor wall they open onto (the hallway, or the landing).
+//   doorX: where the doorway starts, from the room's left edge.
+const WINGS = {
+  office: { slots: 3, width: 4, firstX: 6, floorY: 0, doorX: 1, name: "Office" },
+  bedroom: { slots: 4, width: 6, firstX: 0, floorY: UPSTAIRS, doorX: 2.2, name: "Bedroom" },
+};
+const WING_DEPTH = 5; // how far north a private room reaches from its corridor
+const DOOR_WIDTH = 1.6;
+const OFFICE_TOP = -WALL_THICKNESS - WING_DEPTH; // the office floor's north edge
+
+// Left edge of spot 1, 2, 3... for a kind of room.
+function wingX(kind, slot) {
+  return WINGS[kind].firstX + (slot - 1) * WINGS[kind].width;
+}
+
+// The current house: rebuilt by buildHouse whenever offices or bedrooms
+// change. houseVersion goes up by one each time, so render.js knows to
+// redraw its saved floor picture.
 let ROOMS = [];
 let WALLS = [];
 let FURNITURE = [];
 let SOLIDS = []; // everything you bump into: walls plus solid furniture
 let houseVersion = 0;
-let houseTopY = -5.8; // the house's northern edge (for the camera)
-let buildDoorX = null; // left edge of the next free office spot, or null if all are taken
+let houseTopY = -5.8; // the house's northern edge on each floor (for the camera)
+const buildDoors = { office: null, bedroom: null }; // left edge of each kind's next free spot, or null if all are taken
 
-// offices: a list of { slot (1 to 3), since, ownerName, color, locked, mine },
-// already in order (slot 1 first). An office's room id comes from when it
-// was built, so it stays the same when it slides to a different spot.
-function buildHouse(offices) {
+// offices and bedrooms: lists of { slot, since, ownerName, color, locked,
+// mine }, already in order (slot 1 first). A room's id comes from when it
+// was made, so it stays the same when it slides to a different spot.
+function buildHouse(offices, bedrooms = []) {
   const t = WALL_THICKNESS;
   const rooms = [...BASE_ROOMS];
   const walls = [...BASE_WALLS];
   const furniture = [...BASE_FURNITURE];
 
-  // The hallway's top wall, with a doorway into the Conference Room (x 2 to
-  // 3.6), the Library (x 20.2 to 21.8) and each office (x0 + 1 to x0 + 2.6).
-  const doorways = [2, 20.2, ...offices.map((o) => officeX(o.slot) + 1)].sort((a, b) => a - b);
-  let from = -t;
-  for (const doorway of doorways) {
-    walls.push({ x: from, y: -t, w: doorway - from, h: t });
-    from = doorway + 1.6;
-  }
-  walls.push({ x: from, y: -t, w: HOUSE_WIDTH + t - from, h: t });
-
-  for (const office of offices) {
-    const x0 = officeX(office.slot);
-    const inner = OFFICE_WIDTH - t;
-    const theme = officeThemeFor(office.ownerName);
-    rooms.push({ id: "office-" + office.since, name: office.ownerName + "'s Office", rect: { x: x0, y: OFFICE_TOP, w: inner, h: OFFICE_DEPTH }, office, theme, sign: { x: x0 + 1.8, matY: 0.74 } });
-    walls.push(
-      { x: x0 - t, y: OFFICE_TOP - t, w: OFFICE_WIDTH + t, h: t }, // north wall
-      { x: x0 - t, y: OFFICE_TOP - t, w: t, h: OFFICE_DEPTH + t }, // left side, down to the hallway wall
-      { x: x0 + inner, y: OFFICE_TOP - t, w: t, h: OFFICE_DEPTH + t } // right side
-    );
-    furniture.push(...(OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default)(x0, OFFICE_TOP, office));
-    if (office.locked) {
-      furniture.push({ kind: "closedDoor", x: x0 + 1, y: 0, w: 1.6, solid: false });
+  // A corridor's top wall, from x -t to the east end, with gaps for its doorways.
+  const corridorWall = (y, doorways) => {
+    let from = -t;
+    for (const doorway of doorways.sort((a, b) => a - b)) {
+      walls.push({ x: from, y: y - t, w: doorway - from, h: t });
+      from = doorway + DOOR_WIDTH;
     }
-  }
+    walls.push({ x: from, y: y - t, w: HOUSE_WIDTH + t - from, h: t });
+  };
 
-  // The "+" door where the next office would go.
-  buildDoorX = offices.length < OFFICE_SLOTS ? officeX(offices.length + 1) : null;
-  if (buildDoorX !== null) {
-    furniture.push({ kind: "buildDoor", x: buildDoorX + 1.35, y: 0, w: 0.9, solid: false });
-  }
+  const add = (kind, list) => {
+    const wing = WINGS[kind];
+    const top = wing.floorY - t - WING_DEPTH;
+    for (const info of list) {
+      const x0 = wingX(kind, info.slot);
+      const inner = wing.width - t;
+      const theme = kind === "office" ? officeThemeFor(info.ownerName) : null;
+      rooms.push({
+        id: kind + "-" + info.since,
+        name: `${info.ownerName}'s ${wing.name}`,
+        rect: { x: x0, y: top, w: inner, h: WING_DEPTH },
+        owned: { ...info, kind },
+        theme,
+        north: true,
+        door: { x: x0 + wing.doorX, y: wing.floorY },
+        sign: { x: x0 + wing.doorX + 0.8, matY: wing.floorY + 0.74 },
+      });
+      walls.push(
+        { x: x0 - t, y: top - t, w: wing.width + t, h: t }, // north wall
+        { x: x0 - t, y: top - t, w: t, h: WING_DEPTH + t }, // left side, down to the corridor wall
+        { x: x0 + inner, y: top - t, w: t, h: WING_DEPTH + t } // right side
+      );
+      const pieces = kind === "office" ? OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default : BEDROOM_FURNITURE;
+      furniture.push(...pieces(x0, top, info));
+      if (info.locked) {
+        furniture.push({ kind: "closedDoor", x: x0 + wing.doorX, y: wing.floorY, w: DOOR_WIDTH, solid: false });
+      }
+    }
+    // The "+" door where the next one would go.
+    buildDoors[kind] = list.length < wing.slots ? wingX(kind, list.length + 1) : null;
+    if (buildDoors[kind] !== null) {
+      furniture.push({ kind: "buildDoor", x: buildDoors[kind] + wing.doorX + 0.35, y: wing.floorY, w: 0.9, solid: false });
+    }
+  };
+
+  // The hallway's top wall, with a doorway into the Conference Room (x 2 to
+  // 3.6), the Library (x 20.2 to 21.8) and each office. The landing's has
+  // one for each bedroom.
+  corridorWall(0, [2, 20.2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
+  corridorWall(UPSTAIRS, bedrooms.map((b) => wingX("bedroom", b.slot) + WINGS.bedroom.doorX));
+  add("office", offices);
+  add("bedroom", bedrooms);
 
   // The hallway's sign is a carved wooden plaque hanging on its back wall,
   // between two lamps on the right (onWall: on the wall, not on its top).
+  // The landing gets one too, between the second and third bedroom doors.
   rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 }, sign: { x: 13.72, y: 0, plaque: true, onWall: true } });
+  rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: UPSTAIRS, w: HOUSE_WIDTH, h: 3 }, sign: { x: 12, y: UPSTAIRS, plaque: true, onWall: true } });
 
   ROOMS = rooms;
   WALLS = walls;
@@ -286,7 +388,7 @@ function buildHouse(offices) {
   houseVersion++;
 }
 
-buildHouse([]);
+buildHouse([], []);
 
 // --- Office furniture ---
 // What goes in an office, given x0 (its left edge), top (its north edge)
@@ -364,6 +466,28 @@ const OFFICE_FURNITURE = {
   ],
 };
 
+// --- Bedroom furniture ---
+// Bedrooms are 5.6 wide and 5 deep, with the doorway at the bottom between
+// x0 + 2.2 and x0 + 3.8. A big bed against the north wall (its blanket in
+// the owner's color; step into it to go to sleep), a nightstand with a lamp
+// on each side, a rainy window, a wardrobe, a rug, a bookshelf and a plant.
+const BEDROOM_FURNITURE = (x0, top, bedroom) => [
+  { kind: "rug", x: x0 + 1.3, y: top + 2.75, w: 3.0, h: 1.3, color: "#8a6a9a", solid: false },
+  { kind: "rainWindow", x: x0 + 4.25, y: top, w: 1.2, solid: false },
+  { kind: "wardrobe", x: x0 + 0.1, y: top + 0.1, w: 1.0, h: 0.6 },
+  { kind: "nightstand", x: x0 + 1.25, y: top + 0.15, w: 0.55, h: 0.45 },
+  { kind: "bed", x: x0 + 1.9, y: top + 0.1, w: 1.8, h: 2.3, color: bedroom.color, solid: false },
+  { kind: "nightstand", x: x0 + 3.8, y: top + 0.15, w: 0.55, h: 0.45 },
+  { kind: "bookshelf", x: x0 + 0.1, y: top + 3.9, w: 1.3, h: 0.5 },
+  { kind: "plant", x: x0 + 4.85, y: top + 3.9, w: 0.6, h: 0.6 },
+];
+
+// The bed a player is lying in (their center is on it), or null.
+function bedAt(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.find((f) => f.kind === "bed" && cx >= f.x + 0.15 && cx <= f.x + f.w - 0.15 && cy >= f.y + 0.5 && cy <= f.y + f.h) || null;
+}
+
 // The secret office theme for a name, or null for a normal office.
 // Matched without caring about capital letters or stray spaces.
 function officeThemeFor(name) {
@@ -378,22 +502,26 @@ function roomNameFor(id) {
   return ROOMS.find((r) => r.id === id)?.name || CONFIG.roomNames[id] || "somewhere";
 }
 
-// True if the player is standing in the hallway right by the "+" door
-// where the next office would go.
+// Which "+" door the player is standing right by ("office" in the
+// hallway, "bedroom" on the landing), or null.
 function isNearBuildDoor(player) {
-  if (buildDoorX === null || getCurrentRoom(player).id !== "hallway") return false;
+  const corridor = getCurrentRoom(player).id;
+  const kind = corridor === "hallway" ? "office" : corridor === "landing" ? "bedroom" : null;
+  if (!kind || buildDoors[kind] === null) return null;
   const cx = player.x + PLAYER_SIZE / 2;
-  return cx >= buildDoorX + 0.8 && cx <= buildDoorX + 2.8 && player.y < 1.2;
+  const doorX = buildDoors[kind] + WINGS[kind].doorX;
+  return cx >= doorX - 0.2 && cx <= doorX + 1.8 && player.y < WINGS[kind].floorY + 1.2 ? kind : null;
 }
 
-// If the player is in the hallway right in front of someone else's locked
-// office door, returns that office's room (otherwise null). Used for the
+// If the player is in a corridor right in front of someone else's locked
+// office or bedroom door, returns that room (otherwise null). Used for the
 // "Press K to knock" prompt.
 function lockedDoorInFront(player) {
-  if (getCurrentRoom(player).id !== "hallway") return null;
+  const corridor = getCurrentRoom(player).id;
+  if (corridor !== "hallway" && corridor !== "landing") return null;
   const cx = player.x + PLAYER_SIZE / 2;
-  const nearDoor = (r) => cx >= r.rect.x + 1 && cx <= r.rect.x + 2.6 && player.y < 0.9;
-  return ROOMS.find((r) => r.office?.locked && !r.office.mine && nearDoor(r)) || null;
+  const nearDoor = (r) => cx >= r.door.x && cx <= r.door.x + DOOR_WIDTH && player.y >= r.door.y && player.y < r.door.y + 0.9;
+  return ROOMS.find((r) => r.owned?.locked && !r.owned.mine && nearDoor(r)) || null;
 }
 
 // True if the player is close enough to the raccoons to talk to them.
@@ -404,9 +532,9 @@ function isNearRaccoons(player) {
   return Math.hypot(dx, dy) < 1.4;
 }
 
-// What pressing E would do right here: talk to the raccoons, build an
-// office at the "+" door, or nothing. If both are in reach (the raccoons
-// stand near the third office's doorway), whichever is closer wins.
+// What pressing E would do right here: talk to the raccoons, make an
+// office or bedroom at a "+" door, or nothing. If both are in reach (the
+// raccoons stand near the third office's doorway), whichever is closer wins.
 function nearestInteraction(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
   const options = [];
@@ -414,7 +542,8 @@ function nearestInteraction(player) {
     const r = FURNITURE.find((f) => f.kind === "raccoons");
     options.push(["raccoons", Math.hypot(cx - (r.x + r.w / 2), cy - (r.y + r.h / 2))]);
   }
-  if (isNearBuildDoor(player)) options.push(["buildDoor", Math.hypot(cx - (buildDoorX + 1.8), cy - 0.3)]);
+  const kind = isNearBuildDoor(player);
+  if (kind) options.push(["buildDoor", Math.hypot(cx - (buildDoors[kind] + WINGS[kind].doorX + 0.8), cy - (WINGS[kind].floorY + 0.3))]);
   options.sort((a, b) => a[1] - b[1]);
   return options[0]?.[0] ?? null;
 }
@@ -436,15 +565,15 @@ function rectsOverlap(a, b) {
 // Moves a player by (dx, dy), sliding along walls and furniture instead of passing
 // through them. Checks x and y separately so bumping into a wall on one
 // axis doesn't stop movement on the other. dx/dy are in grid units.
-// Also stops you walking into someone else's locked office (but anyone
-// already inside can always walk out).
+// Also stops you walking into someone else's locked office or bedroom (but
+// anyone already inside can always walk out).
 function movePlayer(player, dx, dy) {
   const box = () => ({ x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE });
   const startRoomId = getCurrentRoom(player).id;
   const blocked = () => {
     if (SOLIDS.some((w) => rectsOverlap(box(), w))) return true;
     const room = getCurrentRoom(player);
-    return room.id !== startRoomId && room.office?.locked && !room.office.mine;
+    return room.id !== startRoomId && room.owned?.locked && !room.owned.mine;
   };
 
   player.x += dx;
@@ -458,10 +587,11 @@ function movePlayer(player, dx, dy) {
   }
 }
 
-// Returns the room the player's center point is currently inside.
+// Returns the room the player's center point is currently inside (or the
+// hallway or landing, if they're somehow in between).
 function getCurrentRoom(player) {
   const cx = player.x + PLAYER_SIZE / 2;
   const cy = player.y + PLAYER_SIZE / 2;
   const room = ROOMS.find((r) => cx >= r.rect.x && cx <= r.rect.x + r.rect.w && cy >= r.rect.y && cy <= r.rect.y + r.rect.h);
-  return room || ROOMS.find((r) => r.id === "hallway");
+  return room || ROOMS.find((r) => r.id === (floorOf(cy) ? "landing" : "hallway"));
 }

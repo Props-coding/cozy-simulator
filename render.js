@@ -205,6 +205,10 @@ const OFFICE_THEME_STYLE = {
 // Outside the house: a soft lawn with little tufts of grass and a few
 // flowers, so empty office spots look like garden, not a dark gap.
 function paintYard(ctx) {
+  if (viewFloor === 1) {
+    paintRoof(ctx);
+    return;
+  }
   const { left, right, top, bottom } = houseBounds();
   ctx.fillStyle = "#93b06c";
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
@@ -227,14 +231,31 @@ function paintYard(ctx) {
   }
 }
 
+// Upstairs, everything outside the rooms is the roof below you: rows of
+// warm clay shingles, each a slightly different shade.
+function paintRoof(ctx) {
+  const { left, right, top, bottom } = houseBounds();
+  ctx.fillStyle = "#6a3f33";
+  ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
+  for (let y = top - 6, row = 0; y < bottom + 12; y += 11, row++) {
+    for (let x = left - 18 + (row % 2) * 9, i = 0; x < right + 18; x += 18, i++) {
+      ctx.fillStyle = shadeColor("#8a5242", Math.round((noise(row * 37 + i * 1.3) - 0.5) * 22));
+      roundRectPath(ctx, x, y, 17, 12, 5);
+      ctx.fill();
+      ctx.fillStyle = "rgba(30, 15, 10, 0.3)";
+      ctx.fillRect(x + 1, y + 10, 15, 2);
+    }
+  }
+}
+
 function paintFloors(ctx) {
   paintYard(ctx);
   for (const room of ROOMS) {
-    const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
+    const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.owned?.kind] || CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
-    // Rooms north of the hallway also get floor under the hallway's wall,
+    // Rooms north of a corridor also get floor under the corridor's wall,
     // so their doorways show floor, not grass.
-    const underWall = room.rect.y < 0 ? WALL_THICKNESS : 0;
+    const underWall = room.north ? WALL_THICKNESS : 0;
     const box = { x: a.x, y: a.y, w: room.rect.w * TILE, h: (room.rect.h + underWall) * TILE };
     ctx.save();
     ctx.beginPath();
@@ -278,16 +299,22 @@ function paintFloors(ctx) {
   }
 }
 
-// The house's full width in screen pixels, from the far west end of the
-// hallway to the east wall, with a little margin. Used for the saved floor
-// picture and for how far the camera can scroll.
+// Which floor is being drawn (0 downstairs, 1 upstairs): the one you're
+// on. drawScene sets it each frame.
+let viewFloor = 0;
+
+// The floor being drawn, in screen pixels, from the west wall to the east
+// wall, with a little margin. Both floors are the same size, so the view
+// doesn't change size when you take the stairs. Used for the saved floor
+// picture and for fitting the house to the window.
 function houseBounds() {
+  const base = viewFloor * UPSTAIRS;
   return {
     left: toScreen(-WALL_THICKNESS, 0).x - 6,
     right: toScreen(HOUSE_WIDTH + WALL_THICKNESS, 0).x + 6,
     // Room above the north wall for its height and tall things against it.
-    top: toScreen(0, houseTopY).y - WALL_HEIGHT - 14,
-    bottom: toScreen(0, 11 + WALL_THICKNESS).y + 6,
+    top: toScreen(0, base + houseTopY).y - WALL_HEIGHT - 14,
+    bottom: toScreen(0, base + 11 + WALL_THICKNESS).y + 6,
   };
 }
 
@@ -309,7 +336,7 @@ function setViewScale(scale) {
 }
 
 let floorCanvas = null;
-let floorVersion = -1;
+let floorVersion = -1; // which house version (and floor) the saved picture shows
 
 // The doormats have writing on them, so repaint the floor once the cozy
 // font has finished loading (in case the first paint happened before).
@@ -320,7 +347,8 @@ document.fonts?.ready.then(() => {
 function drawFloors(ctx) {
   // Repaint only when the house has changed (an office was added, removed
   // or locked), not every frame.
-  if (floorVersion !== houseVersion) {
+  const version = houseVersion + "/" + viewFloor;
+  if (floorVersion !== version) {
     // Painted at full screen resolution, so copying it in is pixel-for-pixel.
     const { left, right, top, bottom } = houseBounds();
     floorCanvas = document.createElement("canvas");
@@ -330,7 +358,7 @@ function drawFloors(ctx) {
     fctx.scale(viewScale, viewScale);
     fctx.translate(-left, -top);
     paintFloors(fctx);
-    floorVersion = houseVersion;
+    floorVersion = version;
   }
   const { left, top } = houseBounds();
   ctx.drawImage(floorCanvas, left, top, floorCanvas.width / viewScale, floorCanvas.height / viewScale);
@@ -399,15 +427,15 @@ function drawWall(ctx, wall) {
       continue;
     }
     const themeStyle = OFFICE_THEME_STYLE[part.room?.theme];
-    ctx.fillStyle = themeStyle?.wall || CONFIG.roomWallColors[part.room?.id] || CONFIG.roomWallColors.office;
+    ctx.fillStyle = themeStyle?.wall || CONFIG.roomWallColors[part.room?.owned?.kind] || CONFIG.roomWallColors[part.room?.id] || CONFIG.roomWallColors.office;
     ctx.fillRect(left, b.y - height, w, height);
     ctx.fillStyle = WOOD_DARK; // baseboard
     ctx.fillRect(left, b.y - 5, w, 5);
     ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // a thin trim line near the top
     ctx.fillRect(left, b.y - height + 3, w, 2);
     if (themeStyle) drawWallPattern(ctx, themeStyle.wallPattern, left, b.y - height, w, height);
-    // Hallway walls get wood paneling on the bottom part, with a rail on top.
-    if (part.room?.id === "hallway") {
+    // Hallway and landing walls get wood paneling on the bottom part, with a rail on top.
+    if (part.room?.id === "hallway" || part.room?.id === "landing") {
       const panelTop = b.y - 18;
       ctx.fillStyle = "#b08a60";
       ctx.fillRect(left, panelTop, w, 13);
@@ -2000,6 +2028,132 @@ const FURNITURE_DRAWERS = {
     drawIvySprig(ctx, b.x + 1, b.y - 18, 11, 1);
   },
 
+  // --- Upstairs and bedrooms ---
+
+  // A wooden staircase seen from above, with the steps lighter toward the
+  // top of the screen (going up, they rise toward the light upstairs;
+  // going down, `down`, they sink into the shade below). A banister runs
+  // along the open side, and an arrow shows which way it goes.
+  staircase(ctx, f) {
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+    const w = b.x - a.x, h = b.y - a.y;
+    const steps = 7;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.3)"; // the stairwell opening
+    ctx.fillRect(a.x - 2, a.y - 2, w + 4, h + 4);
+    for (let i = 0; i < steps; i++) {
+      const sy = a.y + (i * h) / steps;
+      ctx.fillStyle = shadeColor("#a0764e", 22 - i * 8);
+      ctx.fillRect(a.x, sy, w, h / steps + 1);
+      ctx.fillStyle = "rgba(255, 235, 200, 0.25)"; // lit front edge of each step
+      ctx.fillRect(a.x, sy, w, 1.5);
+      ctx.fillStyle = "rgba(40, 25, 10, 0.35)"; // shadow line under each step's nose
+      ctx.fillRect(a.x, sy + h / steps - 1.5, w, 1.5);
+    }
+    // A runner carpet up the middle.
+    ctx.fillStyle = "rgba(111, 90, 140, 0.55)";
+    ctx.fillRect(a.x + w * 0.3, a.y, w * 0.4, h);
+    ctx.fillStyle = "rgba(201, 162, 74, 0.6)";
+    for (let i = 1; i < steps; i++) ctx.fillRect(a.x + w * 0.3, a.y + (i * h) / steps - 1, w * 0.4, 1);
+    // Banister along the west (open) side, with posts.
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(a.x - 3, a.y - 8, 4, h + 8);
+    for (let i = 0; i <= steps; i += 2) {
+      const py = a.y + (i * h) / steps;
+      ctx.fillRect(a.x - 4, py - 10, 6, 10);
+    }
+    ctx.fillStyle = "#c9a24a"; // newel post cap
+    ctx.beginPath();
+    ctx.arc(a.x - 1, a.y + h - 10, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    // A little arrow on the landing step showing which way it goes.
+    ctx.fillStyle = "rgba(255, 245, 225, 0.75)";
+    const ax = a.x + w / 2, ay = f.down ? a.y + h - 10 : a.y + 10;
+    ctx.beginPath();
+    if (f.down) {
+      ctx.moveTo(ax - 6, ay - 3);
+      ctx.lineTo(ax + 6, ay - 3);
+      ctx.lineTo(ax, ay + 4);
+    } else {
+      ctx.moveTo(ax - 6, ay + 3);
+      ctx.lineTo(ax + 6, ay + 3);
+      ctx.lineTo(ax, ay - 4);
+    }
+    ctx.closePath();
+    ctx.fill();
+  },
+
+  // A big cozy bed: a wooden headboard against the wall, pillows, and a
+  // puffy blanket in the owner's color folded back at the top. It isn't
+  // solid: step into it to go to sleep (you're drawn tucked in).
+  bed(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const frame = drawBlock(ctx, f.x, f.y + 0.25, f.w, f.h - 0.25, 12, "#7a5238");
+    const head = drawBlock(ctx, f.x - 0.05, f.y, f.w + 0.1, 0.25, 34, "#6b4630"); // headboard
+    ctx.fillStyle = "rgba(255, 235, 200, 0.18)";
+    roundRectPath(ctx, head.face.x + 6, head.face.y + 5, head.face.w - 12, head.face.h - 12, 6);
+    ctx.fill();
+    const { x, y, w, h } = frame.top;
+    // Sheet and pillows.
+    ctx.fillStyle = "#f5eee2";
+    ctx.fillRect(x + 3, y + 2, w - 6, h - 4);
+    for (const px of [x + 8, x + w / 2 + 3]) {
+      ctx.fillStyle = "#fffaf3";
+      roundRectPath(ctx, px, y + 5, w / 2 - 11, 16, 6);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+      ctx.fillRect(px + 3, y + 16, w / 2 - 17, 2);
+    }
+    // Blanket over the lower part, with a folded-back cuff.
+    const top = y + 28;
+    const blanket = ctx.createLinearGradient(0, top, 0, y + h);
+    blanket.addColorStop(0, shadeColor(f.color, 30));
+    blanket.addColorStop(1, shadeColor(f.color, -10));
+    ctx.fillStyle = blanket;
+    roundRectPath(ctx, x + 1, top, w - 2, y + h - top + frame.face.h - 3, 5);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(f.color, 55);
+    ctx.fillRect(x + 1, top, w - 2, 6);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // quilted lines
+    for (let qy = top + 14; qy < y + h - 4; qy += 12) ctx.fillRect(x + 4, qy, w - 8, 1);
+  },
+
+  // A little nightstand with a drawer and a glowing lamp.
+  nightstand(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const n = drawBlock(ctx, f.x, f.y, f.w, f.h, 18, "#7a5238");
+    ctx.fillStyle = "#5c3d2a";
+    ctx.fillRect(n.face.x + 4, n.face.y + 4, n.face.w - 8, 6);
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(n.face.x + n.face.w / 2 - 1.5, n.face.y + 6, 3, 2);
+    const cx = n.top.x + n.top.w / 2, cy = n.top.y + n.top.h / 2;
+    ctx.fillStyle = "#5c4530"; // lamp stand and shade
+    ctx.fillRect(cx - 1, cy - 14, 2, 14);
+    ctx.fillStyle = "#f2d9a0";
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy - 12);
+    ctx.lineTo(cx + 8, cy - 12);
+    ctx.lineTo(cx + 5, cy - 22);
+    ctx.lineTo(cx - 5, cy - 22);
+    ctx.closePath();
+    ctx.fill();
+  },
+
+  // A tall wooden wardrobe with two doors and brass knobs.
+  wardrobe(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const wd = drawBlock(ctx, f.x, f.y, f.w, f.h, 58, "#8b5e3c");
+    const { x, y, w, h } = wd.face;
+    ctx.strokeStyle = "rgba(40, 25, 10, 0.4)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 4, y + 4, w / 2 - 6, h - 12);
+    ctx.strokeRect(x + w / 2 + 2, y + 4, w / 2 - 6, h - 12);
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(x + w / 2 - 4, y + h / 2 - 2, 2, 4);
+    ctx.fillRect(x + w / 2 + 2, y + h / 2 - 2, 2, 4);
+    ctx.fillStyle = WOOD_DARK; // crown on top
+    ctx.fillRect(wd.top.x - 2, wd.top.y - 2, wd.top.w + 4, 3);
+  },
+
   fridge(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const fr = drawBlock(ctx, f.x, f.y, f.w, f.h, 46, "#dfe6ea");
@@ -2630,7 +2784,7 @@ function drawLamp(ctx, x, y) {
 function drawLights(ctx) {
   // Study, Dinner and the Hallway get a soft golden wash, like rooms lit
   // by lamps at night: warm in the middle, a little dimmer at the edges.
-  for (const id of ["study", "dinner", "hallway"]) {
+  for (const id of ["study", "dinner", "hallway", "landing", "stairs", "stairsUp"]) {
     const rect = ROOMS.find((r) => r.id === id).rect;
     const s1 = toScreen(rect.x, rect.y - 1), s2 = toScreen(rect.x + rect.w, rect.y + rect.h);
     const cx = (s1.x + s2.x) / 2, cy = (s1.y + s2.y) / 2;
@@ -2654,6 +2808,15 @@ function drawLights(ctx) {
   const l1 = toScreen(library.x, library.y - 1), l2 = toScreen(library.x + library.w, library.y + library.h);
   ctx.fillStyle = "rgba(25, 40, 55, 0.2)";
   ctx.fillRect(l1.x, l1.y, l2.x - l1.x, l2.y - l1.y);
+
+  // Bedrooms are dim and a little blue, like a room at night, lit by the
+  // bedside lamps.
+  for (const room of ROOMS) {
+    if (room.owned?.kind !== "bedroom") continue;
+    const s1 = toScreen(room.rect.x, room.rect.y - 1), s2 = toScreen(room.rect.x + room.rect.w, room.rect.y + room.rect.h);
+    ctx.fillStyle = "rgba(30, 30, 70, 0.2)";
+    ctx.fillRect(s1.x, s1.y, s2.x - s1.x, s2.y - s1.y);
+  }
 
   // Secret themed offices get their own warm or cold tint.
   for (const room of ROOMS) {
@@ -2683,6 +2846,9 @@ function drawLights(ctx) {
       drawFluorescent(ctx, f, now);
     } else if (f.kind === "paperLantern") {
       drawPaperLantern(ctx, f);
+    } else if (f.kind === "nightstand") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+      drawGlow(ctx, p.x, p.y - 18 - 17, 34, "rgba(255, 205, 130, 0.5)");
     } else if (f.kind === "cottageDesk") {
       // Candlelight on the desk.
       const p = toScreen(f.x + f.w, f.y + f.h / 2);
@@ -2751,10 +2917,11 @@ function coversSitter(f) {
 }
 
 let staticSprites = [];
-let spritesVersion = -1;
+let spritesVersion = -1; // which house version (and floor) staticSprites is for
 
 function getStaticSprites() {
-  if (spritesVersion !== houseVersion) {
+  const version = houseVersion + "/" + viewFloor;
+  if (spritesVersion !== version) {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
       // Name signs sort just after the wall they're on (and after a locked door).
@@ -2764,8 +2931,8 @@ function getStaticSprites() {
         sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
       })),
-    ];
-    spritesVersion = houseVersion;
+    ].filter((sprite) => floorOf(sprite.sortY) === viewFloor);
+    spritesVersion = version;
   }
   return staticSprites;
 }
@@ -3595,15 +3762,19 @@ function drawPlayerBody(ctx, p) {
   const cx = foot.x + sway;
   const cy = foot.y - r - 5 - bob;
 
-  ctx.fillStyle = "rgba(40, 25, 10, 0.25)";
-  ctx.beginPath();
-  ctx.ellipse(foot.x, foot.y, r * 0.85 - bob * 0.6, r * 0.35, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // (Someone asleep is tucked into bed: no shadow or feet, and a blanket
+  // over their lower half, drawn further down.)
+  if (!p.asleep) {
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)";
+    ctx.beginPath();
+    ctx.ellipse(foot.x, foot.y, r * 0.85 - bob * 0.6, r * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Feet, peeking out under the body (or shoes, if they're wearing some).
   const shoe = Object.hasOwn(SHOE_DRAWERS, p.shoes) ? SHOE_DRAWERS[p.shoes] : null;
   const liftSize = emote === "jig" ? 6 : 3;
-  for (const [side, lift] of [[-1, Math.max(0, step) * liftSize], [1, Math.max(0, -step) * liftSize]]) {
+  for (const [side, lift] of p.asleep ? [] : [[-1, Math.max(0, step) * liftSize], [1, Math.max(0, -step) * liftSize]]) {
     const fx = foot.x + side * (5.5 + (lift > 0 ? kick : 0)), fy = foot.y - 2.5 - lift;
     if (shoe) {
       shoe(ctx, fx, fy, side);
@@ -3691,6 +3862,18 @@ function drawPlayerBody(ctx, p) {
   }
 
   (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+
+  if (p.asleep) {
+    // Tucked in: the bed's blanket pulled up over their lower half.
+    const blanket = ctx.createLinearGradient(0, cy + 2, 0, foot.y + 4);
+    blanket.addColorStop(0, shadeColor(p.asleep.color, 30));
+    blanket.addColorStop(1, shadeColor(p.asleep.color, -10));
+    ctx.fillStyle = blanket;
+    roundRectPath(ctx, cx - r - 6, cy + 2, r * 2 + 12, foot.y + 4 - cy - 2, 5);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(p.asleep.color, 55); // the folded-back cuff
+    ctx.fillRect(cx - r - 6, cy + 2, r * 2 + 12, 5);
+  }
 
   if (p.typing && !emote) {
     // A little hand resting thoughtfully on the chin.
@@ -3938,8 +4121,10 @@ function drawStudySign(ctx, text) {
 // office spots), and the garden south of the hallway's east end, as
 // rectangles in grid units.
 function lawnAreas() {
-  const t = WALL_THICKNESS;
-  const taken = ROOMS.filter((r) => r.rect.y < 0).map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t]).sort((a, b) => a[0] - b[0]);
+  const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
+  const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
+    .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
+    .sort((a, b) => a[0] - b[0]);
   const areas = [];
   let from = -t;
   for (const [start, end] of taken) {
@@ -3947,9 +4132,12 @@ function lawnAreas() {
     from = Math.max(from, end);
   }
   if (from < HOUSE_WIDTH + t) areas.push({ x: from, w: HOUSE_WIDTH + t - from });
-  const north = areas.map((a) => ({ ...a, y: houseTopY - 1.5, h: -t - (houseTopY - 1.5) }));
-  // Plus the garden south of the hallway's east end.
-  return [...north, { x: 18 + t / 2, y: 3 + t / 2, w: HOUSE_WIDTH + t - 18 - t / 2, h: 12 - 3 - t / 2 }];
+  const north = areas.map((a) => ({ ...a, y: base + houseTopY - 1.5, h: -t - (houseTopY - 1.5) }));
+  // Plus the garden below the stairs (downstairs), or the roof south of
+  // the landing (upstairs).
+  const belowStairs = { x: 18, y: base + 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 };
+  if (viewFloor === 0) return [...north, belowStairs];
+  return [...north, belowStairs, { x: -t - 1, y: base + 3 + t / 2, w: 18 + 1 + t / 2, h: 9 }];
 }
 
 // It's raining outside: a slightly gloomy tint over the lawn, streaks of
@@ -3998,7 +4186,10 @@ function drawOutsideRain(ctx) {
 // including yourself, and `pets` the pets following them (see drawPet).
 // Name tags and labels are drawn in the house's own pixels too, so they
 // grow and shrink with it.
-function drawScene(ctx, players, studySign, pets = []) {
+function drawScene(ctx, players, studySign, pets = [], floor = 0) {
+  viewFloor = floor;
+  players = players.filter((p) => floorOf(p.y) === floor);
+  pets = pets.filter((pet) => floorOf(pet.y) === floor);
   ctx.save();
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   ctx.imageSmoothingEnabled = false;
