@@ -142,8 +142,10 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 - Phase 3, our own voice relay: run a relay (coturn) on the droplet instead of the free Metered account, with logins that expire after a few hours. Needs a few more firewall ports.
 - Later, maybe: move the whole site onto the droplet.
 
+- Phase 0 done (2026-09-23): the server has its own address, https://api.thecozy.world (the domain thecozy.world is registered at Namecheap; an "api" record points at the droplet). Caddy 2.11.4 is installed from Caddy's official source, gets and renews its HTTPS certificate from Let's Encrypt by itself (valid now, renews automatically), sends plain http:// visits to https://, and answers "Cozy House server is awake." For setup, `props` can use sudo without a password (the file `/etc/sudoers.d/90-props-setup`); this gets removed or narrowed when setup is finished.
+
 ## Next
-- Decide the server's web address (Phase 0), then start Phase 0.
+- Phase 1: the house key.
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog (`CLAUDE.md`): weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
 
