@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.47",
+    title: "Turn your furniture, and dance your way",
+    text: "While decorating, press R to turn beds, wardrobes, dressers, shelves, sofas and desks so they sit flush against the side walls. Your wardrobe got a makeover too: a big preview with your pet beside you, color swatches, picture tiles and a Random outfit button. And the 4 key is now your own dance, picked on the wardrobe's new Dances tab: Jig, Headbang (trap and dubstep), Glitch (breakcore), Sway (ambient) or Shuffle. Friends in the room hear your music.",
+  },
+  {
     build: "0.46",
     title: "A wardrobe that works",
     text: "The Wardrobe from Nest & Nook now opens! Place it in your bedroom and press E at it to change your color, hat, shoes and pet anytime, without going back to the Join screen. The ghosts on the hallway walls also have proper faces now. And if you see a hooded figure with floating candles and glowing runes at their feet... that's just Props.",
