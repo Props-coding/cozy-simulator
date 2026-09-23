@@ -178,13 +178,17 @@ const BASE_FURNITURE = [
   { kind: "chair", x: 14.7, y: 7.9, w: 0.6, h: 0.6, facing: "up" },
   { kind: "pendant", x: 15, y: 7, solid: false },
 
-  // Library: rainy windows with a reading nook under each (an armchair
-  // turned toward the window on the left, a beanbag on the right, each
-  // with a floor lamp), two rows of freestanding bookshelves either side
-  // of a center aisle, and a long reading table with green banker's lamps
-  // on a deep green rug, with seats along the near side. Quiet, no voice.
-  { kind: "rainWindow", x: 18.3, y: 3.2, w: 1.6, solid: false },
-  { kind: "rainWindow", x: 22.1, y: 3.2, w: 1.6, solid: false },
+  // Library: windows set into its outside (east) wall with rain running
+  // down them, a painting and a clock on the wall it shares with the
+  // hallway, reading nooks (an armchair under the painting, a beanbag by
+  // the window, each with a floor lamp), two rows of freestanding
+  // bookshelves either side of a center aisle, and a long reading table
+  // with green banker's lamps on a deep green rug, with seats along the
+  // near side. Quiet, no voice.
+  { kind: "picture", x: 18.5, y: 3.2, w: 1.0, art: "flowers", solid: false },
+  { kind: "clock", x: 22.9, y: 3.2, solid: false },
+  { kind: "sidePane", x: 24, y: 3.8, h: 1.5, solid: false },
+  { kind: "sidePane", x: 24, y: 7.9, h: 1.5, solid: false },
   { kind: "armchair", x: 18.6, y: 3.6, w: 1.1, h: 0.8 },
   { kind: "floorLamp", x: 19.75, y: 3.45, w: 0.4, h: 0.4 },
   { kind: "floorLamp", x: 22.1, y: 3.45, w: 0.4, h: 0.4 },

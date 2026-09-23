@@ -668,6 +668,79 @@ const FURNITURE_DRAWERS = {
 
   // --- Library ---
 
+  // Hung on a wall face: a round clock showing the real time where you are.
+  clock(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const cx = a.x, cy = a.y - WALL_HEIGHT + 17, r = 11;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.22)";
+    ctx.beginPath();
+    ctx.arc(cx + 1.5, cy + 2.5, r + 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8b6b4a";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fbf6ea";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5c4530";
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      ctx.fillRect(cx + Math.cos(angle) * (r - 2.5) - 0.6, cy + Math.sin(angle) * (r - 2.5) - 0.6, 1.2, 1.2);
+    }
+    const now = new Date();
+    const hands = [
+      [((now.getHours() % 12) + now.getMinutes() / 60) / 12, r * 0.5, 2],
+      [now.getMinutes() / 60, r * 0.78, 1.4],
+    ];
+    ctx.strokeStyle = "#3a2a1e";
+    ctx.lineCap = "round";
+    for (const [turn, length, width] of hands) {
+      const angle = turn * Math.PI * 2 - Math.PI / 2;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
+      ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+  },
+
+  // A window set into a side wall (the house's outside wall, seen from
+  // above), with rain running down the glass. y and h say where along the
+  // wall it sits.
+  sidePane(ctx, f) {
+    const left = toScreen(f.x, 0).x, right = toScreen(f.x + WALL_THICKNESS, 0).x;
+    const top = toScreen(0, f.y).y - WALL_HEIGHT * 0.6, bottom = toScreen(0, f.y + f.h).y - WALL_HEIGHT * 0.6;
+    ctx.fillStyle = "#8b6b4a"; // frame
+    ctx.fillRect(left - 1, top - 2, right - left + 2, bottom - top + 4);
+    const glass = ctx.createLinearGradient(left, 0, right, 0);
+    glass.addColorStop(0, "#7f97aa");
+    glass.addColorStop(1, "#4f6478");
+    ctx.fillStyle = glass;
+    ctx.fillRect(left + 2, top + 1, right - left - 4, bottom - top - 2);
+    const t = performance.now() / 1000;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(left + 2, top + 1, right - left - 4, bottom - top - 2);
+    ctx.clip();
+    ctx.strokeStyle = "rgba(220, 235, 245, 0.65)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 7; i++) {
+      const x = left + 3 + (i * 2.1) % (right - left - 5);
+      const fall = (t * (0.4 + noise(i + f.y) * 0.8) + noise(i * 2.7 + f.y)) % 1;
+      const y = top - 4 + fall * (bottom - top + 8);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + 5);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.fillStyle = "#8b6b4a"; // the bar across the middle
+    ctx.fillRect(left, (top + bottom) / 2 - 1, right - left, 2);
+  },
+
   // Hung on a wall face: a window on a rainy evening, with raindrops
   // running down the glass, green curtains and a little sill.
   rainWindow(ctx, f) {
@@ -2174,6 +2247,9 @@ function drawLights(ctx) {
     if (f.kind === "readingTable") {
       const p = toScreen(f.x, f.y + f.h / 2);
       for (const frac of [0.33, 0.67]) drawGlow(ctx, p.x + f.w * TILE * frac, p.y - 22 - 8, 34, "rgba(255, 220, 140, 0.45)");
+    } else if (f.kind === "sidePane") {
+      const p = toScreen(f.x, f.y + f.h / 2);
+      drawGlow(ctx, p.x - 16, p.y - 10, 50, "rgba(150, 185, 215, 0.3)");
     } else if (f.kind === "rainWindow") {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x, p.y - WALL_HEIGHT + 18, 34, "rgba(150, 185, 215, 0.25)");
@@ -2257,7 +2333,7 @@ function getStaticSprites() {
       // The Hallway's plaque on the wall (every other room has a doormat).
       ...ROOMS.filter((room) => room.sign?.plaque).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
-        sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
+        sortY: f.kind === "sidePane" ? 11 + WALL_THICKNESS + 0.001 : f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
       })),
     ];
@@ -2906,6 +2982,62 @@ function drawStudySign(ctx, text) {
 
 
 
+// The open lawn north of the hallway where no room stands (empty office
+// spots and the stretch beyond them), as rectangles in grid units.
+function lawnAreas() {
+  const t = WALL_THICKNESS;
+  const taken = ROOMS.filter((r) => r.rect.y < 0).map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t]).sort((a, b) => a[0] - b[0]);
+  const areas = [];
+  let from = -t;
+  for (const [start, end] of taken) {
+    if (start > from) areas.push({ x: from, w: start - from });
+    from = Math.max(from, end);
+  }
+  if (from < HOUSE_WIDTH + t) areas.push({ x: from, w: HOUSE_WIDTH + t - from });
+  return areas.map((a) => ({ ...a, y: houseTopY - 1.5, h: -t - (houseTopY - 1.5) }));
+}
+
+// It's raining outside: a slightly gloomy tint over the lawn, streaks of
+// rain falling, and little ripples where drops land.
+function drawOutsideRain(ctx) {
+  const t = performance.now() / 1000;
+  for (const area of lawnAreas()) {
+    const a = toScreen(area.x, area.y), b = toScreen(area.x + area.w, area.y + area.h);
+    const w = b.x - a.x, h = b.y - a.y;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.x, a.y, w, h);
+    ctx.clip();
+    ctx.fillStyle = "rgba(55, 75, 95, 0.16)";
+    ctx.fillRect(a.x, a.y, w, h);
+    const seed = Math.round(area.x * 10);
+    // Ripples on the ground.
+    for (let i = 0; i < Math.max(2, (w * h) / 5000); i++) {
+      const cycle = t * 0.9 + noise(seed + i * 5.3);
+      const phase = cycle % 1, round = Math.floor(cycle);
+      const rx = a.x + noise(seed + i * 3.7 + round * 11.1) * w, ry = a.y + noise(seed + i * 9.1 + round * 7.3) * h;
+      ctx.strokeStyle = `rgba(220, 235, 245, ${0.5 * (1 - phase)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, 1 + phase * 6, 0.5 + phase * 2.4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // Falling rain.
+    ctx.strokeStyle = "rgba(215, 230, 245, 0.45)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < (w * h) / 900; i++) {
+      const x = a.x + noise(seed + i * 1.3) * (w + 20);
+      const fall = (t * (0.9 + noise(seed + i * 2.9) * 0.5) + noise(seed + i * 4.1)) % 1;
+      const y = a.y - 12 + fall * (h + 24);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 2.5, y + 9);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 // Draws the whole house for one frame, scaled to fit the view (see
 // setViewScale). `players` is an array of { x, y, color, name, badge },
 // including yourself. Name tags and labels are drawn in the house's own
@@ -2918,6 +3050,7 @@ function drawScene(ctx, players, studySign) {
   ctx.translate(-left, -top);
 
   drawFloors(ctx);
+  drawOutsideRain(ctx);
 
   // Walls, furniture and players, sorted so lower on screen draws in front.
   const sprites = [...getStaticSprites()];

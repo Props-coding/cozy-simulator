@@ -12,3 +12,7 @@ A small browser hangout for a few friends. Everyone opens a link, picks a name a
 ## Settings
 
 Things you might want to change (room name, colors, music link) live in `config.js`, with comments explaining each one.
+
+## Credits
+
+- Library rain sound: "Rain against the Window" by cori, public domain (from pdsounds.org, via Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Rain_against_the_window.ogg).

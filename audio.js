@@ -191,85 +191,86 @@ export function playJigTune() {
 }
 
 // --- Rain for the Library ---
-// Made in code: looping hiss (soft white noise, trimmed at both ends so it
-// sounds like rain rather than static), a low rumble underneath, and the
-// odd drip. Plays for you while you're in the Library, fading in and out
-// like the Study's lo-fi, with its own volume slider.
+// A real recording: "Rain against the Window" by cori, public domain
+// (from pdsounds.org, via Wikimedia Commons), stored in sounds/. It loops
+// with a slow crossfade so you never hear where it starts over. Plays for
+// you while you're in the Library, fading in and out like the Study's
+// lo-fi, with its own volume slider.
+const RAIN_FILE = "sounds/rain-against-the-window.ogg";
+const RAIN_CROSSFADE = 4; // seconds each loop overlaps the next
+let rainRecording = null; // the decoded recording, loaded the first time
 let rain = null; // the playing sound, or null when stopped
 let inLibrary = false;
 let rainUserVolume = 0.5;
 let rainLevel = 0; // what's actually applied right now (eases toward the target)
 
-function noiseBuffer(seconds, brown) {
-  const length = Math.floor(toneContext.sampleRate * seconds);
-  const buffer = toneContext.createBuffer(1, length, toneContext.sampleRate);
-  const data = buffer.getChannelData(0);
-  let last = 0;
-  for (let i = 0; i < length; i++) {
-    const white = Math.random() * 2 - 1;
-    if (brown) {
-      last = (last + 0.02 * white) / 1.02;
-      data[i] = last * 3.5;
-    } else {
-      data[i] = white;
-    }
+async function loadRainRecording() {
+  if (!rainRecording) {
+    const response = await fetch(RAIN_FILE);
+    rainRecording = await toneContext.decodeAudioData(await response.arrayBuffer());
   }
-  return buffer;
+  return rainRecording;
 }
 
-function startRain() {
+// Smooth "equal power" fade curves, so the crossfade doesn't dip in volume.
+function fadeCurve(fadingIn) {
+  const curve = new Float32Array(64);
+  for (let i = 0; i < 64; i++) {
+    const x = (i / 63) * (Math.PI / 2);
+    curve[i] = fadingIn ? Math.sin(x) : Math.cos(x);
+  }
+  return curve;
+}
+
+async function startRain() {
   if (rain || !toneContext) return;
   const out = toneContext.createGain();
   out.gain.value = 0;
   out.connect(toneContext.destination);
+  const playing = { out, sources: [], timer: null, stopped: false };
+  rain = playing;
+  playing.stop = () => {
+    playing.stopped = true;
+    clearTimeout(playing.timer);
+    for (const src of playing.sources) {
+      try {
+        src.stop();
+      } catch {
+        // Already finished.
+      }
+    }
+    out.disconnect();
+  };
 
-  const hiss = toneContext.createBufferSource();
-  hiss.buffer = noiseBuffer(3, false);
-  hiss.loop = true;
-  const high = toneContext.createBiquadFilter();
-  high.type = "highpass";
-  high.frequency.value = 500;
-  const low = toneContext.createBiquadFilter();
-  low.type = "lowpass";
-  low.frequency.value = 3200;
-  const hissGain = toneContext.createGain();
-  hissGain.gain.value = 0.5;
-  hiss.connect(high);
-  high.connect(low);
-  low.connect(hissGain);
-  hissGain.connect(out);
+  let recording;
+  try {
+    recording = await loadRainRecording();
+  } catch (err) {
+    console.warn("Couldn't load the rain sound:", err);
+    return;
+  }
+  if (playing.stopped) return;
 
-  const rumble = toneContext.createBufferSource();
-  rumble.buffer = noiseBuffer(4, true);
-  rumble.loop = true;
-  const rumbleFilter = toneContext.createBiquadFilter();
-  rumbleFilter.type = "lowpass";
-  rumbleFilter.frequency.value = 500;
-  rumble.connect(rumbleFilter);
-  rumbleFilter.connect(out);
-
-  hiss.start();
-  rumble.start();
-
-  // Now and then, a single drip.
-  const drips = setInterval(() => {
-    if (Math.random() > 0.35 || rainLevel < 0.01) return;
-    const now = toneContext.currentTime;
-    const osc = toneContext.createOscillator();
+  // Plays the recording once from `when`, fading in at the start and out at
+  // the end, and books the next copy to start as this one begins fading.
+  const length = recording.duration;
+  const playFrom = (when) => {
+    if (playing.stopped) return;
+    const src = toneContext.createBufferSource();
+    src.buffer = recording;
     const gain = toneContext.createGain();
-    osc.type = "sine";
-    const freq = 1800 + Math.random() * 1600;
-    osc.frequency.setValueAtTime(freq, now);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, now + 0.08);
-    gain.gain.setValueAtTime(0.25 * rainLevel, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-    osc.connect(gain);
+    gain.gain.setValueCurveAtTime(fadeCurve(true), when, RAIN_CROSSFADE);
+    gain.gain.setValueCurveAtTime(fadeCurve(false), when + length - RAIN_CROSSFADE, RAIN_CROSSFADE);
+    src.connect(gain);
     gain.connect(out);
-    osc.start(now);
-    osc.stop(now + 0.12);
-  }, 180);
-
-  rain = { out, stop: () => { hiss.stop(); rumble.stop(); clearInterval(drips); out.disconnect(); } };
+    src.start(when);
+    src.stop(when + length);
+    playing.sources.push(src);
+    src.onended = () => (playing.sources = playing.sources.filter((s) => s !== src));
+    const next = when + length - RAIN_CROSSFADE;
+    playing.timer = setTimeout(() => playFrom(next), Math.max(0, (next - toneContext.currentTime - 1) * 1000));
+  };
+  playFrom(toneContext.currentTime + 0.05);
 }
 
 // Call once when you walk into the Library, and once when you leave.
@@ -289,8 +290,8 @@ export function setRainVolume(vol) {
 // Call every frame: fades the rain toward where it should be, and stops it
 // completely once it has faded out after you leave.
 export function updateRain(dt) {
-  if (!rain) return;
-  const target = inLibrary && !masterMuted ? rainUserVolume * masterVolume * 0.35 : 0;
+  if (!rain || !rain.out) return;
+  const target = inLibrary && !masterMuted ? rainUserVolume * masterVolume : 0;
   rainLevel += (target - rainLevel) * (1 - Math.pow(0.02, dt));
   if (Math.abs(target - rainLevel) < 0.001) rainLevel = target;
   rain.out.gain.value = rainLevel;
