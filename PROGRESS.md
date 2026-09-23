@@ -105,6 +105,8 @@
 
 - Build 0.32: typing indicator. While someone is writing a chat message, their character makes a thinking face (eyes glancing up, one eyebrow raised, a little "hmm" mouth, a hand on the chin) and a small bubble with three bouncing dots appears over their name. It goes away as soon as they send, clear the box or click away. It rides along with the regular position updates.
 
+- Build 0.33: fixed friends not seeing new features (like the typing dots) right after an update. GitHub Pages lets browsers keep files for 10 minutes, so a normal refresh could load the new page but old game code. Every file is now loaded with the build number attached ("?v=0.33"), so a refresh always gets fresh files. Friends on an older version now show a small "needs refresh" tag next to their name in Who's here. When releasing, every "v=" number in index.html gets updated along with the build tag.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements and pets (crumbs, the raccoon shop, the Library and emotes are done).

@@ -868,16 +868,21 @@ function safeColor(color) {
 
 // Turns a color and a line of text into one sidebar row, with a small
 // dot in the player's color so the list matches who you see on screen.
-function peerRow(color, text) {
-  return `<li><span class="peer-dot" style="background:${safeColor(color)}"></span>${escapeHtml(text)}</li>`;
+function peerRow(color, text, outdated = false) {
+  const tag = outdated ? ' <span class="peer-outdated" title="They\'re on an older version of the house. Ask them to refresh (Ctrl + F5).">needs refresh</span>' : "";
+  return `<li><span class="peer-dot" style="background:${safeColor(color)}"></span><span>${escapeHtml(text)}${tag}</span></li>`;
 }
+
+// This page's build number (from the little tag in the corner). It's sent
+// to friends, so anyone on an older version shows up as "needs refresh".
+const MY_BUILD = document.getElementById("version-tag").textContent.replace("build", "").trim();
 
 function updateSidebar(myRoomName) {
   let rows = peerRow(myColor, `${myName} (you) · ${myRoomName} · ${formatLocalTime(myTimeZone)}`);
   for (const peer of getPeers()) {
     const time = formatLocalTime(peer.tz);
     const roomName = roomNameFor(peer.room);
-    rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`);
+    rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD);
   }
   peerList.innerHTML = rows;
 }
@@ -921,7 +926,7 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const officeInfo = myOffice ? { since: myOffice.since, locked: myOffice.locked } : null;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo, typing: amTyping() });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo, typing: amTyping(), build: MY_BUILD });
   }
 
   const scenePlayers = getPeers().map((peer) => {

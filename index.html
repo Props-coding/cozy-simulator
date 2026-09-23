@@ -7,7 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <!-- Every file is loaded with "?v=" plus the build number, so after an
+       update everyone's browser fetches the new files instead of reusing
+       old ones it saved earlier. (GitHub Pages lets browsers keep files for
+       10 minutes, which could mix new and old code.) When releasing a new
+       build, change every "v=0.33" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.33">
 </head>
 <body>
   <!-- The crumb icon: a happy little cookie crumb with chocolate chips,
@@ -270,11 +275,25 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.32</p>
+  <p id="version-tag">build 0.33</p>
 
-  <script src="config.js"></script>
-  <script src="world.js"></script>
-  <script src="render.js"></script>
-  <script type="module" src="main.js"></script>
+  <script src="config.js?v=0.33"></script>
+  <script src="world.js?v=0.33"></script>
+  <script src="render.js?v=0.33"></script>
+  <!-- The same "?v=" for the files main.js loads in turn. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "./main.js": "./main.js?v=0.33",
+        "./network.js": "./network.js?v=0.33",
+        "./audio.js": "./audio.js?v=0.33",
+        "./theater.js": "./theater.js?v=0.33",
+        "./whiteboard.js": "./whiteboard.js?v=0.33",
+        "./shop.js": "./shop.js?v=0.33",
+        "./emoji.js": "./emoji.js?v=0.33"
+      }
+    }
+  </script>
+  <script type="module" src="main.js?v=0.33"></script>
 </body>
 </html>

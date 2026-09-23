@@ -1127,6 +1127,19 @@ canvas {
   padding: 4px 0;
 }
 
+/* A friend on an older version of the house. */
+.peer-outdated {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #f3d9c9;
+  color: #a4523a;
+  font-size: 0.78em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .peer-dot {
   display: inline-block;
   width: 10px;
