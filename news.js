@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.39",
+    title: "Accounts and cloud saves",
+    text: "The house now has a front door. Make an account, enter the house phrase once, and you'll walk straight in on every visit. Your crumbs, hats, pets, achievements, bedroom and letters are saved to your account, so they follow you to any computer. Forgot your password? Ask the house owner for a reset code.",
+  },
+  {
     build: "0.38",
     title: "Your own little home",
     text: "Bedrooms now start simple: a desk with a laptop and a plain mattress. Open the laptop (press E at your desk) to send letters to friends, read the news, shop at Nest & Nook for furniture and decor, and decorate your room. Buy the Roomy upgrade to take down the partition wall and nearly double your space.",
