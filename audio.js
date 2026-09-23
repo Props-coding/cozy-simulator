@@ -191,12 +191,14 @@ export function playJigTune() {
 }
 
 // --- Rain for the Library ---
-// A real recording: "Rain against the Window" by cori, public domain
-// (from pdsounds.org, via Wikimedia Commons), stored in sounds/. It loops
-// with a slow crossfade so you never hear where it starts over. Plays for
-// you while you're in the Library, fading in and out like the Study's
-// lo-fi, with its own volume slider.
-const RAIN_FILE = "sounds/rain-against-the-window.ogg";
+// A real recording: "Rain" by ezwa, public domain (from pdsounds.org, via
+// Wikimedia Commons), stored in sounds/. It's a soft, steady patter with no
+// sudden splats (picked for being the least distracting of several). It's
+// played slightly muffled, the way rain sounds through a window from a
+// warm room, and loops with a slow crossfade so you never hear where it
+// starts over. Plays for you while you're in the Library, fading in and
+// out like the Study's lo-fi, with its own volume slider.
+const RAIN_FILE = "sounds/soft-rain.ogg";
 const RAIN_CROSSFADE = 4; // seconds each loop overlaps the next
 let rainRecording = null; // the decoded recording, loaded the first time
 let rain = null; // the playing sound, or null when stopped
@@ -226,7 +228,17 @@ async function startRain() {
   if (rain || !toneContext) return;
   const out = toneContext.createGain();
   out.gain.value = 0;
-  out.connect(toneContext.destination);
+  // "Through the glass": soften the hiss on top and the rumble underneath.
+  const muffle = toneContext.createBiquadFilter();
+  muffle.type = "lowpass";
+  muffle.frequency.value = 1700;
+  muffle.Q.value = 0.5;
+  const trim = toneContext.createBiquadFilter();
+  trim.type = "highpass";
+  trim.frequency.value = 140;
+  out.connect(muffle);
+  muffle.connect(trim);
+  trim.connect(toneContext.destination);
   const playing = { out, sources: [], timer: null, stopped: false };
   rain = playing;
   playing.stop = () => {
@@ -240,6 +252,8 @@ async function startRain() {
       }
     }
     out.disconnect();
+    muffle.disconnect();
+    trim.disconnect();
   };
 
   let recording;

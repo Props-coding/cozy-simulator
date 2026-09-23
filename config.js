@@ -99,7 +99,8 @@ const CONFIG = {
   defaultLofiVolume: 0.5,
 
   // Starting volume for the rain in the Library (0 to 1). There's a slider too.
-  defaultRainVolume: 0.5,
+  // Kept low on purpose: it's meant to be a soft background, not a sound.
+  defaultRainVolume: 0.35,
 
   // --- Secret office themes (an Easter egg) ---
   // If someone with one of these names builds an office, they get a

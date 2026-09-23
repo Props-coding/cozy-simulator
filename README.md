@@ -15,4 +15,4 @@ Things you might want to change (room name, colors, music link) live in `config.
 
 ## Credits
 
-- Library rain sound: "Rain against the Window" by cori, public domain (from pdsounds.org, via Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Rain_against_the_window.ogg).
+- Library rain sound: "Rain" by ezwa, public domain (from pdsounds.org, via Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Rain_(1).ogg).

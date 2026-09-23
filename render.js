@@ -336,6 +336,26 @@ function drawFloors(ctx) {
 }
 
 // --- Walls ---
+// Splits a wall's front face into stretches by which room each stretch
+// faces (the room just below it). Returns [{ x0, x1, room }] in grid units.
+function wallFaceParts(wall) {
+  const below = wall.y + wall.h + 0.01;
+  const edges = new Set([wall.x, wall.x + wall.w]);
+  for (const r of ROOMS) {
+    if (below >= r.rect.y && below <= r.rect.y + r.rect.h) {
+      for (const x of [r.rect.x, r.rect.x + r.rect.w]) if (x > wall.x && x < wall.x + wall.w) edges.add(x);
+    }
+  }
+  const xs = [...edges].sort((p, q) => p - q);
+  const parts = [];
+  for (let i = 0; i < xs.length - 1; i++) {
+    const mid = (xs[i] + xs[i + 1]) / 2;
+    const room = ROOMS.find((r) => mid >= r.rect.x && mid <= r.rect.x + r.rect.w && below >= r.rect.y && below <= r.rect.y + r.rect.h);
+    parts.push({ x0: xs[i], x1: xs[i + 1], room });
+  }
+  return parts;
+}
+
 // Simple panels: a wood top edge, a painted front face (each room has its
 // own wall color, see config.js), and a dark baseboard line where the wall
 // meets the floor. Walls running up and
@@ -356,29 +376,44 @@ function drawWall(ctx, wall) {
   // Top edge (the wood cap you see from above).
   ctx.fillStyle = WOOD;
   ctx.fillRect(a.x, a.y - height, b.x - a.x, b.y - a.y);
-  // Front face.
+  // Front face. Each stretch of it takes the look of the room it faces
+  // (the one just below it), so a long wall shared by several rooms is
+  // painted to match each of them.
   const hasFace = !wall.low && wall.w > wall.h;
-  // The face belongs to whichever room it faces: the one just below it.
-  const facing = getCurrentRoom({ x: wall.x + wall.w / 2 - PLAYER_SIZE / 2, y: wall.y + wall.h });
-  const themeStyle = OFFICE_THEME_STYLE[facing.theme];
-  ctx.fillStyle = hasFace ? themeStyle?.wall || CONFIG.roomWallColors[facing.id] || CONFIG.roomWallColors.office : WOOD_DARK;
-  ctx.fillRect(a.x, b.y - height, b.x - a.x, height);
-  // Baseboard.
-  if (hasFace) {
+  if (!hasFace) {
     ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x, b.y - 5, b.x - a.x, 5);
+    ctx.fillRect(a.x, b.y - height, b.x - a.x, height);
+    return;
+  }
+  for (const part of wallFaceParts(wall)) {
+    const left = toScreen(part.x0, 0).x, right = toScreen(part.x1, 0).x, w = right - left;
+    if (!part.room) {
+      // Facing outside (the garden): warm wooden house siding.
+      ctx.fillStyle = "#a07c55";
+      ctx.fillRect(left, b.y - height, w, height);
+      ctx.fillStyle = "rgba(60, 35, 15, 0.28)";
+      for (let y = b.y - height + 6; y < b.y - 2; y += 7) ctx.fillRect(left, y, w, 1.5);
+      ctx.fillStyle = "rgba(255, 235, 200, 0.12)";
+      for (let y = b.y - height + 1; y < b.y - 2; y += 7) ctx.fillRect(left, y, w, 1);
+      continue;
+    }
+    const themeStyle = OFFICE_THEME_STYLE[part.room?.theme];
+    ctx.fillStyle = themeStyle?.wall || CONFIG.roomWallColors[part.room?.id] || CONFIG.roomWallColors.office;
+    ctx.fillRect(left, b.y - height, w, height);
+    ctx.fillStyle = WOOD_DARK; // baseboard
+    ctx.fillRect(left, b.y - 5, w, 5);
     ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // a thin trim line near the top
-    ctx.fillRect(a.x, b.y - height + 3, b.x - a.x, 2);
-    if (themeStyle) drawWallPattern(ctx, themeStyle.wallPattern, a.x, b.y - height, b.x - a.x, height);
+    ctx.fillRect(left, b.y - height + 3, w, 2);
+    if (themeStyle) drawWallPattern(ctx, themeStyle.wallPattern, left, b.y - height, w, height);
     // Hallway walls get wood paneling on the bottom part, with a rail on top.
-    if (facing.id === "hallway") {
+    if (part.room?.id === "hallway") {
       const panelTop = b.y - 18;
       ctx.fillStyle = "#b08a60";
-      ctx.fillRect(a.x, panelTop, b.x - a.x, 13);
+      ctx.fillRect(left, panelTop, w, 13);
       ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
-      for (let px = a.x + 12; px < b.x; px += 24) ctx.fillRect(px, panelTop + 3, 1, 9);
+      for (let px = left + 12; px < right; px += 24) ctx.fillRect(px, panelTop + 3, 1, 9);
       ctx.fillStyle = WOOD;
-      ctx.fillRect(a.x, panelTop - 2, b.x - a.x, 3);
+      ctx.fillRect(left, panelTop - 2, w, 3);
     }
   }
 }
@@ -2998,8 +3033,9 @@ function drawStudySign(ctx, text) {
 
 
 
-// The open lawn north of the hallway where no room stands (empty office
-// spots and the stretch beyond them), as rectangles in grid units.
+// The open lawn outside: north of the hallway where no room stands (empty
+// office spots), and the garden south of the hallway's east end, as
+// rectangles in grid units.
 function lawnAreas() {
   const t = WALL_THICKNESS;
   const taken = ROOMS.filter((r) => r.rect.y < 0).map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t]).sort((a, b) => a[0] - b[0]);
@@ -3010,7 +3046,9 @@ function lawnAreas() {
     from = Math.max(from, end);
   }
   if (from < HOUSE_WIDTH + t) areas.push({ x: from, w: HOUSE_WIDTH + t - from });
-  return areas.map((a) => ({ ...a, y: houseTopY - 1.5, h: -t - (houseTopY - 1.5) }));
+  const north = areas.map((a) => ({ ...a, y: houseTopY - 1.5, h: -t - (houseTopY - 1.5) }));
+  // Plus the garden south of the hallway's east end.
+  return [...north, { x: 18 + t / 2, y: 3 + t / 2, w: HOUSE_WIDTH + t - 18 - t / 2, h: 12 - 3 - t / 2 }];
 }
 
 // It's raining outside: a slightly gloomy tint over the lawn, streaks of
