@@ -187,7 +187,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Cleaner room signs: the brown name plaques and doormats (and the Hallway and Upstairs plaques) are gone. Each doorway has a small matching wooden sign above it with a hand-drawn icon: film reel (Theater), pencil (Conference Room), books (Library), lamp (Study), fork and knife (Dinner), stairs (Stairs). Offices and bedrooms get a nameplate with the owner's name. Walk near a doorway and the room's full name fades in on a little tag under its sign; it fades out as you walk away. The header still shows where you are.
   - Icons are set in `config.js` (`roomIcons`), keyed by room. Built-in choices: film, pencil, books, openBook, lamp, forkKnife, stairs, gamepad, music, heart, leaf, moon, door; anything else (like an emoji) is shown as written.
 
-- Build 0.44 (not pushed yet):
+- Build 0.44:
   - Previews no longer cut off tall things: in Reginald's shop (hats, shoes, pets), on the Join screen and on profile cards, the round backdrop now sits at the bottom of a taller picture, so the Party Hat, Chef Hat, Witch Hat, Top Hat, the Halo and wide pets (fox, raccoon kit) show in full above and beside the circle. The character's body stays inside the circle.
   - New plants at Nest & Nook: Monstera Adansonii (on a moss pole), Hoya Finlaysonii (with pink star flowers), and Red and Pink Anthuriums.
   - Crumbs you earn while Nest & Nook is open now show up right away (the wallet and the "crumbs short" buttons update without reopening the store).
@@ -196,7 +196,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Theater makeover: red velvet curtains with chasing marquee lights around the screen, a gold-star cinema carpet, floor cushions up front, a big back-row sofa you can sit on, glowing lights along the aisle, and a snack counter next to the popcorn machine.
   - Seasonal decorations in the shared rooms (hallways, Theater, Study, Dinner, Library; not offices or bedrooms). Garlands along the hallway walls, plus a small and a big decoration in each room. Autumn: leaf garlands, pumpkins and a crate of pumpkins and apples. Winter: pine garlands with twinkling lights, presents and little decorated trees. Spring: flower garlands, egg baskets and planters of tulips and daffodils. Summer: colorful bunting, sunflowers and standing fans. It follows the calendar; `season` in `config.js` can pin one, and the admin panel has buttons to preview each season.
   - Study turntable: press E at the turntable (on a record cabinet under the bookshelf) to choose your lo-fi type: Asian, Christmas, Hip-Hop (the default), House, Jazz, Medieval, Sad or Summer. They're Lofi Girl's official 24/7 radio streams (all checked as allowed to embed). Your pick only plays for you, so everyone in the Study can listen to their own. It's remembered, saved to your account, shown on your profile ("Favorite lo-fi"), and the record on the turntable has your pick's color. Stations live in `config.js` (`lofiStations`).
-  - Server change for this (needs deploying with the push): profiles now include `lofi`.
+  - Server change for this: profiles now include `lofi` (deployed with the release).
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

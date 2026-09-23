@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.44",
+    title: "An elevator, a movie palace, and your own lo-fi",
+    text: "The stairs are gone: take the elevator instead (press E at the brass doors, ding!). The Theater got a makeover with velvet curtains, marquee lights, a big back-row sofa and a snack counter. The house now dresses up for the season, starting with autumn leaves and pumpkins. In the Study, press E at the new turntable to choose your lo-fi type (Hip-Hop, Jazz, House, Christmas, Medieval and more). Only you hear your pick, and friends can see it on your profile. Plus: four new plants at Nest & Nook (Monstera Adansonii, Hoya Finlaysonii and two Anthuriums), Wren's notes on every item when you hover, crumbs that update while you shop, and hats and pets no longer cut off in previews.",
+  },
+  {
     build: "0.43",
     title: "Tidier room signs",
     text: "The big name plaques are gone. Every doorway now has a small wooden sign with a little picture on it: a film reel for the Theater, books for the Library, a lamp for the Study, a fork and knife for Dinner, and so on. Offices and bedrooms show their owner's name. Walk up to a door and the room's name fades in underneath.",
