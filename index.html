@@ -329,21 +329,14 @@
           <!-- The wardrobe (wardrobe.js): change your look from your bedroom. -->
           <div id="wardrobe-panel" hidden>
             <h3>Your wardrobe</h3>
-            <canvas id="wardrobe-preview" width="96" height="136"></canvas>
-            <div class="wardrobe-rows">
-              <label>Color <input id="wardrobe-color" type="color"></label>
-              <label>Hat <select id="wardrobe-hat"></select></label>
-              <label>Shoes <select id="wardrobe-shoes"></select></label>
-              <label>Pet <select id="wardrobe-pet"></select></label>
+            <canvas id="wardrobe-preview" width="220" height="150"></canvas>
+            <div id="wardrobe-colors" role="group" aria-label="Color"></div>
+            <nav id="wardrobe-tabs"></nav>
+            <div id="wardrobe-items"></div>
+            <div class="wardrobe-bottom">
+              <button id="wardrobe-random" type="button" class="soft-button">🎲 Random outfit</button>
+              <button id="wardrobe-close" type="button" class="warm-button">Done</button>
             </div>
-            <fieldset id="wardrobe-exalted" hidden>
-              <legend>✦ Exalted ✦</legend>
-              <label><input type="checkbox" data-piece="robe"> Hooded robe</label>
-              <label><input type="checkbox" data-piece="sigil"> Sigil circle</label>
-              <label><input type="checkbox" data-piece="candles"> Floating candles</label>
-              <label><input type="checkbox" data-piece="runes"> Rune footsteps</label>
-            </fieldset>
-            <button id="wardrobe-close" type="button" class="warm-button">Done</button>
           </div>
           <!-- The Study's turntable (turntable.js): a crate of records, one
                per lo-fi station. Your pick only plays for you. -->

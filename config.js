@@ -17,6 +17,10 @@ const CONFIG = {
     landing: "Upstairs",
   },
 
+  // The color swatches in the wardrobe (there's also a "custom" one that
+  // opens the full color picker).
+  wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],
+
   // Accounts that can wear the Exalted look (a hooded robe, sigil circle,
   // floating candles and rune footsteps), switched on in their wardrobe.
   exaltedNames: ["Props"],

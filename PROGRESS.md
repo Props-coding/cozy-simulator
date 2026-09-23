@@ -210,6 +210,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - A working wardrobe: the Wardrobe from Nest & Nook (45 crumbs), placed in your bedroom, opens with E. Change your color, hat, shoes and pet right there (with a preview), no need to go back to the Join screen.
   - The Exalted look, only for accounts in `exaltedNames` in `config.js` (just Props): four pieces switched on separately in the wardrobe, all seen by friends. A hooded crimson robe with gold trim and glowing eyes (it replaces the hat while on), a slowly turning sigil circle on the floor, three candles floating around you, and glowing rune footsteps that fade as you walk. Saved to your account. (A tech-savvy friend could copy it by editing their own browser; there's no referee.)
 
+- After 0.46 (not pushed yet):
+  - Wardrobe restyled to match the shops: a big live preview of you with your pet beside you (tall hats and the Halo fit), a row of round color swatches from `wardrobeColors` in `config.js` plus a rainbow "custom" swatch for any color, and tabs (Hats, Shoes, Pets, and Exalted for Props) of picture tiles. Click a tile to wear it, click again to take it off; what you're wearing gets a gold ring and a "Wearing" badge. Exalted tiles use the same light cards with a soft gold border, an "On" badge and a little sparkle. A "Random outfit" button picks a color and any hat, shoes and pet you own.
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

@@ -2,21 +2,28 @@
 // press E at it to change your color, hat, shoes and pet without going
 // back to the Join screen. Changes show right away.
 //
-// Accounts listed in CONFIG.exaltedNames also get the Exalted look here:
-// a hooded robe, a sigil circle, floating candles and rune footsteps, each
+// It looks like the shop: a big preview of you (with your pet beside
+// you), color swatches, and tabs of picture tiles. Click a tile to wear
+// it, click it again to take it off.
+//
+// Accounts listed in CONFIG.exaltedNames also get an Exalted tab: a
+// hooded robe, a sigil circle, floating candles and rune footsteps, each
 // switched on or off separately (drawn in render.js, seen by friends).
 import { playClickSound } from "./audio.js";
 
 const panel = document.getElementById("wardrobe-panel");
-const colorInput = document.getElementById("wardrobe-color");
-const hatSelect = document.getElementById("wardrobe-hat");
-const shoesSelect = document.getElementById("wardrobe-shoes");
-const petSelect = document.getElementById("wardrobe-pet");
-const exaltedBox = document.getElementById("wardrobe-exalted");
 const preview = document.getElementById("wardrobe-preview");
+const colorsRow = document.getElementById("wardrobe-colors");
+const tabsRow = document.getElementById("wardrobe-tabs");
+const itemsGrid = document.getElementById("wardrobe-items");
 
 const AURA_KEY = "cozy-house-aura";
-const AURA_PIECES = ["robe", "sigil", "candles", "runes"];
+const AURA_PIECES = [
+  ["robe", "Hooded robe"],
+  ["sigil", "Sigil circle"],
+  ["candles", "Floating candles"],
+  ["runes", "Rune footsteps"],
+];
 
 // main.js tells us how to read and change your look, and what you own.
 let hooks = { look: () => ({}), wear: () => {}, choices: () => ({ hats: [], shoes: [], pets: [] }), name: () => "" };
@@ -47,7 +54,7 @@ function readAura() {
   } catch {
     // Nothing saved yet.
   }
-  return Object.fromEntries(AURA_PIECES.map((piece) => [piece, saved[piece] === true]));
+  return Object.fromEntries(AURA_PIECES.map(([piece]) => [piece, saved[piece] === true]));
 }
 
 function saveAura(aura) {
@@ -63,52 +70,230 @@ function saveAura(aura) {
 // and only if their name is on the list.
 export function cleanAura(aura, name) {
   if (!aura || typeof aura !== "object" || !isExalted(name)) return null;
-  return Object.fromEntries(AURA_PIECES.map((piece) => [piece, aura[piece] === true]));
+  return Object.fromEntries(AURA_PIECES.map(([piece]) => [piece, aura[piece] === true]));
 }
 
-function fill(select, choices, chosen) {
-  select.innerHTML = "";
-  for (const [id, name] of choices) select.add(new Option(name, id));
-  select.value = choices.some(([id]) => id === chosen) ? chosen : "none";
-}
+// --- Drawing ---
+const canvas = (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h });
 
+// The big preview: you, with your pet sitting beside you.
 function drawPreview() {
   const look = hooks.look();
-  drawCharacterPreview(preview, look.color, look.hat, look.shoes, myAura());
+  const ctx = preview.getContext("2d");
+  ctx.clearRect(0, 0, preview.width, preview.height);
+  const hasPet = look.pet && look.pet !== "none";
+  const me = canvas(96, 136);
+  drawCharacterPreview(me, look.color, look.hat, look.shoes, myAura());
+  ctx.drawImage(me, preview.width / 2 - 48 - (hasPet ? 26 : 0), preview.height - 136);
+  if (hasPet) {
+    const pet = canvas(88, 92);
+    drawPetPreview(pet, look.pet);
+    ctx.drawImage(pet, preview.width / 2 + 6, preview.height - 92);
+  }
+}
+
+// A small picture for a tile: you wearing the hat or shoes, the pet, or
+// an Exalted piece.
+function tilePicture(tab, id) {
+  const look = hooks.look();
+  if (tab === "hats" || tab === "shoes") {
+    const c = canvas(96, 136);
+    drawCharacterPreview(c, look.color, tab === "hats" ? id : "none", tab === "shoes" ? id : "none");
+    return c;
+  }
+  if (tab === "pets") {
+    const c = canvas(88, 92);
+    drawPetPreview(c, id);
+    return c;
+  }
+  // Exalted pieces, each drawn by itself (the drawings live in render.js).
+  const c = canvas(96, 96);
+  const ctx = c.getContext("2d");
+  if (id === "robe") {
+    const me = canvas(96, 136);
+    drawCharacterPreview(me, look.color, "none", "none", { robe: true });
+    ctx.drawImage(me, 0, -34);
+  } else if (id === "sigil") {
+    ctx.save();
+    ctx.translate(48, 56);
+    ctx.scale(1.5, 1.5);
+    drawSigil(ctx, 0, 0);
+    ctx.restore();
+  } else if (id === "candles") {
+    ctx.save();
+    ctx.scale(1.5, 1.5);
+    for (const [x, y] of [[16, 46], [32, 38], [48, 46]]) drawFloatingCandle(ctx, x, y);
+    ctx.restore();
+  } else {
+    drawRuneTrail(ctx);
+  }
+  return c;
+}
+
+// Three glowing runes in a little trail, like footsteps.
+function drawRuneTrail(ctx) {
+  const glyphs = [
+    (c) => (c.moveTo(0, -6), c.lineTo(0, 6), c.moveTo(0, -2), c.lineTo(4, -6), c.moveTo(0, 2), c.lineTo(4, -2)),
+    (c) => (c.moveTo(-4, 6), c.lineTo(0, -6), c.lineTo(4, 6), c.moveTo(-2, 1), c.lineTo(2, 1)),
+    (c) => (c.arc(0, 0, 4.5, 0, Math.PI * 2), c.moveTo(-4.5, 0), c.lineTo(4.5, 0)),
+  ];
+  glyphs.forEach((glyph, k) => {
+    ctx.save();
+    ctx.translate(26 + k * 22, 70 - k * 16);
+    ctx.scale(1.5, 0.9);
+    ctx.globalAlpha = 1 - k * 0.25;
+    ctx.strokeStyle = "#e0405e";
+    ctx.shadowColor = "#ff5a7a";
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    glyph(ctx);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+// --- The panel ---
+let tab = "hats";
+
+function tabsFor() {
+  const list = [["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["pets", "🐾 Pets"]];
+  if (myAura()) list.push(["exalted", "✦ Exalted"]);
+  return list;
+}
+
+function renderColors() {
+  const look = hooks.look();
+  colorsRow.innerHTML = "";
+  const colors = CONFIG.wardrobeColors ?? [];
+  const same = (a, b) => a.toLowerCase() === b.toLowerCase();
+  for (const color of colors) {
+    const swatch = document.createElement("button");
+    swatch.type = "button";
+    swatch.className = "wardrobe-swatch" + (same(color, look.color) ? " chosen" : "");
+    swatch.style.background = color;
+    swatch.setAttribute("aria-label", color);
+    swatch.addEventListener("click", () => {
+      hooks.wear("color", color);
+      playClickSound();
+      render();
+    });
+    colorsRow.appendChild(swatch);
+  }
+  // The custom swatch: a rainbow that opens the full color picker (it
+  // shows your color once you've picked one that isn't a swatch).
+  const isCustom = !colors.some((c) => same(c, look.color));
+  const custom = document.createElement("label");
+  custom.className = "wardrobe-swatch custom" + (isCustom ? " chosen" : "");
+  custom.title = "Pick any color";
+  if (isCustom) custom.style.background = look.color;
+  const picker = document.createElement("input");
+  picker.type = "color";
+  picker.value = look.color;
+  picker.setAttribute("aria-label", "Pick any color");
+  picker.addEventListener("input", () => {
+    hooks.wear("color", picker.value);
+    drawPreview();
+  });
+  picker.addEventListener("change", () => render());
+  custom.appendChild(picker);
+  colorsRow.appendChild(custom);
+}
+
+function renderTabs() {
+  tabsRow.innerHTML = "";
+  if (!tabsFor().some(([id]) => id === tab)) tab = "hats";
+  for (const [id, label] of tabsFor()) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.className = (id === tab ? "active" : "") + (id === "exalted" ? " exalted" : "");
+    button.addEventListener("click", () => {
+      tab = id;
+      playClickSound();
+      render();
+    });
+    tabsRow.appendChild(button);
+  }
+}
+
+function tile(picture, name, on, onClick, exalted = false) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "wardrobe-tile" + (on ? " wearing" : "") + (exalted ? " exalted" : "");
+  el.setAttribute("aria-pressed", on);
+  const art = document.createElement("span");
+  art.className = "wardrobe-art";
+  art.appendChild(picture);
+  const label = document.createElement("span");
+  label.className = "wardrobe-name";
+  label.textContent = name;
+  el.append(art, label);
+  if (on) {
+    const badge = document.createElement("span");
+    badge.className = "wardrobe-badge";
+    badge.textContent = exalted ? "On" : "Wearing";
+    el.appendChild(badge);
+  }
+  el.addEventListener("click", onClick);
+  return el;
+}
+
+function renderItems() {
+  itemsGrid.innerHTML = "";
+  if (tab === "exalted") {
+    const aura = myAura();
+    for (const [piece, name] of AURA_PIECES) {
+      const onClick = () => {
+        aura[piece] = !aura[piece];
+        saveAura(aura);
+        playClickSound();
+        render();
+      };
+      itemsGrid.appendChild(tile(tilePicture("exalted", piece), name, aura[piece], onClick, true));
+    }
+    return;
+  }
+  const look = hooks.look();
+  const type = { hats: "hat", shoes: "shoes", pets: "pet" }[tab];
+  const owned = hooks.choices()[tab].filter(([id]) => id !== "none");
+  if (!owned.length) {
+    const empty = document.createElement("p");
+    empty.className = "wardrobe-empty";
+    empty.textContent = `No ${tab} yet. The raccoons in the hallway sell them!`;
+    itemsGrid.appendChild(empty);
+    return;
+  }
+  for (const [id, name] of owned) {
+    const on = look[type] === id;
+    const onClick = () => {
+      hooks.wear(type, on ? "none" : id); // click again to take it off
+      playClickSound();
+      render();
+    };
+    itemsGrid.appendChild(tile(tilePicture(tab, id), name, on, onClick));
+  }
 }
 
 function render() {
-  const look = hooks.look();
-  const { hats, shoes, pets } = hooks.choices();
-  colorInput.value = look.color;
-  fill(hatSelect, hats, look.hat);
-  fill(shoesSelect, shoes, look.shoes);
-  fill(petSelect, pets, look.pet);
-  const aura = myAura();
-  exaltedBox.hidden = !aura;
-  if (aura) {
-    for (const box of exaltedBox.querySelectorAll("input[data-piece]")) box.checked = aura[box.dataset.piece];
-  }
+  renderColors();
+  renderTabs();
+  renderItems();
   drawPreview();
 }
 
-const change = (type, value) => {
-  hooks.wear(type, value);
-  drawPreview();
-};
-colorInput.addEventListener("input", () => change("color", colorInput.value));
-hatSelect.addEventListener("change", () => (change("hat", hatSelect.value || "none"), playClickSound()));
-shoesSelect.addEventListener("change", () => (change("shoes", shoesSelect.value || "none"), playClickSound()));
-petSelect.addEventListener("change", () => (change("pet", petSelect.value || "none"), playClickSound()));
-for (const box of exaltedBox.querySelectorAll("input[data-piece]")) {
-  box.addEventListener("change", () => {
-    const aura = myAura();
-    aura[box.dataset.piece] = box.checked;
-    saveAura(aura);
-    drawPreview();
-    playClickSound();
-  });
-}
+// A random outfit: any color from the swatches, and any hat, shoes and
+// pet you own (or none).
+const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
+document.getElementById("wardrobe-random").addEventListener("click", () => {
+  const { hats, shoes, pets } = hooks.choices();
+  hooks.wear("color", pickFrom(CONFIG.wardrobeColors));
+  hooks.wear("hat", pickFrom(hats)[0]);
+  hooks.wear("shoes", pickFrom(shoes)[0]);
+  hooks.wear("pet", pickFrom(pets)[0]);
+  playClickSound();
+  render();
+});
 
 export function openWardrobe() {
   render();
