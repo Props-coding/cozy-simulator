@@ -66,6 +66,7 @@ const ROOM_CHIME_NOTES = {
   hallway: [523.25, 659.25], // C5, E5: light and neutral
   theater: [659.25, 783.99], // E5, G5: a little brighter
   conference: [587.33, 739.99], // D5, F#5: bright and businesslike
+  library: [440, 523.25], // A4, C5: hushed
   study: [493.88, 587.33], // B4, D5: softer, calmer
   dinner: [440, 554.37], // A4, C#5: warm, settling in
 };
@@ -149,6 +150,154 @@ export function playCoatWhoosh() {
 export function playCrumbSound() {
   playTone(987.77, 0, { gain: 0.07, duration: 0.09, type: "triangle" });
   playTone(1318.51, 80, { gain: 0.07, duration: 0.16, type: "triangle" });
+}
+
+// A short, jaunty fiddle jig for the "jig" emote: a buzzy sawtooth note,
+// softened a little, with a touch of wobble like a bow on a string.
+function playFiddleNote(freq, delayMs, duration) {
+  if (!toneContext || currentRoomId === "dinner" || currentRoomId === "library" || masterMuted) return;
+  const start = toneContext.currentTime + delayMs / 1000;
+  const osc = toneContext.createOscillator();
+  const vibrato = toneContext.createOscillator();
+  const vibratoDepth = toneContext.createGain();
+  const filter = toneContext.createBiquadFilter();
+  const gain = toneContext.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.value = freq;
+  vibrato.frequency.value = 6;
+  vibratoDepth.gain.value = freq * 0.006;
+  vibrato.connect(vibratoDepth);
+  vibratoDepth.connect(osc.frequency);
+  filter.type = "lowpass";
+  filter.frequency.value = 2200;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.linearRampToValueAtTime(0.045 * masterVolume, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(toneContext.destination);
+  osc.start(start);
+  vibrato.start(start);
+  osc.stop(start + duration + 0.05);
+  vibrato.stop(start + duration + 0.05);
+}
+
+// About three seconds of a lively jig in D (six notes to a bar).
+export function playJigTune() {
+  const D5 = 587.33, E5 = 659.25, Fs5 = 739.99, G5 = 783.99, A5 = 880, B5 = 987.77, Cs5 = 554.37, A4 = 440, D6 = 1174.66;
+  const notes = [D5, Fs5, A5, D6, A5, Fs5, G5, B5, G5, E5, Cs5, A4, D5, Fs5, A5, B5, A5, Fs5, E5, Cs5, A4, D5];
+  const step = 140; // milliseconds per note
+  notes.forEach((freq, i) => playFiddleNote(freq, i * step, i === notes.length - 1 ? 0.5 : 0.16));
+}
+
+// --- Rain for the Library ---
+// Made in code: looping hiss (soft white noise, trimmed at both ends so it
+// sounds like rain rather than static), a low rumble underneath, and the
+// odd drip. Plays for you while you're in the Library, fading in and out
+// like the Study's lo-fi, with its own volume slider.
+let rain = null; // the playing sound, or null when stopped
+let inLibrary = false;
+let rainUserVolume = 0.5;
+let rainLevel = 0; // what's actually applied right now (eases toward the target)
+
+function noiseBuffer(seconds, brown) {
+  const length = Math.floor(toneContext.sampleRate * seconds);
+  const buffer = toneContext.createBuffer(1, length, toneContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < length; i++) {
+    const white = Math.random() * 2 - 1;
+    if (brown) {
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.5;
+    } else {
+      data[i] = white;
+    }
+  }
+  return buffer;
+}
+
+function startRain() {
+  if (rain || !toneContext) return;
+  const out = toneContext.createGain();
+  out.gain.value = 0;
+  out.connect(toneContext.destination);
+
+  const hiss = toneContext.createBufferSource();
+  hiss.buffer = noiseBuffer(3, false);
+  hiss.loop = true;
+  const high = toneContext.createBiquadFilter();
+  high.type = "highpass";
+  high.frequency.value = 500;
+  const low = toneContext.createBiquadFilter();
+  low.type = "lowpass";
+  low.frequency.value = 3200;
+  const hissGain = toneContext.createGain();
+  hissGain.gain.value = 0.5;
+  hiss.connect(high);
+  high.connect(low);
+  low.connect(hissGain);
+  hissGain.connect(out);
+
+  const rumble = toneContext.createBufferSource();
+  rumble.buffer = noiseBuffer(4, true);
+  rumble.loop = true;
+  const rumbleFilter = toneContext.createBiquadFilter();
+  rumbleFilter.type = "lowpass";
+  rumbleFilter.frequency.value = 500;
+  rumble.connect(rumbleFilter);
+  rumbleFilter.connect(out);
+
+  hiss.start();
+  rumble.start();
+
+  // Now and then, a single drip.
+  const drips = setInterval(() => {
+    if (Math.random() > 0.35 || rainLevel < 0.01) return;
+    const now = toneContext.currentTime;
+    const osc = toneContext.createOscillator();
+    const gain = toneContext.createGain();
+    osc.type = "sine";
+    const freq = 1800 + Math.random() * 1600;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, now + 0.08);
+    gain.gain.setValueAtTime(0.25 * rainLevel, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }, 180);
+
+  rain = { out, stop: () => { hiss.stop(); rumble.stop(); clearInterval(drips); out.disconnect(); } };
+}
+
+// Call once when you walk into the Library, and once when you leave.
+export function enterLibrary() {
+  inLibrary = true;
+  startRain();
+}
+
+export function leaveLibrary() {
+  inLibrary = false;
+}
+
+export function setRainVolume(vol) {
+  rainUserVolume = vol;
+}
+
+// Call every frame: fades the rain toward where it should be, and stops it
+// completely once it has faded out after you leave.
+export function updateRain(dt) {
+  if (!rain) return;
+  const target = inLibrary && !masterMuted ? rainUserVolume * masterVolume * 0.35 : 0;
+  rainLevel += (target - rainLevel) * (1 - Math.pow(0.02, dt));
+  if (Math.abs(target - rainLevel) < 0.001) rainLevel = target;
+  rain.out.gain.value = rainLevel;
+  if (!inLibrary && rainLevel === 0) {
+    rain.stop();
+    rain = null;
+  }
 }
 
 // A tiny, soft click for buttons and toggles.

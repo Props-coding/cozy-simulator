@@ -14,6 +14,8 @@ import {
   sendFocus,
   onChat,
   sendChat,
+  onEmote,
+  sendEmote,
 } from "./network.js";
 import {
   requestMic,
@@ -35,6 +37,11 @@ import {
   playKnockSound,
   playTimerChime,
   playChatSound,
+  playJigTune,
+  enterLibrary,
+  leaveLibrary,
+  setRainVolume,
+  updateRain,
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
@@ -66,6 +73,7 @@ const peerList = document.getElementById("peer-list");
 const muteToggle = document.getElementById("mute-toggle");
 const volumeSlider = document.getElementById("volume-slider");
 const lofiVolumeSlider = document.getElementById("lofi-volume-slider");
+const rainVolumeSlider = document.getElementById("rain-volume-slider");
 const lofiPlayerContainer = document.getElementById("lofi-player");
 const micStatus = document.getElementById("mic-status");
 const confirmDialog = document.getElementById("confirm-dialog");
@@ -93,6 +101,10 @@ lofiVolumeSlider.addEventListener("input", () => setLofiVolume(parseFloat(lofiVo
 lofiVolumeSlider.addEventListener("change", () => playClickSound());
 setLofiVolume(CONFIG.defaultLofiVolume);
 lofiVolumeSlider.value = CONFIG.defaultLofiVolume;
+rainVolumeSlider.addEventListener("input", () => setRainVolume(parseFloat(rainVolumeSlider.value)));
+rainVolumeSlider.addEventListener("change", () => playClickSound());
+setRainVolume(CONFIG.defaultRainVolume);
+rainVolumeSlider.value = CONFIG.defaultRainVolume;
 
 const canvas = document.getElementById("house");
 const ctx = canvas.getContext("2d");
@@ -381,6 +393,9 @@ window.addEventListener("keydown", (e) => {
     playClickSound();
   }
 
+  // Number keys 1 to 5: emotes.
+  if (Object.hasOwn(EMOTE_KEYS, key)) startEmote(EMOTE_KEYS[key]);
+
   // Open or close the whiteboard in the Conference Room.
   if (key === "b" && getCurrentRoom(player).id === "conference") {
     if (isWhiteboardOpen()) closeWhiteboard();
@@ -466,6 +481,58 @@ initTheater(() => getPeers().filter((p) => p.room === "theater").map((p) => p.id
 // Clicking the house gives the keyboard back to the game (for example
 // after clicking on the Theater's video, which keeps the keys otherwise).
 canvas.addEventListener("mousedown", () => document.activeElement?.blur());
+
+// --- Emotes ---
+// Wave, heart, laugh, jig and sleepy: press 1 to 5, click the buttons in
+// the sidebar, or type /wave, /heart, /laugh, /jig (or /hit the jig) or
+// /sleepy in chat. Friends see them too. Walking stops yours early.
+const EMOTE_KEYS = { 1: "wave", 2: "heart", 3: "laugh", 4: "jig", 5: "sleepy" };
+const EMOTE_COMMANDS = {
+  "/wave": "wave", "/heart": "heart", "/laugh": "laugh", "/lol": "laugh",
+  "/jig": "jig", "/hit the jig": "jig", "/hitthejig": "jig", "/sleepy": "sleepy", "/sleep": "sleepy", "/zzz": "sleepy",
+};
+let myEmote = null; // { id, start }
+const peerEmotes = {}; // peer id -> { id, start }
+
+function startEmote(id) {
+  if (!Object.hasOwn(EMOTE_LENGTHS, id)) return;
+  myEmote = { id, start: performance.now() };
+  sendEmote(id);
+  if (id === "jig") playJigTune();
+}
+
+function stopMyEmote() {
+  if (!myEmote) return;
+  myEmote = null;
+  sendEmote(null);
+}
+
+// An emote in the form the drawing code wants ({ id, t } with t in
+// seconds), or null once it has run its course.
+function emoteNow(emote) {
+  if (!emote) return null;
+  const t = (performance.now() - emote.start) / 1000;
+  return t < EMOTE_LENGTHS[emote.id] ? { id: emote.id, t } : null;
+}
+
+onEmote((id, peerId) => {
+  if (id === null) {
+    delete peerEmotes[peerId];
+    return;
+  }
+  if (typeof id !== "string" || !Object.hasOwn(EMOTE_LENGTHS, id)) return;
+  peerEmotes[peerId] = { id, start: performance.now() };
+  // A friend hitting the jig in the same room as you: you hear the tune too.
+  const peer = getPeers().find((p) => p.id === peerId);
+  if (id === "jig" && peer?.room === getCurrentRoom(player).id) playJigTune();
+});
+
+for (const button of document.querySelectorAll("#emote-bar button")) {
+  button.addEventListener("click", () => {
+    startEmote(button.dataset.emote);
+    button.blur(); // give the keyboard back to walking
+  });
+}
 
 // --- Whiteboard ---
 initWhiteboard({ confirm: (options) => askConfirm(options) });
@@ -558,8 +625,16 @@ function updateChatTabs(room) {
 
 document.getElementById("chat-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  const text = clipText(expandEmoticons(expandShortcodes(chatInput.value.trim())), CHAT_MAX_LENGTH);
+  const typed = chatInput.value.trim();
   chatInput.blur(); // sending takes you straight back to walking
+  // Emote commands like /jig do the emote instead of sending a message.
+  const command = typed.toLowerCase().replace(/\s+/g, " ");
+  if (Object.hasOwn(EMOTE_COMMANDS, command)) {
+    chatInput.value = "";
+    startEmote(EMOTE_COMMANDS[command]);
+    return;
+  }
+  const text = clipText(expandEmoticons(expandShortcodes(typed)), CHAT_MAX_LENGTH);
   if (!text || performance.now() - lastChatSent < 400) return;
   lastChatSent = performance.now();
   chatInput.value = "";
@@ -753,6 +828,7 @@ function tick(now) {
   const { dx, dy } = readMovement(dt);
   if (dx !== 0 || dy !== 0) {
     movePlayer(player, dx, dy);
+    stopMyEmote(); // walking off ends an emote
   }
 
   const currentRoom = getCurrentRoom(player);
@@ -766,6 +842,8 @@ function tick(now) {
     if (currentRoom.id === "study") enterStudy(lofiPlayerContainer);
     if (previousRoomId === "study") leaveStudy();
     if (previousRoomId === "theater") leaveTheater();
+    if (previousRoomId === "library") leaveLibrary();
+    if (currentRoom.id === "library") enterLibrary();
     if (previousRoomId === "conference") closeWhiteboard();
     if (currentRoom.id === "theater") enterTheater();
     if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
@@ -773,6 +851,7 @@ function tick(now) {
   }
   updateLofi(dt);
   updateTheater();
+  updateRain(dt);
   updateFocusTimer(currentRoom.id);
 
   timeSinceLastBroadcast += dt;
@@ -787,9 +866,9 @@ function tick(now) {
     // A friend's hat name comes over the network, so only accept known hats.
     const hat = Object.hasOwn(HAT_DRAWERS, peer.hat) ? peer.hat : "none";
     const shoes = Object.hasOwn(SHOE_DRAWERS, peer.shoes) ? peer.shoes : "none";
-    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id) };
+    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id), emote: emoteNow(peerEmotes[peer.id]) };
   });
-  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me") });
+  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me"), emote: emoteNow(myEmote) });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText());
 

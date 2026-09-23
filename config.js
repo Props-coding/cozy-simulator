@@ -18,6 +18,7 @@ const CONFIG = {
     hallway: "Hallway",
     theater: "Theater",
     conference: "Conference Room",
+    library: "Library",
     study: "Study",
     dinner: "Dinner",
   },
@@ -28,6 +29,7 @@ const CONFIG = {
     hallway: { style: "planks", color: "#d4b48c" },
     theater: { style: "carpet", color: "#5a2833" },
     conference: { style: "carpet", color: "#5f6b7a" },
+    library: { style: "planks", color: "#6e4a32" },
     study: { style: "planks", color: "#9c6a45" },
     dinner: { style: "checker", color: "#dcae8c" },
     office: { style: "planks", color: "#b98a5e" }, // used for every office
@@ -38,6 +40,7 @@ const CONFIG = {
     hallway: "#eadbc2",
     theater: "#3d2c3a",
     conference: "#dcd3c4",
+    library: "#3f5a4a",
     study: "#6f8a6a",
     dinner: "#f0d9b8",
     office: "#8f7fa3", // used for every office
@@ -94,6 +97,9 @@ const CONFIG = {
 
   // Starting volume for the Study music (0 to 1). There's a slider too.
   defaultLofiVolume: 0.5,
+
+  // Starting volume for the rain in the Library (0 to 1). There's a slider too.
+  defaultRainVolume: 0.5,
 
   // --- Secret office themes (an Easter egg) ---
   // If someone with one of these names builds an office, they get a

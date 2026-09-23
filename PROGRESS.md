@@ -92,9 +92,14 @@
 
 - Not pushed yet: north rooms (Conference Room and offices) now also get a name doormat on the hallway floor in front of their door instead of a sign over it, so nobody walks through any name. The Hallway keeps its wall plaque. The raccoons moved to the hallway's east corner, right of the Hallway plaque and past the last office door (the umbrella stand was removed, and the plant moved to the bottom-right corner, to make room; if the "+" office door is ever also in reach, E picks whichever is closer). The shoes picker on the Join screen now matches the hats picker's font. The shop's item grid now scrolls on its own (with a cozy scrollbar) while the title, Reginald's line, crumbs, tabs and Bye! button stay put, and the shop never gets taller than the house view, so every card can always be reached and bought.
 
+- Not pushed yet: the Library and emotes.
+  - The house now extends further east: the hallway is longer, with lamps, the sea painting and a rainy window along the new stretch, and the Library sits at the new south-east end next to Dinner (the lawn north of the new stretch is free for bedrooms later). The Library: rain running down its windows, a reading nook under each (an armchair turned to the window, a beanbag), floor lamps, two rows of freestanding bookshelves either side of a center aisle, and a long reading table with green banker's lamps on a deep green rug. Dim and a little cool, like a rainy evening. Quiet room: no voice.
+  - Rain sound, made in code (soft hiss, low rumble and the odd drip): fades in when you walk into the Library and out when you leave, with its own "Rain volume" slider.
+  - Emotes: press 1 to 5, click the new buttons in the sidebar, or type a command in chat. 1 Wave (rock side to side with a waving hand), 2 Heart (hearts float up), 3 Laugh (shaking, squinting, open mouth, 😂), 4 Jig (big bouncy hops, swaying, feet kicking out, music notes flying, and a short jaunty fiddle tune for everyone in the room), 5 Sleepy (eyes closed, slow breathing, Z's drifting up). /jig or /hit the jig in chat works too, for Kxiven. Friends see all of them; walking ends yours.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements, pets, a Library with rain sounds, and emotes (crumbs and the raccoon shop are done).
+- New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements and pets (crumbs, the raccoon shop, the Library and emotes are done).
 - Decisions needed before starting: where bedrooms go; what the conference room replaces or where it's added; which extras beyond hats and shoes to unlock.
 
 ## Open questions

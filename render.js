@@ -283,7 +283,7 @@ function paintFloors(ctx) {
 function houseBounds() {
   return {
     left: toScreen(-WALL_THICKNESS, 0).x - 6,
-    right: toScreen(18 + WALL_THICKNESS, 0).x + 6,
+    right: toScreen(HOUSE_WIDTH + WALL_THICKNESS, 0).x + 6,
     // Room above the north wall for its height and tall things against it.
     top: toScreen(0, houseTopY).y - WALL_HEIGHT - 14,
     bottom: toScreen(0, 11 + WALL_THICKNESS).y + 6,
@@ -664,6 +664,107 @@ const FURNITURE_DRAWERS = {
       ctx.fillStyle = "#5c3a22";
       ctx.fillRect(cx - 2.5, ty - 5, 5, 1.5);
     }
+  },
+
+  // --- Library ---
+
+  // Hung on a wall face: a window on a rainy evening, with raindrops
+  // running down the glass, green curtains and a little sill.
+  rainWindow(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const x = a.x, y = a.y - WALL_HEIGHT + 4, w = f.w * TILE, h = 28;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.22)";
+    ctx.fillRect(x + 2, y + 3, w, h);
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(x, y, w, h);
+    const ix = x + 3, iy = y + 3, iw = w - 6, ih = h - 6;
+    const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
+    sky.addColorStop(0, "#4f6478");
+    sky.addColorStop(1, "#7f97aa");
+    ctx.fillStyle = sky;
+    ctx.fillRect(ix, iy, iw, ih);
+    // Raindrops sliding down the glass, each at its own speed.
+    const t = performance.now() / 1000;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(ix, iy, iw, ih);
+    ctx.clip();
+    ctx.strokeStyle = "rgba(220, 235, 245, 0.6)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < Math.round(iw / 4); i++) {
+      const dx = ix + ((i * 7.3) % iw);
+      const fall = (t * (0.5 + noise(i + f.x) * 0.9) + noise(i * 3.1 + f.x)) % 1;
+      const dy = iy - 4 + fall * (ih + 8);
+      ctx.beginPath();
+      ctx.moveTo(dx, dy);
+      ctx.lineTo(dx - 0.8, dy + 4);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(220, 235, 245, 0.45)"; // drops resting on the glass
+    for (let i = 0; i < 6; i++) ctx.fillRect(ix + noise(i + 40 + f.x) * iw, iy + noise(i + 50 + f.x) * ih, 1.5, 1.5);
+    ctx.restore();
+    ctx.fillStyle = WOOD_DARK; // window bars
+    ctx.fillRect(x + w / 2 - 1, y, 2, h);
+    ctx.fillRect(x, y + h / 2 - 1, w, 2);
+    ctx.fillStyle = "#8b6b4a"; // sill
+    ctx.fillRect(x - 3, y + h, w + 6, 3);
+    ctx.fillStyle = "#4f6b52"; // curtains
+    ctx.fillRect(x - 4, y - 2, 7, h + 3);
+    ctx.fillRect(x + w - 3, y - 2, 7, h + 3);
+  },
+
+  // A tall freestanding bookcase, packed with three rows of books, with a
+  // couple of books lying on top.
+  libraryShelf(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const shelf = drawBlock(ctx, f.x, f.y, f.w, f.h, 58, "#5a3a26");
+    const bookColors = ["#8f2f2a", "#3f6f9f", "#c98a3c", "#4f7a48", "#7d6a8f", "#b5603c", "#2f4f4f"];
+    const { x, y, w } = shelf.face;
+    for (let row = 0; row < 3; row++) {
+      const rowY = y + 4 + row * 17;
+      ctx.fillStyle = "#3a2618";
+      ctx.fillRect(x + 3, rowY, w - 6, 14);
+      for (let i = 0; i * 6 + 5 < w - 6; i++) {
+        const bh = 10 + ((i * 5 + row * 3) % 4);
+        ctx.fillStyle = bookColors[(i * 3 + row * 2 + Math.round(f.x)) % bookColors.length];
+        ctx.fillRect(x + 5 + i * 6, rowY + 14 - bh, 5, bh);
+      }
+    }
+    const top = shelf.top;
+    ctx.fillStyle = "#c98a3c";
+    ctx.fillRect(top.x + 6, top.y + top.h / 2 - 3, 16, 4);
+    ctx.fillStyle = "#3f6f9f";
+    ctx.fillRect(top.x + 8, top.y + top.h / 2 - 7, 13, 4);
+  },
+
+  // A long reading table with two green banker's lamps, open books and a
+  // stack of books to get through.
+  readingTable(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#5c3d2a");
+    const { x, y, w, h } = t.top;
+    const mid = y + h / 2;
+    for (const bx of [x + 14, x + w - 44]) {
+      ctx.fillStyle = "#f4ecdc"; // open book
+      ctx.fillRect(bx, mid - 3, 26, 13);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+      ctx.fillRect(bx + 12.5, mid - 3, 1, 13);
+    }
+    for (const lx of [x + w * 0.33, x + w * 0.67]) {
+      ctx.fillStyle = "#b8923a"; // brass stand
+      ctx.fillRect(lx - 5, mid + 1, 10, 3);
+      ctx.fillRect(lx - 0.8, mid - 10, 1.6, 11);
+      ctx.fillStyle = "#2f6b45"; // green glass shade
+      ctx.beginPath();
+      ctx.ellipse(lx, mid - 11, 8, 4, 0, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(lx - 8, mid - 11, 16, 2);
+    }
+    const stack = ["#8f2f2a", "#c98a3c", "#3f6f9f"];
+    stack.forEach((color, i) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x + w / 2 - 8, mid + 4 - i * 4, 16 - i * 2, 4);
+    });
   },
 
   // --- Conference Room ---
@@ -2053,6 +2154,13 @@ function drawLights(ctx) {
   ctx.fillStyle = "rgba(20, 8, 25, 0.28)";
   ctx.fillRect(t1.x, t1.y, t2.x - t1.x, t2.y - t1.y);
 
+  // The Library is dim and a little cool, like a rainy evening, lit by
+  // its reading lamps.
+  const library = ROOMS.find((r) => r.id === "library").rect;
+  const l1 = toScreen(library.x, library.y - 1), l2 = toScreen(library.x + library.w, library.y + library.h);
+  ctx.fillStyle = "rgba(25, 40, 55, 0.2)";
+  ctx.fillRect(l1.x, l1.y, l2.x - l1.x, l2.y - l1.y);
+
   // Secret themed offices get their own warm or cold tint.
   for (const room of ROOMS) {
     if (!room.theme) continue;
@@ -2063,7 +2171,13 @@ function drawLights(ctx) {
 
   const now = performance.now() / 1000;
   for (const f of FURNITURE) {
-    if (f.kind === "bigScreen") {
+    if (f.kind === "readingTable") {
+      const p = toScreen(f.x, f.y + f.h / 2);
+      for (const frac of [0.33, 0.67]) drawGlow(ctx, p.x + f.w * TILE * frac, p.y - 22 - 8, 34, "rgba(255, 220, 140, 0.45)");
+    } else if (f.kind === "rainWindow") {
+      const p = toScreen(f.x + f.w / 2, f.y);
+      drawGlow(ctx, p.x, p.y - WALL_HEIGHT + 18, 34, "rgba(150, 185, 215, 0.25)");
+    } else if (f.kind === "bigScreen") {
       const p = toScreen(f.x + f.w / 2, f.y + f.h);
       drawGlow(ctx, p.x, p.y - 30, 150, "rgba(170, 200, 255, 0.22)");
     } else if (f.kind === "fireplace") {
@@ -2486,9 +2600,24 @@ const SHOE_DRAWERS = {
 function drawPlayerBody(ctx, p) {
   const foot = playerFeet(p);
   const r = PLAYER_RADIUS;
-  const step = p.moving ? Math.sin(performance.now() / 1000 * 12) : 0;
-  const bob = Math.abs(step) * 2.5;
-  const cx = foot.x;
+  const emote = p.emote?.id, et = p.emote?.t ?? 0; // which emote, and seconds since it started
+  let step = p.moving ? Math.sin(performance.now() / 1000 * 12) : 0;
+  let bob = Math.abs(step) * 2.5;
+  let sway = 0, tilt = 0, kick = 0;
+  if (emote === "jig") {
+    // Hitting the jig: big bouncy hops, swaying side to side, feet kicking out.
+    step = Math.sin(et * 9);
+    bob = Math.abs(step) * 6;
+    sway = Math.sin(et * 4.5) * 4;
+    kick = 3.5;
+  } else if (emote === "wave") {
+    tilt = Math.sin(et * 8) * 0.12; // rocking side to side while waving
+  } else if (emote === "laugh") {
+    sway = Math.sin(et * 40) * 1.5; // shaking with laughter
+  } else if (emote === "sleepy") {
+    bob = (Math.sin(et * 1.5) + 1) * 0.8; // slow, sleepy breathing
+  }
+  const cx = foot.x + sway;
   const cy = foot.y - r - 5 - bob;
 
   ctx.fillStyle = "rgba(40, 25, 10, 0.25)";
@@ -2498,9 +2627,9 @@ function drawPlayerBody(ctx, p) {
 
   // Feet, peeking out under the body (or shoes, if they're wearing some).
   const shoe = Object.hasOwn(SHOE_DRAWERS, p.shoes) ? SHOE_DRAWERS[p.shoes] : null;
-  ctx.fillStyle = shadeColor(p.color, -70);
-  for (const [side, lift] of [[-1, Math.max(0, step) * 3], [1, Math.max(0, -step) * 3]]) {
-    const fx = cx + side * 5.5, fy = foot.y - 2.5 - lift;
+  const liftSize = emote === "jig" ? 6 : 3;
+  for (const [side, lift] of [[-1, Math.max(0, step) * liftSize], [1, Math.max(0, -step) * liftSize]]) {
+    const fx = foot.x + side * (5.5 + (lift > 0 ? kick : 0)), fy = foot.y - 2.5 - lift;
     if (shoe) {
       shoe(ctx, fx, fy, side);
     } else {
@@ -2509,6 +2638,13 @@ function drawPlayerBody(ctx, p) {
       ctx.ellipse(fx, fy, 4, 2.6, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  ctx.save();
+  if (tilt) {
+    ctx.translate(foot.x, foot.y);
+    ctx.rotate(tilt);
+    ctx.translate(-foot.x, -foot.y);
   }
 
   const body = ctx.createLinearGradient(0, cy - r, 0, cy + r);
@@ -2522,24 +2658,106 @@ function drawPlayerBody(ctx, p) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Face: two eyes, rosy cheeks and a little smile.
+  // Face: eyes, rosy cheeks and a mouth, which change with some emotes.
+  ctx.strokeStyle = "#2b2b2b";
   ctx.fillStyle = "#2b2b2b";
-  ctx.beginPath();
-  ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
-  ctx.arc(cx + 4, cy - 2, 1.6, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.lineWidth = 1.5;
+  if (emote === "sleepy") {
+    // Closed, sleepy eyes.
+    ctx.beginPath();
+    ctx.moveTo(cx - 6, cy - 1.5);
+    ctx.lineTo(cx - 2, cy - 1.5);
+    ctx.moveTo(cx + 2, cy - 1.5);
+    ctx.lineTo(cx + 6, cy - 1.5);
+    ctx.stroke();
+  } else if (emote === "laugh" || emote === "jig") {
+    // Happy squinting eyes, like ^ ^.
+    for (const ex of [cx - 4, cx + 4]) {
+      ctx.beginPath();
+      ctx.arc(ex, cy - 1, 2, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+    }
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.arc(cx + 4, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.fillStyle = "rgba(240, 120, 120, 0.35)";
   ctx.beginPath();
   ctx.ellipse(cx - 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
   ctx.ellipse(cx + 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#2b2b2b";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
-  ctx.stroke();
+  if (emote === "laugh") {
+    ctx.fillStyle = "#6b2a2a"; // wide open laughing mouth
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2.5, 3.5, 0, Math.PI);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+  }
 
   (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+
+  if (emote === "wave") {
+    // A little waving hand beside the body.
+    ctx.fillStyle = shadeColor(p.color, 20);
+    ctx.strokeStyle = shadeColor(p.color, -50);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx + r + 2, cy - 5 + Math.sin(et * 14) * 3, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// How long each emote lasts, in seconds (walking stops one early).
+const EMOTE_LENGTHS = { wave: 2.5, heart: 3, laugh: 3, jig: 6, sleepy: 5 };
+
+// The little things floating above someone doing an emote: hearts, notes,
+// Z's, or an emoji. Drawn with the name tags, so they're never hidden.
+function drawEmoteFloaters(ctx, p, cx, headTop) {
+  const { id, t } = p.emote;
+  ctx.save();
+  ctx.textAlign = "center";
+  const emojiFont = (size) => `${size}px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif`;
+  if (id === "heart") {
+    ctx.font = emojiFont(14);
+    for (let i = 0; i < 3; i++) {
+      const tt = t - i * 0.5;
+      if (tt <= 0 || tt >= 2) continue;
+      ctx.globalAlpha = 1 - tt / 2;
+      ctx.fillText("❤️", cx + Math.sin(tt * 3 + i * 2) * 9, headTop - 26 - tt * 16);
+    }
+  } else if (id === "wave") {
+    ctx.font = emojiFont(16);
+    ctx.fillText("👋", cx + 18, headTop - 4 + Math.sin(t * 10) * 2);
+  } else if (id === "laugh") {
+    ctx.font = emojiFont(16);
+    ctx.fillText("😂", cx, headTop - 28 + Math.sin(t * 12) * 2);
+  } else if (id === "sleepy") {
+    ctx.fillStyle = "#5f6b7a";
+    for (let i = 0; i < 3; i++) {
+      const tt = (t * 0.7 + i / 3) % 1;
+      ctx.globalAlpha = 1 - tt;
+      ctx.font = `700 ${Math.round(9 + tt * 8)}px 'Quicksand', sans-serif`;
+      ctx.fillText("z", cx + 12 + tt * 14, headTop - 4 - tt * 22);
+    }
+  } else if (id === "jig") {
+    const colors = ["#c0554a", "#3f6f9f", "#d9a441", "#4f7a48"];
+    ctx.font = "700 15px 'Quicksand', sans-serif";
+    for (let i = 0; i < 4; i++) {
+      const tt = (t * 0.9 + i / 4) % 1;
+      const angle = t * 3 + i * 1.6;
+      ctx.globalAlpha = 1 - tt;
+      ctx.fillStyle = colors[i];
+      ctx.fillText(i % 2 ? "♪" : "♫", cx + Math.cos(angle) * 22, headTop + 12 - tt * 26);
+    }
+  }
+  ctx.restore();
 }
 
 // Draws a character by itself, centered in a small canvas, for the
@@ -2563,6 +2781,8 @@ function drawPlayerTag(ctx, p) {
   const foot = playerFeet(p);
   const cx = foot.x;
   const headTop = foot.y - PLAYER_RADIUS * 2 - 10; // a little room above for hats
+
+  if (p.emote) drawEmoteFloaters(ctx, p, cx, headTop);
 
   ctx.font = "600 12px 'Quicksand', sans-serif";
   ctx.textAlign = "center";

@@ -755,6 +755,46 @@ canvas {
   gap: 20px;
 }
 
+/* Emote buttons: round, with their number key in a little badge. */
+#emote-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+#emote-bar button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  font-size: 1.15em;
+  border-radius: 50%;
+  border: 2px solid #eadcc6;
+  background: white;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+
+#emote-bar button:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+#emote-bar button span {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 15px;
+  height: 15px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+}
+
 /* The sidebar and the chat card, stacked in one column the sidebar's width. */
 #side-column {
   display: flex;

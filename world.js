@@ -5,13 +5,14 @@
 // every object's positioning in sync; this file never touches pixels.
 //
 // Layout: a hallway runs across the middle of the house. Theater, Study,
-// and Dinner hang below it (south), each with a doorway up into the
-// hallway. The Conference Room and personal offices hang above it
+// Dinner and the Library hang below it (south), each with a doorway up
+// into the hallway. The Conference Room and personal offices hang above it
 // (north), each with a doorway down into the hallway. Offices come and go as their owners join and
 // leave, so the room and wall lists below get rebuilt when that happens
 // (see buildHouse).
 
 const WALL_THICKNESS = 0.4;
+const HOUSE_WIDTH = 24; // how far east the house (and hallway) reaches
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
@@ -23,6 +24,7 @@ const BASE_ROOMS = [
   { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, matY: 2.12 } },
   { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, matY: 2.12 } },
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, matY: 2.12 } },
+  { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: 3, w: 6, h: 8 }, sign: { x: 21, matY: 2.12 } },
   // North side, at the west end (same depth as the offices next to it).
   { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, matY: 0.74 } },
 ];
@@ -35,18 +37,19 @@ const BASE_ROOMS = [
 // office, so it's made in buildHouse instead.)
 const BASE_WALLS = [
   // Outer walls
-  { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
+  { x: -WALL_THICKNESS, y: 11, w: HOUSE_WIDTH + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
   { x: -WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 17.2 }, // left, from the Conference Room down to the bottom
 
   // Conference Room: its north wall and its right-hand side
   { x: -WALL_THICKNESS, y: -5.8, w: 6, h: WALL_THICKNESS },
   { x: 5.6, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
-  { x: 18, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // right
+  { x: HOUSE_WIDTH, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // right
 
   // Dividers between rooms (no doors between rooms directly). They start
   // at the same line as the walls above the rooms so the tops line up.
   { x: 6 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
   { x: 12 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
+  { x: 18 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS / 2 },
 
   // Wall above the Theater, with its doorway at the right-hand end (so the
   // big screen can fill the rest of that wall)
@@ -59,6 +62,10 @@ const BASE_WALLS = [
   // Wall above Dinner, with a doorway gap in the middle
   { x: 12, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
   { x: 16, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
+
+  // Wall above the Library, with a doorway gap in the middle
+  { x: 18, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
+  { x: 22, y: 3 - WALL_THICKNESS / 2, w: 2, h: WALL_THICKNESS },
 ];
 
 // Furniture and decorations. x/y/w/h is the patch of floor each one
@@ -78,7 +85,7 @@ const BASE_FURNITURE = [
   // in the bottom-right corner. They're spaced to leave the doorways
   // clear: Conference Room (x 2 to 3.6) and the three office spots (7 to
   // 8.6, 11 to 12.6, 15 to 16.6).
-  { kind: "rug", x: 1.5, y: 0.95, w: 15, h: 0.95, color: "#b5603c", solid: false },
+  { kind: "rug", x: 1.5, y: 0.95, w: 21, h: 0.95, color: "#b5603c", solid: false },
   { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
   { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
   { kind: "sconce", x: 1.7, y: 0, solid: false },
@@ -91,7 +98,13 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 12.7, y: 0, solid: false },
   { kind: "sconce", x: 14.35, y: 0, solid: false },
   { kind: "picture", x: 16.7, y: 0, w: 0.75, art: "hills", solid: false },
-  { kind: "plant", x: 17.3, y: 2.05, w: 0.6, h: 0.6 },
+  // The newer east stretch of the hallway: lamps, the sea painting, and a
+  // window with rain running down it (like the Library's).
+  { kind: "sconce", x: 18.8, y: 0, solid: false },
+  { kind: "picture", x: 19.4, y: 0, w: 1.1, art: "sea", solid: false },
+  { kind: "sconce", x: 21.0, y: 0, solid: false },
+  { kind: "rainWindow", x: 21.7, y: 0, w: 1.6, solid: false },
+  { kind: "plant", x: 23.3, y: 2.05, w: 0.6, h: 0.6 },
   // Three raccoons in a trenchcoat, lurking in the hallway's east corner,
   // to the right of the Hallway plaque and past the last office door. They
   // sell hats and shoes for crumbs (walk up and press E; see shop.js).
@@ -164,6 +177,27 @@ const BASE_FURNITURE = [
   { kind: "table", x: 14.1, y: 6.4, w: 1.8, h: 1.2 },
   { kind: "chair", x: 14.7, y: 7.9, w: 0.6, h: 0.6, facing: "up" },
   { kind: "pendant", x: 15, y: 7, solid: false },
+
+  // Library: rainy windows with a reading nook under each (an armchair
+  // turned toward the window on the left, a beanbag on the right, each
+  // with a floor lamp), two rows of freestanding bookshelves either side
+  // of a center aisle, and a long reading table with green banker's lamps
+  // on a deep green rug, with seats along the near side. Quiet, no voice.
+  { kind: "rainWindow", x: 18.3, y: 3.2, w: 1.6, solid: false },
+  { kind: "rainWindow", x: 22.1, y: 3.2, w: 1.6, solid: false },
+  { kind: "armchair", x: 18.6, y: 3.6, w: 1.1, h: 0.8 },
+  { kind: "floorLamp", x: 19.75, y: 3.45, w: 0.4, h: 0.4 },
+  { kind: "floorLamp", x: 22.1, y: 3.45, w: 0.4, h: 0.4 },
+  { kind: "beanbag", x: 22.75, y: 3.6, w: 0.9, h: 0.8 },
+  { kind: "libraryShelf", x: 18.6, y: 5.5, w: 1.5, h: 0.45 },
+  { kind: "libraryShelf", x: 21.9, y: 5.5, w: 1.5, h: 0.45 },
+  { kind: "libraryShelf", x: 18.6, y: 7.3, w: 1.5, h: 0.45 },
+  { kind: "libraryShelf", x: 21.9, y: 7.3, w: 1.5, h: 0.45 },
+  { kind: "rug", x: 19.3, y: 8.75, w: 3.4, h: 2.05, color: "#4f6b52", solid: false },
+  { kind: "readingTable", x: 19.7, y: 9.0, w: 2.6, h: 0.7 },
+  { kind: "chair", x: 20.05, y: 9.85, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
+  { kind: "chair", x: 21.35, y: 9.85, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
+  { kind: "plant", x: 23.3, y: 10.1, w: 0.6, h: 0.6 },
 ];
 
 // --- Offices ---
@@ -210,7 +244,7 @@ function buildHouse(offices) {
     walls.push({ x: from, y: -t, w: doorway - from, h: t });
     from = doorway + 1.6;
   }
-  walls.push({ x: from, y: -t, w: 18 + t - from, h: t });
+  walls.push({ x: from, y: -t, w: HOUSE_WIDTH + t - from, h: t });
 
   for (const office of offices) {
     const x0 = officeX(office.slot);
@@ -236,7 +270,7 @@ function buildHouse(offices) {
 
   // The hallway's sign is a carved wooden plaque hanging on its back wall,
   // between two lamps on the right (onWall: on the wall, not on its top).
-  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 }, sign: { x: 13.5, y: 0, plaque: true, onWall: true } });
+  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 }, sign: { x: 13.5, y: 0, plaque: true, onWall: true } });
 
   ROOMS = rooms;
   WALLS = walls;

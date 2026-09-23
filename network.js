@@ -28,6 +28,8 @@ let externalOnTheater = null;
 let theaterAction = null;
 let externalOnBoard = null;
 let boardAction = null;
+let externalOnEmote = null;
+let emoteAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -80,6 +82,16 @@ export function onTheater(callback) {
 export function sendTheater(message, peerIds) {
   if (!peerIds || peerIds.length === 0) return;
   theaterAction?.send(message, { target: peerIds });
+}
+
+// A friend started an emote (or stopped one: id is null).
+export function onEmote(callback) {
+  externalOnEmote = callback;
+}
+
+// Tells everyone we started an emote, or stopped (null).
+export function sendEmote(id) {
+  emoteAction?.send(id);
 }
 
 // Whiteboard messages (strokes, clear, or a picture of the whole board).
@@ -138,6 +150,9 @@ export function connectToRoom(myName, myColor) {
   // "knock" carries no information, the message arriving is the knock.
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
+
+  emoteAction = room.makeAction("emote");
+  emoteAction.onMessage = (id, { peerId }) => externalOnEmote?.(id, peerId);
 
   boardAction = room.makeAction("board");
   boardAction.onMessage = (message, { peerId }) => externalOnBoard?.(message, peerId);
