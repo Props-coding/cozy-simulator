@@ -27,11 +27,11 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 
 ## Hard constraints
 
-- **Hosted on GitHub Pages.** That means static files only. No server code and no backend of our own.
+- **Hosted on GitHub Pages, with one small server of our own (decided 2026-09-23).** The site itself (HTML, CSS, JS) stays static on GitHub Pages. A small server on the user's DigitalOcean droplet handles only what a static site can't: the house key check, cloud saves (crumb backup), and later our own voice relay. Keep it small: plain Node.js with as few packages as possible, behind the Caddy web server for HTTPS. The droplet is already hardened (see PROGRESS.md). Ask before installing anything on it, and never put its secrets in the public repo.
 - **Peer to peer.** Use Trystero (serverless WebRTC matchmaking) so friends' browsers find each other. After that, voice and movement data go directly between friends. Confirm the current setup and which matchmaking strategy to use from Trystero's docs.
 - **3 to 4 people at once,** desktop browsers (Chrome and Edge first, Firefox if easy).
-- **Free to run,** and low maintenance.
-- **The site will be public,** so anyone with the link could open it. Use a hard-to-guess room name stored in `config.js`, use Trystero's encryption password option if it is available (verify the current API), and collect no personal data.
+- **Cheap to run,** and low maintenance. The droplet is the only running cost; avoid anything that adds another bill or much upkeep without asking.
+- **The site will be public,** so anyone with the link could open it. Until the house key ships, use a hard-to-guess room name stored in `config.js` and Trystero's encryption password option. Once it ships, the room name, password and relay login come from the server only after a friend enters the house key, and are no longer in the public code. Collect no personal data.
 - **GitHub Pages is not for commercial use.** This is a private friends project, so that is fine. Do not add anything that sells or charges.
 
 ## Room rules (the heart of the design)

@@ -132,9 +132,20 @@
   - Placing a real bed puts the starter mattress away. Friends see your decor (sent when they join and whenever you change it). Your room, what you own and where it goes are saved in your browser, and come back if you remove and remake your bedroom.
   - Six new achievements: Making It Home, Interior Designer, Moving On Up, Pen Pal, You've Got Mail and Well Informed.
 
+- Server set up and secured (2026-09-23): a DigitalOcean droplet (Ubuntu 24.04) at 142.93.3.149. Fully updated, automatic security updates on, firewall on (only SSH, 80 and 443 open), password logins off, root login off, fail2ban running. You log in as `props` with your SSH key (`ssh props@142.93.3.149`); admin commands use `sudo` and your password.
+
+## Server plan (agreed 2026-09-23)
+The site stays on GitHub Pages. The droplet runs one small program for the things a static site can't do. One phase at a time, tested before the next.
+- Phase 0, groundwork: a web address for the server (needed for HTTPS, since the site is HTTPS), then Caddy (a web server that gets and renews HTTPS certificates by itself) and a tiny "hello" program, so the site can talk to the server.
+- Phase 1, house key: friends type a secret phrase once on the Join screen. The server checks it and hands back the room name, the room password and a short-lived relay login. The room password and relay login leave the public code, and we switch to fresh ones, since the old ones stay visible in GitHub's history. Wrong guesses get slowed down.
+- Phase 2, cloud saves (crumb backup): crumbs, hats, shoes, pets, achievements and your bedroom are saved on the server under a personal save code. It works on any computer, and clearing browser data no longer wipes it. Nightly backups of the save file.
+- Phase 3, our own voice relay: run a relay (coturn) on the droplet instead of the free Metered account, with logins that expire after a few hours. Needs a few more firewall ports.
+- Later, maybe: move the whole site onto the droplet.
+
 ## Next
+- Decide the server's web address (Phase 0), then start Phase 0.
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- Still in the backlog (`CLAUDE.md`): house key and crumb backup code (on hold until a server), weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
+- Still in the backlog (`CLAUDE.md`): weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
