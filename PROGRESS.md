@@ -82,9 +82,9 @@
 
 - Build 0.27: room names are now signs on the walls instead of labels floating over the floor, so nobody walks through them. Every room's name sign hangs over its doorway on the hallway side (Theater, Study, Dinner, Conference Room, and each office), and the Hallway has a carved wooden plaque hanging on its back wall between two lamps on the right. People walk in front of or behind signs like any wall.
 
-- Not pushed yet: the south rooms' name signs hung over the hallway's walkway, so people walked through them. Theater, Study and Dinner now have a doormat with their name on the hallway floor in front of their door instead, which people walk over like a rug. North rooms keep their signs over the doorway.
+- Build 0.28: the south rooms' name signs hung over the hallway's walkway, so people walked through them. Theater, Study and Dinner now have a doormat with their name on the hallway floor in front of their door instead, which people walk over like a rug. North rooms keep their signs over the doorway.
 
-- Not pushed yet: crumbs and the raccoon shop.
+- Build 0.28: crumbs and the raccoon shop.
   - Crumbs are the house money, with a cute crumb icon (a little cookie crumb with chocolate chips and a happy face). The counter sits in the header next to the room pill and bounces when crumbs come in. You earn 1 crumb a minute for being in the house, plus 10 for finishing a Study focus session (both in `config.js`).
   - Three raccoons in a trenchcoat (Reginald on top, Pip peeking between the buttons, Bean at the bottom with the tail) lurk in the hallway's east corner, gently swaying. Walk up and press E to talk: a big soft speech box with each raccoon's name on a colored tag, words typing out with a babbling voice (each raccoon has its own pitch), and a bouncing arrow to continue (E, Enter, Space or click). Pick "Show me the goods" and their coat swings open to a plaid-lined shop.
   - For sale: 8 hats (party hat, chef hat, top hat, cowboy hat, witch hat, frog hat, crown, halo) and 5 shoes (sneakers, rain boots, bunny slippers, cowboy boots, roller skates), each on a hanging price tag with a preview of you wearing it. Buy, wear or take off; the raccoons comment on every purchase. What you own shows up on the Join screen too, which now has a shoes picker. Friends see your hat and shoes.
