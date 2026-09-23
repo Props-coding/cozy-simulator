@@ -58,6 +58,7 @@ import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchieve
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
+import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura } from "./wardrobe.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
@@ -183,6 +184,22 @@ colorInput.addEventListener("input", updatePreview);
 hatInput.addEventListener("change", updatePreview);
 shoesInput.addEventListener("change", updatePreview);
 updatePreview();
+
+// The wardrobe (wardrobe.js) changes your look from your bedroom.
+initWardrobe({
+  name: () => myName,
+  look: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet }),
+  choices: () => ({ hats: hatChoices(), shoes: shoeChoices(), pets: petChoices() }),
+  wear: (type, id) => {
+    if (type === "color") myColor = colorInput.value = id;
+    else if (type === "hat") myHat = id;
+    else if (type === "shoes") myShoes = id;
+    else myPet = id;
+    saveProfile();
+    refreshLook();
+    updatePreview();
+  },
+});
 
 // The raccoons' shop can read and change what you're wearing.
 initShop({
@@ -426,6 +443,7 @@ function roomHintFor(room) {
   if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
+  if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   const lockedDoor = lockedDoorInFront(player);
@@ -471,6 +489,12 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     ride = { from: elevatorInReach(player), t: 0, arrived: false };
     playClickSound();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "wardrobe") {
+    for (const k in keysDown) keysDown[k] = false;
+    openWardrobe();
     return;
   }
 
@@ -758,7 +782,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || !!ride;
 }
 
 // Riding the elevator: the doors slide open, you step in, and they open
@@ -1354,7 +1378,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura() });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -1365,12 +1389,12 @@ function tick(now) {
     const pet = Object.hasOwn(PET_DRAWERS, peer.pet) ? peer.pet : "none";
     const bed = bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: statusBadge(peer.room, bed), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color } };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: statusBadge(peer.room, bed), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name) };
   });
   lastScenePlayers = scenePlayers;
   const myBed = bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color } });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 

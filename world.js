@@ -873,6 +873,8 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
+  const closet = FURNITURE.find((f) => f.kind === "wardrobe" && f.mine && floorOf(f.y) === floorOf(player.y) && Math.abs(cx - (f.x + f.w / 2)) < f.w / 2 + 0.3 && cy > f.y && cy < f.y + f.h + 1.0);
+  if (closet) options.push(["wardrobe", Math.hypot(cx - (closet.x + closet.w / 2), cy - (closet.y + closet.h))]);
   const deck = FURNITURE.find((f) => f.kind === "turntable");
   const deckDistance = Math.hypot(cx - (deck.x + deck.w / 2), cy - (deck.y + deck.h / 2));
   if (deckDistance < 1.2) options.push(["turntable", deckDistance]);

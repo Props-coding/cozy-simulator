@@ -326,6 +326,25 @@
               </div>
             </div>
           </div>
+          <!-- The wardrobe (wardrobe.js): change your look from your bedroom. -->
+          <div id="wardrobe-panel" hidden>
+            <h3>Your wardrobe</h3>
+            <canvas id="wardrobe-preview" width="96" height="136"></canvas>
+            <div class="wardrobe-rows">
+              <label>Color <input id="wardrobe-color" type="color"></label>
+              <label>Hat <select id="wardrobe-hat"></select></label>
+              <label>Shoes <select id="wardrobe-shoes"></select></label>
+              <label>Pet <select id="wardrobe-pet"></select></label>
+            </div>
+            <fieldset id="wardrobe-exalted" hidden>
+              <legend>✦ Exalted ✦</legend>
+              <label><input type="checkbox" data-piece="robe"> Hooded robe</label>
+              <label><input type="checkbox" data-piece="sigil"> Sigil circle</label>
+              <label><input type="checkbox" data-piece="candles"> Floating candles</label>
+              <label><input type="checkbox" data-piece="runes"> Rune footsteps</label>
+            </fieldset>
+            <button id="wardrobe-close" type="button" class="warm-button">Done</button>
+          </div>
           <!-- The Study's turntable (turntable.js): a crate of records, one
                per lo-fi station. Your pick only plays for you. -->
           <div id="turntable-panel" hidden>
@@ -520,6 +539,7 @@
         "./achievements.js": "./achievements.js?v=0.45",
         "./home.js": "./home.js?v=0.45",
         "./turntable.js": "./turntable.js?v=0.45",
+        "./wardrobe.js": "./wardrobe.js?v=0.45",
         "./laptop.js": "./laptop.js?v=0.45",
         "./news.js": "./news.js?v=0.45",
         "./account.js": "./account.js?v=0.45",

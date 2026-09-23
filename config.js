@@ -17,6 +17,10 @@ const CONFIG = {
     landing: "Upstairs",
   },
 
+  // Accounts that can wear the Exalted look (a hooded robe, sigil circle,
+  // floating candles and rune footsteps), switched on in their wardrobe.
+  exaltedNames: ["Props"],
+
   // Seasonal decorations in the shared rooms: "auto" follows the calendar
   // (spring Mar to May, summer Jun to Aug, autumn Sep to Nov, winter Dec
   // to Feb), or pick one: "spring", "summer", "autumn" or "winter".

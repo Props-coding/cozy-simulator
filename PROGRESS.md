@@ -206,6 +206,10 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Slimmer elevator doors (1.1 tiles wide instead of 1.6).
   - Seasonal wall decor: the hanging garlands are gone. Instead, little cutouts are stuck along both hallways' walls (only on wall, clear of doors, lamps and pictures): Halloween in autumn (bats, ghosts, a trio of flying bats, jack-o'-lanterns), paper snowflakes in winter, butterflies in spring, suns and watermelon slices in summer.
 
+- After 0.45 (not pushed yet):
+  - A working wardrobe: the Wardrobe from Nest & Nook (45 crumbs), placed in your bedroom, opens with E. Change your color, hat, shoes and pet right there (with a preview), no need to go back to the Join screen.
+  - The Exalted look, only for accounts in `exaltedNames` in `config.js` (just Props): four pieces switched on separately in the wardrobe, all seen by friends. A hooded crimson robe with gold trim and glowing eyes (it replaces the hat while on), a slowly turning sigil circle on the floor, three candles floating around you, and glowing rune footsteps that fade as you walk. Saved to your account. (A tech-savvy friend could copy it by editing their own browser; there's no referee.)
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

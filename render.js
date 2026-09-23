@@ -7205,6 +7205,174 @@ function drawPetPreview(canvas, kind) {
   ctx.restore();
 }
 
+// --- The Exalted look (see CONFIG.exaltedNames and wardrobe.js) ---
+// A look only certain accounts can wear, picked piece by piece in the
+// wardrobe: a hooded crimson robe with glowing eyes, a slowly turning
+// sigil circle on the floor, candles floating around them, and runes
+// left glowing where they walk. p.aura is { robe, sigil, candles, runes }.
+
+// A turning ring of runes on the floor, under their feet.
+function drawSigil(ctx, x, y) {
+  const t = performance.now() / 1000;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(1, 0.38); // lying flat on the floor
+  const glow = ctx.createRadialGradient(0, 0, 8, 0, 0, 30);
+  glow.addColorStop(0, "rgba(200, 40, 70, 0.28)");
+  glow.addColorStop(1, "rgba(200, 40, 70, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 30, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.rotate(t * 0.4);
+  ctx.strokeStyle = "rgba(230, 70, 90, 0.75)";
+  ctx.lineWidth = 1.4;
+  for (const r of [24, 19]) {
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.beginPath(); // a seven-pointed star inside
+  for (let k = 0; k <= 7; k++) {
+    const a = (k * 3 * Math.PI * 2) / 7;
+    ctx.lineTo(Math.cos(a) * 19, Math.sin(a) * 19);
+  }
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 200, 150, 0.8)"; // little runes around the ring
+  for (let k = 0; k < 10; k++) {
+    const a = (k / 10) * Math.PI * 2;
+    ctx.save();
+    ctx.translate(Math.cos(a) * 21.5, Math.sin(a) * 21.5);
+    ctx.rotate(a + Math.PI / 2);
+    ctx.fillRect(-0.5, -1.8, 1, 3.6);
+    ctx.fillRect(-1.6, k % 2 ? -1.8 : 0.6, 3.2, 0.9);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// The candles floating around them: where each one is right now, and
+// whether it's behind them (drawn first) or in front.
+function candleSpots(cx, cy) {
+  const t = performance.now() / 1000;
+  return [0, 1, 2].map((k) => {
+    const a = t * 0.9 + (k / 3) * Math.PI * 2;
+    return { x: cx + Math.cos(a) * 25, y: cy + 5 + Math.sin(a) * 6 + Math.sin(t * 2 + k) * 2, behind: Math.sin(a) < 0 }; // (low enough to pass below the face)
+  });
+}
+
+function drawFloatingCandle(ctx, x, y) {
+  const t = performance.now() / 1000;
+  const glow = ctx.createRadialGradient(x, y - 9, 1, x, y - 9, 10);
+  glow.addColorStop(0, "rgba(255, 210, 120, 0.55)");
+  glow.addColorStop(1, "rgba(255, 210, 120, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(x, y - 9, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#efe4cf"; // the candle, with a drip
+  ctx.fillRect(x - 2, y - 6, 4, 8);
+  ctx.fillStyle = "#d8cbb2";
+  ctx.fillRect(x + 1, y - 6, 1, 8);
+  ctx.fillStyle = "#efe4cf";
+  ctx.fillRect(x - 2.4, y - 6, 1.2, 3);
+  const flick = Math.sin(t * 12 + x) * 0.6;
+  ctx.fillStyle = "#ffb347"; // the flame
+  ctx.beginPath();
+  ctx.ellipse(x + flick * 0.4, y - 9, 1.6, 2.8 + flick * 0.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#fff3c4";
+  ctx.beginPath();
+  ctx.ellipse(x + flick * 0.4, y - 8.4, 0.7, 1.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// A hooded crimson robe with gold trim over the body; inside the hood,
+// shadow and two glowing eyes.
+function drawRobe(ctx, cx, cy, r) {
+  const robe = ctx.createLinearGradient(0, cy - r - 8, 0, cy + r + 4);
+  robe.addColorStop(0, "#8a2438");
+  robe.addColorStop(1, "#4a1020");
+  ctx.fillStyle = robe;
+  ctx.beginPath(); // the cloak, from the hood's point down to a flared hem
+  ctx.moveTo(cx, cy - r - 8);
+  ctx.quadraticCurveTo(cx + r + 2, cy - r + 2, cx + r + 1, cy + 2);
+  ctx.lineTo(cx + r + 4, cy + r + 2);
+  ctx.quadraticCurveTo(cx, cy + r + 6, cx - r - 4, cy + r + 2);
+  ctx.lineTo(cx - r - 1, cy + 2);
+  ctx.quadraticCurveTo(cx - r - 2, cy - r + 2, cx, cy - r - 8);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; // lit from above
+  ctx.beginPath();
+  ctx.ellipse(cx - 4, cy - r - 1, 5, 3, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#1a0a10"; // the dark opening of the hood
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 1, r * 0.62, r * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#d9a441"; // gold trim around the hood and down the front
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 1, r * 0.62 + 1, r * 0.55 + 1, 0, 0, Math.PI * 2);
+  ctx.moveTo(cx, cy + r * 0.55);
+  ctx.lineTo(cx, cy + r + 4);
+  ctx.stroke();
+  const t = performance.now() / 1000;
+  ctx.fillStyle = `rgba(255, 207, 110, ${0.75 + Math.sin(t * 2) * 0.2})`; // glowing eyes
+  for (const ex of [cx - 3.2, cx + 3.2]) {
+    ctx.beginPath();
+    ctx.ellipse(ex, cy - 2, 1.5, 1, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Rune footsteps: little glowing marks left where they walk, fading away.
+const runeMarks = []; // { x, y (grid, at their feet), born, glyph }
+const lastRuneAt = {}; // player id -> where the last mark was dropped
+
+function dropRuneMarks(players) {
+  const now = performance.now();
+  for (const p of players) {
+    if (!p.aura?.runes || !p.moving || p.asleep) continue;
+    const fx = p.x + PLAYER_SIZE / 2, fy = p.y + PLAYER_SIZE;
+    const last = lastRuneAt[p.id];
+    if (!last || Math.hypot(fx - last.x, fy - last.y) > 0.5) {
+      runeMarks.push({ x: fx, y: fy, born: now, glyph: runeMarks.length % 4 });
+      lastRuneAt[p.id] = { x: fx, y: fy };
+    }
+  }
+  while (runeMarks.length && now - runeMarks[0].born > 1600) runeMarks.shift();
+}
+
+function drawRuneMarks(ctx) {
+  const now = performance.now();
+  for (const m of runeMarks) {
+    if (floorOf(m.y) !== viewFloor) continue;
+    const p = toScreen(m.x, m.y);
+    const fade = 1 - (now - m.born) / 1600;
+    ctx.save();
+    ctx.translate(p.x, p.y - 2);
+    ctx.scale(1, 0.5);
+    ctx.globalAlpha = Math.max(0, fade);
+    ctx.strokeStyle = "#ff5a7a";
+    ctx.shadowColor = "#ff5a7a";
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    if (m.glyph === 0) { // a few simple rune shapes, taking turns
+      ctx.moveTo(0, -6); ctx.lineTo(0, 6); ctx.moveTo(0, -2); ctx.lineTo(4, -6); ctx.moveTo(0, 2); ctx.lineTo(4, -2);
+    } else if (m.glyph === 1) {
+      ctx.moveTo(-4, 6); ctx.lineTo(0, -6); ctx.lineTo(4, 6); ctx.moveTo(-2, 1); ctx.lineTo(2, 1);
+    } else if (m.glyph === 2) {
+      ctx.moveTo(-4, -5); ctx.lineTo(4, 5); ctx.moveTo(4, -5); ctx.lineTo(-4, 5); ctx.moveTo(0, -6); ctx.lineTo(0, 6);
+    } else {
+      ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.moveTo(-4.5, 0); ctx.lineTo(4.5, 0);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 // Draws one player's body (used for yourself and everyone else): a soft
 // shadow, two little feet, and a round body lit from above (lighter on
 // top, darker underneath) like everything else, with their hat on top.
@@ -7231,6 +7399,13 @@ function drawPlayerBody(ctx, p) {
   }
   const cx = foot.x + sway;
   const cy = foot.y - r - 5 - bob;
+
+  // The Exalted look's sigil circle (on the floor) and any floating
+  // candles that are behind them right now.
+  const aura = p.asleep ? null : p.aura;
+  if (aura?.sigil) drawSigil(ctx, foot.x, foot.y);
+  const candles = aura?.candles ? candleSpots(cx, cy) : [];
+  for (const c of candles) if (c.behind) drawFloatingCandle(ctx, c.x, c.y);
 
   // (Someone asleep is tucked into bed: no shadow or feet, and a blanket
   // over their lower half, drawn further down.)
@@ -7331,7 +7506,10 @@ function drawPlayerBody(ctx, p) {
     ctx.stroke();
   }
 
-  (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+  // A robe's hood takes the place of a hat.
+  if (aura?.robe) drawRobe(ctx, cx, cy, r);
+  else (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+  for (const c of candles) if (!c.behind) drawFloatingCandle(ctx, c.x, c.y);
 
   if (p.asleep) {
     // Tucked in: the bed's blanket pulled up over their lower half.
@@ -7417,10 +7595,10 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
 
 // Draws a character by itself, centered in a small canvas, for the
 // preview on the Join screen.
-function drawCharacterPreview(canvas, color, hat, shoes) {
+function drawCharacterPreview(canvas, color, hat, shoes, aura = null) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const p = { x: 0, y: 0, color, hat, shoes, moving: false };
+  const p = { x: 0, y: 0, color, hat, shoes, moving: false, aura: aura && { robe: aura.robe } }; // (just the robe: the rest wouldn't fit)
   const foot = playerFeet(p);
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height - 13);
@@ -7442,7 +7620,7 @@ let lastTagTime = performance.now();
 // gap, which also covers the little bob while walking) push it up. Hat
 // heights come from shop.js.
 function tagLiftFor(hat) {
-  const height = globalThis.hatHeights?.[hat] ?? 0;
+  const height = hat === "hood" ? 8 : globalThis.hatHeights?.[hat] ?? 0; // (the Exalted robe's hood is 8 pixels tall)
   return Math.max(0, height + 5 - 8);
 }
 
@@ -7452,7 +7630,7 @@ function drawPlayerTag(ctx, p) {
   const now = performance.now();
   const step = Math.min(1, ((now - lastTagTime) / 1000) * 10);
   lastTagTime = now;
-  const target = tagLiftFor(p.hat);
+  const target = p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat);
   const lift = (tagLifts[p.id] ??= target);
   tagLifts[p.id] = lift + (target - lift) * step;
   // The top of their head plus room for their hat. The name, badge, speech
@@ -7968,6 +8146,8 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
 
   drawFloors(ctx);
   drawOutsideRain(ctx);
+  dropRuneMarks(players);
+  drawRuneMarks(ctx);
 
   // Walls, furniture and players, sorted so lower on screen draws in front.
   const sprites = [...getStaticSprites()];

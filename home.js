@@ -152,7 +152,7 @@ const WREN_NOTES = {
   quiltBed: "Hand-stitched quilt in your own color. Sleep like a loaf.",
   canopyBed: "Gauzy drapes and tiny lights. You'll feel like royalty.",
   nightstand: "A little lamp for late-night reading. Glows so softly.",
-  wardrobe: "Room for every sweater you swear you'll fold.",
+  wardrobe: "Room for every sweater. Press E at it to change your outfit anytime.",
   dresser: "Drawers for socks, secrets and spare hair ties.",
   vanity: "Bulb mirror for getting ready like a movie star.",
   clothesRack: "Show off your favorite outfits. Very boutique of you.",
