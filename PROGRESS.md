@@ -126,7 +126,7 @@
 
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- Still in the backlog (`CLAUDE.md`): house key and crumb backup code (on hold until a server),  weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
+- Still in the backlog (`CLAUDE.md`): house key and crumb backup code (on hold until a server), weather station, porch, fireplace room, music room, seasonal decorations, distance voice.
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.
