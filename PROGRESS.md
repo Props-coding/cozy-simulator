@@ -117,7 +117,7 @@
 
 - Build 0.36: Lyss's secret office. anyone named Lyss who builds an office gets a dark cottage one. Deep green walls with ivy creeping along the top and dark wood paneling below, an arched window onto an autumn evening with leaves drifting past, dried lavender and herbs hanging on the wall, an ivy plant, a candlelit writing desk with an open book and a cup of tea, a velvet armchair with a knitted throw, pumpkins with a jar candle, a yarn basket with a ball rolling away, and four cats: one asleep on the desk, one on the armchair, a calico in a cat bed (little z's drifting up), and a black cat keeping watch from the cat tree.
 
-- Upstairs and bedrooms (not pushed yet):
+- Build 0.37: upstairs and bedrooms.
   - Stairs: the garden corner south of the hallway's east end is now a stairwell (door from the hallway, a lamp and a plant) with a staircase. Walk onto the steps and you arrive upstairs, next to the staircase down. Only the floor you're on is shown; friends on the other floor still show in Who's here. Holding an arrow key while taking the stairs doesn't bounce you back: you stop until you let go.
   - Upstairs: a landing like the hallway (runner rug, lamps, paintings, a bench, a side table, plants, and an "Upstairs" plaque), with the roof all around, rain falling on it.
   - Bedrooms: up to four, along the north side of the landing. Press E at the "+" door to make yours. They work like offices: named after you, lockable (L), knockable (K), removable (R), private voice and a Room chat with whoever is inside, and they disappear while you're offline. Each has a big bed with a blanket in your color, two nightstands with lamps, a rainy window, a wardrobe, a rug, a bookshelf and a plant, lit dim and blue like night.
