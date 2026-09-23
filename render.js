@@ -689,12 +689,12 @@ const CUTOUTS = {
     ctx.strokeStyle = "rgba(90, 80, 100, 0.35)";
     ctx.lineWidth = 0.6;
     ctx.stroke();
-    ctx.fillStyle = "#2a2230"; // face
-    ctx.beginPath();
-    ctx.ellipse(-2.2, -1.5, 1, 1.4, 0, 0, Math.PI * 2);
-    ctx.ellipse(2.2, -1.5, 1, 1.4, 0, 0, Math.PI * 2);
-    ctx.ellipse(0, 2.2, 1.1, 1.4, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = "#2a2230"; // face: two eyes and a little "oo" mouth, each its own shape
+    for (const [x, y, rx, ry] of [[-2.3, -1.6, 0.9, 1.3], [2.3, -1.6, 0.9, 1.3], [0, 2.4, 0.9, 1.1]]) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = "rgba(240, 150, 170, 0.5)"; // rosy cheeks
     ctx.fillRect(-4.2, 0.2, 1.6, 1);
     ctx.fillRect(2.6, 0.2, 1.6, 1);
@@ -749,16 +749,18 @@ const CUTOUTS = {
     const colors = ["#f2a0b8", "#c8b0e8", "#fff2a8", "#a8d8e8"];
     ctx.fillStyle = colors[n % colors.length];
     for (const side of [-1, 1]) {
-      ctx.beginPath();
-      ctx.ellipse(side * 3.5, -2, 3.8, 3, side * 0.5, 0, Math.PI * 2);
-      ctx.ellipse(side * 3, 2.5, 2.6, 2.2, -side * 0.4, 0, Math.PI * 2);
-      ctx.fill();
+      for (const [x, y, rx, ry, tilt] of [[side * 3.5, -2, 3.8, 3, side * 0.5], [side * 3, 2.5, 2.6, 2.2, -side * 0.4]]) {
+        ctx.beginPath(); // each wing its own shape
+        ctx.ellipse(x, y, rx, ry, tilt, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.beginPath();
-    ctx.arc(-3.5, -2.5, 1, 0, Math.PI * 2);
-    ctx.arc(3.5, -2.5, 1, 0, Math.PI * 2);
-    ctx.fill();
+    for (const x of [-3.5, 3.5]) {
+      ctx.beginPath();
+      ctx.arc(x, -2.5, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = "#5a4636"; // body and feelers
     ctx.fillRect(-0.6, -4, 1.2, 8);
     ctx.strokeStyle = "#5a4636";
