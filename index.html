@@ -63,6 +63,22 @@
             </form>
             <p id="theater-note"></p>
           </div>
+          <!-- The Conference Room whiteboard, shown over the house when you
+               press B there. whiteboard.js handles the drawing. -->
+          <div id="whiteboard-panel" hidden>
+            <canvas id="whiteboard-canvas" width="960" height="400"></canvas>
+            <div id="whiteboard-tools">
+              <button type="button" class="pen active" data-color="#2b2b2b" title="Black pen" style="--pen: #2b2b2b"></button>
+              <button type="button" class="pen" data-color="#c0554a" title="Red pen" style="--pen: #c0554a"></button>
+              <button type="button" class="pen" data-color="#3f6f9f" title="Blue pen" style="--pen: #3f6f9f"></button>
+              <button type="button" class="pen" data-color="#4f7a48" title="Green pen" style="--pen: #4f7a48"></button>
+              <button type="button" class="pen eraser" data-color="eraser" title="Eraser">Eraser</button>
+              <span class="tools-gap"></span>
+              <button id="whiteboard-save" type="button" class="soft-button">Save picture</button>
+              <button id="whiteboard-clear" type="button" class="soft-button">Clear</button>
+              <button id="whiteboard-close" type="button" class="warm-button">Close</button>
+            </div>
+          </div>
           <!-- A cozy in-game "are you sure?" card, shown over the house. -->
           <div id="confirm-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
             <div class="confirm-card">

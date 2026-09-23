@@ -607,6 +607,76 @@ const FURNITURE_DRAWERS = {
     }
   },
 
+  // --- Conference Room ---
+
+  // A rolling whiteboard on legs, showing whatever's drawn on the shared
+  // board right now.
+  whiteboard(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y + f.h), b = toScreen(f.x + f.w, f.y + f.h);
+    const w = b.x - a.x, boardH = w / 2.4, legH = 16;
+    const y = a.y - legH - boardH;
+    ctx.fillStyle = "#6f7680"; // legs and wheels
+    ctx.fillRect(a.x + 10, a.y - legH, 3, legH);
+    ctx.fillRect(b.x - 13, a.y - legH, 3, legH);
+    ctx.fillRect(a.x + 4, a.y - 3, 16, 2);
+    ctx.fillRect(b.x - 20, a.y - 3, 16, 2);
+    ctx.fillStyle = "#9aa3ad"; // frame
+    roundRectPath(ctx, a.x - 2, y - 2, w + 4, boardH + 4, 3);
+    ctx.fill();
+    const live = document.getElementById("whiteboard-canvas");
+    if (live) ctx.drawImage(live, a.x + 1, y + 1, w - 2, boardH - 2);
+    else {
+      ctx.fillStyle = "white";
+      ctx.fillRect(a.x + 1, y + 1, w - 2, boardH - 2);
+    }
+    ctx.fillStyle = "#7d858f"; // marker tray
+    ctx.fillRect(a.x + 6, y + boardH + 1, w - 12, 3);
+    const markers = ["#2b2b2b", "#c0554a", "#3f6f9f", "#4f7a48"];
+    markers.forEach((color, i) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(a.x + 14 + i * 9, y + boardH - 1, 7, 2);
+    });
+  },
+
+  // A big walnut conference table with laptops, notepads, water glasses
+  // and a little plant in the middle.
+  conferenceTable(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#6b4a32");
+    const { x, y, w, h } = t.top;
+    // Laptops along each long side.
+    for (const lx of [x + 22, x + w - 48]) {
+      ctx.fillStyle = "#c8ccd2";
+      roundRectPath(ctx, lx, y + 6, 26, 16, 2);
+      ctx.fill();
+      ctx.fillStyle = "#6fa7c8";
+      ctx.fillRect(lx + 3, y + 8, 20, 11);
+    }
+    // Notepads and pens on the near side.
+    for (const nx of [x + 30, x + w - 44]) {
+      ctx.fillStyle = "#f4ecd2";
+      ctx.fillRect(nx, y + h - 20, 14, 16);
+      ctx.fillStyle = "#3f6f9f";
+      ctx.fillRect(nx + 16, y + h - 19, 2, 13);
+    }
+    // Water glasses.
+    for (const gx of [x + 14, x + w / 2 + 24, x + w - 14]) {
+      ctx.fillStyle = "rgba(200, 230, 245, 0.7)";
+      ctx.fillRect(gx - 3, y + h / 2 - 4, 6, 8);
+    }
+    // A small plant in the middle.
+    const cx = x + w / 2, cy = y + h / 2;
+    ctx.fillStyle = "#e8dcc8";
+    ctx.fillRect(cx - 6, cy - 2, 12, 8);
+    for (const [dx, dy, color] of [[-4, -6, "#4f7a48"], [4, -7, "#5c8a54"], [0, -10, "#6fa05e"]]) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
   // --- Theater ---
 
   // The big cinema screen on a low stage, with speakers either side.
@@ -1489,7 +1559,7 @@ const FURNITURE_DRAWERS = {
   // "left" or "right" has its back along the other side.
   chair(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const back = "#8a6448", seat = "#a3785a", t = 0.15;
+    const back = f.back || "#8a6448", seat = f.seat || "#a3785a", t = 0.15;
     if (f.facing === "up") {
       drawBlock(ctx, f.x, f.y, f.w, f.h - t, 16, seat);
       drawBlock(ctx, f.x, f.y + f.h - t, f.w, t, 30, back);
@@ -1853,6 +1923,12 @@ function drawLights(ctx) {
 // can stand on (like stools) sort by their top edge, so you're always
 // drawn over them. Cinema seats are the opposite: they draw over whoever
 // sits in them, so you see heads above the seat backs.
+// Seats whose back is toward you (cinema seats, and chairs you can sit in
+// that face away) draw over whoever sits in them.
+function coversSitter(f) {
+  return f.kind === "theaterSeat" || (f.kind === "chair" && f.sit && f.facing === "up");
+}
+
 let staticSprites = [];
 let spritesVersion = -1;
 
@@ -1861,7 +1937,7 @@ function getStaticSprites() {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
-        sortY: f.h === undefined ? f.y + 0.001 : f.kind === "theaterSeat" ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
+        sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
       })),
     ];

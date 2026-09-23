@@ -26,6 +26,8 @@ let externalOnChat = null;
 let chatAction = null;
 let externalOnTheater = null;
 let theaterAction = null;
+let externalOnBoard = null;
+let boardAction = null;
 
 export function onPeerStream(callback) {
   externalOnPeerStream = callback;
@@ -80,6 +82,16 @@ export function sendTheater(message, peerIds) {
   theaterAction?.send(message, { target: peerIds });
 }
 
+// Whiteboard messages (strokes, clear, or a picture of the whole board).
+export function onBoard(callback) {
+  externalOnBoard = callback;
+}
+
+// Sends a whiteboard message to everyone, or to one friend if peerId is given.
+export function sendBoard(message, peerId) {
+  boardAction?.send(message, peerId ? { target: peerId } : undefined);
+}
+
 // Knock on one friend's office door (only they get the message).
 export function sendKnock(peerId) {
   knockAction?.send(true, { target: peerId });
@@ -126,6 +138,9 @@ export function connectToRoom(myName, myColor) {
   // "knock" carries no information, the message arriving is the knock.
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (_, { peerId }) => externalOnKnock?.(peerId);
+
+  boardAction = room.makeAction("board");
+  boardAction.onMessage = (message, { peerId }) => externalOnBoard?.(message, peerId);
 
   theaterAction = room.makeAction("theater");
   theaterAction.onMessage = (message, { peerId }) => externalOnTheater?.(message, peerId);

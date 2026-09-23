@@ -2,9 +2,9 @@
 // room rules: your mic is only live while you stand in a voice room,
 // and you only hear a friend if you're both in the same voice room.
 
-// Rooms where voice chat is on: the Theater, plus every office (where you
-// only hear the people in that same office).
-const VOICE_ROOMS = ["theater"];
+// Rooms where voice chat is on: the Theater and the Conference Room, plus
+// every office (where you only hear the people in that same office).
+const VOICE_ROOMS = ["theater", "conference"];
 
 function isVoiceRoom(roomId) {
   return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-");
@@ -65,6 +65,7 @@ export function playLeaveSound() {
 const ROOM_CHIME_NOTES = {
   hallway: [523.25, 659.25], // C5, E5: light and neutral
   theater: [659.25, 783.99], // E5, G5: a little brighter
+  conference: [587.33, 739.99], // D5, F#5: bright and businesslike
   study: [493.88, 587.33], // B4, D5: softer, calmer
   dinner: [440, 554.37], // A4, C#5: warm, settling in
 };

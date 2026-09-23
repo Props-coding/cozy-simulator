@@ -6,8 +6,8 @@
 //
 // Layout: a hallway runs across the middle of the house. Theater, Study,
 // and Dinner hang below it (south), each with a doorway up into the
-// hallway. Personal offices hang above it (north), each with a doorway
-// down into the hallway. Offices come and go as their owners join and
+// hallway. The Conference Room and personal offices hang above it
+// (north), each with a doorway down into the hallway. Offices come and go as their owners join and
 // leave, so the room and wall lists below get rebuilt when that happens
 // (see buildHouse).
 
@@ -20,18 +20,24 @@ const BASE_ROOMS = [
   { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 } },
   { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 } },
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 } },
+  // North side, at the west end (same depth as the offices next to it).
+  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
 // dividers between rooms, and the wall segments above each room (with a
 // gap left open for the doorway). Same shape of logic as a plain top-down
 // house, just in grid units instead of pixels.
-// (The hallway's top wall gets a doorway for each office, so it's made in
-// buildHouse instead.)
+// (The hallway's top wall gets a doorway for the Conference Room and each
+// office, so it's made in buildHouse instead.)
 const BASE_WALLS = [
   // Outer walls
   { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
-  { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // left
+  { x: -WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 17.2 }, // left, from the Conference Room down to the bottom
+
+  // Conference Room: its north wall and its right-hand side
+  { x: -WALL_THICKNESS, y: -5.8, w: 6, h: WALL_THICKNESS },
+  { x: 5.6, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
   { x: 18, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11 + WALL_THICKNESS * 2 }, // right
 
   // Dividers between rooms (no doors between rooms directly). They start
@@ -62,24 +68,43 @@ const BASE_WALLS = [
 // wall they're on.
 const BASE_FURNITURE = [
   // Hallway: a long runner rug, and along the back wall (west to east):
-  // coat hooks with boots underneath, framed pictures between warm wall
-  // lamps, a side table with a lamp and flowers under a mirror, a
-  // cushioned bench, an umbrella stand and a plant. They're spaced to leave
-  // the three office doorways clear (x 5 to 6.6, 9 to 10.6, 13 to 14.6).
+  // coat hooks with boots underneath, a cushioned bench under a flower
+  // painting between warm wall lamps, a side table with a lamp and flowers
+  // under a mirror, a sea painting between lamps, and an umbrella stand
+  // and a plant under a hills painting. They're spaced to leave the
+  // doorways clear: Conference Room (x 2 to 3.6) and the three office
+  // spots (7 to 8.6, 11 to 12.6, 15 to 16.6).
   { kind: "rug", x: 1.5, y: 1.0, w: 15, h: 1.1, color: "#b5603c", solid: false },
-  { kind: "coatHooks", x: 0.4, y: 0, w: 1.1, solid: false },
-  { kind: "boots", x: 0.5, y: 0.15, w: 0.9, h: 0.35, solid: false },
-  { kind: "sconce", x: 2.0, y: 0, solid: false },
-  { kind: "picture", x: 2.5, y: 0, w: 1.1, art: "hills", solid: false },
-  { kind: "sconce", x: 4.3, y: 0, solid: false },
-  { kind: "mirror", x: 7.5, y: 0, w: 0.7, short: true, solid: false },
-  { kind: "console", x: 6.85, y: 0.1, w: 2.0, h: 0.45 },
-  { kind: "picture", x: 11.1, y: 0, w: 1.1, art: "sea", solid: false },
-  { kind: "sconce", x: 12.6, y: 0, solid: false },
-  { kind: "picture", x: 15.3, y: 0, w: 0.9, art: "flowers", solid: false },
-  { kind: "bench", x: 15.0, y: 0.1, w: 1.5, h: 0.5 },
-  { kind: "umbrellaStand", x: 16.65, y: 0.2, w: 0.4, h: 0.4 },
-  { kind: "plant", x: 17.25, y: 0.3, w: 0.6, h: 0.6 },
+  { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
+  { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
+  { kind: "sconce", x: 1.7, y: 0, solid: false },
+  { kind: "sconce", x: 3.9, y: 0, solid: false },
+  { kind: "picture", x: 4.55, y: 0, w: 0.9, art: "flowers", solid: false },
+  { kind: "bench", x: 4.25, y: 0.1, w: 1.5, h: 0.5 },
+  { kind: "sconce", x: 6.4, y: 0, solid: false },
+  { kind: "mirror", x: 9.45, y: 0, w: 0.7, short: true, solid: false },
+  { kind: "console", x: 8.9, y: 0.1, w: 1.8, h: 0.45 },
+  { kind: "sconce", x: 12.95, y: 0, solid: false },
+  { kind: "picture", x: 13.25, y: 0, w: 1.1, art: "sea", solid: false },
+  { kind: "sconce", x: 14.7, y: 0, solid: false },
+  { kind: "picture", x: 16.85, y: 0, w: 0.9, art: "hills", solid: false },
+  { kind: "umbrellaStand", x: 16.75, y: 0.2, w: 0.4, h: 0.4 },
+  { kind: "plant", x: 17.3, y: 0.3, w: 0.6, h: 0.6 },
+
+  // Conference Room: a rolling whiteboard at the front, a big table with
+  // seats all round (stand on one to sit), a plant, and a coffee cart.
+  { kind: "whiteboard", x: 1.0, y: -5.3, w: 3.6, h: 0.3 },
+  { kind: "conferenceTable", x: 1.0, y: -3.8, w: 3.6, h: 1.4 },
+  { kind: "chair", x: 1.3, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 2.5, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 3.7, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 1.3, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 2.5, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 3.7, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 0.3, y: -3.4, w: 0.6, h: 0.6, facing: "right", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 4.7, y: -3.4, w: 0.6, h: 0.6, facing: "left", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "plant", x: 0.15, y: -5.3, w: 0.6, h: 0.6 },
+  { kind: "teaCart", x: 4.3, y: -1.5, w: 1.2, h: 0.6 },
 
   // Theater: a big screen along the top wall, two rows of plush cinema
   // seats facing it, and a popcorn machine by the door side. Seats aren't
@@ -142,7 +167,7 @@ const BASE_FURNITURE = [
 // at the next free spot.
 const OFFICE_SLOTS = 3; // how many offices can exist at once
 const OFFICE_WIDTH = 4; // grid units per office, including its wall
-const OFFICE_FIRST_X = 4; // left edge of the first office spot
+const OFFICE_FIRST_X = 6; // left edge of the first office spot (right of the Conference Room)
 const OFFICE_DEPTH = 5; // how far north an office reaches from the hallway
 const OFFICE_TOP = -WALL_THICKNESS - OFFICE_DEPTH; // the office floor's north edge
 
@@ -159,7 +184,7 @@ let WALLS = [];
 let FURNITURE = [];
 let SOLIDS = []; // everything you bump into: walls plus solid furniture
 let houseVersion = 0;
-let houseTopY = -WALL_THICKNESS; // the house's northern edge (for the camera)
+let houseTopY = -5.8; // the house's northern edge (for the camera)
 let buildDoorX = null; // left edge of the next free office spot, or null if all are taken
 
 // offices: a list of { slot (1 to 3), since, ownerName, color, locked, mine },
@@ -171,8 +196,9 @@ function buildHouse(offices) {
   const walls = [...BASE_WALLS];
   const furniture = [...BASE_FURNITURE];
 
-  // The hallway's top wall, with a doorway (x0 + 1 to x0 + 2.6) into each office.
-  const doorways = offices.map((o) => officeX(o.slot) + 1).sort((a, b) => a - b);
+  // The hallway's top wall, with a doorway into the Conference Room (x 2 to
+  // 3.6) and into each office (x0 + 1 to x0 + 2.6).
+  const doorways = [2, ...offices.map((o) => officeX(o.slot) + 1)].sort((a, b) => a - b);
   let from = -t;
   for (const doorway of doorways) {
     walls.push({ x: from, y: -t, w: doorway - from, h: t });
@@ -208,7 +234,7 @@ function buildHouse(offices) {
   WALLS = walls;
   FURNITURE = furniture;
   SOLIDS = [...walls, ...furniture.filter((f) => f.solid !== false)];
-  houseTopY = offices.length ? OFFICE_TOP - t : -t;
+  houseTopY = OFFICE_TOP - t; // the Conference Room always reaches this far north
   houseVersion++;
 }
 

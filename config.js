@@ -21,6 +21,7 @@ const CONFIG = {
   roomNames: {
     hallway: "Hallway",
     theater: "Theater",
+    conference: "Conference Room",
     study: "Study",
     dinner: "Dinner",
   },
@@ -30,6 +31,7 @@ const CONFIG = {
   roomFloors: {
     hallway: { style: "planks", color: "#d4b48c" },
     theater: { style: "carpet", color: "#5a2833" },
+    conference: { style: "carpet", color: "#5f6b7a" },
     study: { style: "planks", color: "#9c6a45" },
     dinner: { style: "checker", color: "#dcae8c" },
     office: { style: "planks", color: "#b98a5e" }, // used for every office
@@ -39,6 +41,7 @@ const CONFIG = {
   roomWallColors: {
     hallway: "#eadbc2",
     theater: "#3d2c3a",
+    conference: "#dcd3c4",
     study: "#6f8a6a",
     dinner: "#f0d9b8",
     office: "#8f7fa3", // used for every office

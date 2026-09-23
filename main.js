@@ -37,6 +37,7 @@ import {
   playChatSound,
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
+import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -73,6 +74,8 @@ onPeerLeave((peerId) => {
 });
 onPeerJoin((peerId) => {
   playJoinSound();
+  // Send a friend who just arrived the whiteboard so far.
+  sendBoardTo(peerId);
   // Let a friend who just arrived see the Study timer, if one is running.
   if (focusTimer) sendFocus(focusMessage(), peerId);
 });
@@ -303,6 +306,9 @@ function actionHintFor(room) {
     if (offices.length >= OFFICE_SLOTS) return "All three offices are taken right now.";
     return "Press E to build your office.";
   }
+  if (room.id === "conference") {
+    return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
+  }
   if (room.id === "study") {
     if (!focusTimer) return `Press F to start a ${CONFIG.focusMinutes} minute focus session for everyone in the Study.`;
     const what = focusTimer.phase === "focus" ? "Focus time" : "Break time";
@@ -326,6 +332,14 @@ window.addEventListener("keydown", (e) => {
     saveMyOffice();
     playClickSound();
   }
+
+  // Open or close the whiteboard in the Conference Room.
+  if (key === "b" && getCurrentRoom(player).id === "conference") {
+    if (isWhiteboardOpen()) closeWhiteboard();
+    else openWhiteboard();
+    playClickSound();
+  }
+  if (key === "escape" && isWhiteboardOpen()) closeWhiteboard();
 
   // Start or stop the shared Study focus timer.
   if (key === "f" && getCurrentRoom(player).id === "study") {
@@ -367,6 +381,9 @@ initTheater(() => getPeers().filter((p) => p.room === "theater").map((p) => p.id
 // Clicking the house gives the keyboard back to the game (for example
 // after clicking on the Theater's video, which keeps the keys otherwise).
 canvas.addEventListener("mousedown", () => document.activeElement?.blur());
+
+// --- Whiteboard ---
+initWhiteboard({ confirm: (options) => askConfirm(options) });
 
 // --- Chat ---
 // Two channels: "house" (everyone) and office chat (only people standing
@@ -661,6 +678,7 @@ function tick(now) {
     if (currentRoom.id === "study") enterStudy(lofiPlayerContainer);
     if (previousRoomId === "study") leaveStudy();
     if (previousRoomId === "theater") leaveTheater();
+    if (previousRoomId === "conference") closeWhiteboard();
     if (currentRoom.id === "theater") enterTheater();
     if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
     previousRoomId = currentRoom.id;

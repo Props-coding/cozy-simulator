@@ -161,6 +161,69 @@ canvas {
   color: #e8d6bd;
 }
 
+/* The Conference Room whiteboard: a cream card over the house with the
+   board and a row of pens and buttons underneath. */
+#whiteboard-panel:not([hidden]) {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 740px;
+  padding: 10px;
+  background: #fffaf3;
+  border: 3px solid var(--wood);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(60, 40, 20, 0.4);
+}
+
+#whiteboard-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid #c8cdd3;
+  border-radius: 8px;
+  box-shadow: none;
+  background: white;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+#whiteboard-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#whiteboard-tools .pen {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid #fffaf3;
+  background: var(--pen);
+  box-shadow: 0 0 0 2px #eadcc6;
+  cursor: pointer;
+}
+
+#whiteboard-tools .pen.eraser {
+  width: auto;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.8em;
+  color: var(--wood);
+  background: white;
+}
+
+#whiteboard-tools .pen.active {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+#whiteboard-tools .tools-gap {
+  flex: 1;
+}
+
 /* The in-game "are you sure?" card: dims the house a little and shows a
    warm cream card in the middle. */
 #confirm-dialog:not([hidden]) {
