@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.45",
+    title: "Spooky walls and a Nest & Nook search bar",
+    text: "The hallways are decorated for Halloween with little bats, ghosts and jack-o'-lanterns on the walls. Nest & Nook has a search bar now, so try \"pink\", \"lamp\" or \"hoya\". There are two new hoyas too: the Hoya Polyneura hangs on the wall, and the Hoya Compacta is curly Hindu rope. Decorating lines up nicely now: pieces snap by their center, and a guide line shows your room's middle. Name tags also float above your hat instead of covering it.",
+  },
+  {
     build: "0.44",
     title: "An elevator, a movie palace, and your own lo-fi",
     text: "The stairs are gone: take the elevator instead (press E at the brass doors, ding!). The Theater got a makeover with velvet curtains, marquee lights, a big back-row sofa and a snack counter. The house now dresses up for the season, starting with autumn leaves and pumpkins. In the Study, press E at the new turntable to choose your lo-fi type (Hip-Hop, Jazz, House, Christmas, Medieval and more). Only you hear your pick, and friends can see it on your profile. Plus: four new plants at Nest & Nook (Monstera Adansonii, Hoya Finlaysonii and two Anthuriums), Wren's notes on every item when you hover, crumbs that update while you shop, and hats and pets no longer cut off in previews.",
