@@ -104,13 +104,38 @@ function spareCount(id) {
 }
 
 // --- Nest & Nook ---
+// A little boutique website on the laptop: a striped awning, Wren the
+// shopkeeper bird (who picks something special each day and thanks you
+// when you buy), a tab for each part of the shop, and item cards.
 const STORE_TABS = [
-  ["furniture", "Furniture"],
-  ["cozy", "Plants & rugs"],
-  ["wall", "Walls"],
-  ["upgrades", "Upgrades"],
+  ["furniture", "🛋️", "Furniture", "Pieces to sit, sleep and stash things on."],
+  ["cozy", "🌿", "Plants & rugs", "Green friends, soft rugs and little comforts."],
+  ["wall", "🖼️", "Walls", "Windows, pictures and things to hang up."],
+  ["upgrades", "✨", "Upgrades", "Make your room itself a little bigger."],
 ];
+// Items added in build 0.40 get a "New!" ribbon.
+const NEW_ITEMS = new Set([
+  "loveseatSage", "loveseatRose", "coffeeTable", "dresser", "writingDesk", "rockingChair", "recordPlayer", "fishTank", "piano", "arcade", "telescope", "globe", "toyChest",
+  "fern", "monstera", "cactus", "snakePlant", "succulents", "fiddleFig", "palm", "lemonTree", "candles", "bookStacks", "floorCushions", "lavaLamp", "roundRugCream", "roundRugTeal",
+  "corkBoard", "jarShelf", "pothosShelf", "posterStars", "posterMountains", "posterCat", "worldMap", "neonSign",
+]);
+const WREN_HELLOS = [
+  "Welcome in! Mind the dust bunnies, they're decorative.",
+  "Oh, hello! Everything here was hand-picked. By me. With my beak.",
+  "Browse all you like. I'll just be here, fluffing.",
+  "Looking for something cozy? You've come to the right nook.",
+];
+const WREN_THANKS = [
+  "Lovely choice! It'll look sweet in your room.",
+  "Thank you kindly! Wrapped with a bit of string.",
+  "Oh, that one's a favorite. Enjoy!",
+  "Delivered straight to your bedroom. Free of charge!",
+];
+const WREN_PICK_LINES = ["I'd put this by a window.", "Everyone's asking about this one.", "Trust me on this.", "It just makes a room, you know?"];
+const pickLine = (list) => list[Math.floor(Math.random() * list.length)];
+
 let storeTab = "furniture";
+let wrenSays = pickLine(WREN_HELLOS);
 
 // Draws the store into `page` (a laptop page). `onTab` hears which
 // section is showing (the laptop puts it in the address bar).
@@ -118,115 +143,213 @@ let tellTab = () => {};
 export function renderStore(page, onTab = tellTab) {
   tellTab = onTab;
   tellTab(storeTab);
+  const scroll = page.scrollTop;
   page.innerHTML = "";
-  const top = document.createElement("div");
-  top.className = "nook-top";
-  const title = document.createElement("div");
-  title.className = "nook-title";
-  title.innerHTML = "<strong>Nest &amp; Nook</strong><span>furniture and little comforts</span>";
-  const balance = document.createElement("span");
-  balance.className = "nook-balance";
-  balance.innerHTML = '<svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>';
-  balance.append(String(crumbBalance()));
-  top.append(title, balance);
+  page.classList.add("nook-page");
+  const make = (tag, className, text) => {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  };
 
-  const tabs = document.createElement("div");
-  tabs.className = "nook-tabs";
-  for (const [id, label] of STORE_TABS) {
-    const tab = document.createElement("button");
+  // The shop front: a striped awning, the logo and your crumbs.
+  const front = make("header", "nook-front");
+  front.appendChild(make("div", "nook-awning"));
+  const sign = make("div", "nook-sign");
+  sign.innerHTML = '<svg class="nook-logo" aria-hidden="true"><use href="#nook-bird"></use></svg>';
+  const words = make("div", "nook-words");
+  words.append(make("strong", "", "Nest & Nook"), make("span", "", "little comforts for little rooms"));
+  const wallet = make("span", "nook-wallet");
+  wallet.innerHTML = '<svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>';
+  wallet.append(String(crumbBalance()));
+  sign.append(words, wallet);
+  front.appendChild(sign);
+
+  // Wren, the shopkeeper, with something to say.
+  const wren = make("div", "nook-wren");
+  wren.innerHTML = '<svg class="nook-wren-bird" aria-hidden="true"><use href="#nook-bird"></use></svg>';
+  wren.appendChild(make("p", "nook-bubble", wrenSays));
+
+  const tabs = make("nav", "nook-tabs");
+  for (const [id, icon, label] of STORE_TABS) {
+    const tab = make("button", "nook-tab-" + id);
     tab.type = "button";
-    tab.textContent = label;
+    tab.append(make("span", "nook-tab-icon", icon), label);
     tab.classList.toggle("active", id === storeTab);
     tab.addEventListener("click", () => {
       storeTab = id;
       playClickSound();
+      page.scrollTop = 0;
       renderStore(page);
     });
     tabs.appendChild(tab);
   }
 
-  const grid = document.createElement("div");
-  grid.className = "nook-grid";
+  const [, , label, blurb] = STORE_TABS.find(([id]) => id === storeTab);
+  const section = make("section", "nook-section nook-" + storeTab);
+  const heading = make("div", "nook-heading");
+  heading.append(make("h3", "", label), make("p", "", blurb));
+  section.appendChild(heading);
+
   if (storeTab === "upgrades") {
-    grid.appendChild(upgradeCard(page));
+    section.appendChild(upgradeCard(page));
   } else {
-    for (const [id, item] of Object.entries(DECOR).filter(([, it]) => it.tab === storeTab)) grid.appendChild(itemCard(page, id, item));
+    const items = Object.entries(DECOR).filter(([, it]) => it.tab === storeTab);
+    // Wren's pick: a different item each day.
+    const day = Math.floor(Date.now() / 86_400_000);
+    const [pickId, pick] = items[day % items.length];
+    section.appendChild(pickCard(page, pickId, pick));
+    const grid = make("div", "nook-grid");
+    for (const [id, item] of items) grid.appendChild(itemCard(page, id, item));
+    section.appendChild(grid);
   }
-  page.append(top, tabs, grid);
+
+  const footer = make("footer", "nook-footer", "Nest & Nook · free delivery to your bedroom · est. 2026 · 🪺");
+  page.append(front, wren, tabs, section, footer);
+  page.scrollTop = scroll;
 }
 
-function card(name, price, note) {
+// Buying something: pay, add it to your home, a heart pops up, and Wren
+// says thanks.
+function buy(page, id, item, button) {
+  if (!spendCrumbs(item.price)) {
+    playClickSound();
+    button.textContent = `${item.price - crumbBalance()} crumbs short`;
+    button.classList.add("short");
+    return;
+  }
+  home.owned[id] = Math.min(99, (home.owned[id] || 0) + 1);
+  store();
+  playCrumbSound();
+  wrenSays = pickLine(WREN_THANKS);
+  hooks.notice(`${item.name} is yours! Open Decorate on the laptop to place it.`);
+  const rect = button.getBoundingClientRect(), box = page.getBoundingClientRect();
+  renderStore(page);
+  const heart = document.createElement("span");
+  heart.className = "nook-heart";
+  heart.textContent = "💖";
+  heart.style.left = `${rect.left - box.left + rect.width / 2}px`;
+  heart.style.top = `${rect.top - box.top + page.scrollTop}px`;
+  page.appendChild(heart);
+  setTimeout(() => heart.remove(), 900);
+}
+
+function priceTag(price) {
+  const tag = document.createElement("span");
+  tag.className = "nook-price";
+  tag.innerHTML = '<svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>';
+  tag.append(String(price));
+  return tag;
+}
+
+function preview(item, w, h) {
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  drawDecorPreview(canvas, item, hooks.color());
+  return canvas;
+}
+
+function basketButton(page, id, item) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "nook-buy";
+  button.textContent = "🧺 Add to basket";
+  button.addEventListener("click", () => buy(page, id, item, button));
+  return button;
+}
+
+// The big "Wren's pick of the day" card at the top of a section.
+function pickCard(page, id, item) {
   const el = document.createElement("div");
-  el.className = "nook-item";
-  const label = document.createElement("div");
-  label.className = "nook-name";
-  label.textContent = name;
-  const cost = document.createElement("div");
-  cost.className = "nook-price";
-  cost.innerHTML = '<svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>';
-  cost.append(String(price));
-  const small = document.createElement("div");
-  small.className = "nook-note";
-  small.textContent = note;
-  el.append(label, cost, small);
+  el.className = "nook-pick";
+  const art = document.createElement("div");
+  art.className = "nook-pick-art";
+  art.appendChild(preview(item, 200, 150));
+  const info = document.createElement("div");
+  info.className = "nook-pick-info";
+  const label = document.createElement("span");
+  label.className = "nook-pick-label";
+  label.textContent = "✨ Wren's pick of the day";
+  const name = document.createElement("h4");
+  name.textContent = item.name;
+  const line = document.createElement("p");
+  line.textContent = `"${WREN_PICK_LINES[Math.floor(Date.now() / 86_400_000) % WREN_PICK_LINES.length]}"`;
+  const row = document.createElement("div");
+  row.className = "nook-pick-row";
+  row.append(priceTag(item.price), basketButton(page, id, item));
+  info.append(label, name, line, row);
+  el.append(art, info);
   return el;
 }
 
 function itemCard(page, id, item) {
   const owned = home.owned[id] || 0;
-  const el = card(item.name, item.price, owned ? `You have ${owned}` : "");
-  const preview = document.createElement("canvas");
-  preview.width = 110;
-  preview.height = 84;
-  drawDecorPreview(preview, item, hooks.color());
-  el.prepend(preview);
-  const buy = document.createElement("button");
-  buy.type = "button";
-  buy.className = "warm-button";
-  buy.textContent = "Buy";
-  buy.addEventListener("click", () => {
-    if (!spendCrumbs(item.price)) {
-      playClickSound();
-      buy.textContent = `${item.price - crumbBalance()} short`;
-      return;
-    }
-    home.owned[id] = Math.min(99, owned + 1);
-    store();
-    playCrumbSound();
-    hooks.notice(`${item.name} is yours! Open Decorate on the laptop to place it.`);
-    renderStore(page);
-  });
-  el.appendChild(buy);
+  const el = document.createElement("div");
+  el.className = "nook-item";
+  if (NEW_ITEMS.has(id)) {
+    const ribbon = document.createElement("span");
+    ribbon.className = "nook-new";
+    ribbon.textContent = "New!";
+    el.appendChild(ribbon);
+  }
+  if (owned) {
+    const have = document.createElement("span");
+    have.className = "nook-owned";
+    have.textContent = owned > 1 ? `in your home ×${owned}` : "in your home";
+    el.appendChild(have);
+  }
+  const art = document.createElement("div");
+  art.className = "nook-art";
+  art.appendChild(preview(item, 120, 90));
+  const name = document.createElement("div");
+  name.className = "nook-name";
+  name.textContent = item.name;
+  el.append(art, name, priceTag(item.price), basketButton(page, id, item));
   return el;
 }
 
 function upgradeCard(page) {
   const roomy = home.size === "roomy";
-  const el = card("Roomy Room", ROOMY_PRICE, roomy ? "Done! Enjoy the space." : "Takes down the partition wall, nearly doubling your bedroom.");
-  el.classList.add("wide");
-  const icon = document.createElement("div");
-  icon.className = "nook-icon";
-  icon.textContent = "🔨";
-  el.prepend(icon);
-  const buy = document.createElement("button");
-  buy.type = "button";
-  buy.className = roomy ? "soft-button" : "warm-button";
-  buy.textContent = roomy ? "Yours" : "Upgrade";
-  buy.disabled = roomy;
-  buy.addEventListener("click", () => {
+  const el = document.createElement("div");
+  el.className = "nook-pick nook-upgrade";
+  const art = document.createElement("div");
+  art.className = "nook-pick-art";
+  art.textContent = roomy ? "🏡" : "🔨";
+  const info = document.createElement("div");
+  info.className = "nook-pick-info";
+  const name = document.createElement("h4");
+  name.textContent = "The Roomy Room";
+  const line = document.createElement("p");
+  line.textContent = roomy
+    ? "Done! The partition wall is gone and your bedroom is roomy. Enjoy the space."
+    : "Our builders take down your bedroom's partition wall, making it a good bit wider. Plenty of room for a sofa and a fish tank.";
+  const row = document.createElement("div");
+  row.className = "nook-pick-row";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "nook-buy";
+  button.textContent = roomy ? "Yours! 🎉" : "🔨 Upgrade my room";
+  button.disabled = roomy;
+  button.addEventListener("click", () => {
     if (!spendCrumbs(ROOMY_PRICE)) {
       playClickSound();
-      buy.textContent = `${ROOMY_PRICE - crumbBalance()} short`;
+      button.textContent = `${ROOMY_PRICE - crumbBalance()} crumbs short`;
+      button.classList.add("short");
       return;
     }
     home.size = "roomy";
     store();
     playCrumbSound();
     unlock("roomy");
+    wrenSays = "Down comes the wall! Enjoy all that space.";
     hooks.notice("Down comes the wall! Your bedroom is roomy now.");
     renderStore(page);
   });
-  el.appendChild(buy);
+  row.append(priceTag(ROOMY_PRICE), button);
+  info.append(name, line, row);
+  el.append(art, info);
   return el;
 }
 

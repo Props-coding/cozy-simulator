@@ -1846,99 +1846,286 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.4;
 }
 
-/* Nest & Nook */
-.nook-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Nest & Nook: a little boutique website. Sage and cream, a striped
+   awning, Wren the shopkeeper bird, pastel sections and soft cards. */
+.laptop-page.nook-page:not([hidden]) {
+  position: relative;
+  padding: 0 0 12px;
+  background-color: #fbf6ec;
+  background-image: radial-gradient(rgba(143, 168, 122, 0.18) 1.2px, transparent 1.3px);
+  background-size: 16px 16px;
 }
 
-.nook-title {
+.nook-front {
+  position: relative;
+  background: #f3ede0;
+}
+
+/* The awning: stripes with a scalloped edge. */
+.nook-awning {
+  height: 26px;
+  background: repeating-linear-gradient(90deg, #8fa87a 0 28px, #fbf6ec 28px 56px);
+  position: relative;
+}
+
+.nook-awning::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 12px;
+  background: radial-gradient(circle at 14px 0, #8fa87a 13px, transparent 14px) 0 0 / 56px 12px repeat-x,
+    radial-gradient(circle at 42px 0, #fbf6ec 13px, transparent 14px) 0 0 / 56px 12px repeat-x;
+  filter: drop-shadow(0 2px 1px rgba(90, 70, 40, 0.15));
+}
+
+.nook-sign {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px 12px;
+}
+
+.nook-logo {
+  width: 54px;
+  height: 50px;
+  flex: none;
+}
+
+.nook-words {
   display: flex;
   flex-direction: column;
-  color: var(--wood-dark);
+  flex: 1;
 }
 
-.nook-title strong {
-  font-size: 1.2em;
+.nook-words strong {
+  font-size: 1.7em;
+  letter-spacing: 0.02em;
   color: #5f7a4a;
+  line-height: 1.1;
 }
 
-.nook-title span {
-  font-size: 0.85em;
-  color: #9c8770;
+.nook-words span {
+  font-size: 0.9em;
+  font-style: italic;
+  color: #a08466;
 }
 
-.nook-balance {
+.nook-wallet {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 14px 6px 10px;
+  background: #fffaf3;
+  border: 2px solid #e8d9bf;
+  border-radius: 999px;
   font-weight: 700;
   color: #9a6a1e;
+  box-shadow: 0 3px 8px rgba(122, 92, 62, 0.12);
 }
 
+/* Wren, peeking in with something to say. */
+.nook-wren {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 22px 10px;
+}
+
+.nook-wren-bird {
+  width: 40px;
+  height: 36px;
+  flex: none;
+  animation: wren-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes wren-bob {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-2px) rotate(-4deg); }
+}
+
+.nook-bubble {
+  position: relative;
+  margin: 0;
+  padding: 8px 14px;
+  background: #fffaf3;
+  border: 2px solid #e8d9bf;
+  border-radius: 14px;
+  font-size: 0.9em;
+  color: #6b5540;
+}
+
+.nook-bubble::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  margin-top: -6px;
+  border: 6px solid transparent;
+  border-right-color: #e8d9bf;
+}
+
+/* The tabs, each with its own soft color. */
 .nook-tabs {
   display: flex;
-  gap: 6px;
-  margin: 10px 0;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 22px 12px;
 }
 
 .nook-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: inherit;
   font-weight: 700;
-  padding: 4px 12px;
+  font-size: 0.92em;
+  padding: 7px 16px;
   border-radius: 999px;
-  border: 2px solid #b9cfa4;
-  background: white;
-  color: #5f7a4a;
+  border: 2px solid var(--tab, #b9cfa4);
+  background: #fffaf3;
+  color: #5c4530;
   cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.nook-tabs button:hover {
+  transform: translateY(-2px);
 }
 
 .nook-tabs button.active {
-  background: #5f7a4a;
-  border-color: #5f7a4a;
+  background: var(--tab, #b9cfa4);
+  color: #3f3020;
+}
+
+.nook-tab-furniture { --tab: #f2c9a8; }
+.nook-tab-cozy { --tab: #b9d6a4; }
+.nook-tab-wall { --tab: #b8d0e8; }
+.nook-tab-upgrades { --tab: #e6c8ec; }
+
+.nook-section {
+  margin: 0 16px;
+  padding: 14px 16px 16px;
+  border-radius: 20px;
+  background: var(--soft, #f1f5e9);
+}
+
+.nook-furniture { --soft: #fbeee2; --deep: #d99a6c; }
+.nook-cozy { --soft: #eef5e6; --deep: #7fa86a; }
+.nook-wall { --soft: #eaf1f8; --deep: #6f98bc; }
+.nook-upgrades { --soft: #f5ecf6; --deep: #b086bc; }
+
+.nook-heading h3 {
+  margin: 0;
+  font-size: 1.15em;
+  color: #5c4530;
+}
+
+.nook-heading p {
+  margin: 2px 0 12px;
+  font-size: 0.88em;
+  color: #9c8770;
+}
+
+/* Wren's pick of the day: a big card at the top. */
+.nook-pick {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  background: #fffaf3;
+  border: 2px dashed var(--deep);
+  border-radius: 18px;
+}
+
+.nook-pick-art {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 150px;
+  font-size: 80px;
+  background: radial-gradient(circle, #fff 30%, var(--soft) 72%);
+  border-radius: 16px;
+}
+
+.nook-pick-info h4 {
+  margin: 4px 0 4px;
+  font-size: 1.3em;
+  color: #4a3a2c;
+}
+
+.nook-pick-info p {
+  margin: 0 0 10px;
+  font-style: italic;
+  color: #8a735a;
+}
+
+.nook-pick-label {
+  display: inline-block;
+  padding: 2px 10px;
+  background: var(--deep);
   color: white;
+  font-size: 0.78em;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.nook-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .nook-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
 }
 
 .nook-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 8px;
-  background: #f1f5e9;
-  border: 2px solid #dbe6cc;
-  border-radius: 14px;
-  text-align: center;
-}
-
-.nook-item.wide {
-  grid-column: 1 / -1;
-}
-
-.nook-item canvas {
-  width: 110px;
-  height: 84px;
-  border: none;
-  border-radius: 10px;
+  gap: 5px;
+  padding: 10px 10px 12px;
   background: #fffaf3;
-  box-shadow: none;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 rgba(122, 92, 62, 0.1), 0 6px 14px rgba(122, 92, 62, 0.08);
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.nook-icon {
-  font-size: 44px;
+.nook-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 5px 0 rgba(122, 92, 62, 0.1), 0 12px 20px rgba(122, 92, 62, 0.12);
+}
+
+.nook-art {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: radial-gradient(circle, #fff 35%, var(--soft) 75%);
+  border-radius: 14px;
+}
+
+.nook-page canvas {
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .nook-name {
   font-weight: 700;
-  font-size: 0.88em;
-  color: var(--wood-dark);
+  font-size: 0.9em;
+  color: #4a3a2c;
+  min-height: 2.3em;
+  display: flex;
+  align-items: center;
 }
 
 .nook-price {
@@ -1946,26 +2133,89 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   gap: 4px;
   font-weight: 700;
-  font-size: 0.85em;
   color: #9a6a1e;
 }
 
 .nook-price .crumb-icon {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
 }
 
-.nook-note {
-  min-height: 1em;
-  font-size: 0.78em;
-  color: #7a8f6a;
-}
-
-.nook-item button {
-  margin-top: 2px;
-  padding: 4px 14px;
+.nook-buy {
+  font-family: inherit;
+  font-weight: 700;
   font-size: 0.85em;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--deep, #8fa87a);
+  color: white;
+  cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 0.1s ease;
+}
+
+.nook-buy:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.nook-buy:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.nook-buy.short {
+  background: #c9b6a0;
+}
+
+.nook-new {
+  position: absolute;
+  top: 8px;
+  left: -4px;
+  padding: 2px 9px 2px 8px;
+  background: #e37aa0;
+  color: white;
+  font-size: 0.72em;
+  font-weight: 700;
+  border-radius: 0 999px 999px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  z-index: 1;
+}
+
+.nook-owned {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 1px 8px;
+  background: #eef5e6;
+  color: #5f7a4a;
+  font-size: 0.7em;
+  font-weight: 700;
+  border-radius: 999px;
+  z-index: 1;
+}
+
+.nook-footer {
+  margin: 14px 16px 0;
+  text-align: center;
+  font-size: 0.8em;
+  color: #a08466;
+}
+
+/* The little heart that pops up when you buy something. */
+.nook-heart {
+  position: absolute;
+  font-size: 26px;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  animation: nook-heart 0.9s ease-out forwards;
+}
+
+@keyframes nook-heart {
+  0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+  20% { transform: translate(-50%, -10px) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -60px) scale(1); opacity: 0; }
 }
 
 /* --- Decorating --- */
