@@ -4,15 +4,14 @@
 // see home.js), and Decorate. Back, Forward and Reload work, and the
 // address bar shows where you are.
 //
-// Mail with no server: a letter waits in your outbox until you and that
-// friend are in the house at the same time, then it's handed over and
-// their laptop says thanks, and it leaves your outbox. Letters are saved
-// in each person's own browser.
+// Mail is kept on the house server, so letters arrive even when the
+// friend you wrote to is offline.
 import { getPeers, sendMail, onMail } from "./network.js";
 import { NEWS } from "./news.js";
 import { renderStore, startDecorating } from "./home.js";
 import { unlock } from "./achievements.js";
 import { playClickSound } from "./audio.js";
+import { serverApi, accountName } from "./account.js";
 
 const laptop = document.getElementById("laptop");
 const title = document.getElementById("laptop-title");
@@ -31,7 +30,7 @@ const mailBadge = document.getElementById("mail-badge");
 // --- Connecting to main.js ---
 // main.js tells us your name and color, and what to do when a letter
 // arrives (a notice and a chat line).
-let hooks = { name: () => "Friend", color: () => "#e05a47", onLetter: () => {} };
+let hooks = { name: () => "Friend", color: () => "#e05a47", onLetter: () => {}, notice: () => {} };
 export function initLaptop(options) {
   hooks = options;
 }
@@ -177,102 +176,86 @@ function renderNews() {
   pages.news.appendChild(list);
 }
 
-// --- Mail: saved letters ---
-// inbox: [{ id, from, color, subject, body, sentAt, read }]
-// outbox: [{ id, to, subject, body, sentAt }]
-// contacts: names of friends you've seen in the house.
-const STORAGE_KEY = "cozy-house-mail";
-const LIMITS = { name: 16, subject: 60, body: 1000, inbox: 100, outbox: 30 };
-let mail = { inbox: [], outbox: [], contacts: [] };
-try {
-  const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (loaded && typeof loaded === "object") {
-    mail.inbox = (Array.isArray(loaded.inbox) ? loaded.inbox : []).map(cleanLetter).filter(Boolean);
-    mail.outbox = (Array.isArray(loaded.outbox) ? loaded.outbox : []).filter((l) => l && typeof l.id === "string" && typeof l.to === "string");
-    mail.contacts = (Array.isArray(loaded.contacts) ? loaded.contacts : []).filter((n) => typeof n === "string").slice(0, 50);
-  }
-} catch {
-  // Nothing saved yet, or storage is blocked: start with empty mail.
-}
-
-function store() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mail));
-  } catch {
-    // Storage blocked: letters just won't be remembered.
-  }
-}
-
-// A letter from the network (or storage), checked and trimmed, or null.
-function cleanLetter(l) {
-  if (!l || typeof l.id !== "string" || l.id.length > 40 || typeof l.from !== "string" || typeof l.body !== "string") return null;
-  return {
-    id: l.id,
-    from: l.from.trim().slice(0, LIMITS.name) || "Someone",
-    color: /^#[0-9a-fA-F]{6}$/.test(l.color) ? l.color : "#999999",
-    subject: String(l.subject ?? "").slice(0, LIMITS.subject),
-    body: l.body.slice(0, LIMITS.body),
-    sentAt: Number.isFinite(l.sentAt) ? l.sentAt : Date.now(),
-    read: l.read === true,
-  };
-}
+// --- Mail ---
+// Letters live on the house server, so they reach friends even when
+// they're not in the house. Your inbox is fetched every minute while you're
+// here (and right away if the friend who wrote to you is here too, since
+// their laptop gives yours a little nudge).
+const LIMITS = { name: 16, subject: 60, body: 1000 };
+let inbox = [];
+let names = []; // everyone in the house, for the To box
+let loaded = false;
 
 const sameName = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 function updateBadge() {
-  const unread = mail.inbox.filter((l) => !l.read).length;
+  const unread = inbox.filter((l) => !l.read).length;
   mailBadge.hidden = unread === 0;
   mailBadge.textContent = unread;
 }
-updateBadge();
 
-// --- Mail: delivery ---
-// Every few seconds: remember the names of friends who are here (for the
-// To box), and hand over any waiting letters to friends who are here.
-const lastTry = {}; // letter id -> when we last tried (so we don't flood them)
-setInterval(() => {
-  const peers = getPeers();
-  let changed = false;
-  for (const peer of peers) {
-    const name = String(peer.name ?? "").trim().slice(0, LIMITS.name);
-    if (name && !mail.contacts.some((c) => sameName(c, name))) {
-      mail.contacts.push(name);
-      changed = true;
-    }
-  }
-  if (changed) store();
-  for (const letter of mail.outbox) {
-    const peer = peers.find((p) => typeof p.name === "string" && sameName(p.name, letter.to));
-    if (!peer || Date.now() - (lastTry[letter.id] || 0) < 15000) continue;
-    lastTry[letter.id] = Date.now();
-    sendMail({ type: "letter", id: letter.id, from: hooks.name(), color: hooks.color(), subject: letter.subject, body: letter.body, sentAt: letter.sentAt }, peer.id);
-  }
-}, 3000);
-
-onMail((message, peerId) => {
-  if (message?.type === "letter") {
-    const letter = cleanLetter({ ...message, read: false });
-    if (!letter) return;
-    sendMail({ type: "got", id: letter.id }, peerId); // "arrived, thanks"
-    if (mail.inbox.some((l) => l.id === letter.id)) return; // already have it
-    mail.inbox.unshift(letter);
-    mail.inbox = mail.inbox.slice(0, LIMITS.inbox);
-    store();
+// Fetches your inbox. New unread letters since last time get a notice.
+async function refreshInbox() {
+  if (!accountName()) return;
+  try {
+    const { inbox: fresh } = await serverApi("GET", "/api/mail");
+    const known = new Set(inbox.map((l) => l.id));
+    const arrived = loaded ? fresh.filter((l) => !l.read && !known.has(l.id)) : [];
+    inbox = fresh;
+    loaded = true;
     updateBadge();
-    unlock("gotMail");
-    hooks.onLetter(letter);
-    if (!pages.mail.hidden && !laptop.hidden) showInbox();
-  } else if (message?.type === "got" && typeof message.id === "string") {
-    const before = mail.outbox.length;
-    mail.outbox = mail.outbox.filter((l) => l.id !== message.id);
-    if (mail.outbox.length !== before) {
-      store();
-      if (!pages.mail.hidden && !laptop.hidden) showInbox();
+    for (const letter of arrived) {
+      unlock("gotMail");
+      hooks.onLetter(letter);
     }
+    if (!pages.mail.hidden && !laptop.hidden && address.textContent.endsWith("/inbox")) showInbox();
+  } catch {
+    // The server's unreachable for a moment: try again next time.
   }
+}
+
+async function refreshNames() {
+  try {
+    ({ names } = await serverApi("GET", "/api/names"));
+  } catch {
+    // Keep the old list.
+  }
+}
+
+// Letters from before mail lived on the server were kept in the browser.
+// Bring them over once (and send anything that was still waiting to go).
+async function bringOverOldMail() {
+  let old = null;
+  try {
+    old = JSON.parse(localStorage.getItem("cozy-house-mail"));
+  } catch {
+    return;
+  }
+  if (!old || old.moved) return;
+  try {
+    if (Array.isArray(old.inbox) && old.inbox.length) await serverApi("POST", "/api/mail/import", { letters: old.inbox });
+    for (const letter of Array.isArray(old.outbox) ? old.outbox : []) {
+      await serverApi("POST", "/api/mail", { to: letter.to, subject: letter.subject, body: letter.body, color: hooks.color() }).catch(() => {});
+    }
+    localStorage.setItem("cozy-house-mail", JSON.stringify({ moved: true }));
+  } catch {
+    // Try again next visit.
+  }
+}
+
+// Called by main.js once you've joined the house.
+export async function startMail() {
+  await bringOverOldMail();
+  await refreshInbox();
+  refreshNames();
+  setInterval(refreshInbox, 60_000);
+}
+
+// A nudge from a friend's laptop: they just sent you something.
+onMail((message) => {
+  if (message?.type === "nudge") refreshInbox();
 });
 
-// --- Mail: screens ---
 function el(tag, className, text) {
   const e = document.createElement(tag);
   if (className) e.className = className;
@@ -297,9 +280,9 @@ function showInbox() {
   page.appendChild(write);
 
   page.appendChild(el("h3", "mail-heading", "Inbox"));
-  if (mail.inbox.length === 0) page.appendChild(el("p", "mail-empty", "No letters yet."));
+  if (inbox.length === 0) page.appendChild(el("p", "mail-empty", loaded ? "No letters yet." : "Checking for letters..."));
   const list = el("ul", "mail-list");
-  for (const letter of mail.inbox) {
+  for (const letter of inbox) {
     const li = el("li", letter.read ? "" : "unread");
     const from = el("span", "mail-from", letter.from);
     from.style.color = letter.color;
@@ -311,24 +294,15 @@ function showInbox() {
     list.appendChild(li);
   }
   page.appendChild(list);
-
-  if (mail.outbox.length) {
-    page.appendChild(el("h3", "mail-heading", "Waiting to deliver"));
-    const out = el("ul", "mail-list outbox");
-    for (const letter of mail.outbox) {
-      const li = el("li");
-      li.append(el("span", "mail-from", "To " + letter.to), el("span", "mail-subject", letter.subject || "(no subject)"), el("span", "mail-when", "when you're both here"));
-      out.appendChild(li);
-    }
-    page.appendChild(out);
-  }
 }
 
 function showLetter(letter) {
   setAddress("https://mail.cozy/letter/" + letter.id, "Mail · " + (letter.subject || "(no subject)"));
-  letter.read = true;
-  store();
-  updateBadge();
+  if (!letter.read) {
+    letter.read = true;
+    updateBadge();
+    serverApi("POST", "/api/mail/read", { id: letter.id }).catch(() => {});
+  }
   const page = pages.mail;
   page.innerHTML = "";
   const paper = el("div", "letter-paper");
@@ -352,8 +326,8 @@ function showLetter(letter) {
   remove.type = "button";
   remove.addEventListener("click", () => {
     playClickSound();
-    mail.inbox = mail.inbox.filter((l) => l !== letter);
-    store();
+    inbox = inbox.filter((l) => l !== letter);
+    serverApi("POST", "/api/mail/delete", { id: letter.id }).catch(() => {});
     showInbox();
   });
   buttons.append(back, remove, reply);
@@ -362,6 +336,7 @@ function showLetter(letter) {
 
 function showCompose(to = "", subject = "") {
   setAddress("https://mail.cozy/new", "Mail · New letter");
+  refreshNames();
   const page = pages.mail;
   page.innerHTML = "";
   const form = el("form", "mail-compose");
@@ -375,7 +350,7 @@ function showCompose(to = "", subject = "") {
   toInput.setAttribute("list", "mail-contacts");
   const contacts = el("datalist");
   contacts.id = "mail-contacts";
-  for (const name of mail.contacts) contacts.appendChild(new Option(name));
+  for (const name of names) if (!sameName(name, hooks.name())) contacts.appendChild(new Option(name));
 
   const subjectInput = el("input");
   subjectInput.type = "text";
@@ -385,10 +360,10 @@ function showCompose(to = "", subject = "") {
 
   const body = el("textarea");
   body.maxLength = LIMITS.body;
-  body.rows = 7;
+  body.rows = 8;
   body.placeholder = "Dear friend...";
 
-  const note = el("p", "mail-note", "It'll be delivered the next time you're both in the house.");
+  const note = el("p", "mail-note", "It'll be waiting in their inbox, even if they're not in the house right now.");
   const buttons = el("div", "mail-buttons");
   const cancel = el("button", "soft-button", "Cancel");
   cancel.type = "button";
@@ -406,26 +381,27 @@ function showCompose(to = "", subject = "") {
     return l;
   };
   form.append(label("To", toInput), contacts, label("Subject", subjectInput), body, note, buttons);
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = toInput.value.trim();
     if (!name || !body.value.trim()) {
       note.textContent = "Add who it's to, and write something first.";
       return;
     }
-    if (sameName(name, hooks.name())) {
-      note.textContent = "That's you! Write to a friend instead.";
-      return;
+    send.disabled = true;
+    try {
+      const result = await serverApi("POST", "/api/mail", { to: name, subject: subjectInput.value.trim(), body: body.value.trim(), color: hooks.color() });
+      playClickSound();
+      unlock("penPal");
+      // If they're in the house right now, tell their laptop to check.
+      const peer = getPeers().find((p) => typeof p.name === "string" && sameName(p.name, result.to));
+      if (peer) sendMail({ type: "nudge" }, peer.id);
+      hooks.notice(`Your letter to ${result.to} is in their mailbox.`);
+      showInbox();
+    } catch (err) {
+      note.textContent = err.message;
+      send.disabled = false;
     }
-    if (mail.outbox.length >= LIMITS.outbox) {
-      note.textContent = "Your outbox is full. Wait for some letters to be delivered first.";
-      return;
-    }
-    mail.outbox.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), to: name, subject: subjectInput.value.trim(), body: body.value.trim(), sentAt: Date.now() });
-    store();
-    playClickSound();
-    unlock("penPal");
-    showInbox();
   });
   page.appendChild(form);
   (to ? body : toInput).focus();

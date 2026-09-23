@@ -164,6 +164,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Account settings: an "Account" link on the Join screen lets you change your name (with your password) or your password (which logs you out on your other computers).
   - Fixed: darker shades of darker shades came out black (it showed on the new loveseat's back and arms).
   - Claude Code now has its own account ("Claude"), which it only uses in private test rooms.
+  - Real mail: letters are kept on the house server, so they reach friends even when they're not in the house. Your inbox is checked every minute (and right away when the friend who wrote is in the house too), with a 📬 notice and chat line for new ones. The To box lists everyone in the house. Letters from the old browser-only mail (and anything still waiting in an outbox) moved over to the server automatically.
+  - Friend profiles: click someone's character, or their name in Who's here, to see a card with their character and pet, when they joined, their hours in the house, their achievements, and a bio. On your own card you can write your bio (up to 160 characters). The look, achievements and hours come from each person's cloud save.
+  - Admin tools: accounts can be made admins (`sudo cozy-admin admin NAME`; Props is one). Admins get a 🛠️ button in the header with testing tools: add crumbs or set them to 0, own every hat, shoe, pet and Nest & Nook item, the Roomy upgrade, unlock or reset all achievements, jump to any room, and an accounts list with a "Reset code" button for forgotten passwords. The crumb and unlock tools only change the admin's own save; the accounts tools are checked by the server.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

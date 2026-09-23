@@ -72,7 +72,8 @@ body:has(#game-screen:not([hidden])) {
 }
 
 #settings-button,
-#trophy-button {
+#trophy-button,
+#admin-button {
   width: 38px;
   height: 38px;
   padding: 0;
@@ -2150,4 +2151,250 @@ input[type="range"]::-moz-range-thumb {
 .account-who {
   margin: 0;
   color: var(--wood);
+}
+
+/* --- Admin tools (only for admin accounts) --- */
+#admin-button {
+  font-size: 19px;
+}
+
+/* The header buttons' own display rule would otherwise show it anyway. */
+#admin-button[hidden] {
+  display: none;
+}
+
+#admin-panel:not([hidden]) {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 21;
+  width: 440px;
+  max-height: min(75vh, 620px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  text-align: left;
+  background: #fffaf3;
+  border: 2px dashed #c9a24a;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(90, 65, 40, 0.28);
+  animation: pop-in 0.15s ease-out;
+}
+
+#admin-panel h2,
+#admin-panel h3 {
+  margin: 0 0 6px;
+  font-size: 1em;
+  color: var(--wood);
+}
+
+#admin-panel h3 {
+  margin-top: 12px;
+}
+
+.admin-hint {
+  margin: 0 0 10px;
+  font-size: 0.8em;
+  color: #9c8770;
+}
+
+.admin-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.admin-group > span {
+  width: 92px;
+  font-weight: 700;
+  font-size: 0.85em;
+  color: var(--wood-dark);
+}
+
+.admin-group button,
+#admin-users button {
+  padding: 3px 10px;
+  font-size: 0.8em;
+}
+
+#admin-room {
+  font-family: inherit;
+  padding: 3px 6px;
+  border-radius: 8px;
+  border: 1px solid #d9c3a5;
+  color: var(--wood);
+  max-width: 190px;
+}
+
+#admin-users {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.82em;
+  color: #6b5540;
+}
+
+#admin-users li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0e4d0;
+}
+
+.admin-status {
+  min-height: 1em;
+  margin: 10px 0 0;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #4f7a48;
+  user-select: text;
+}
+
+/* --- A friend's profile card --- */
+#profile-card:not([hidden]) {
+  position: absolute;
+  inset: 0;
+  z-index: 13;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(60, 40, 20, 0.3);
+  border-radius: 12px;
+}
+
+.profile-inner {
+  position: relative;
+  width: min(380px, calc(100% - 40px));
+  box-sizing: border-box;
+  padding: 22px 24px 20px;
+  background: #fffaf3;
+  border: 3px solid var(--wood);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(60, 40, 20, 0.35);
+  text-align: center;
+  animation: pop-in 0.15s ease-out;
+}
+
+#profile-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--wood);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#profile-close:hover {
+  background: #f3e6d0;
+}
+
+.profile-loading {
+  color: #9c8770;
+  font-style: italic;
+}
+
+.profile-look {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.profile-look canvas {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.profile-character {
+  background: radial-gradient(circle, #f3e6d0 60%, transparent 62%) !important;
+  border-radius: 50%;
+}
+
+.profile-name {
+  margin: 6px 0 2px;
+  font-size: 1.4em;
+}
+
+.profile-meta {
+  margin: 0;
+  font-size: 0.85em;
+  color: #9c8770;
+}
+
+.profile-bio-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.profile-bio {
+  margin: 0;
+  padding: 10px 14px;
+  background: #fbefd9;
+  border-radius: 12px;
+  color: #4a3a2c;
+  overflow-wrap: anywhere;
+}
+
+.profile-bio.empty {
+  color: #9c8770;
+  font-style: italic;
+}
+
+.profile-bio-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.95em;
+  padding: 8px 10px;
+  border: 1px solid #d9c3a5;
+  border-radius: 10px;
+  resize: none;
+}
+
+.profile-trophies h3 {
+  margin: 0 0 6px;
+  font-size: 0.9em;
+  color: var(--wood);
+}
+
+.profile-trophy-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.profile-trophy {
+  font-size: 20px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fbefd9;
+  border-radius: 8px;
+  cursor: default;
+}
+
+/* Names in "Who's here" can be clicked to see a profile. */
+#peer-list li[data-name] {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+#peer-list li[data-name]:hover {
+  background: #fbefd9;
 }

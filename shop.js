@@ -133,6 +133,18 @@ export function spendCrumbs(amount) {
   return true;
 }
 
+// Admin panel helpers (for testing).
+export function setCrumbs(amount) {
+  save.crumbs = Math.max(0, Math.floor(amount));
+  store();
+  showCrumbs();
+}
+
+export function grantAllShopItems() {
+  save.owned = CATALOG.map((item) => item.id);
+  store();
+}
+
 export function crumbBalance() {
   return save.crumbs;
 }

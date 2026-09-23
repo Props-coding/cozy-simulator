@@ -4,6 +4,7 @@
 //   sudo cozy-admin reset NAME     give NAME a one-time code to set a new password
 //   sudo cozy-admin phrase         set (or change) the house phrase
 //   sudo cozy-admin remove NAME    delete an account (and its cloud save) for good
+//   sudo cozy-admin admin NAME     make NAME an admin (the 🛠️ panel in the game); "unadmin" undoes it
 //
 // It talks to the running server on the droplet itself, using the admin
 // token from /etc/cozy-server.env (which only root can read).
@@ -54,13 +55,16 @@ try {
     const r = await call("POST", "/admin/reset", { name });
     console.log(`Reset code for ${r.name}: ${r.code}`);
     console.log(`Send it to them privately. On the Join screen they choose "Forgot password?", enter it, and pick a new password. It works once, for ${r.hours} hours.`);
+  } else if ((command === "admin" || command === "unadmin") && name) {
+    const r = await call("POST", "/admin/promote", { name, admin: command === "admin" });
+    console.log(r.admin ? `${r.name} is an admin now (the 🛠️ panel shows up in the game).` : `${r.name} isn't an admin any more.`);
   } else if (command === "remove" && name) {
     const r = await call("POST", "/admin/remove", { name });
     console.log(`Removed ${r.name}'s account and cloud save.`);
   } else if (command === "phrase") {
     await setPhrase();
   } else {
-    console.log("Usage:\n  sudo cozy-admin users\n  sudo cozy-admin reset NAME\n  sudo cozy-admin remove NAME\n  sudo cozy-admin phrase");
+    console.log("Usage:\n  sudo cozy-admin users\n  sudo cozy-admin reset NAME\n  sudo cozy-admin remove NAME\n  sudo cozy-admin admin NAME\n  sudo cozy-admin unadmin NAME\n  sudo cozy-admin phrase");
   }
 } catch (err) {
   console.error("Didn't work:", err.message);

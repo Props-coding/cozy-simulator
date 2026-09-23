@@ -280,12 +280,24 @@ export function isHouseReady() {
   return houseReady;
 }
 
+// For other parts of the game (mail, profiles, the admin panel): talk to
+// the house server as the logged-in account.
+export function serverApi(method, path, body) {
+  return api(method, path, body);
+}
+
+// True if this account is an admin (sees the 🛠️ panel).
+export function isAdmin() {
+  return !!account?.admin;
+}
+
 export function accountName() {
   return account?.name ?? null;
 }
 
 async function afterLogin(user) {
   account.name = user.name;
+  account.admin = !!user.admin;
   storage.set(ACCOUNT_KEY, JSON.stringify(account));
   if (!user.member) {
     phraseHello.textContent = `Hi ${user.name}! Enter the house phrase a friend gave you. You only need to do this once.`;

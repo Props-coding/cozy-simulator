@@ -1,0 +1,138 @@
+// Friend profiles: click someone in the house (or their name in "Who's
+// here") to see their card: their character and pet, a short bio, when
+// they joined, their hours in the house, and the achievements they've
+// earned. Your own card lets you write your bio.
+//
+// The card comes from the house server, which reads each friend's look,
+// achievements and hours from their cloud save.
+import { serverApi, accountName } from "./account.js";
+import { ACHIEVEMENTS } from "./achievements.js";
+import { itemName } from "./shop.js";
+import { playClickSound } from "./audio.js";
+
+const card = document.getElementById("profile-card");
+const body = document.getElementById("profile-body");
+
+export function isProfileOpen() {
+  return !card.hidden;
+}
+
+export function closeProfile() {
+  card.hidden = true;
+  document.activeElement?.blur();
+}
+
+document.getElementById("profile-close").addEventListener("click", () => {
+  playClickSound();
+  closeProfile();
+});
+
+// Escape closes the card. While it's open, the game's keys are off (so
+// typing a bio doesn't walk you away).
+window.addEventListener("keydown", (e) => {
+  if (card.hidden) return;
+  e.stopImmediatePropagation();
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeProfile();
+  }
+});
+
+function el(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+export async function openProfile(name) {
+  card.hidden = false;
+  body.innerHTML = "";
+  body.appendChild(el("p", "profile-loading", "Looking them up..."));
+  playClickSound();
+  let p;
+  try {
+    p = await serverApi("GET", "/api/profile?name=" + encodeURIComponent(name));
+  } catch (err) {
+    body.innerHTML = "";
+    body.appendChild(el("p", "profile-loading", err.status === 404 ? `${name} doesn't have an account yet (they may be on an older version).` : err.message));
+    return;
+  }
+  const mine = accountName() && p.name.toLowerCase() === accountName().toLowerCase();
+  body.innerHTML = "";
+
+  // Their character (and pet), drawn like on the Join screen.
+  const look = el("div", "profile-look");
+  const character = el("canvas", "profile-character");
+  character.width = 96;
+  character.height = 96;
+  drawCharacterPreview(character, p.color, p.hat ?? "none", p.shoes ?? "none");
+  look.appendChild(character);
+  if (p.pet && Object.hasOwn(PET_DRAWERS, p.pet)) {
+    const pet = el("canvas", "profile-pet");
+    pet.width = 72;
+    pet.height = 72;
+    drawPetPreview(pet, p.pet);
+    pet.title = itemName(p.pet);
+    look.appendChild(pet);
+  }
+
+  const head = el("div", "profile-head");
+  const nameTag = el("h2", "profile-name", p.name);
+  nameTag.style.color = p.color;
+  const hours = Math.floor(p.seconds / 3600), minutes = Math.floor((p.seconds % 3600) / 60);
+  const since = new Date(p.since).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" });
+  head.append(
+    nameTag,
+    el("p", "profile-meta", `In the house since ${since}`),
+    el("p", "profile-meta", hours ? `${hours} hour${hours === 1 ? "" : "s"} in the house` : `${minutes} minute${minutes === 1 ? "" : "s"} in the house`)
+  );
+
+  // The bio (and, on your own card, a way to change it).
+  const bio = el("p", "profile-bio", p.bio || (mine ? "Write a little about yourself!" : "No bio yet."));
+  if (!p.bio) bio.classList.add("empty");
+  const bioBox = el("div", "profile-bio-box");
+  bioBox.appendChild(bio);
+  if (mine) {
+    const edit = el("button", "link-button", "Edit bio");
+    edit.type = "button";
+    edit.addEventListener("click", () => {
+      const input = el("textarea", "profile-bio-input");
+      input.maxLength = 160;
+      input.rows = 3;
+      input.value = p.bio;
+      input.placeholder = "Up to 160 characters";
+      const save = el("button", "warm-button", "Save");
+      save.type = "button";
+      save.addEventListener("click", async () => {
+        save.disabled = true;
+        try {
+          const r = await serverApi("POST", "/api/profile", { bio: input.value });
+          p.bio = r.bio;
+          openProfile(p.name);
+        } catch (err) {
+          save.disabled = false;
+          save.textContent = err.message;
+        }
+      });
+      bioBox.replaceChildren(input, save);
+      input.focus();
+    });
+    bioBox.appendChild(edit);
+  }
+
+  // Achievements: the ones they've earned, as a row of icons.
+  const earned = ACHIEVEMENTS.filter((a) => p.achievements.includes(a.id));
+  const trophies = el("div", "profile-trophies");
+  trophies.appendChild(el("h3", "", `Achievements · ${earned.length} of ${ACHIEVEMENTS.length}`));
+  const row = el("div", "profile-trophy-row");
+  for (const a of earned) {
+    const icon = el("span", "profile-trophy", a.icon);
+    icon.title = a.name + ": " + a.desc;
+    row.appendChild(icon);
+  }
+  if (!earned.length) row.appendChild(el("span", "profile-meta", "None yet."));
+  trophies.appendChild(row);
+
+  body.append(look, head, bioBox, trophies);
+}

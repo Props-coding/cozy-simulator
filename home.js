@@ -41,6 +41,18 @@ function store() {
   }
 }
 
+// Admin panel helpers (for testing): one of every Nest & Nook item, and
+// the Roomy upgrade.
+export function grantAllDecor() {
+  for (const id of Object.keys(DECOR)) home.owned[id] = Math.max(home.owned[id] || 0, 1);
+  store();
+}
+
+export function grantRoomy() {
+  home.size = "roomy";
+  store();
+}
+
 // Your room's size and placed decor (main.js puts these in your bedroom).
 export function myHome() {
   return home;

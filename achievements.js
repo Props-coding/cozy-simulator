@@ -115,6 +115,20 @@ export function unlock(id) {
   renderPanel();
 }
 
+// Admin panel helpers (for testing): unlock everything quietly (no
+// pop-ups, crumbs or chat lines), or start over from nothing.
+export function unlockAllQuietly() {
+  for (const a of ACHIEVEMENTS) save.unlocked[a.id] ??= Date.now();
+  store();
+  renderPanel();
+}
+
+export function resetAchievements() {
+  save = { unlocked: {}, stats: {} };
+  store();
+  renderPanel();
+}
+
 // Adds to a counter, and returns the new total.
 export function count(stat, amount = 1) {
   save.stats[stat] = (Number.isFinite(save.stats[stat]) ? save.stats[stat] : 0) + amount;

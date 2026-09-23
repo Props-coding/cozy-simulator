@@ -54,7 +54,9 @@ import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
-import { initLaptop, openLaptop, isLaptopOpen } from "./laptop.js";
+import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
+import { openProfile, isProfileOpen } from "./profile.js";
+import { initAdmin } from "./admin.js";
 import { isHouseReady } from "./account.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
@@ -203,6 +205,8 @@ joinButton.addEventListener("click", async () => {
   myPet = petChoices().some(([id]) => id === petInput.value) ? petInput.value : "none";
   saveProfile();
   startEarningCrumbs();
+  startMail();
+  initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
@@ -602,6 +606,48 @@ initTheater(() => getPeers().filter((p) => p.room === "theater").map((p) => p.id
 // after clicking on the Theater's video, which keeps the keys otherwise).
 canvas.addEventListener("mousedown", () => document.activeElement?.blur());
 
+// Clicking someone's character opens their profile (not while decorating,
+// when clicks move furniture).
+let lastScenePlayers = [];
+canvas.addEventListener("click", (e) => {
+  if (isDecorating() || uiBusy()) return;
+  const r = canvas.getBoundingClientRect();
+  const g = screenToGrid(canvas, e.clientX - r.left, e.clientY - r.top);
+  const hit = lastScenePlayers.find((p) => Math.hypot(g.x - (p.x + PLAYER_SIZE / 2), g.y - (p.y + PLAYER_SIZE - 0.45)) < 0.5);
+  if (hit) openProfile(hit.name);
+});
+
+// Admin panel: jump to the middle of any room (the nearest free spot).
+function teleport(roomId) {
+  const room = ROOMS.find((r) => r.id === roomId);
+  if (!room) return false;
+  const { x, y, w, h } = room.rect;
+  const fits = (px, py) => {
+    const box = { x: px, y: py, w: PLAYER_SIZE, h: PLAYER_SIZE };
+    return px >= x && py >= y && px + PLAYER_SIZE <= x + w && py + PLAYER_SIZE <= y + h && !SOLIDS.some((s) => rectsOverlap(box, s));
+  };
+  for (let ring = 0; ring < 12; ring++) {
+    for (let i = -ring; i <= ring; i++) {
+      for (const [dx, dy] of [[i, -ring], [i, ring], [-ring, i], [ring, i]]) {
+        const px = x + w / 2 - PLAYER_SIZE / 2 + dx * 0.3, py = y + h / 2 - PLAYER_SIZE / 2 + dy * 0.3;
+        if (fits(px, py)) {
+          Object.assign(player, { x: px, y: py });
+          for (const k in keysDown) keysDown[k] = false;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// After the admin panel unlocks things: refresh the hat, shoe and pet lists.
+function refreshLook() {
+  fillSelect(hatInput, hatChoices(), myHat);
+  fillSelect(shoesInput, shoeChoices(), myShoes);
+  fillSelect(petInput, petChoices(), myPet);
+}
+
 // --- Emotes ---
 // Wave, heart, laugh, jig and sleepy: press 1 to 5, click the buttons in
 // the sidebar, or type /wave, /heart, /laugh, /jig (or /hit the jig) or
@@ -691,7 +737,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating();
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen();
 }
 
 function isTyping(e) {
@@ -920,6 +966,7 @@ initHome({
 initLaptop({
   name: () => myName,
   color: () => myColor,
+  notice: (text) => showNotice(text),
   onLetter: (letter) => {
     showNotice(`📬 A letter from ${letter.from}! Read it on your bedroom laptop.`);
     addChatLine({ channel: "house", system: true, text: `📬 You got a letter from ${letter.from}. Read it on your bedroom laptop.` });
@@ -1196,21 +1243,29 @@ function safeColor(color) {
 
 // Turns a color and a line of text into one sidebar row, with a small
 // dot in the player's color so the list matches who you see on screen.
-function peerRow(color, text, outdated = false) {
+function peerRow(color, text, outdated = false, name = "") {
   const tag = outdated ? ' <span class="peer-outdated" title="They\'re on an older version of the house. Ask them to refresh (Ctrl + F5).">needs refresh</span>' : "";
-  return `<li><span class="peer-dot" style="background:${safeColor(color)}"></span><span>${escapeHtml(text)}${tag}</span></li>`;
+  const who = escapeHtml(String(name));
+  return `<li data-name="${who}" title="See ${who}'s profile"><span class="peer-dot" style="background:${safeColor(color)}"></span><span>${escapeHtml(text)}${tag}</span></li>`;
 }
+
+// Clicking a name in "Who's here" opens their profile. (The list is
+// redrawn every frame, so this listens for the press, not the click.)
+peerList.addEventListener("mousedown", (e) => {
+  const name = e.target.closest("li[data-name]")?.dataset.name;
+  if (name) openProfile(name);
+});
 
 // This page's build number (from the little tag in the corner). It's sent
 // to friends, so anyone on an older version shows up as "needs refresh".
 const MY_BUILD = document.getElementById("version-tag").textContent.replace("build", "").trim();
 
 function updateSidebar(myRoomName) {
-  let rows = peerRow(myColor, `${myName} (you) · ${amAsleep ? "💤 " : ""}${myRoomName} · ${formatLocalTime(myTimeZone)}`);
+  let rows = peerRow(myColor, `${myName} (you) · ${amAsleep ? "💤 " : ""}${myRoomName} · ${formatLocalTime(myTimeZone)}`, false, myName);
   for (const peer of getPeers()) {
     const time = formatLocalTime(peer.tz);
     const roomName = (bedAt(peer) ? "💤 " : "") + roomNameFor(peer.room);
-    rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD);
+    rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD, peer.name);
   }
   peerList.innerHTML = rows;
 }
@@ -1282,6 +1337,7 @@ function tick(now) {
     const at = bed ? tuckedIn(bed) : shown;
     return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: statusBadge(peer.room, bed), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color } };
   });
+  lastScenePlayers = scenePlayers;
   const myBed = bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color } });

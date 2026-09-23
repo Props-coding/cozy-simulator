@@ -3,8 +3,8 @@
 export const NEWS = [
   {
     build: "0.40",
-    title: "A proper browser, and a lot more furniture",
-    text: "Your laptop is now a real little web browser with tabs, back and forward, and an address bar: visit start.cozy, mail.cozy, news.cozy and nestandnook.cozy. Nest & Nook doubled in size, with loveseats, a fish tank, a record player, an upright piano, an arcade cabinet, a telescope, eight new plants, round rugs, posters, a neon sign and more. The house got a garden's worth of different plants too, and you can change your name or password from the Join screen.",
+    title: "Real mail, profiles, and a proper browser",
+    text: "Letters now arrive even when your friend isn't in the house: they wait in their inbox on mail.cozy. Click anyone (or their name in Who's here) to see their profile, with their pet, achievements, hours in the house and a bio you can write yourself. Your laptop is now a real little web browser with tabs, back and forward, and an address bar. Nest & Nook doubled in size, with loveseats, a fish tank, a record player, an upright piano, an arcade cabinet, a telescope, eight new plants, round rugs, posters, a neon sign and more. The house got a garden's worth of different plants, and you can change your name or password from the Join screen.",
   },
   {
     build: "0.39",

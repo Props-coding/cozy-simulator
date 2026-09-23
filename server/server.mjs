@@ -33,10 +33,11 @@ const MAX_SAVE_BYTES = 300_000;
 const SESSION_DAYS = 365;
 const RESET_HOURS = 24;
 const TURN_HOURS = 24; // how long a relay login lasts
+const MAIL_LIMITS = { subject: 60, body: 1000, inbox: 200 };
 const TURN_HOST = env.TURN_HOST || "api.thecozy.world";
 
 // --- The data file ---
-// users: lowercase name -> { name, salt, hash, createdAt, member, save, reset }
+// users: lowercase name -> { name, salt, hash, createdAt, member, save, reset, inbox, bio }
 // sessions: hash of a login token -> { user, createdAt, lastUsed }
 let db = { users: {}, sessions: {} };
 
@@ -182,7 +183,7 @@ function currentUser(req) {
   return { user, key: session.user, tokenHash: sha256(token) };
 }
 
-const publicUser = (u) => ({ name: u.name, member: !!u.member });
+const publicUser = (u) => ({ name: u.name, member: !!u.member, admin: !!u.admin });
 
 // Used for unknown names, so a wrong name takes as long as a wrong password.
 const DUMMY_SALT = randomBytes(16).toString("hex");
@@ -245,6 +246,145 @@ const routes = {
     const { user, key } = currentUser(req);
     if (!user.member) throw new Oops(403, "Enter the house phrase first.");
     return { roomId: env.ROOM_ID, password: env.ROOM_PASSWORD, turn: relayLogin(key) };
+  },
+
+  // --- Mail: letters kept on the server, so they arrive even when the
+  // friend you wrote to isn't in the house. Each account has an inbox.
+  "GET /api/mail": async (req) => {
+    const { user } = currentUser(req);
+    return { inbox: user.inbox ?? [] };
+  },
+
+  "POST /api/mail": async (req, ip) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    if (!allowed("mail:" + ip, 40)) throw new Oops(429, "That's a lot of letters! Please wait a few minutes.");
+    const body = await readJson(req, 20_000);
+    const to = db.users[String(body.to ?? "").trim().replace(/\s+/g, " ").toLowerCase()];
+    if (!to || !to.member) throw new Oops(404, "There's nobody in the house by that name.");
+    if (to === user) throw new Oops(400, "That's you! Write to a friend instead.");
+    const text = String(body.body ?? "").trim().slice(0, MAIL_LIMITS.body);
+    if (!text) throw new Oops(400, "Write something first.");
+    const letter = {
+      id: randomBytes(9).toString("base64url"),
+      from: user.name,
+      color: /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : "#999999",
+      subject: String(body.subject ?? "").trim().slice(0, MAIL_LIMITS.subject),
+      body: text,
+      sentAt: Date.now(),
+      read: false,
+    };
+    to.inbox = [letter, ...(to.inbox ?? [])].slice(0, MAIL_LIMITS.inbox);
+    await saveDb();
+    return { sent: true, to: to.name };
+  },
+
+  "POST /api/mail/read": async (req) => {
+    const { user } = currentUser(req);
+    const body = await readJson(req, 2_000);
+    const letter = (user.inbox ?? []).find((l) => l.id === body.id);
+    if (letter && !letter.read) {
+      letter.read = true;
+      await saveDb();
+    }
+    return { ok: true };
+  },
+
+  "POST /api/mail/delete": async (req) => {
+    const { user } = currentUser(req);
+    const body = await readJson(req, 2_000);
+    user.inbox = (user.inbox ?? []).filter((l) => l.id !== body.id);
+    await saveDb();
+    return { ok: true };
+  },
+
+  // Letters from before mail lived on the server (kept in the browser):
+  // brought over once, into your own inbox.
+  "POST /api/mail/import": async (req) => {
+    const { user } = currentUser(req);
+    const body = await readJson(req, 200_000);
+    const have = new Set((user.inbox ?? []).map((l) => l.id));
+    const brought = (Array.isArray(body.letters) ? body.letters : [])
+      .filter((l) => l && typeof l.id === "string" && l.id.length <= 40 && !have.has(l.id) && typeof l.from === "string" && typeof l.body === "string")
+      .slice(0, MAIL_LIMITS.inbox)
+      .map((l) => ({
+        id: l.id,
+        from: l.from.trim().slice(0, 16) || "Someone",
+        color: /^#[0-9a-fA-F]{6}$/.test(l.color) ? l.color : "#999999",
+        subject: String(l.subject ?? "").slice(0, MAIL_LIMITS.subject),
+        body: l.body.slice(0, MAIL_LIMITS.body),
+        sentAt: Number.isFinite(l.sentAt) ? l.sentAt : Date.now(),
+        read: l.read === true,
+      }));
+    user.inbox = [...(user.inbox ?? []), ...brought].sort((a, b) => b.sentAt - a.sentAt).slice(0, MAIL_LIMITS.inbox);
+    await saveDb();
+    return { imported: brought.length };
+  },
+
+  // Everyone in the house (for the To box).
+  "GET /api/names": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    return { names: Object.values(db.users).filter((u) => u.member).map((u) => u.name).sort((a, b) => a.localeCompare(b)) };
+  },
+
+  // --- Profiles: what friends see when they click on you. Your look,
+  // achievements and hours come from your cloud save; the bio you write.
+  "GET /api/profile": async (req) => {
+    const { user: me } = currentUser(req);
+    if (!me.member) throw new Oops(403, "Enter the house phrase first.");
+    const name = new URL(req.url, "http://x").searchParams.get("name") ?? "";
+    const user = db.users[name.trim().replace(/\s+/g, " ").toLowerCase()];
+    if (!user || !user.member) throw new Oops(404, "There's nobody in the house by that name.");
+    const saved = (key) => {
+      try {
+        return JSON.parse(user.save?.data?.[key] ?? "null");
+      } catch {
+        return null;
+      }
+    };
+    const look = saved("cozy-house-profile") ?? {};
+    const progress = saved("cozy-house-achievements") ?? {};
+    const text = (v, max) => (typeof v === "string" ? v.slice(0, max) : null);
+    return {
+      name: user.name,
+      since: user.createdAt,
+      bio: user.bio ?? "",
+      color: /^#[0-9a-fA-F]{6}$/.test(look.color) ? look.color : "#999999",
+      hat: text(look.hat, 30),
+      shoes: text(look.shoes, 30),
+      pet: text(look.pet, 30),
+      achievements: Object.keys(progress.unlocked ?? {}).slice(0, 200),
+      seconds: Number.isFinite(progress.stats?.seconds) ? progress.stats.seconds : 0,
+    };
+  },
+
+  "POST /api/profile": async (req) => {
+    const { user } = currentUser(req);
+    const body = await readJson(req, 5_000);
+    user.bio = String(body.bio ?? "").trim().replace(/\s+/g, " ").slice(0, 160);
+    await saveDb();
+    return { bio: user.bio };
+  },
+
+  // --- The admin panel in the game (only for admin accounts) ---
+  "GET /api/admin/users": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.admin) throw new Oops(403, "Admins only.");
+    return {
+      users: Object.values(db.users).map((u) => ({ name: u.name, member: !!u.member, admin: !!u.admin, since: u.createdAt, savedAt: u.save?.updatedAt ?? null, letters: (u.inbox ?? []).length })),
+    };
+  },
+  "POST /api/admin/reset": async (req) => {
+    const { user: me } = currentUser(req);
+    if (!me.admin) throw new Oops(403, "Admins only.");
+    const body = await readJson(req, 2_000);
+    const user = db.users[String(body.name ?? "").trim().toLowerCase()];
+    if (!user) throw new Oops(404, "No account with that name.");
+    const code = randomBytes(5).toString("hex").toUpperCase();
+    user.reset = { code, expires: Date.now() + RESET_HOURS * 3600_000 };
+    await saveDb();
+    return { name: user.name, code, hours: RESET_HOURS };
   },
 
   // Cloud saves: crumbs, what you own, achievements, your bedroom, letters.
@@ -334,6 +474,14 @@ const adminRoutes = {
     user.reset = { code, expires: Date.now() + RESET_HOURS * 3600_000 };
     await saveDb();
     return { name: user.name, code, hours: RESET_HOURS };
+  },
+  "POST /admin/promote": async (req) => {
+    const body = await readJson(req, 10_000);
+    const user = db.users[String(body.name ?? "").trim().toLowerCase()];
+    if (!user) throw new Oops(404, "No account with that name.");
+    user.admin = body.admin !== false;
+    await saveDb();
+    return { name: user.name, admin: user.admin };
   },
   "POST /admin/remove": async (req) => {
     const body = await readJson(req, 10_000);
