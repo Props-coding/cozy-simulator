@@ -28,6 +28,8 @@ let externalOnTheater = null;
 let theaterAction = null;
 let externalOnBoard = null;
 let boardAction = null;
+let kanbanAction = null;
+let externalOnKanban = null;
 let externalOnEmote = null;
 let emoteAction = null;
 let externalOnDecor = null;
@@ -129,6 +131,17 @@ export function sendBoard(message, peerId) {
   boardAction?.send(message, peerId ? { target: peerId } : undefined);
 }
 
+// The Workshop boards changed (someone added, moved or edited a card):
+// friends fetch the new boards from the server right away. No details are
+// sent, just the nudge.
+export function onKanbanPing(callback) {
+  externalOnKanban = callback;
+}
+
+export function sendKanbanPing() {
+  kanbanAction?.send(1);
+}
+
 // Knock on one friend's office or bedroom door (only they get the message).
 export function sendKnock(peerId, kind) {
   knockAction?.send(kind, { target: peerId });
@@ -187,6 +200,9 @@ export function connectToRoom(myName, myColor) {
 
   boardAction = room.makeAction("board");
   boardAction.onMessage = (message, { peerId }) => externalOnBoard?.(message, peerId);
+
+  kanbanAction = room.makeAction("kanban");
+  kanbanAction.onMessage = () => externalOnKanban?.();
 
   theaterAction = room.makeAction("theater");
   theaterAction.onMessage = (message, { peerId }) => externalOnTheater?.(message, peerId);

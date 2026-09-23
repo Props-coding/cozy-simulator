@@ -326,6 +326,29 @@
               </div>
             </div>
           </div>
+          <!-- The Workshop's project boards (kanban.js). -->
+          <div id="kanban-panel" hidden>
+            <div class="kanban-top">
+              <h3>🔨 Workshop boards</h3>
+              <button id="kanban-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+            </div>
+            <nav id="kanban-tabs"></nav>
+            <div id="kanban-columns"></div>
+            <div id="kanban-editor" hidden>
+              <h4>Card details</h4>
+              <label>Title <input id="kanban-edit-title" type="text" maxlength="80"></label>
+              <div class="kanban-edit-row"><span>Color</span><div id="kanban-edit-labels"></div></div>
+              <label>Due date <input id="kanban-edit-due" type="date"></label>
+              <label>Note <textarea id="kanban-edit-note" maxlength="300" rows="3"></textarea></label>
+              <label>Link <input id="kanban-edit-link" type="text" maxlength="300" placeholder="https://..."></label>
+              <div class="kanban-edit-buttons">
+                <button id="kanban-edit-delete" type="button" class="soft-button">Delete</button>
+                <span></span>
+                <button id="kanban-edit-cancel" type="button" class="soft-button">Cancel</button>
+                <button id="kanban-edit-save" type="button" class="warm-button">Save</button>
+              </div>
+            </div>
+          </div>
           <!-- The wardrobe (wardrobe.js): change your look from your bedroom. -->
           <div id="wardrobe-panel" hidden>
             <h3>Your wardrobe</h3>
@@ -533,6 +556,7 @@
         "./home.js": "./home.js?v=0.47",
         "./turntable.js": "./turntable.js?v=0.47",
         "./wardrobe.js": "./wardrobe.js?v=0.47",
+        "./kanban.js": "./kanban.js?v=0.47",
         "./laptop.js": "./laptop.js?v=0.47",
         "./news.js": "./news.js?v=0.47",
         "./account.js": "./account.js?v=0.47",

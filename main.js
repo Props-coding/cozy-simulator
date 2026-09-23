@@ -71,12 +71,13 @@ import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achiev
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
+import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
 import { isHouseReady } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
-import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
+import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -240,6 +241,18 @@ joinButton.addEventListener("click", async () => {
   saveProfile();
   startEarningCrumbs();
   applyMyLofi(); // your Study station (it may have come with your cloud save)
+  loadSavedBoard(); // the Conference Room whiteboard, as it was left
+  // The Workshop's project boards: kept up to date, and new or finished
+  // cards announced in the house chat.
+  startKanban({
+    color: () => myColor,
+    confirm: (options) => askConfirm(options),
+    notice: (text) => showNotice(text),
+    post: (text, kanban) => {
+      sendChat({ kanban });
+      addChatLine({ channel: "house", system: true, text });
+    },
+  });
   startMail();
   initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
@@ -456,6 +469,7 @@ function roomHintFor(room) {
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
+  if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   const lockedDoor = lockedDoorInFront(player);
@@ -501,6 +515,12 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     ride = { from: elevatorInReach(player), t: 0, arrived: false };
     playClickSound();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "kanban") {
+    for (const k in keysDown) keysDown[k] = false;
+    openKanban();
     return;
   }
 
@@ -808,7 +828,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || !!ride;
 }
 
 // Riding the elevator: the doors slide open, you step in, and they open
@@ -1030,6 +1050,14 @@ onChat((message, peerId) => {
     addChatLine({ channel: "house", system: true, text: `🏆 ${peerName} earned "${earned.name}"` });
     return;
   }
+  // A friend added or finished a card on the Workshop boards.
+  const k = message?.kanban;
+  if (k && (k.kind === "added" || k.kind === "done") && typeof k.title === "string") {
+    const title = clipText(k.title, 80);
+    const text = k.kind === "added" ? `📝 ${peerName} added "${title}" to ${clipText(String(k.board ?? "a board"), 30)}.` : `✅ ${clipText(String(k.who ?? peerName), 16)} finished "${title}"!`;
+    addChatLine({ channel: "house", system: true, text });
+    return;
+  }
   // A friend went to bed, or got up.
   if (typeof message?.bedtime === "boolean") {
     addChatLine({ channel: "house", system: true, text: message.bedtime ? `🌙 ${peerName} went to bed.` : `☀️ ${peerName} got up.` });
@@ -1101,8 +1129,9 @@ function updateSleep() {
 }
 
 // The badge over someone: "eating" in Dinner, "sleeping" in bed.
-function statusBadge(roomId, bed) {
+function statusBadge(roomId, bed, name) {
   if (bed) return "sleeping";
+  if (roomId === "workshop" && busyBuilders().has(String(name ?? "").toLowerCase())) return "🔨"; // working on a card in Doing
   return roomId === "dinner" ? "eating" : null;
 }
 
@@ -1418,12 +1447,12 @@ function tick(now) {
     const pet = Object.hasOwn(PET_DRAWERS, peer.pet) ? peer.pet : "none";
     const bed = bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: statusBadge(peer.room, bed), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name) };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name) };
   });
   lastScenePlayers = scenePlayers;
   const myBed = bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura() });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 

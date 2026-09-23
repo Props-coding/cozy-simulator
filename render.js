@@ -5177,6 +5177,155 @@ const FURNITURE_DRAWERS = {
     drawIvySprig(ctx, b.x + 1, b.y - 18, 11, 1);
   },
 
+  // --- The Workshop ---
+
+  // The house's project board on the Workshop wall: a big corkboard with
+  // three columns (To do, Doing, Done) of little sticky notes, colored by
+  // who claimed them, kept up to date by kanban.js (globalThis.kanbanView
+  // is { columns: [[colors], [colors], [colors]] } for the board last
+  // looked at).
+  kanbanBoard(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 2, h = WALL_HEIGHT - 6;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
+    ctx.fillRect(x + 2, y + 3, w, h);
+    ctx.fillStyle = "#8a5a3c"; // frame
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = "#c9a06a"; // cork
+    ctx.fillRect(x + 3, y + 3, w - 6, h - 6);
+    ctx.fillStyle = "rgba(120, 80, 40, 0.25)";
+    for (let i = 0; i < 40; i++) ctx.fillRect(x + 4 + noise(i * 3.1) * (w - 8), y + 4 + noise(i * 5.7) * (h - 8), 1, 1);
+    const colW = (w - 6) / 3;
+    ctx.fillStyle = "rgba(90, 60, 30, 0.35)"; // column dividers
+    for (const k of [1, 2]) ctx.fillRect(x + 3 + colW * k, y + 5, 1, h - 10);
+    ctx.fillStyle = "#fffaf3"; // a little header strip on each column
+    for (let k = 0; k < 3; k++) ctx.fillRect(x + 3 + colW * k + 3, y + 5, colW - 6, 3);
+    ctx.fillStyle = ["#e0a84c", "#5aa0d8", "#7ac07a"][0];
+    ["#e0a84c", "#5aa0d8", "#7ac07a"].forEach((c, k) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x + 3 + colW * k + 3, y + 5, 4, 3);
+    });
+    const columns = globalThis.kanbanView?.columns ?? [[], [], []];
+    columns.forEach((notes, k) => {
+      const perRow = Math.max(1, Math.floor((colW - 4) / 8));
+      notes.slice(0, perRow * 3).forEach((color, i) => {
+        const nx = x + 3 + colW * k + 3 + (i % perRow) * 8, ny = y + 11 + Math.floor(i / perRow) * 7;
+        ctx.fillStyle = color || "#fff2a8";
+        ctx.fillRect(nx, ny, 6, 5);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
+        ctx.fillRect(nx, ny + 4, 6, 1);
+        ctx.fillStyle = "#c0303a"; // thumbtack
+        ctx.fillRect(nx + 2.5, ny, 1, 1);
+      });
+      if (notes.length > perRow * 3) {
+        ctx.fillStyle = "#5c4530";
+        ctx.font = "700 6px 'Quicksand', sans-serif";
+        ctx.fillText("+" + (notes.length - perRow * 3), x + 3 + colW * k + colW - 12, y + h - 5);
+      }
+    });
+  },
+
+  // A pegboard with tools hanging on it.
+  pegboard(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 3, h = WALL_HEIGHT - 9;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.fillRect(x + 2, y + 3, w, h);
+    ctx.fillStyle = "#d9b98a";
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = "rgba(90, 60, 30, 0.35)"; // the holes
+    for (let px = x + 3; px < x + w - 2; px += 5) for (let py = y + 3; py < y + h - 2; py += 5) ctx.fillRect(px, py, 1, 1);
+    const cx = x + w / 2;
+    ctx.fillStyle = "#7a5238"; // a hammer
+    ctx.fillRect(x + 6, y + 6, 2, 14);
+    ctx.fillStyle = "#8a8f96";
+    ctx.fillRect(x + 3, y + 5, 8, 4);
+    ctx.fillStyle = "#c0554a"; // a screwdriver
+    ctx.fillRect(cx - 1.5, y + 5, 3, 7);
+    ctx.fillStyle = "#b8bec6";
+    ctx.fillRect(cx - 0.5, y + 12, 1, 10);
+    ctx.strokeStyle = "#8a8f96"; // a wrench
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + w - 8, y + 8);
+    ctx.lineTo(x + w - 8, y + 22);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + w - 8, y + 7, 3, Math.PI * 0.2, Math.PI * 1.8);
+    ctx.stroke();
+  },
+
+  // A sturdy workbench with a vise, some wood offcuts, and the "done jar":
+  // a glass jar that fills up with little colored paper stars as cards are
+  // finished (globalThis.kanbanJar, from kanban.js).
+  workbench(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const legs = drawBlock(ctx, f.x + 0.1, f.y + 0.15, f.w - 0.2, f.h - 0.15, 20, "#6b4630");
+    const top = drawBlock(ctx, f.x, f.y, f.w, f.h - 0.2, 6, "#a0703e");
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // the shelf underneath
+    ctx.fillRect(legs.face.x + 4, legs.face.y + 6, legs.face.w - 8, 2);
+    const t = top.top;
+    ctx.fillStyle = "#8a8f96"; // a vise on the left end
+    ctx.fillRect(t.x + 4, t.y - 6, 12, 7);
+    ctx.fillStyle = "#5f656c";
+    ctx.fillRect(t.x + 7, t.y - 9, 6, 3);
+    ctx.fillStyle = "#d9b98a"; // a couple of wood offcuts
+    ctx.fillRect(t.x + 24, t.y + 6, 18, 5);
+    ctx.fillStyle = "#c49a5c";
+    ctx.fillRect(t.x + 30, t.y + 2, 14, 4);
+    // The done jar, on the right end.
+    const jx = t.x + t.w - 24, jb = t.y + t.h - 4, jw = 16, jh = 22;
+    const done = globalThis.kanbanJar ?? 0;
+    const fill = Math.min(1, done / 40); // full after 40 finished cards
+    const colors = ["#f2a0b8", "#fff2a8", "#a8d8e8", "#c8b0e8", "#b9e0a4", "#f7c68a"];
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(jx + 1, jb - jh + 4, jw - 2, jh - 5);
+    ctx.clip();
+    const level = jb - 1 - (jh - 6) * fill;
+    for (let i = 0; i < Math.min(done, 80); i++) {
+      const sx = jx + 3 + noise(i * 2.3) * (jw - 6), sy = jb - 3 - noise(i * 4.1) * (jb - 3 - level);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
+    }
+    ctx.restore();
+    ctx.fillStyle = "rgba(200, 225, 235, 0.35)"; // the glass
+    roundRectPath(ctx, jx, jb - jh + 3, jw, jh - 3, 3);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.45)"; // shine
+    ctx.fillRect(jx + 2, jb - jh + 6, 1.5, jh - 10);
+    ctx.fillStyle = "#c9a24a"; // lid
+    ctx.fillRect(jx - 1, jb - jh, jw + 2, 4);
+    ctx.fillStyle = "#fffaf3"; // its label
+    ctx.fillRect(jx + 3, jb - 11, jw - 6, 5);
+    ctx.fillStyle = "#5c4530";
+    ctx.font = "700 4px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("DONE", jx + jw / 2, jb - 7.5);
+    ctx.textAlign = "left";
+  },
+
+  // A red metal toolbox with a handle.
+  toolbox(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = drawBlock(ctx, f.x, f.y, f.w, f.h, 14, "#c0403a");
+    ctx.fillStyle = "#8a2a24";
+    ctx.fillRect(b.face.x, b.face.y + 4, b.face.w, 1.5);
+    ctx.fillStyle = "#d9d9d9";
+    ctx.fillRect(b.face.x + b.face.w / 2 - 3, b.face.y + 6, 6, 3);
+    ctx.strokeStyle = "#3a3a40"; // handle
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(b.top.x + b.top.w / 2 - 7, b.top.y + b.top.h / 2);
+    ctx.lineTo(b.top.x + b.top.w / 2 - 7, b.top.y + b.top.h / 2 - 5);
+    ctx.lineTo(b.top.x + b.top.w / 2 + 7, b.top.y + b.top.h / 2 - 5);
+    ctx.lineTo(b.top.x + b.top.w / 2 + 7, b.top.y + b.top.h / 2);
+    ctx.stroke();
+  },
+
   // --- Turned furniture: side views ---
   // A piece turned to face right (against the left wall) or left (against
   // the right wall; the same drawing, mirrored). Its footprint is turned
@@ -8289,6 +8438,15 @@ const SIGN_ICONS = {
     ctx.fill();
     ctx.fillRect(cx + 3, cy, 1.8, 7);
   },
+  hammer(ctx, cx, cy) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.6);
+    ctx.fillRect(-1.2, -3, 2.4, 11); // handle
+    ctx.fillRect(-6, -7, 12, 4.5); // head
+    ctx.fillRect(4, -7, 2.5, 2); // claw
+    ctx.restore();
+  },
   elevator(ctx, cx, cy) {
     ctx.fillRect(cx - 8, cy - 7, 10, 14); // two doors
     ctx.fillStyle = "#8a5a3c";
@@ -8462,7 +8620,9 @@ function lawnAreas() {
   // the landing (upstairs).
   const belowStairs = { x: 18, y: corridor + 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 };
   if (viewFloor === 0) return [...north, belowStairs];
-  return [...north, belowStairs, { x: -t - 1, y: corridor + 3 + t / 2, w: 18 + 1 + t / 2, h: 9 }];
+  // (Upstairs, the Workshop takes the west end of the roof south of the
+  // landing.)
+  return [...north, belowStairs, { x: 8 + t / 2, y: corridor + 3 + t / 2, w: 10, h: 9 }, { x: -t - 1, y: corridor + 8 + t, w: 9 + t / 2, h: 4 }];
 }
 
 // --- Decorating helpers ---

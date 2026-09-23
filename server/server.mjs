@@ -22,6 +22,7 @@ const env = process.env;
 const PORT = Number(env.PORT || 3000);
 const DATA_DIR = env.DATA_DIR || "/var/lib/cozy-server";
 const DB_FILE = join(DATA_DIR, "db.json");
+const WHITEBOARD_FILE = join(DATA_DIR, "whiteboard.png"); // the Conference Room whiteboard
 const BACKUP_DIR = join(DATA_DIR, "backups");
 const ALLOWED_ORIGINS = (env.ALLOWED_ORIGINS || "https://props-coding.github.io").split(",").map((s) => s.trim());
 for (const name of ["HOUSE_PHRASE", "ROOM_ID", "ROOM_PASSWORD", "ADMIN_TOKEN"]) {
@@ -38,6 +39,7 @@ const TURN_HOST = env.TURN_HOST || "api.thecozy.world";
 
 // --- The data file ---
 // users: lowercase name -> { name, salt, hash, createdAt, member, save, reset, inbox, bio }
+// kanban: the Workshop's boards (see applyKanban)
 // sessions: hash of a login token -> { user, createdAt, lastUsed }
 let db = { users: {}, sessions: {} };
 
@@ -49,6 +51,7 @@ async function loadDb() {
     if (err.code !== "ENOENT") throw err; // a broken file stops the server rather than wiping it
   }
   db.users ??= {};
+  db.kanban ??= { version: 1, jar: 0, boards: [{ id: "first", name: "Projects", archived: false, cards: [] }] };
   db.sessions ??= {};
   // Forget logins that haven't been used in a year.
   const cutoff = Date.now() - SESSION_DAYS * 86400_000;
@@ -188,6 +191,122 @@ const publicUser = (u) => ({ name: u.name, member: !!u.member, admin: !!u.admin 
 // Used for unknown names, so a wrong name takes as long as a wrong password.
 const DUMMY_SALT = randomBytes(16).toString("hex");
 
+// --- The Workshop's kanban boards ---
+// db.kanban: { version, jar, boards: [{ id, name, archived, cards: [card] }] }
+// card: { id, title, column ("todo", "doing" or "done"), label, due, note,
+//         link, claimedBy (a name), claimColor, addedBy, addedAt, doneAt }
+const KANBAN_COLUMNS = ["todo", "doing", "done"];
+const KANBAN_LABELS = ["", "red", "orange", "yellow", "green", "blue", "purple", "pink"];
+const KANBAN_LIMITS = { boards: 30, cards: 300, name: 30, title: 80, note: 300, link: 300 };
+
+function kanbanState() {
+  const k = db.kanban;
+  return { version: k.version, jar: k.jar, boards: k.boards };
+}
+
+const newId = () => randomBytes(6).toString("hex");
+const cleanText = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+
+function findBoard(id) {
+  const board = db.kanban.boards.find((b) => b.id === id);
+  if (!board) throw new Oops(404, "That board isn't there any more.");
+  return board;
+}
+
+function findCard(id) {
+  for (const board of db.kanban.boards) {
+    const index = board.cards.findIndex((c) => c.id === id);
+    if (index >= 0) return { board, card: board.cards[index], index };
+  }
+  throw new Oops(404, "That card isn't there any more.");
+}
+
+// The optional card details, checked: a color label, a due date, a short
+// note and a web link.
+function cardDetails(body, card) {
+  if (body.label !== undefined) card.label = KANBAN_LABELS.includes(body.label) ? body.label : "";
+  if (body.due !== undefined) card.due = /^\d{4}-\d{2}-\d{2}$/.test(body.due) ? body.due : "";
+  if (body.note !== undefined) card.note = cleanText(body.note, KANBAN_LIMITS.note);
+  if (body.link !== undefined) {
+    const link = String(body.link ?? "").trim().slice(0, KANBAN_LIMITS.link);
+    card.link = /^https?:\/\/\S+$/i.test(link) ? link : "";
+  }
+}
+
+// Applies one change. Returns a little about what happened (so the page
+// can post "added" or "finished" in the house chat).
+function applyKanban(body, user) {
+  const k = db.kanban;
+  switch (body.op) {
+    case "addBoard": {
+      if (k.boards.filter((b) => !b.archived).length >= KANBAN_LIMITS.boards) throw new Oops(400, "That's a lot of boards. Archive one first.");
+      const name = cleanText(body.name, KANBAN_LIMITS.name) || "New project";
+      const board = { id: newId(), name, archived: false, cards: [] };
+      k.boards.push(board);
+      return { board: board.id };
+    }
+    case "renameBoard": {
+      const board = findBoard(body.board);
+      board.name = cleanText(body.name, KANBAN_LIMITS.name) || board.name;
+      return {};
+    }
+    case "archiveBoard": {
+      findBoard(body.board).archived = body.archived !== false;
+      return {};
+    }
+    case "addCard": {
+      const board = findBoard(body.board);
+      if (board.cards.length >= KANBAN_LIMITS.cards) throw new Oops(400, "This board is full. Clear out some Done cards first.");
+      const title = cleanText(body.title, KANBAN_LIMITS.title);
+      if (!title) throw new Oops(400, "Give the card a title.");
+      const card = { id: newId(), title, column: "todo", label: "", due: "", note: "", link: "", claimedBy: null, claimColor: null, addedBy: user.name, addedAt: Date.now(), doneAt: null };
+      cardDetails(body, card);
+      board.cards.push(card);
+      return { added: title, board: board.name };
+    }
+    case "editCard": {
+      const { card } = findCard(body.card);
+      if (body.title !== undefined) card.title = cleanText(body.title, KANBAN_LIMITS.title) || card.title;
+      cardDetails(body, card);
+      return {};
+    }
+    case "deleteCard": {
+      const { board, index } = findCard(body.card);
+      board.cards.splice(index, 1);
+      return {};
+    }
+    case "claimCard": {
+      // Claim it for yourself, or let go of it if it's already yours.
+      const { card } = findCard(body.card);
+      if (card.claimedBy === user.name) {
+        card.claimedBy = null;
+        card.claimColor = null;
+      } else {
+        card.claimedBy = user.name;
+        card.claimColor = /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : "#999999";
+      }
+      return {};
+    }
+    case "moveCard": {
+      // To another column (and a spot in it: before the card `before`, or
+      // at the end).
+      const { board, card, index } = findCard(body.card);
+      if (!KANBAN_COLUMNS.includes(body.column)) throw new Oops(400, "That's not a column.");
+      const finished = body.column === "done" && card.column !== "done";
+      board.cards.splice(index, 1);
+      card.column = body.column;
+      card.doneAt = body.column === "done" ? card.doneAt ?? Date.now() : null;
+      const at = board.cards.findIndex((c) => c.id === body.before);
+      if (at >= 0) board.cards.splice(at, 0, card);
+      else board.cards.push(card);
+      if (finished) k.jar++;
+      return finished ? { finished: card.title, board: board.name, claimedBy: card.claimedBy } : {};
+    }
+    default:
+      throw new Oops(400, "That's not something the board can do.");
+  }
+}
+
 const routes = {
   "GET /api/health": async () => ({ ok: true }),
 
@@ -326,6 +445,58 @@ const routes = {
     const { user } = currentUser(req);
     if (!user.member) throw new Oops(403, "Enter the house phrase first.");
     return { names: Object.values(db.users).filter((u) => u.member).map((u) => u.name).sort((a, b) => a.localeCompare(b)) };
+  },
+
+  // --- The Conference Room whiteboard: a picture of it, saved so it's
+  // still there when everyone has logged off. Whoever draws uploads the
+  // latest picture a moment after they stop (it already has everyone's
+  // strokes on it, since strokes are shared live).
+  "GET /api/whiteboard": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    try {
+      const png = await readFile(WHITEBOARD_FILE);
+      return { image: "data:image/png;base64," + png.toString("base64") };
+    } catch (err) {
+      if (err.code === "ENOENT") return { image: null };
+      throw err;
+    }
+  },
+
+  "PUT /api/whiteboard": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    if (!allowed("whiteboard:" + key, 400)) throw new Oops(429, "That's a lot of drawing! Please wait a few minutes.");
+    const body = await readJson(req, 2_500_000);
+    const prefix = "data:image/png;base64,";
+    if (typeof body.image !== "string" || !body.image.startsWith(prefix)) throw new Oops(400, "That doesn't look like a picture of the board.");
+    const png = Buffer.from(body.image.slice(prefix.length), "base64");
+    const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    if (png.length > 1_800_000 || !png.subarray(0, 8).equals(signature)) throw new Oops(400, "That doesn't look like a picture of the board.");
+    const tmp = WHITEBOARD_FILE + ".tmp";
+    await writeFile(tmp, png, { mode: 0o600 });
+    await rename(tmp, WHITEBOARD_FILE);
+    return { ok: true };
+  },
+
+  // --- The Workshop's boards (kanban). Every change is one small action,
+  // applied here one at a time, so two people editing at once never
+  // overwrite each other. Each action returns the whole (small) state.
+  "GET /api/kanban": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    return kanbanState();
+  },
+
+  "POST /api/kanban": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    if (!allowed("kanban:" + key, 600)) throw new Oops(429, "Lots of changes! Please wait a few minutes.");
+    const body = await readJson(req, 10_000);
+    const result = applyKanban(body, user);
+    db.kanban.version++;
+    await saveDb();
+    return { ...kanbanState(), result };
   },
 
   // --- Profiles: what friends see when they click on you. Your look,

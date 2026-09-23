@@ -47,7 +47,10 @@ const BASE_ROOMS = [
   { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, y: -WALL_THICKNESS / 2 }, north: true },
   // The elevator lobby, south of the hallway's east end (the same spot on both floors).
   { id: "elevator", name: CONFIG.roomNames.elevator, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, y: 3 } },
-  // Upstairs: the landing (added in buildHouse) and its elevator lobby.
+  // Upstairs: the Workshop, south of the landing's west end (a place to
+  // make things together, with the house's project boards on its wall).
+  { id: "workshop", name: CONFIG.roomNames.workshop, rect: { x: 0, y: LANDING + 3, w: 8, h: 5 }, sign: { x: 6.2, y: LANDING + 3 } },
+  // The landing (added in buildHouse) and its elevator lobby.
   { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
 ];
 
@@ -84,7 +87,13 @@ const BASE_WALLS = [
   // top wall has the bedroom doorways, so it's made in buildHouse.
   { x: -WALL_THICKNESS, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
-  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS },
+  // (the landing's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
+  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: 5.4 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 7.0, y: LANDING + 3 - WALL_THICKNESS / 2, w: 12.2, h: WALL_THICKNESS },
+  // The Workshop: its left side, its right side, and its bottom (drawn short).
+  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS * 1.5 },
+  { x: 8 - WALL_THICKNESS / 2, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: LANDING + 8, w: 8 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
   { x: 20.8, y: LANDING + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: LANDING + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
@@ -273,6 +282,21 @@ const BASE_FURNITURE = [
   { kind: "picture", x: 22.4, y: LANDING, w: 0.9, art: "hills", solid: false },
   { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
+
+  // The Workshop: the house's project board (a big corkboard) and a tool
+  // pegboard on the back wall, a long workbench with the "done jar" on it
+  // and two stools, a rug, a toolbox, a lamp and a plant. Press E at the
+  // corkboard to open the boards (kanban.js).
+  { kind: "kanbanBoard", x: 0.3, y: LANDING + 3 + WALL_THICKNESS / 2, w: 3.7, solid: false },
+  { kind: "pegboard", x: 4.1, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.2, solid: false },
+  { kind: "sconce", x: 7.4, y: LANDING + 3 + WALL_THICKNESS / 2, solid: false },
+  { kind: "rug", x: 0.8, y: LANDING + 5.4, w: 3.8, h: 2.2, color: "#8a6a4a", solid: false },
+  { kind: "workbench", x: 1.0, y: LANDING + 5.6, w: 3.0, h: 0.75 },
+  { kind: "stool", x: 1.6, y: LANDING + 6.45, w: 0.6, h: 0.6, color: "#c98a3a", solid: false },
+  { kind: "stool", x: 2.9, y: LANDING + 6.45, w: 0.6, h: 0.6, color: "#6f8a6a", solid: false },
+  { kind: "toolbox", x: 6.6, y: LANDING + 7.2, w: 0.8, h: 0.5 },
+  { kind: "floorLamp", x: 5.4, y: LANDING + 7.3, w: 0.4, h: 0.4 },
+  { kind: "monstera", x: 0.15, y: LANDING + 7.2, w: 0.6, h: 0.6 },
   { kind: "sconce", x: 18.7, y: LANDING + 3.2, solid: false },
   { kind: "rug", x: 20.8, y: LANDING + 4.3, w: 2.8, h: 1.9, color: "#4f5f7a", round: true, solid: false },
   { kind: "bench", x: 18.3, y: LANDING + 4.2, w: 1.5, h: 0.5 },
@@ -900,6 +924,9 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
+  // The Workshop's corkboard: stand below it.
+  const cork = FURNITURE.find((f) => f.kind === "kanbanBoard");
+  if (floorOf(player.y) === floorOf(cork.y) && cx > cork.x - 0.2 && cx < cork.x + cork.w + 0.2 && cy > cork.y && cy < cork.y + 1.4) options.push(["kanban", cy - cork.y]);
   // Your wardrobe (facing forward, or turned): within a step of it.
   const reach = (f) => Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h));
   const closet = FURNITURE.find((f) => (f.kind === "wardrobe" || f.kind === "wardrobeSide") && f.mine && floorOf(f.y) === floorOf(player.y) && reach(f) < 0.9);

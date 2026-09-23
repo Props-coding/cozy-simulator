@@ -1,11 +1,15 @@
 // The Conference Room whiteboard: everyone can draw on it together. Each
 // stroke is sent to everyone in the house (not only the Conference Room),
 // so everyone keeps a copy of the board. When someone new joins, a friend
-// sends them a picture of the board as it is now. There's no server, so
-// the drawing lasts only while someone is in the house (the "Save
-// picture" button downloads a copy).
+// sends them a picture of the board as it is now.
+//
+// The board is also saved on the house server, so it's still there when
+// everyone has logged off: a few seconds after you draw (or clear), your
+// copy of the board is uploaded, and it's loaded when you arrive. (The
+// "Save picture" button still downloads a copy for you to keep.)
 import { sendBoard, onBoard } from "./network.js";
 import { unlock } from "./achievements.js";
+import { serverApi } from "./account.js";
 
 const BOARD_W = 960; // the board's size in its own pixels (the panel scales it)
 const BOARD_H = 400;
@@ -81,7 +85,38 @@ const stopDrawing = () => {
   drawing = false;
   flush();
   lastPoint = null;
+  saveSoon();
 };
+
+// --- Saving on the server ---
+// Uploads the board a few seconds after your last change (so a burst of
+// scribbles is one upload, not dozens).
+const SAVE_DELAY = 3000;
+let saveTimer = null;
+function saveSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    serverApi("PUT", "/api/whiteboard", { image: board.toDataURL("image/png") }).catch((err) => console.warn("Couldn't save the whiteboard:", err.message));
+  }, SAVE_DELAY);
+}
+
+// Loads the saved board when you arrive (unless a friend has already sent
+// you a fresher one, or you've started drawing).
+export async function loadSavedBoard() {
+  try {
+    const { image } = await serverApi("GET", "/api/whiteboard");
+    if (!image || hasContent) return;
+    const img = new Image();
+    img.onload = () => {
+      if (hasContent) return;
+      ctx.drawImage(img, 0, 0, BOARD_W, BOARD_H);
+      hasContent = true;
+    };
+    img.src = image;
+  } catch (err) {
+    console.warn("Couldn't load the saved whiteboard:", err.message);
+  }
+}
 board.addEventListener("pointerup", stopDrawing);
 board.addEventListener("pointercancel", stopDrawing);
 
@@ -97,6 +132,7 @@ document.getElementById("whiteboard-clear").addEventListener("click", async () =
   if (!(await confirmClear())) return;
   wipe();
   sendBoard({ type: "clear" });
+  saveSoon();
 });
 
 // Downloads the board as a picture.

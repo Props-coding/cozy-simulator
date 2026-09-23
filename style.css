@@ -3096,3 +3096,351 @@ input[type="range"]::-moz-range-thumb {
   text-align: center;
   line-height: 1.2;
 }
+
+/* The Workshop boards (kanban.js): a big cream card over the house, with
+   project tabs, three columns and sticky-note cards. */
+#kanban-panel:not([hidden]) {
+  position: absolute;
+  inset: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  box-sizing: border-box;
+  background: #fffaf3;
+  border: 6px solid #a0703e;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(60, 35, 15, 0.35);
+  color: #4a3a2c;
+  z-index: 5;
+}
+
+.kanban-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kanban-top h3 {
+  margin: 0;
+}
+
+#kanban-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.kanban-tab,
+.kanban-rename {
+  font: inherit;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 2px solid #ead8bd;
+  background: #fffaf3;
+  color: #6b4f38;
+  cursor: pointer;
+}
+
+.kanban-tab.active {
+  background: #f3e6d0;
+  border-color: #c98a3a;
+  color: #4a3a2c;
+}
+
+.kanban-tab.archived {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.kanban-tab.add {
+  border-style: dashed;
+  color: #9c8770;
+}
+
+.kanban-rename {
+  cursor: text;
+  width: 170px;
+  outline: none;
+  border-color: #c98a3a;
+}
+
+.kanban-tab-tools {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.kanban-icon {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 2px solid #ead8bd;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #6b4f38;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.kanban-icon.wide {
+  font-size: 0.85em;
+}
+
+#kanban-columns {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.kanban-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f6ecdb;
+  border-top: 5px solid var(--col);
+  transition: background 0.15s ease;
+}
+
+.kanban-column.drop {
+  background: #efe0c6;
+}
+
+.kanban-column-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+
+.kanban-count {
+  min-width: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--col);
+  color: #fffaf3;
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.kanban-add {
+  font: inherit;
+  padding: 7px 10px;
+  border: 2px dashed #d9c3a0;
+  border-radius: 10px;
+  background: #fffaf3;
+  color: #4a3a2c;
+  outline: none;
+}
+
+.kanban-add:focus {
+  border-style: solid;
+  border-color: #c98a3a;
+}
+
+.kanban-list {
+  flex: 1 1 auto;
+  min-height: 60px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 8px;
+}
+
+/* A card: a little sticky note with a colored label stripe on the left. */
+.kanban-card {
+  position: relative;
+  text-align: left;
+  padding: 9px 30px 9px 12px;
+  border-radius: 10px;
+  background: #fffdf8;
+  border-left: 5px solid var(--label);
+  box-shadow: 0 2px 0 rgba(122, 92, 62, 0.12), 0 3px 8px rgba(122, 92, 62, 0.1);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px) rotate(-0.4deg);
+}
+
+.kanban-card.mine {
+  box-shadow: 0 0 0 2px var(--accent), 0 3px 8px rgba(122, 92, 62, 0.12);
+}
+
+.kanban-card.dragging {
+  opacity: 0.35;
+}
+
+.kanban-card-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.kanban-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.kanban-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f3e6d0;
+  color: #6b4f38;
+  font-size: 0.75em;
+  text-decoration: none;
+}
+
+.kanban-chip.late {
+  background: #f8d4d0;
+  color: #a0302a;
+}
+
+.kanban-chip.link:hover {
+  background: #ead8bd;
+}
+
+.kanban-card-note {
+  margin-top: 5px;
+  color: #8a7560;
+  font-size: 0.8em;
+  overflow-wrap: anywhere;
+}
+
+/* The claimer's face, pinned on like a thumbtack. */
+.kanban-tack {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+
+.kanban-card-edit {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #b39c7a;
+  cursor: pointer;
+}
+
+.kanban-card-edit:hover {
+  background: #f3e6d0;
+  color: #6b4f38;
+}
+
+.kanban-hint,
+.kanban-empty {
+  margin: 8px 4px;
+  color: #b39c7a;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+/* The card details editor, over the boards. */
+#kanban-editor:not([hidden]) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, calc(100% - 40px));
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  background: #fffaf3;
+  border: 4px solid #c98a3a;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(60, 35, 15, 0.3);
+}
+
+#kanban-editor h4 {
+  margin: 0;
+}
+
+#kanban-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.9em;
+}
+
+#kanban-editor input,
+#kanban-editor textarea {
+  font: inherit;
+  font-weight: 400;
+  padding: 6px 9px;
+  border: 2px solid #ead8bd;
+  border-radius: 9px;
+  background: #fffdf8;
+  color: #4a3a2c;
+  outline: none;
+  resize: vertical;
+}
+
+#kanban-editor input:focus,
+#kanban-editor textarea:focus {
+  border-color: #c98a3a;
+}
+
+.kanban-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 0.9em;
+}
+
+#kanban-edit-labels {
+  display: flex;
+  gap: 6px;
+}
+
+.kanban-label {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid #fffaf3;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #e3cfae;
+  cursor: pointer;
+}
+
+.kanban-label.none {
+  background: repeating-linear-gradient(45deg, #fffaf3 0 3px, #ead8bd 3px 5px);
+}
+
+.kanban-label.chosen {
+  box-shadow: 0 0 0 2.5px #c98a3a;
+}
+
+.kanban-edit-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.kanban-edit-buttons span {
+  flex: 1;
+}

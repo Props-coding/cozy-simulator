@@ -15,6 +15,7 @@ const CONFIG = {
     dinner: "Dinner",
     elevator: "Elevator",
     landing: "Upstairs",
+    workshop: "Workshop",
   },
 
   // The color swatches in the wardrobe (there's also a "custom" one that
@@ -32,7 +33,7 @@ const CONFIG = {
 
   // The little wooden sign over each room's doorway shows an icon. Keyed
   // by room id. Built-in icons (drawn to match the house): "film",
-  // "pencil", "books", "openBook", "lamp", "forkKnife", "elevator", "stairs",
+  // "pencil", "books", "openBook", "lamp", "forkKnife", "elevator", "stairs", "hammer",
   // "gamepad", "music", "heart", "leaf", "moon", "door". Anything else is
   // shown as written (an emoji works). A new room without one gets a door.
   // Offices and bedrooms show their owner's name instead of an icon.
@@ -44,6 +45,7 @@ const CONFIG = {
     dinner: "forkKnife",
     elevator: "elevator",
     elevatorUp: "elevator",
+    workshop: "hammer",
   },
 
   // Each room's floor: a style ("planks" for wood boards, "carpet",
@@ -59,6 +61,7 @@ const CONFIG = {
     office: { style: "planks", color: "#b98a5e" }, // used for every office
     elevator: { style: "checker", color: "#d9cbb4" },
     elevatorUp: { style: "checker", color: "#d9cbb4" },
+    workshop: { style: "planks", color: "#b88a5a" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
   },
@@ -74,6 +77,7 @@ const CONFIG = {
     office: "#8f7fa3", // used for every office
     elevator: "#d8c3a0",
     elevatorUp: "#d8c3a0",
+    workshop: "#c9b28a",
     landing: "#e6d6c6",
     bedroom: "#a9b8cf", // used for every bedroom
   },

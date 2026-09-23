@@ -6,7 +6,7 @@
 // every office and bedroom (where you only hear the people in that same
 // room). main.js passes "asleep" as the room while you're in bed, which
 // isn't a voice room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference"];
+const VOICE_ROOMS = ["theater", "conference", "workshop"];
 
 function isVoiceRoom(roomId) {
   return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-") || roomId.startsWith("bedroom-");
@@ -76,6 +76,7 @@ const ROOM_CHIME_NOTES = {
   library: [440, 523.25], // A4, C5: hushed
   study: [493.88, 587.33], // B4, D5: softer, calmer
   dinner: [440, 554.37], // A4, C#5: warm, settling in
+  workshop: [523.25, 698.46], // C5, F5: busy and cheerful
 };
 
 export function playRoomChangeSound(roomId) {
@@ -157,6 +158,12 @@ export function playCoatWhoosh() {
 export function playElevatorDing() {
   playTone(1046.5, 0, { gain: 0.08, duration: 0.5, type: "sine" });
   playTone(830.61, 260, { gain: 0.08, duration: 0.8, type: "sine" });
+}
+
+// A card moved to Done in the Workshop: a bright little "ding-ding!".
+export function playCardDoneSound() {
+  playTone(783.99, 0, { gain: 0.08, duration: 0.15, type: "triangle" });
+  playTone(1174.66, 90, { gain: 0.08, duration: 0.35, type: "triangle" });
 }
 
 // A happy little "cha-ching" for buying something (or earning crumbs).
