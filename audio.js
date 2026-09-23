@@ -451,6 +451,18 @@ export function handlePeerStream(stream, peerId) {
   peerAudioElements[peerId] = audioEl;
 }
 
+// After an automatic update, the page came back without a click, so the
+// browser may be holding sound back. True until the first click.
+export function soundIsBlocked() {
+  return toneContext?.state === "suspended" || Object.values(peerAudioElements).some((el) => el.paused);
+}
+
+// Called on the first click after that: lets sound (and friends' voices) play.
+export function resumeAudio() {
+  toneContext?.resume();
+  for (const el of Object.values(peerAudioElements)) el.play().catch(() => {});
+}
+
 export function removePeerAudio(peerId) {
   peerAudioElements[peerId]?.remove();
   delete peerAudioElements[peerId];

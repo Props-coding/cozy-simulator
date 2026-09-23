@@ -472,6 +472,16 @@
        than display:none, since some browsers pause hidden video. -->
   <div id="lofi-player"></div>
 
+  <!-- When a new build is out (updater.js): a countdown, then the house
+       reloads itself and puts you back where you were. -->
+  <div id="update-banner" hidden>
+    <span>✨</span>
+    <span id="update-text">The house just got an update!</span>
+    <button id="update-now" type="button" class="warm-button">Update now</button>
+  </div>
+  <!-- After an automatic update: the browser wants a click before sound. -->
+  <button id="sound-hint" type="button" hidden>🔈 Click anywhere to turn sound back on</button>
+
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
   <p id="version-tag">build 0.40</p>
@@ -496,7 +506,8 @@
         "./news.js": "./news.js?v=0.40",
         "./account.js": "./account.js?v=0.40",
         "./profile.js": "./profile.js?v=0.40",
-        "./admin.js": "./admin.js?v=0.40"
+        "./admin.js": "./admin.js?v=0.40",
+        "./updater.js": "./updater.js?v=0.40"
       }
     }
   </script>

@@ -48,6 +48,8 @@ import {
   setWhiteNoiseVolume,
   updateWhiteNoise,
   playGoodnightChime,
+  soundIsBlocked,
+  resumeAudio,
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
@@ -58,6 +60,7 @@ import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
 import { isHouseReady } from "./account.js";
+import { initUpdater, takeResume } from "./updater.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1347,4 +1350,51 @@ function tick(now) {
   updateSidebar(currentRoom.name);
 
   requestAnimationFrame(tick);
+}
+
+// --- Updates without refreshing ---
+// updater.js checks for a new build every minute and reloads the page for
+// you (after a short countdown, and never while you're typing or have
+// something open). Coming back from one of those, you skip the Join screen
+// and land where you were.
+function inTheMiddleOfSomething() {
+  const typingSomething = (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) && document.activeElement.value;
+  return dialogOpen || uiBusy() || !!typingSomething;
+}
+
+initUpdater({
+  build: MY_BUILD,
+  where: () => (gameScreen.hidden ? null : { x: player.x, y: player.y }),
+  busy: inTheMiddleOfSomething,
+});
+
+const resume = takeResume();
+if (resume) {
+  // Wait until we're logged in and know how to reach the house, then join
+  // just like clicking Join, and step back to where you were.
+  const started = Date.now();
+  const tryJoin = () => {
+    if (!isHouseReady()) {
+      if (Date.now() - started < 30_000) setTimeout(tryJoin, 200);
+      return;
+    }
+    joinButton.click();
+    Object.assign(player, { x: resume.x, y: resume.y });
+    if (!isInsideARoom(player)) Object.assign(player, spawnPoint(floorOf(player.y)));
+    // The browser holds sound back until you click: say so.
+    setTimeout(() => {
+      if (!soundIsBlocked()) return;
+      const hint = document.getElementById("sound-hint");
+      hint.hidden = false;
+      const wake = () => {
+        resumeAudio();
+        hint.hidden = true;
+        window.removeEventListener("pointerdown", wake, true);
+        window.removeEventListener("keydown", wake, true);
+      };
+      window.addEventListener("pointerdown", wake, true);
+      window.addEventListener("keydown", wake, true);
+    }, 1500);
+  };
+  tryJoin();
 }
