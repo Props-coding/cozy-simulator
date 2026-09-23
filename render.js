@@ -2716,6 +2716,17 @@ function drawPlayerBody(ctx, p) {
       ctx.arc(ex, cy - 1, 2, Math.PI * 1.1, Math.PI * 1.9);
       ctx.stroke();
     }
+  } else if (p.typing && !emote) {
+    // Thinking while typing: eyes glancing up and to the side, and one
+    // eyebrow raised.
+    ctx.beginPath();
+    ctx.arc(cx - 3, cy - 3, 1.6, 0, Math.PI * 2);
+    ctx.arc(cx + 5, cy - 3, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + 2.5, cy - 7.5);
+    ctx.quadraticCurveTo(cx + 5, cy - 9, cx + 7.5, cy - 7.5);
+    ctx.stroke();
   } else {
     ctx.beginPath();
     ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
@@ -2732,6 +2743,11 @@ function drawPlayerBody(ctx, p) {
     ctx.beginPath();
     ctx.arc(cx, cy + 2.5, 3.5, 0, Math.PI);
     ctx.fill();
+  } else if (p.typing && !emote) {
+    ctx.beginPath(); // a small "hmm" mouth
+    ctx.moveTo(cx - 1.5, cy + 4);
+    ctx.lineTo(cx + 2.5, cy + 3.3);
+    ctx.stroke();
   } else {
     ctx.beginPath();
     ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
@@ -2739,6 +2755,17 @@ function drawPlayerBody(ctx, p) {
   }
 
   (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+
+  if (p.typing && !emote) {
+    // A little hand resting thoughtfully on the chin.
+    ctx.fillStyle = shadeColor(p.color, 20);
+    ctx.strokeStyle = shadeColor(p.color, -50);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx + 5.5, cy + r - 2.5, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
 
   if (emote === "wave") {
     // A little waving hand beside the body.
@@ -2843,6 +2870,32 @@ function drawPlayerTag(ctx, p) {
     ctx.stroke();
     ctx.fillStyle = "#5c4530";
     ctx.fillText(p.badge, cx, headTop - 27);
+  }
+
+  // While they're typing (and haven't just said something): a little
+  // bubble with three dots bouncing one after another.
+  if (p.typing && !p.bubble) {
+    const bottom = headTop - (p.badge ? 46 : 26);
+    const w = 34, h = 18, t = performance.now() / 1000;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.15)";
+    roundRectPath(ctx, cx - w / 2 + 1, bottom - h + 2, w, h, 9);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    roundRectPath(ctx, cx - w / 2, bottom - h, w, h, 9);
+    ctx.fill();
+    ctx.beginPath(); // little tail pointing down at them
+    ctx.moveTo(cx - 4, bottom - 1);
+    ctx.lineTo(cx + 4, bottom - 1);
+    ctx.lineTo(cx, bottom + 4);
+    ctx.closePath();
+    ctx.fill();
+    for (let i = 0; i < 3; i++) {
+      const hop = Math.max(0, Math.sin(t * 6 - i * 0.9)) * 3;
+      ctx.fillStyle = "#b39c7a";
+      ctx.beginPath();
+      ctx.arc(cx - 8 + i * 8, bottom - h / 2 - hop, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // Speech bubble for a recent chat message, above the name (and badge).

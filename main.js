@@ -590,6 +590,13 @@ function bubbleFor(who) {
   return b && performance.now() < b.until ? b.text : null;
 }
 
+// True while you're in the middle of writing a chat message (the chat box
+// has the cursor and something in it). Friends see a thinking face and
+// bouncing dots over your character.
+function amTyping() {
+  return document.activeElement === chatInput && chatInput.value.trim() !== "";
+}
+
 // True if the message area is scrolled all the way down (or nearly).
 function chatAtBottom() {
   return chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 12;
@@ -914,7 +921,7 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const officeInfo = myOffice ? { since: myOffice.since, locked: myOffice.locked } : null;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: officeInfo, typing: amTyping() });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -922,9 +929,9 @@ function tick(now) {
     // A friend's hat name comes over the network, so only accept known hats.
     const hat = Object.hasOwn(HAT_DRAWERS, peer.hat) ? peer.hat : "none";
     const shoes = Object.hasOwn(SHOE_DRAWERS, peer.shoes) ? peer.shoes : "none";
-    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id), emote: emoteNow(peerEmotes[peer.id]) };
+    return { x: shown.x, y: shown.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: peer.room === "dinner" ? "eating" : null, bubble: bubbleFor(peer.id), emote: emoteNow(peerEmotes[peer.id]), typing: peer.typing === true };
   });
-  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me"), emote: emoteNow(myEmote) });
+  scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me"), emote: emoteNow(myEmote), typing: amTyping() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText());
 

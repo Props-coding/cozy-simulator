@@ -103,6 +103,8 @@
 
 - Build 0.31: chat no longer makes the page longer. The sidebar is now exactly as tall as the house, and the message area fills the space left and scrolls inside itself (mouse wheel, with a slim cozy scrollbar). It follows new messages only if you're already at the bottom; if you've scrolled up to read, it stays put and shows a small "New messages ↓" button that jumps down. Your own messages always jump to the bottom. The message box, emoji and Send buttons always stay visible below, long unbroken text wraps, and both tabs work the same way.
 
+- Not pushed yet: typing indicator. While someone is writing a chat message, their character makes a thinking face (eyes glancing up, one eyebrow raised, a little "hmm" mouth, a hand on the chin) and a small bubble with three bouncing dots appears over their name. It goes away as soon as they send, clear the box or click away. It rides along with the regular position updates.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements and pets (crumbs, the raccoon shop, the Library and emotes are done).
