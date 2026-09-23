@@ -80,6 +80,8 @@
 
 - Not pushed yet: the house now fills the screen. The whole house is always in view (no scrolling, no cropped rooms), trimmed to its edges, and scaled up as big as the window allows beside the sidebar (whole-number sizes when that costs little space). It's drawn at the screen's real resolution, so it stays sharp on high-resolution screens, and it resizes when the window does. Name tags and room labels scale with it. Empty office spots are now a little garden lawn instead of a dark gap. The chat box grows to fill the height beside the house. Narrow windows still put the sidebar under the house.
 
+- Not pushed yet: room names are now signs on the walls instead of labels floating over the floor, so nobody walks through them. Every room's name sign hangs over its doorway on the hallway side (Theater, Study, Dinner, Conference Room, and each office), and the Hallway has a carved wooden plaque hanging on its back wall between two lamps on the right. People walk in front of or behind signs like any wall.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.

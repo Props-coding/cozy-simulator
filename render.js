@@ -1987,6 +1987,8 @@ function getStaticSprites() {
   if (spritesVersion !== houseVersion) {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
+      // Name signs sort just after the wall they're on (and after a locked door).
+      ...ROOMS.filter((room) => room.sign).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
         sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
@@ -2220,22 +2222,30 @@ function drawPlayerTag(ctx, p) {
   ctx.textAlign = "left";
 }
 
-// Room names as small pills: the hallway's near its top-left corner (just
-// right of the office door and the coat hooks), the other rooms' along their
-// bottom edge, clear of furniture.
-function drawRoomLabels(ctx) {
-  ctx.font = "600 14px 'Quicksand', sans-serif";
-  for (const room of ROOMS) {
-    const { x, y, w, h } = room.rect;
-    const textW = ctx.measureText(room.name).width;
-    const p = room.id === "hallway" ? toScreen(x + 2.9, y + 0.3) : toScreen(x + w / 2, y + h - 0.6);
-    const left = room.id === "hallway" ? p.x : p.x - textW / 2 - 10;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-    roundRectPath(ctx, left, p.y, textW + 20, 22, 8);
-    ctx.fill();
-    ctx.fillStyle = "#5c4530";
-    ctx.fillText(room.name, left + 10, p.y + 16);
-  }
+// A room's name sign, mounted at the top of the wall over its doorway (on
+// the hallway side). Drawn in the same front-to-back order as the wall, so
+// people walk in front of or behind it like any wall, never through it.
+// The hallway's own sign is a darker carved wooden plaque hanging on the
+// wall itself.
+function drawRoomSign(ctx, room) {
+  const { x, y, plaque, onWall } = room.sign;
+  const p = toScreen(x, y - WALL_THICKNESS / 2); // the middle of the wall's top edge
+  const cy = onWall ? toScreen(x, y).y - WALL_HEIGHT + 17 : p.y - WALL_HEIGHT;
+  ctx.font = "700 12px 'Quicksand', sans-serif";
+  const w = ctx.measureText(room.name).width + 18, h = 17;
+  ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // small shadow below the sign
+  roundRectPath(ctx, p.x - w / 2 + 1, cy - h / 2 + 2, w, h, 6);
+  ctx.fill();
+  roundRectPath(ctx, p.x - w / 2, cy - h / 2, w, h, 6);
+  ctx.fillStyle = plaque ? "#6b4a32" : "#fffaf3";
+  ctx.fill();
+  ctx.strokeStyle = plaque ? "#c9a24a" : WOOD;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = plaque ? "#f3e6d0" : "#5c4530";
+  ctx.textAlign = "center";
+  ctx.fillText(room.name, p.x, cy + 4);
+  ctx.textAlign = "left";
 }
 
 // The Study focus timer, shown as a little chalkboard over the study table
@@ -2293,6 +2303,5 @@ function drawScene(ctx, players, studySign) {
   drawLights(ctx);
   if (studySign) drawStudySign(ctx, studySign); // under name tags, so names stay readable
   for (const p of players) drawPlayerTag(ctx, p);
-  drawRoomLabels(ctx);
   ctx.restore();
 }

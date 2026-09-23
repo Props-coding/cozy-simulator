@@ -15,13 +15,15 @@ const WALL_THICKNESS = 0.4;
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
-// match wins.
+// match wins. "sign" is where the room's name sign hangs: over its
+// doorway, on the hallway side (x is the sign's center, y is the bottom
+// edge of the wall it's mounted on).
 const BASE_ROOMS = [
-  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 } },
-  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 } },
-  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 } },
+  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3.2 } },
+  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3.2 } },
+  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3.2 } },
   // North side, at the west end (same depth as the offices next to it).
-  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 } },
+  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: 0 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -70,7 +72,7 @@ const BASE_FURNITURE = [
   // Hallway: a long runner rug, and along the back wall (west to east):
   // coat hooks with boots underneath, a cushioned bench under a flower
   // painting between warm wall lamps, a side table with a lamp and flowers
-  // under a mirror, a sea painting between lamps, and an umbrella stand
+  // under a mirror, the Hallway's name plaque between lamps, and an umbrella stand
   // and a plant under a hills painting. They're spaced to leave the
   // doorways clear: Conference Room (x 2 to 3.6) and the three office
   // spots (7 to 8.6, 11 to 12.6, 15 to 16.6).
@@ -85,7 +87,6 @@ const BASE_FURNITURE = [
   { kind: "mirror", x: 9.45, y: 0, w: 0.7, short: true, solid: false },
   { kind: "console", x: 8.9, y: 0.1, w: 1.8, h: 0.45 },
   { kind: "sconce", x: 12.95, y: 0, solid: false },
-  { kind: "picture", x: 13.25, y: 0, w: 1.1, art: "sea", solid: false },
   { kind: "sconce", x: 14.7, y: 0, solid: false },
   { kind: "picture", x: 16.85, y: 0, w: 0.9, art: "hills", solid: false },
   { kind: "umbrellaStand", x: 16.75, y: 0.2, w: 0.4, h: 0.4 },
@@ -210,7 +211,7 @@ function buildHouse(offices) {
     const x0 = officeX(office.slot);
     const inner = OFFICE_WIDTH - t;
     const theme = officeThemeFor(office.ownerName);
-    rooms.push({ id: "office-" + office.since, name: office.ownerName + "'s Office", rect: { x: x0, y: OFFICE_TOP, w: inner, h: OFFICE_DEPTH }, office, theme });
+    rooms.push({ id: "office-" + office.since, name: office.ownerName + "'s Office", rect: { x: x0, y: OFFICE_TOP, w: inner, h: OFFICE_DEPTH }, office, theme, sign: { x: x0 + 1.8, y: 0 } });
     walls.push(
       { x: x0 - t, y: OFFICE_TOP - t, w: OFFICE_WIDTH + t, h: t }, // north wall
       { x: x0 - t, y: OFFICE_TOP - t, w: t, h: OFFICE_DEPTH + t }, // left side, down to the hallway wall
@@ -228,7 +229,9 @@ function buildHouse(offices) {
     furniture.push({ kind: "buildDoor", x: buildDoorX + 1.35, y: 0, w: 0.9, solid: false });
   }
 
-  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 } });
+  // The hallway's sign is a carved wooden plaque hanging on its back wall,
+  // between two lamps on the right (onWall: on the wall, not on its top).
+  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 }, sign: { x: 13.82, y: 0, plaque: true, onWall: true } });
 
   ROOMS = rooms;
   WALLS = walls;
