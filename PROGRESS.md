@@ -101,6 +101,8 @@
 
 - Not pushed yet: the Library is now a tall room at the hallway's east end, entered through a door in its west wall, so its north wall is an outside wall: three rainy windows and a clock there (rain falling past the glass looks right now), with the reading nook (armchair turned to the window, beanbag, floor lamps) underneath. The side-wall windows are gone. The raccoons stepped a little left to leave room for the new door. Sound settings moved into a cozy cog button in the header (a honey-colored cog with a little heart): it opens a small card with Mute everyone, Volume, Lo-fi volume and Rain volume. The sidebar now just has Who's here, the mic note and Emotes.
 
+- Not pushed yet: chat no longer makes the page longer. The sidebar is now exactly as tall as the house, and the message area fills the space left and scrolls inside itself (mouse wheel, with a slim cozy scrollbar). It follows new messages only if you're already at the bottom; if you've scrolled up to read, it stays put and shows a small "New messages ↓" button that jumps down. Your own messages always jump to the bottom. The message box, emoji and Send buttons always stay visible below, long unbroken text wraps, and both tabs work the same way.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then achievements and pets (crumbs, the raccoon shop, the Library and emotes are done).

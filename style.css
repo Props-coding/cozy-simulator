@@ -860,6 +860,7 @@ canvas {
 /* Chat card: same cream card style as the sidebar. */
 #chat-card {
   flex: 1; /* fills the rest of the column's height */
+  min-height: 0; /* ...but never pushes the column taller */
   display: flex;
   flex-direction: column;
   text-align: left;
@@ -911,22 +912,73 @@ canvas {
   background: #c0664a;
 }
 
+/* The message area: fills the chat card's spare height and scrolls inside
+   itself, so the page never gets longer however much people chat. */
+.chat-log-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 90px;
+  display: flex;
+  margin: 0 0 8px;
+}
+
 #chat-log {
   list-style: none;
-  margin: 0 0 8px;
+  margin: 0;
   padding: 6px 8px;
   flex: 1;
-  min-height: 110px;
-  height: 0; /* lets it stretch to fill the card without pushing it taller */
+  min-width: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #f7eddc;
   border-radius: 10px;
   font-size: 0.85em;
-  overflow-wrap: anywhere;
+  overflow-wrap: anywhere; /* long unbroken text wraps instead of stretching the box */
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: #e0c9a4 transparent;
+}
+
+#chat-log::-webkit-scrollbar {
+  width: 8px;
+}
+
+#chat-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#chat-log::-webkit-scrollbar-thumb {
+  background: #e0c9a4;
+  border: 2px solid #f7eddc;
+  border-radius: 999px;
 }
 
 #chat-log li {
   padding: 2px 0;
+}
+
+/* "New messages" button, floating over the bottom of the message area. */
+#chat-new {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.78em;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 3px 10px rgba(90, 65, 40, 0.3);
+  cursor: pointer;
+  white-space: nowrap;
+  animation: pop-in 0.15s ease-out;
+}
+
+#chat-new[hidden] {
+  display: none;
 }
 
 #chat-log .chat-name {
@@ -942,6 +994,7 @@ canvas {
   position: relative;
   display: flex;
   gap: 6px;
+  flex: none; /* the message box and buttons always stay visible */
 }
 
 #emoji-button {
@@ -1029,6 +1082,13 @@ canvas {
   #game-layout {
     flex-direction: column;
     align-items: center;
+  }
+
+  /* Under the house there's no house height to match, so the message
+     area just gets a comfortable fixed height. */
+  .chat-log-wrap {
+    flex: none;
+    height: 220px;
   }
 }
 

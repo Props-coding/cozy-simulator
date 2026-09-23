@@ -490,9 +490,10 @@ function fitHouse() {
   canvas.width = Math.round(w * scale * dpr);
   canvas.height = Math.round(h * scale * dpr);
   setViewScale(canvas.width / w);
-  // Beside the house, the sidebar column is as tall as the house, and the
-  // chat box stretches to fill the extra height.
-  sideColumn.style.minHeight = stacked ? "" : `${Math.round(h * scale) + FRAME}px`;
+  // Beside the house, the sidebar column is exactly as tall as the house,
+  // and the chat's message area fills whatever height is left (scrolling
+  // inside itself), so chatting never makes the page longer.
+  sideColumn.style.height = stacked ? "" : `${Math.round(h * scale) + FRAME}px`;
 }
 
 window.addEventListener("resize", fitHouse);
@@ -569,6 +570,7 @@ const CHAT_MAX_LENGTH = 200;
 const chatInput = document.getElementById("chat-input");
 const chatLog = document.getElementById("chat-log");
 const chatTabs = { house: document.getElementById("chat-tab-house"), office: document.getElementById("chat-tab-office") };
+const chatNewButton = document.getElementById("chat-new");
 
 let chatTab = "house"; // which tab is showing
 let chatLines = []; // { channel: "house" or an office id like "office-2", name, color, text }
@@ -588,7 +590,23 @@ function bubbleFor(who) {
   return b && performance.now() < b.until ? b.text : null;
 }
 
-function renderChat() {
+// True if the message area is scrolled all the way down (or nearly).
+function chatAtBottom() {
+  return chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 12;
+}
+
+function scrollChatToBottom() {
+  chatLog.scrollTop = chatLog.scrollHeight;
+  chatNewButton.hidden = true;
+}
+
+// Redraws the messages for the current tab. If you were at the bottom (or
+// `toBottom` is set), it stays at the newest message; if you'd scrolled
+// up to read, it leaves you where you were, and `newMessage` shows the
+// "New messages" button.
+function renderChat({ toBottom = false, newMessage = false } = {}) {
+  const wasAtBottom = chatAtBottom();
+  const scrolledTo = chatLog.scrollTop;
   const channel = chatTab === "house" ? "house" : lastOfficeRoomId;
   const lines = chatLines.filter((l) => l.channel === channel);
   chatLog.innerHTML = "";
@@ -609,25 +627,40 @@ function renderChat() {
     li.append(name, document.createTextNode(line.text));
     chatLog.appendChild(li);
   }
-  chatLog.scrollTop = chatLog.scrollHeight;
+  if (toBottom || wasAtBottom) {
+    scrollChatToBottom();
+  } else {
+    chatLog.scrollTop = scrolledTo;
+    if (newMessage) chatNewButton.hidden = false;
+  }
   chatTabs.house.querySelector(".unread-dot").hidden = !unread.house;
   chatTabs.office.querySelector(".unread-dot").hidden = !unread.office;
 }
 
-function addChatLine(line) {
+// Adds a message. Your own messages always jump to the bottom, so you see
+// what you just sent.
+function addChatLine(line, mine = false) {
   chatLines.push(line);
   if (chatLines.length > 200) chatLines = chatLines.slice(-200); // keep it light
   const tabForLine = line.channel === "house" ? "house" : "office";
   if (tabForLine !== chatTab) unread[tabForLine] = true;
-  renderChat();
+  renderChat({ toBottom: mine, newMessage: tabForLine === chatTab });
 }
+
+chatNewButton.addEventListener("click", () => {
+  scrollChatToBottom();
+  chatInput.blur();
+});
+chatLog.addEventListener("scroll", () => {
+  if (chatAtBottom()) chatNewButton.hidden = true;
+});
 
 function switchChatTab(tab) {
   chatTab = tab;
   unread[tab] = false;
   chatTabs.house.classList.toggle("active", tab === "house");
   chatTabs.office.classList.toggle("active", tab === "office");
-  renderChat();
+  renderChat({ toBottom: true });
 }
 
 chatTabs.house.addEventListener("click", () => switchChatTab("house"));
@@ -665,10 +698,10 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
   if (chatTab === "office" && lastOfficeRoomId) {
     const inThisOffice = getPeers().filter((p) => p.room === lastOfficeRoomId).map((p) => p.id);
     sendChat({ text, office: lastOfficeRoomId }, inThisOffice);
-    addChatLine({ channel: lastOfficeRoomId, name: myName, color: myColor, text });
+    addChatLine({ channel: lastOfficeRoomId, name: myName, color: myColor, text }, true);
   } else {
     sendChat({ text });
-    addChatLine({ channel: "house", name: myName, color: myColor, text });
+    addChatLine({ channel: "house", name: myName, color: myColor, text }, true);
   }
   bubbles.me = { text, until: performance.now() + 6000 };
 });

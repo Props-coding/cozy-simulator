@@ -219,7 +219,12 @@
           <button id="chat-tab-house" class="chat-tab active" type="button">House<span class="unread-dot" hidden></span></button>
           <button id="chat-tab-office" class="chat-tab" type="button" disabled>Office<span class="unread-dot" hidden></span></button>
         </div>
-        <ul id="chat-log"></ul>
+        <!-- The messages scroll inside this box; the "New messages" button
+             appears over its bottom edge when you've scrolled up. -->
+        <div class="chat-log-wrap">
+          <ul id="chat-log"></ul>
+          <button id="chat-new" type="button" hidden>New messages ↓</button>
+        </div>
         <form id="chat-form" autocomplete="off">
           <input id="chat-input" type="text" maxlength="400" placeholder="Message">
           <button id="emoji-button" type="button" title="Emoji">😊</button>
