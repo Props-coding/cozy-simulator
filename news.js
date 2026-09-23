@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.42",
+    title: "A cozy girl's dream at Nest & Nook",
+    text: "Nest & Nook now has 130 things to buy, sorted into Furniture, Plants, Shelves and Decor. There are over 20 new plants, from a bird of paradise and an olive tree to a pink orchid, a terrarium and a vase of pampas grass, plus hanging pothos and a string of pearls. You'll also find a canopy bed, a vanity with a bulb mirror, a cloud sofa, an egg chair, crystal and candle shelves, mushroom and moon lamps, a fluffy cloud rug, a neon heart and a big teddy bear. And your laptop desk and mattress can finally be moved while you decorate.",
+  },
+  {
     build: "0.41",
     title: "A cuter Nest & Nook, and no more refreshing",
     text: "Nest & Nook got a makeover: a striped awning, pastel sections, and Wren, the little shopkeeper bird, who picks something special every day and thanks you for shopping. And when the house gets an update, it now refreshes itself: a little banner counts down, and you land right back where you were (click once to turn the sound back on).",

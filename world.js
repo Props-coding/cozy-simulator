@@ -486,101 +486,179 @@ function bedroomWidth(size) {
 
 // Everything Nest & Nook sells. `kind` is how it's drawn (see render.js),
 // w and h its footprint in grid units, `tab` where it's listed in the
-// store. `wall` items hang on the back wall. `sleep` means you can sleep
-// in it. `ownerColor` uses the bedroom owner's color. Other fields (like
-// color or art) are passed on to the drawing.
+// store (furniture, plants, shelves or decor). `wall` items hang on the
+// back wall. `sleep` means you can sleep in it. `ownerColor` uses the
+// bedroom owner's color. Other fields (like color, art or shape) are
+// passed on to the drawing.
 const DECOR = {
-  // Furniture
+  // --- Furniture ---
   quiltBed: { name: "Quilted Bed", tab: "furniture", price: 60, kind: "bed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true },
+  canopyBed: { name: "Canopy Bed", tab: "furniture", price: 160, kind: "canopyBed", w: 1.8, h: 2.3, sleep: true, solid: false, ownerColor: true },
   nightstand: { name: "Nightstand & Lamp", tab: "furniture", price: 20, kind: "nightstand", w: 0.55, h: 0.45 },
   wardrobe: { name: "Wardrobe", tab: "furniture", price: 45, kind: "wardrobe", w: 1.0, h: 0.6 },
-  bookshelf: { name: "Bookshelf", tab: "furniture", price: 35, kind: "bookshelf", w: 1.3, h: 0.5 },
-  armchair: { name: "Reading Armchair", tab: "furniture", price: 40, kind: "armchair", w: 1.1, h: 0.8 },
-  velvetChair: { name: "Velvet Chair (cat included)", tab: "furniture", price: 60, kind: "cottageChair", w: 1.0, h: 0.8 },
-  beanbag: { name: "Beanbag", tab: "furniture", price: 25, kind: "beanbag", w: 0.9, h: 0.8 },
-  bench: { name: "Cushioned Bench", tab: "furniture", price: 25, kind: "bench", w: 1.5, h: 0.5 },
-  teaCart: { name: "Tea Cart", tab: "furniture", price: 30, kind: "teaCart", w: 1.2, h: 0.6 },
-  floorLamp: { name: "Floor Lamp", tab: "furniture", price: 25, kind: "floorLamp", w: 0.4, h: 0.4 },
-  fireplace: { name: "Stone Fireplace", tab: "furniture", price: 120, kind: "fireplace", w: 1.1, h: 0.6 },
-  catBed: { name: "Cat Bed (cat included)", tab: "furniture", price: 50, kind: "catBed", w: 0.75, h: 0.5, solid: false },
+  dresser: { name: "Dresser", tab: "furniture", price: 45, kind: "dresser", w: 1.1, h: 0.5 },
+  vanity: { name: "Vanity with Bulb Mirror", tab: "furniture", price: 85, kind: "vanity", w: 1.2, h: 0.5 },
+  clothesRack: { name: "Clothes Rack", tab: "furniture", price: 40, kind: "clothesRack", w: 1.2, h: 0.45 },
+  cloudSofa: { name: "Cloud Sofa", tab: "furniture", price: 110, kind: "cloudSofa", w: 2.0, h: 0.85 },
   loveseatSage: { name: "Sage Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#7a9e8c" },
   loveseatRose: { name: "Rose Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#c98a8a" },
-  coffeeTable: { name: "Coffee Table", tab: "furniture", price: 30, kind: "coffeeTable", w: 1.2, h: 0.6 },
-  dresser: { name: "Dresser", tab: "furniture", price: 45, kind: "dresser", w: 1.1, h: 0.5 },
-  writingDesk: { name: "Writing Desk", tab: "furniture", price: 40, kind: "writingDesk", w: 1.3, h: 0.6 },
+  armchair: { name: "Reading Armchair", tab: "furniture", price: 40, kind: "armchair", w: 1.1, h: 0.8 },
+  velvetChair: { name: "Velvet Chair (cat included)", tab: "furniture", price: 60, kind: "cottageChair", w: 1.0, h: 0.8 },
+  papasanChair: { name: "Papasan Chair", tab: "furniture", price: 65, kind: "papasanChair", w: 1.0, h: 0.8 },
+  eggChair: { name: "Hanging Egg Chair", tab: "furniture", price: 95, kind: "eggChair", w: 0.9, h: 0.7 },
   rockingChair: { name: "Rocking Chair", tab: "furniture", price: 45, kind: "rockingChair", w: 0.8, h: 0.6 },
+  beanbag: { name: "Beanbag", tab: "furniture", price: 25, kind: "beanbag", w: 0.9, h: 0.8 },
+  poufCream: { name: "Cream Knit Pouf", tab: "furniture", price: 20, kind: "pouf", w: 0.6, h: 0.5, color: "#e0c8b0" },
+  poufPink: { name: "Pink Knit Pouf", tab: "furniture", price: 20, kind: "pouf", w: 0.6, h: 0.5, color: "#efb8c4" },
+  mushroomStool: { name: "Mushroom Stool", tab: "furniture", price: 18, kind: "mushroomStool", w: 0.5, h: 0.45 },
+  bench: { name: "Cushioned Bench", tab: "furniture", price: 25, kind: "bench", w: 1.5, h: 0.5 },
+  coffeeTable: { name: "Coffee Table", tab: "furniture", price: 30, kind: "coffeeTable", w: 1.2, h: 0.6 },
+  sideTable: { name: "Round Side Table", tab: "furniture", price: 22, kind: "sideTable", w: 0.6, h: 0.5 },
+  writingDesk: { name: "Writing Desk", tab: "furniture", price: 40, kind: "writingDesk", w: 1.3, h: 0.6 },
+  aestheticDesk: { name: "Aesthetic Desk", tab: "furniture", price: 75, kind: "aestheticDesk", w: 1.4, h: 0.6 },
+  teaCart: { name: "Tea Cart", tab: "furniture", price: 30, kind: "teaCart", w: 1.2, h: 0.6 },
+  barCart: { name: "Gold Bar Cart", tab: "furniture", price: 45, kind: "barCart", w: 0.9, h: 0.5 },
+  fireplace: { name: "Stone Fireplace", tab: "furniture", price: 120, kind: "fireplace", w: 1.1, h: 0.6 },
   recordPlayer: { name: "Record Player", tab: "furniture", price: 55, kind: "recordPlayer", w: 0.9, h: 0.5 },
-  fishTank: { name: "Fish Tank", tab: "furniture", price: 80, kind: "fishTank", w: 1.0, h: 0.5 },
   piano: { name: "Upright Piano", tab: "furniture", price: 140, kind: "piano", w: 1.5, h: 0.7 },
+  fishTank: { name: "Fish Tank", tab: "furniture", price: 80, kind: "fishTank", w: 1.0, h: 0.5 },
   arcade: { name: "Arcade Cabinet", tab: "furniture", price: 110, kind: "arcade", w: 0.8, h: 0.6 },
   telescope: { name: "Telescope", tab: "furniture", price: 65, kind: "telescope", w: 0.6, h: 0.5 },
   globe: { name: "Globe", tab: "furniture", price: 35, kind: "globe", w: 0.5, h: 0.45 },
   toyChest: { name: "Toy Chest", tab: "furniture", price: 30, kind: "toyChest", w: 0.9, h: 0.5 },
+  catBed: { name: "Cat Bed (cat included)", tab: "furniture", price: 50, kind: "catBed", w: 0.75, h: 0.5, solid: false },
+  catTree: { name: "Cat Tree (cat included)", tab: "furniture", price: 70, kind: "catTree", w: 0.6, h: 0.5 },
 
-  // Plants, rugs and cozy bits
-  plant: { name: "Potted Plant", tab: "cozy", price: 10, kind: "plant", w: 0.6, h: 0.6 },
-  fern: { name: "Boston Fern", tab: "cozy", price: 15, kind: "fern", w: 0.6, h: 0.6 },
-  monstera: { name: "Monstera", tab: "cozy", price: 25, kind: "monstera", w: 0.6, h: 0.6 },
-  cactus: { name: "Tall Cactus", tab: "cozy", price: 20, kind: "cactus", w: 0.6, h: 0.6 },
-  snakePlant: { name: "Snake Plant", tab: "cozy", price: 18, kind: "snakePlant", w: 0.6, h: 0.6 },
-  succulents: { name: "Succulent Dish", tab: "cozy", price: 12, kind: "succulents", w: 0.6, h: 0.5 },
-  fiddleFig: { name: "Fiddle-Leaf Fig", tab: "cozy", price: 30, kind: "fiddleFig", w: 0.6, h: 0.6 },
-  palm: { name: "Kentia Palm", tab: "cozy", price: 28, kind: "palm", w: 0.6, h: 0.6 },
-  lemonTree: { name: "Lemon Tree", tab: "cozy", price: 35, kind: "lemonTree", w: 0.6, h: 0.6 },
-  candles: { name: "Candle Cluster", tab: "cozy", price: 12, kind: "candles", w: 0.6, h: 0.4 },
-  bookStacks: { name: "Book Stacks", tab: "cozy", price: 12, kind: "bookStacks", w: 0.7, h: 0.4 },
-  floorCushions: { name: "Floor Cushions", tab: "cozy", price: 20, kind: "floorCushions", w: 1.0, h: 0.6, solid: false },
-  lavaLamp: { name: "Lava Lamp", tab: "cozy", price: 22, kind: "lavaLamp", w: 0.4, h: 0.4 },
-  ivyPlant: { name: "Trailing Ivy", tab: "cozy", price: 18, kind: "ivyPlant", w: 0.6, h: 0.5 },
-  bamboo: { name: "Potted Bamboo", tab: "cozy", price: 22, kind: "bamboo", w: 0.6, h: 0.5 },
-  bonsai: { name: "Bonsai", tab: "cozy", price: 30, kind: "bonsai", w: 0.6, h: 0.5 },
-  pumpkins: { name: "Pumpkins & Candle", tab: "cozy", price: 15, kind: "pumpkins", w: 0.6, h: 0.5 },
-  yarnBasket: { name: "Yarn Basket", tab: "cozy", price: 15, kind: "yarnBasket", w: 0.55, h: 0.4 },
-  rugBerry: { name: "Berry Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#a8473a", solid: false },
-  rugSage: { name: "Sage Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f8a6a", solid: false },
-  rugHoney: { name: "Honey Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#c98f3c", solid: false },
-  rugPlum: { name: "Plum Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f5a8c", solid: false },
-  roundRugCream: { name: "Round Cream Rug", tab: "cozy", price: 22, kind: "rug", w: 1.8, h: 1.4, color: "#e9dcc2", round: true, solid: false },
-  roundRugTeal: { name: "Round Teal Rug", tab: "cozy", price: 22, kind: "rug", w: 1.8, h: 1.4, color: "#4f8a8a", round: true, solid: false },
+  // --- Plants ---
+  plant: { name: "Potted Plant", tab: "plants", price: 10, kind: "plant", w: 0.6, h: 0.6 },
+  monstera: { name: "Monstera", tab: "plants", price: 25, kind: "monstera", w: 0.6, h: 0.6 },
+  fiddleFig: { name: "Fiddle-Leaf Fig", tab: "plants", price: 30, kind: "fiddleFig", w: 0.6, h: 0.6 },
+  birdOfParadise: { name: "Bird of Paradise", tab: "plants", price: 40, kind: "birdOfParadise", w: 0.7, h: 0.6 },
+  oliveTree: { name: "Olive Tree", tab: "plants", price: 40, kind: "oliveTree", w: 0.6, h: 0.6 },
+  rubberPlant: { name: "Rubber Plant", tab: "plants", price: 28, kind: "rubberPlant", w: 0.6, h: 0.6 },
+  moneyTree: { name: "Money Tree", tab: "plants", price: 30, kind: "moneyTree", w: 0.6, h: 0.6 },
+  palm: { name: "Kentia Palm", tab: "plants", price: 28, kind: "palm", w: 0.6, h: 0.6 },
+  lemonTree: { name: "Lemon Tree", tab: "plants", price: 35, kind: "lemonTree", w: 0.6, h: 0.6 },
+  snakePlant: { name: "Snake Plant", tab: "plants", price: 18, kind: "snakePlant", w: 0.6, h: 0.6 },
+  zzPlant: { name: "ZZ Plant", tab: "plants", price: 18, kind: "zzPlant", w: 0.6, h: 0.6 },
+  alocasia: { name: "Alocasia", tab: "plants", price: 32, kind: "alocasia", w: 0.6, h: 0.6 },
+  calathea: { name: "Calathea", tab: "plants", price: 24, kind: "calathea", w: 0.6, h: 0.6 },
+  peaceLily: { name: "Peace Lily", tab: "plants", price: 22, kind: "peaceLily", w: 0.6, h: 0.6 },
+  pilea: { name: "Pilea (Money Plant)", tab: "plants", price: 16, kind: "pilea", w: 0.5, h: 0.5 },
+  philodendron: { name: "Heartleaf Philodendron", tab: "plants", price: 16, kind: "philodendron", w: 0.6, h: 0.5 },
+  spiderPlant: { name: "Spider Plant", tab: "plants", price: 14, kind: "spiderPlant", w: 0.6, h: 0.5 },
+  fern: { name: "Boston Fern", tab: "plants", price: 15, kind: "fern", w: 0.6, h: 0.6 },
+  ivyPlant: { name: "Trailing Ivy", tab: "plants", price: 18, kind: "ivyPlant", w: 0.6, h: 0.5 },
+  bamboo: { name: "Potted Bamboo", tab: "plants", price: 22, kind: "bamboo", w: 0.6, h: 0.5 },
+  bonsai: { name: "Bonsai", tab: "plants", price: 30, kind: "bonsai", w: 0.6, h: 0.5 },
+  jadePlant: { name: "Jade Plant", tab: "plants", price: 14, kind: "jadePlant", w: 0.5, h: 0.5 },
+  aloeVera: { name: "Aloe Vera", tab: "plants", price: 12, kind: "aloeVera", w: 0.5, h: 0.5 },
+  cactus: { name: "Tall Cactus", tab: "plants", price: 20, kind: "cactus", w: 0.6, h: 0.6 },
+  succulents: { name: "Succulent Dish", tab: "plants", price: 12, kind: "succulents", w: 0.6, h: 0.5 },
+  orchid: { name: "Pink Orchid", tab: "plants", price: 26, kind: "orchid", w: 0.5, h: 0.5 },
+  lavenderPot: { name: "Lavender", tab: "plants", price: 14, kind: "lavenderPot", w: 0.5, h: 0.5 },
+  herbGarden: { name: "Herb Garden", tab: "plants", price: 20, kind: "herbGarden", w: 0.9, h: 0.4 },
+  terrarium: { name: "Terrarium", tab: "plants", price: 24, kind: "terrarium", w: 0.5, h: 0.5 },
+  pampasVase: { name: "Pampas Grass Vase", tab: "plants", price: 22, kind: "pampasVase", w: 0.5, h: 0.5 },
+  tulipVase: { name: "Tulip Vase", tab: "plants", price: 16, kind: "tulipVase", w: 0.5, h: 0.45 },
+  sunflowerVase: { name: "Sunflower Jug", tab: "plants", price: 16, kind: "sunflowerVase", w: 0.5, h: 0.45 },
+  eucalyptusVase: { name: "Eucalyptus Bud Vase", tab: "plants", price: 14, kind: "eucalyptusVase", w: 0.45, h: 0.4 },
+  cherryBlossom: { name: "Cherry Blossom Branch", tab: "plants", price: 24, kind: "cherryBlossom", w: 0.5, h: 0.45 },
+  macramePothos: { name: "Macramé Pothos", tab: "plants", price: 20, kind: "macramePothos", w: 0.6, wall: true },
+  stringOfPearls: { name: "String of Pearls", tab: "plants", price: 18, kind: "stringOfPearls", w: 0.5, wall: true },
+  hangingFern: { name: "Hanging Fern", tab: "plants", price: 18, kind: "hangingFern", w: 0.6, wall: true },
+  pothosShelf: { name: "Pothos Shelf", tab: "plants", price: 16, kind: "pothosShelf", w: 0.8, wall: true },
+  airPlants: { name: "Air Plant Rack", tab: "plants", price: 14, kind: "airPlants", w: 0.8, wall: true },
+  driedHerbs: { name: "Dried Herbs", tab: "plants", price: 12, kind: "driedHerbs", w: 0.9, wall: true },
 
-  // On the wall
-  rainWindow: { name: "Rainy Window", tab: "wall", price: 40, kind: "rainWindow", w: 1.2, wall: true },
-  lakeWindow: { name: "Lake Window", tab: "wall", price: 45, kind: "lakeWindow", w: 1.0, wall: true },
-  moonWindow: { name: "Moon Window", tab: "wall", price: 50, kind: "moonWindow", w: 0.8, wall: true },
-  leafWindow: { name: "Autumn Window", tab: "wall", price: 50, kind: "leafWindow", w: 0.9, wall: true },
-  paintingFlowers: { name: "Flower Painting", tab: "wall", price: 15, kind: "picture", art: "flowers", w: 0.9, wall: true },
-  paintingSea: { name: "Sea Painting", tab: "wall", price: 15, kind: "picture", art: "sea", w: 0.9, wall: true },
-  paintingHills: { name: "Hills Painting", tab: "wall", price: 15, kind: "picture", art: "hills", w: 0.9, wall: true },
-  stringLights: { name: "String Lights", tab: "wall", price: 20, kind: "lights", w: 2.0, wall: true },
-  clock: { name: "Wall Clock", tab: "wall", price: 20, kind: "clock", w: 0.5, wall: true, centered: true },
-  mirror: { name: "Mirror", tab: "wall", price: 25, kind: "mirror", w: 0.7, wall: true, short: true },
-  driedHerbs: { name: "Dried Herbs", tab: "wall", price: 12, kind: "driedHerbs", w: 0.9, wall: true },
-  scroll: { name: "Calligraphy Scroll", tab: "wall", price: 15, kind: "scroll", w: 0.55, wall: true },
-  corkBoard: { name: "Cork Board", tab: "wall", price: 15, kind: "corkBoard", w: 1.2, wall: true },
-  jarShelf: { name: "Shelf of Jars", tab: "wall", price: 18, kind: "jarShelf", w: 1.2, wall: true },
-  pothosShelf: { name: "Pothos Shelf", tab: "wall", price: 16, kind: "pothosShelf", w: 0.8, wall: true },
-  posterStars: { name: "Night Sky Poster", tab: "wall", price: 12, kind: "poster", art: "stars", w: 0.7, wall: true },
-  posterMountains: { name: "Mountain Poster", tab: "wall", price: 12, kind: "poster", art: "mountains", w: 0.7, wall: true },
-  posterCat: { name: "Cat Poster", tab: "wall", price: 12, kind: "poster", art: "cat", w: 0.7, wall: true },
-  worldMap: { name: "World Map", tab: "wall", price: 25, kind: "worldMap", w: 1.3, wall: true },
-  neonSign: { name: "Neon \"cozy\" Sign", tab: "wall", price: 40, kind: "neonSign", w: 0.9, wall: true },
+  // --- Shelves ---
+  bookshelf: { name: "Bookshelf", tab: "shelves", price: 35, kind: "bookshelf", w: 1.3, h: 0.5 },
+  libraryShelf: { name: "Tall Library Shelf", tab: "shelves", price: 50, kind: "libraryShelf", w: 1.5, h: 0.45 },
+  cubeShelf: { name: "Cube Shelf with Baskets", tab: "shelves", price: 40, kind: "cubeShelf", w: 1.0, h: 0.5 },
+  ladderShelf: { name: "Ladder Shelf", tab: "shelves", price: 38, kind: "ladderShelf", w: 0.8, h: 0.4 },
+  recordCrate: { name: "Record Crate", tab: "shelves", price: 25, kind: "recordCrate", w: 0.8, h: 0.5 },
+  floatingBooks: { name: "Floating Book Shelf", tab: "shelves", price: 18, kind: "floatingBooks", w: 1.1, wall: true },
+  candleShelf: { name: "Candle Shelf", tab: "shelves", price: 18, kind: "candleShelf", w: 1.0, wall: true },
+  crystalShelf: { name: "Crystal Shelf", tab: "shelves", price: 22, kind: "crystalShelf", w: 1.0, wall: true },
+  teaShelf: { name: "Tea Shelf with Mugs", tab: "shelves", price: 20, kind: "teaShelf", w: 1.0, wall: true },
+  jarShelf: { name: "Shelf of Jars", tab: "shelves", price: 18, kind: "jarShelf", w: 1.2, wall: true },
+
+  // --- Decor ---
+  rugBerry: { name: "Berry Rug", tab: "decor", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#a8473a", solid: false },
+  rugSage: { name: "Sage Rug", tab: "decor", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f8a6a", solid: false },
+  rugHoney: { name: "Honey Rug", tab: "decor", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#c98f3c", solid: false },
+  rugPlum: { name: "Plum Rug", tab: "decor", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f5a8c", solid: false },
+  roundRugCream: { name: "Round Cream Rug", tab: "decor", price: 22, kind: "rug", w: 1.8, h: 1.4, color: "#e9dcc2", round: true, solid: false },
+  roundRugTeal: { name: "Round Teal Rug", tab: "decor", price: 22, kind: "rug", w: 1.8, h: 1.4, color: "#4f8a8a", round: true, solid: false },
+  heartRug: { name: "Heart Rug", tab: "decor", price: 26, kind: "rug", w: 1.6, h: 1.4, color: "#efa8bc", shape: "heart", solid: false },
+  checkerRug: { name: "Checkered Rug", tab: "decor", price: 26, kind: "rug", w: 2.2, h: 1.5, color: "#b9d6a4", shape: "checker", solid: false },
+  fluffyRug: { name: "Fluffy Cloud Rug", tab: "decor", price: 28, kind: "rug", w: 2.0, h: 1.4, color: "#f7f1e6", shape: "fluffy", solid: false },
+  floorLamp: { name: "Floor Lamp", tab: "decor", price: 25, kind: "floorLamp", w: 0.4, h: 0.4 },
+  mushroomLamp: { name: "Mushroom Lamp", tab: "decor", price: 28, kind: "mushroomLamp", w: 0.5, h: 0.45 },
+  moonLamp: { name: "Moon Lamp", tab: "decor", price: 24, kind: "moonLamp", w: 0.45, h: 0.4 },
+  lavaLamp: { name: "Lava Lamp", tab: "decor", price: 22, kind: "lavaLamp", w: 0.4, h: 0.4 },
+  candles: { name: "Candle Cluster", tab: "decor", price: 12, kind: "candles", w: 0.6, h: 0.4 },
+  discoBall: { name: "Little Disco Ball", tab: "decor", price: 24, kind: "discoBall", w: 0.5, h: 0.45 },
+  wavyMirror: { name: "Wavy Mirror", tab: "decor", price: 40, kind: "wavyMirror", w: 0.6, h: 0.3 },
+  archMirror: { name: "Arched Floor Mirror", tab: "decor", price: 45, kind: "archMirror", w: 0.8, h: 0.3 },
+  teddyBear: { name: "Big Teddy Bear", tab: "decor", price: 30, kind: "teddyBear", w: 0.6, h: 0.5 },
+  blanketBasket: { name: "Blanket Basket", tab: "decor", price: 20, kind: "blanketBasket", w: 0.7, h: 0.45 },
+  yarnBasket: { name: "Yarn Basket", tab: "decor", price: 15, kind: "yarnBasket", w: 0.55, h: 0.4 },
+  bookStacks: { name: "Book Stacks", tab: "decor", price: 12, kind: "bookStacks", w: 0.7, h: 0.4 },
+  floorCushions: { name: "Floor Cushions", tab: "decor", price: 20, kind: "floorCushions", w: 1.0, h: 0.6, solid: false },
+  pumpkins: { name: "Pumpkins & Candle", tab: "decor", price: 15, kind: "pumpkins", w: 0.6, h: 0.5 },
+  rainWindow: { name: "Rainy Window", tab: "decor", price: 40, kind: "rainWindow", w: 1.2, wall: true },
+  lakeWindow: { name: "Lake Window", tab: "decor", price: 45, kind: "lakeWindow", w: 1.0, wall: true },
+  moonWindow: { name: "Moon Window", tab: "decor", price: 50, kind: "moonWindow", w: 0.8, wall: true },
+  leafWindow: { name: "Autumn Window", tab: "decor", price: 50, kind: "leafWindow", w: 0.9, wall: true },
+  stringLights: { name: "String Lights", tab: "decor", price: 20, kind: "lights", w: 2.0, wall: true },
+  fairyCurtain: { name: "Fairy Light Curtain", tab: "decor", price: 30, kind: "fairyCurtain", w: 1.4, wall: true },
+  polaroidWall: { name: "Polaroid String", tab: "decor", price: 18, kind: "polaroidWall", w: 1.4, wall: true },
+  tapestry: { name: "Boho Tapestry", tab: "decor", price: 28, kind: "tapestry", w: 1.2, wall: true },
+  neonSign: { name: 'Neon "cozy" Sign', tab: "decor", price: 40, kind: "neonSign", w: 0.9, wall: true },
+  heartNeon: { name: "Neon Heart", tab: "decor", price: 35, kind: "heartNeon", w: 0.7, wall: true },
+  paintingFlowers: { name: "Flower Painting", tab: "decor", price: 15, kind: "picture", art: "flowers", w: 0.9, wall: true },
+  paintingSea: { name: "Sea Painting", tab: "decor", price: 15, kind: "picture", art: "sea", w: 0.9, wall: true },
+  paintingHills: { name: "Hills Painting", tab: "decor", price: 15, kind: "picture", art: "hills", w: 0.9, wall: true },
+  posterStars: { name: "Night Sky Poster", tab: "decor", price: 12, kind: "poster", art: "stars", w: 0.7, wall: true },
+  posterMountains: { name: "Mountain Poster", tab: "decor", price: 12, kind: "poster", art: "mountains", w: 0.7, wall: true },
+  posterCat: { name: "Cat Poster", tab: "decor", price: 12, kind: "poster", art: "cat", w: 0.7, wall: true },
+  worldMap: { name: "World Map", tab: "decor", price: 25, kind: "worldMap", w: 1.3, wall: true },
+  corkBoard: { name: "Cork Board", tab: "decor", price: 15, kind: "corkBoard", w: 1.2, wall: true },
+  clock: { name: "Wall Clock", tab: "decor", price: 20, kind: "clock", w: 0.5, wall: true, centered: true },
+  mirror: { name: "Mirror", tab: "decor", price: 25, kind: "mirror", w: 0.7, wall: true, short: true },
+  scroll: { name: "Calligraphy Scroll", tab: "decor", price: 15, kind: "scroll", w: 0.55, wall: true },
+
+  // --- Starter pieces every bedroom comes with (not sold) ---
+  starterDesk: { name: "Laptop Desk", tab: null, price: 0, kind: "laptopDesk", w: 1.3, h: 0.6, keep: true },
+  starterMattress: { name: "Plain Mattress", tab: null, price: 0, kind: "mattress", w: 1.4, h: 2.1, sleep: true, solid: false, ownerColor: true },
 };
 
-// The starter pieces every bedroom has, as spots inside the room (x, y
-// from its top-left corner): the laptop desk, and a plain mattress that
-// gets put away once you place a real bed.
-const DESK_SPOT = { x: 0.15, y: 0.1, w: 1.3, h: 0.6 };
-const MATTRESS_SPOT = { x: 2.05, y: 0.15, w: 1.4, h: 2.1 };
-const hasBed = (placed) => placed.some((p) => DECOR[p.item]?.sleep);
+// Where the starter pieces go in a brand new bedroom (from its top-left
+// corner). They can be moved like anything else; the laptop desk can't be
+// put away, since the laptop is how you get to Decorate.
+const STARTERS = [
+  { item: "starterDesk", x: 0.15, y: 0.1 },
+  { item: "starterMattress", x: 2.05, y: 0.15 },
+];
 const DOOR_LANE = { x: 0.8, y: BEDROOM_DEPTH - 1.1, w: 2.0, h: 1.1 }; // kept clear so you can always get in
 
-const MAX_DECOR = 40; // pieces per bedroom
+const MAX_DECOR = 80; // pieces per bedroom
+
+// A bedroom's decor from before the starter pieces could be moved has no
+// laptop desk in it: give it the desk (and the mattress, unless there's a
+// bed) in their usual spots.
+function withStarters(placed) {
+  if (placed.some((p) => p.item === "starterDesk")) return placed;
+  const hasBed = placed.some((p) => DECOR[p.item]?.sleep);
+  return [STARTERS[0], ...(hasBed ? [] : [STARTERS[1]]), ...placed];
+}
 
 // True if a piece of decor { item, x, y } can go at that spot in a bedroom
 // of this size, given what's already placed (skipping index `skip`, the
 // piece being moved). Pieces must be inside the room, and floor pieces
-// can't overlap each other, the starter pieces or the doorway (rugs can
-// go under anything). Wall pieces can't overlap each other.
+// can't overlap each other or the doorway (rugs can go under anything).
+// Wall pieces can't overlap each other.
 function decorFits(size, placed, piece, skip = -1) {
   const item = Object.hasOwn(DECOR, piece?.item) ? DECOR[piece.item] : null;
   if (!item || !Number.isFinite(piece.x) || (!item.wall && !Number.isFinite(piece.y))) return false;
@@ -593,8 +671,7 @@ function decorFits(size, placed, piece, skip = -1) {
   if (piece.y < 0 || piece.y + item.h > BEDROOM_DEPTH + 1e-9) return false;
   if (item.kind === "rug") return true;
   const box = { x: piece.x, y: piece.y, w: item.w, h: item.h };
-  const spots = item.sleep || hasBed(others) ? [DESK_SPOT, DOOR_LANE] : [DESK_SPOT, MATTRESS_SPOT, DOOR_LANE];
-  if (spots.some((spot) => rectsOverlap(box, spot))) return false;
+  if (rectsOverlap(box, DOOR_LANE)) return false;
   return !others.some((p) => {
     const o = DECOR[p.item];
     return !o.wall && o.kind !== "rug" && rectsOverlap(box, { x: p.x, y: p.y, w: o.w, h: o.h });
@@ -605,10 +682,8 @@ function decorFits(size, placed, piece, skip = -1) {
 // from friends, and when a room shrinks).
 function tidyDecor(size, placed) {
   const kept = [];
-  // Beds first, since a bed frees up the mattress's spot for other pieces.
-  const pieces = Array.isArray(placed) ? placed.slice(0, MAX_DECOR) : [];
-  const bedsFirst = [...pieces.filter((p) => DECOR[p?.item]?.sleep), ...pieces.filter((p) => !DECOR[p?.item]?.sleep)];
-  for (const piece of bedsFirst) {
+  const pieces = withStarters(Array.isArray(placed) ? placed.slice(0, MAX_DECOR) : []);
+  for (const piece of pieces) {
     const clean = { item: String(piece?.item), x: Number(piece?.x), y: Number(piece?.y) };
     if (decorFits(size, kept, clean)) kept.push(clean);
   }
@@ -619,7 +694,7 @@ function tidyDecor(size, placed) {
 // top-left corner) into furniture at (x0, top), the room's corner.
 // `owner` is the bedroom's info (for its color, and whether it's yours).
 function decorPiece(piece, x0, top, owner, index) {
-  const { name, tab, price, wall, centered, ownerColor, ...look } = DECOR[piece.item];
+  const { name, tab, price, wall, centered, ownerColor, keep, ...look } = DECOR[piece.item];
   return {
     ...look,
     x: x0 + piece.x + (centered ? look.w / 2 : 0),
@@ -627,21 +702,14 @@ function decorPiece(piece, x0, top, owner, index) {
     h: wall ? undefined : look.h,
     color: ownerColor ? owner.color : look.color,
     solid: wall ? false : look.solid,
+    mine: owner.mine, // (the laptop desk opens only for its owner)
     decor: { index, mine: owner.mine }, // so its owner can pick it back up
   };
 }
 
-// What's in a bedroom: the laptop desk, a plain mattress (until a real
-// bed is placed), and whatever the owner has placed from Nest & Nook.
-const BEDROOM_FURNITURE = (x0, top, bedroom) => {
-  const decor = bedroom.decor || [];
-  const at = (spot) => ({ x: x0 + spot.x, y: top + spot.y, w: spot.w, h: spot.h });
-  return [
-    { kind: "laptopDesk", ...at(DESK_SPOT), mine: bedroom.mine },
-    ...(hasBed(decor) ? [] : [{ kind: "mattress", ...at(MATTRESS_SPOT), color: bedroom.color, sleep: true, solid: false }]),
-    ...decor.map((piece, index) => decorPiece(piece, x0, top, bedroom, index)),
-  ];
-};
+// What's in a bedroom: everything placed in it, starting with the laptop
+// desk and (until you put it away) the plain mattress.
+const BEDROOM_FURNITURE = (x0, top, bedroom) => withStarters(bedroom.decor || []).map((piece, index) => decorPiece(piece, x0, top, bedroom, index));
 
 // The bed (or mattress) a player is lying in (their center is on it), or null.
 function bedAt(player) {

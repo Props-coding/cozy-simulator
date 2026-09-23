@@ -2000,8 +2000,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .nook-tab-furniture { --tab: #f2c9a8; }
-.nook-tab-cozy { --tab: #b9d6a4; }
-.nook-tab-wall { --tab: #b8d0e8; }
+.nook-tab-plants { --tab: #b9d6a4; }
+.nook-tab-shelves { --tab: #e8d3a4; }
+.nook-tab-decor { --tab: #f0bccb; }
 .nook-tab-upgrades { --tab: #e6c8ec; }
 
 .nook-section {
@@ -2012,8 +2013,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .nook-furniture { --soft: #fbeee2; --deep: #d99a6c; }
-.nook-cozy { --soft: #eef5e6; --deep: #7fa86a; }
-.nook-wall { --soft: #eaf1f8; --deep: #6f98bc; }
+.nook-plants { --soft: #eef5e6; --deep: #7fa86a; }
+.nook-shelves { --soft: #f8f0e0; --deep: #b08a4a; }
+.nook-decor { --soft: #fbecef; --deep: #c67890; }
 .nook-upgrades { --soft: #f5ecf6; --deep: #b086bc; }
 
 .nook-heading h3 {

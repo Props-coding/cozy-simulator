@@ -174,6 +174,15 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Nest & Nook redesign: a cute boutique site. A striped scalloped awning, a logo with Wren (a little bird in a nest) who greets you and thanks you when you buy, tabs with icons and their own pastel colors (Furniture, Plants & rugs, Walls, Upgrades), a "Wren's pick of the day" card, cream cards that lift on hover, "New!" ribbons on the 0.40 items, "in your home" badges, "Add to basket" buttons with a heart pop, a dotted background and a footer.
   - Updates without refreshing: every minute the page checks the site for a newer build. When there is one, a banner counts down from 10 (it waits while you're typing, decorating or have something open; "Update now" skips the wait), then the page reloads itself under the new version's address (so the browser can't use an old saved copy), skips the Join screen and puts you back where you were standing. Browsers hold sound back until a click, so a "Click anywhere to turn sound back on" note shows until your first click. Friends on 0.40 or older still need one last Ctrl + F5 to get this.
 
+- Build 0.42 (not pushed yet):
+  - Nest & Nook grew from 69 to 130 items, in new sections: Furniture, Plants, Shelves, Decor (and Upgrades). Anything that holds a plant (like the pothos shelf) is in Plants. Anything you already bought or placed stays where it is.
+  - New plants: bird of paradise, olive tree, rubber plant, money tree, ZZ plant, alocasia, calathea, peace lily, pilea, heartleaf philodendron, spider plant, jade, aloe, pink orchid, lavender, herb garden, terrarium, and vases of pampas grass, tulips, sunflowers, eucalyptus and cherry blossom. Hanging ones for the wall: macramé pothos, string of pearls, hanging fern and an air plant rack.
+  - New shelves: tall library shelf, cube shelf with baskets, ladder shelf, record crate, and wall shelves for books, candles, crystals and tea mugs.
+  - New furniture: canopy bed, vanity with a bulb mirror, clothes rack, cloud sofa, papasan and hanging egg chairs, knit poufs, mushroom stool, round side table, aesthetic desk, gold bar cart, and the cat tree.
+  - New decor: heart, checkered and fluffy cloud rugs, mushroom and moon lamps, a little disco ball, wavy and arched mirrors, a big teddy bear, a blanket basket, a fairy light curtain, a polaroid string, a boho tapestry and a neon heart.
+  - The laptop desk and the plain mattress can now be moved like everything else while decorating. The mattress can be put away; the desk can't (it's how you get to decorating), but it can go anywhere. Existing bedrooms keep them where they were.
+  - The store's item pictures now show round and heart-shaped rugs in their real shape.
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

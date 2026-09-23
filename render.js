@@ -252,6 +252,49 @@ function paintRoof(ctx) {
 function drawRug(ctx, f) {
   const a = toScreen(f.x, f.y);
   const w = f.w * TILE, h = f.h * TILE;
+  if (f.shape === "heart") {
+    const cx = a.x + w / 2, cy = a.y + h / 2;
+    for (const [grow, color] of [[0, f.color], [-6, shadeColor(f.color, 30)], [-11, f.color]]) {
+      const s = Math.min(w, h * 1.2) / 2 + grow;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.75);
+      ctx.bezierCurveTo(cx - s * 1.35, cy, cx - s * 0.75, cy - s * 0.95, cx, cy - s * 0.35);
+      ctx.bezierCurveTo(cx + s * 0.75, cy - s * 0.95, cx + s * 1.35, cy, cx, cy + s * 0.75);
+      ctx.fill();
+    }
+    return;
+  }
+  if (f.shape === "checker") {
+    roundRectPath(ctx, a.x, a.y, w, h, 8);
+    ctx.save();
+    ctx.clip();
+    const size = 16;
+    for (let yy = 0; yy < h; yy += size) {
+      for (let xx = 0; xx < w; xx += size) {
+        ctx.fillStyle = ((xx + yy) / size) % 2 ? f.color : "#f7f1e6";
+        ctx.fillRect(a.x + xx, a.y + yy, size, size);
+      }
+    }
+    ctx.restore();
+    return;
+  }
+  if (f.shape === "fluffy") {
+    const cx = a.x + w / 2, cy = a.y + h / 2;
+    ctx.fillStyle = f.color;
+    for (let i = 0; i < 36; i++) {
+      const ang = (i / 36) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(ang) * (w / 2 - 5), cy + Math.sin(ang) * (h / 2 - 5), 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, w / 2 - 5, h / 2 - 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    for (let i = 0; i < 40; i++) ctx.fillRect(a.x + 8 + noise(i * 2.9) * (w - 16), a.y + 8 + noise(i * 6.1) * (h - 16), 2, 1);
+    return;
+  }
   if (f.round) {
     // A round (oval) rug with rings.
     const cx = a.x + w / 2, cy = a.y + h / 2;
@@ -1481,6 +1524,1496 @@ const FURNITURE_DRAWERS = {
     ctx.fillRect(c.x + 4, c.y - 22, 6, 7);
     ctx.fillStyle = "#6b3a1e";
     ctx.fillRect(c.x + 4.5, c.y - 22, 5, 1.5);
+  },
+
+  // --- The cozy plant collection ---
+
+  // ZZ plant: upright stems lined with glossy little leaves.
+  zzPlant(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "cement", 10, 15);
+    for (const [dx, lean, len] of [[-5, -0.25, 34], [-1, -0.08, 42], [3, 0.1, 38], [7, 0.3, 30]]) {
+      const tipX = b.x + dx + Math.sin(lean) * len, tipY = soil - Math.cos(lean) * len;
+      ctx.strokeStyle = "#4f7a3a";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(b.x + dx * 0.4, soil);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+      for (let t = 0.3; t <= 1; t += 0.14) {
+        const px = b.x + dx * 0.4 + (tipX - b.x - dx * 0.4) * t, py = soil + (tipY - soil) * t;
+        drawLeaf(ctx, px, py, lean - 0.9, 7, 2.6, "#2f5a2f", "rgba(255,255,255,0.25)");
+        drawLeaf(ctx, px, py, lean + 0.9, 7, 2.6, "#3d6b3a", "rgba(255,255,255,0.25)");
+      }
+    }
+  },
+
+  // Pilea (the Chinese money plant): round coin leaves on thin stems.
+  pilea(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "ceramic", 8, 12);
+    const leaves = [[-14, -14, 4.5], [13, -16, 4.8], [-8, -26, 5], [9, -28, 4.6], [0, -34, 5.2], [-15, -30, 3.8], [16, -30, 4], [2, -20, 4.2]];
+    for (const [dx, dy, r] of leaves) {
+      ctx.strokeStyle = "#6f9a4a";
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(b.x, soil - 4);
+      ctx.quadraticCurveTo(b.x + dx * 0.3, soil + dy * 0.6, b.x + dx, soil + dy);
+      ctx.stroke();
+      ctx.fillStyle = r > 4.7 ? "#5f9a4a" : "#6fae55";
+      ctx.beginPath();
+      ctx.arc(b.x + dx, soil + dy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+      ctx.beginPath();
+      ctx.arc(b.x + dx, soil + dy, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // Calathea: wide leaves with feathery stripes, in a pink pot.
+  calathea(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "pink", 10, 15);
+    for (const [angle, len] of [[-0.9, 24], [-0.45, 30], [0, 32], [0.45, 29], [0.9, 23]]) {
+      drawLeaf(ctx, b.x, soil, angle, len, 9, "#4f7a48", null);
+      ctx.save();
+      ctx.translate(b.x, soil);
+      ctx.rotate(angle);
+      ctx.strokeStyle = "#a8c88a"; // feathery stripes
+      ctx.lineWidth = 1.2;
+      for (let t = 0.25; t < 0.9; t += 0.13) {
+        ctx.beginPath();
+        ctx.moveTo(0, -len * t);
+        ctx.lineTo(-4, -len * t - 3);
+        ctx.moveTo(0, -len * t);
+        ctx.lineTo(4, -len * t - 3);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "#c9708a"; // pink midrib
+      ctx.beginPath();
+      ctx.moveTo(0, -2);
+      ctx.lineTo(0, -len + 3);
+      ctx.stroke();
+      ctx.restore();
+    }
+  },
+
+  // Bird of paradise: tall stems with huge paddle leaves, in a basket.
+  birdOfParadise(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "basket", 12, 17);
+    for (const [dx, lean, stem, color] of [[-4, -0.35, 30, "#3d6b40"], [4, 0.3, 34, "#3d6b40"], [0, -0.05, 44, "#4a7a48"], [-2, 0.55, 22, "#2f5a36"], [2, -0.7, 20, "#2f5a36"]]) {
+      const topX = b.x + dx + Math.sin(lean) * stem, topY = soil - Math.cos(lean) * stem;
+      ctx.strokeStyle = "#5f7a3a";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(b.x + dx * 0.3, soil);
+      ctx.lineTo(topX, topY);
+      ctx.stroke();
+      drawLeaf(ctx, topX, topY + 2, lean, 26, 9, color);
+      ctx.save(); // splits in the leaf edge
+      ctx.translate(topX, topY + 2);
+      ctx.rotate(lean);
+      ctx.strokeStyle = "rgba(20, 40, 20, 0.45)";
+      ctx.lineWidth = 0.8;
+      for (const t of [0.35, 0.6]) {
+        ctx.beginPath();
+        ctx.moveTo(6, -26 * t);
+        ctx.lineTo(2, -26 * t - 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  },
+
+  // An olive tree: a slim trunk and a silvery cloud of little leaves.
+  oliveTree(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "clay", 11, 20);
+    ctx.strokeStyle = "#7a6a52";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(b.x, soil);
+    ctx.quadraticCurveTo(b.x - 4, soil - 20, b.x + 1, soil - 38);
+    ctx.stroke();
+    for (let i = 0; i < 46; i++) {
+      const a = noise(i * 2.7) * Math.PI * 2, r = 5 + noise(i * 5.3) * 14;
+      drawLeaf(ctx, b.x + Math.cos(a) * r, soil - 50 + Math.sin(a) * r * 0.75, a + 1.2, 6, 1.6, ["#8fa88a", "#a8b89a", "#7a9474"][i % 3], null);
+    }
+    ctx.fillStyle = "#3a3040";
+    for (const [dx, dy] of [[-6, -46], [5, -52], [9, -44]]) {
+      ctx.beginPath();
+      ctx.ellipse(b.x + dx, soil + dy, 1.3, 1.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A peace lily: dark glossy leaves and white flowers.
+  peaceLily(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "ceramic", 10, 15);
+    for (const [angle, len] of [[-1.0, 20], [-0.6, 26], [-0.2, 24], [0.25, 26], [0.65, 25], [1.0, 19]]) drawLeaf(ctx, b.x, soil, angle, len, 6, angle % 0.5 ? "#2f5a36" : "#3d6b40");
+    for (const [dx, h] of [[-5, 34], [4, 38], [0, 30]]) {
+      ctx.strokeStyle = "#5f8a4a";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(b.x, soil);
+      ctx.lineTo(b.x + dx, soil - h + 6);
+      ctx.stroke();
+      ctx.fillStyle = "#fdfbf5";
+      ctx.beginPath();
+      ctx.moveTo(b.x + dx, soil - h + 6);
+      ctx.quadraticCurveTo(b.x + dx - 5, soil - h, b.x + dx, soil - h - 4);
+      ctx.quadraticCurveTo(b.x + dx + 5, soil - h, b.x + dx, soil - h + 6);
+      ctx.fill();
+      ctx.fillStyle = "#f2e08a";
+      ctx.fillRect(b.x + dx - 0.7, soil - h - 1, 1.4, 5);
+    }
+  },
+
+  // A rubber plant: big, dark, shiny burgundy leaves up a central stem.
+  rubberPlant(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "cement", 10, 16);
+    ctx.strokeStyle = "#5a4a3a";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(b.x, soil);
+    ctx.lineTo(b.x, soil - 46);
+    ctx.stroke();
+    [[-1, -10], [1, -18], [-1, -26], [1, -33], [-1, -40], [0, -48]].forEach(([side, dy], i) => {
+      const angle = side === 0 ? 0 : side * 1.0;
+      drawLeaf(ctx, b.x, soil + dy, angle, 15, 6, i % 2 ? "#3a2a35" : "#4a2e3a", "rgba(255, 200, 200, 0.25)");
+    });
+  },
+
+  // Aloe vera: thick spiky leaves with little white speckles.
+  aloeVera(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "clay", 10, 13);
+    for (const [angle, len] of [[-1.1, 18], [-0.6, 24], [-0.2, 27], [0.25, 26], [0.7, 22], [1.1, 17]]) {
+      drawLeaf(ctx, b.x, soil, angle, len, 4, "#7fae8a", null);
+      ctx.save();
+      ctx.translate(b.x, soil);
+      ctx.rotate(angle);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      for (let t = 0.25; t < 0.8; t += 0.15) ctx.fillRect(-1, -len * t, 1.2, 1.2);
+      ctx.restore();
+    }
+  },
+
+  // Alocasia: tall stems with arrow-shaped leaves and bright white veins.
+  alocasia(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "black", 10, 16);
+    for (const [dx, h, tilt] of [[-8, 34, -0.5], [7, 40, 0.45], [0, 48, 0.05]]) {
+      const lx = b.x + dx, ly = soil - h;
+      ctx.strokeStyle = "#6f8a4a";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(b.x, soil);
+      ctx.lineTo(lx, ly + 4);
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(tilt);
+      ctx.fillStyle = "#26402c";
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.lineTo(8, 6);
+      ctx.lineTo(0, 3);
+      ctx.lineTo(-8, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#e8f0e0";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.lineTo(0, -11);
+      for (const t of [-8, -3, 2]) {
+        ctx.moveTo(0, t);
+        ctx.lineTo(5, t + 5);
+        ctx.moveTo(0, t);
+        ctx.lineTo(-5, t + 5);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  },
+
+  // A pink orchid: two broad leaves, a stake and an arching spray of flowers.
+  orchid(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "ceramic", 8, 13);
+    drawLeaf(ctx, b.x, soil, -1.2, 13, 5, "#3d6b40");
+    drawLeaf(ctx, b.x, soil, 1.15, 12, 5, "#2f5a36");
+    ctx.strokeStyle = "#8b6b4a"; // stake
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(b.x + 1, soil);
+    ctx.lineTo(b.x + 1, soil - 36);
+    ctx.stroke();
+    ctx.strokeStyle = "#6f7a4a";
+    ctx.beginPath();
+    ctx.moveTo(b.x + 1, soil - 30);
+    ctx.quadraticCurveTo(b.x + 8, soil - 42, b.x + 16, soil - 32);
+    ctx.stroke();
+    for (const [px, py] of [[b.x + 2, soil - 34], [b.x + 7, soil - 38], [b.x + 12, soil - 37], [b.x + 16, soil - 32]]) {
+      ctx.fillStyle = "#f2b8d0";
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(px + Math.cos(a) * 2.2, py + Math.sin(a) * 2.2, 2.2, 1.5, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#c0406a";
+      ctx.beginPath();
+      ctx.arc(px, py, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A pot of lavender: slim stems topped with purple flower spikes.
+  lavenderPot(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "clay", 10, 13);
+    for (let i = 0; i < 13; i++) {
+      const angle = (i - 6) * 0.1, len = 22 + (i % 3) * 4;
+      const tx = b.x + Math.sin(angle) * len, ty = soil - Math.cos(angle) * len;
+      ctx.strokeStyle = "#8fa87a";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(b.x + (i - 6) * 0.6, soil);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      ctx.fillStyle = i % 2 ? "#9a7ac0" : "#b69ad8";
+      for (let k = 0; k < 4; k++) {
+        ctx.beginPath();
+        ctx.ellipse(tx, ty + k * 2, 1.5, 1.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  // A long wooden planter of kitchen herbs: basil, rosemary and mint.
+  herbGarden(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 11, "#a8783e");
+    const x = box.top.x, y = box.top.y + box.top.h / 2, w = box.top.w;
+    for (let i = 0; i < 9; i++) drawLeaf(ctx, x + w * 0.2 + (i % 3) * 3 - 3, y, (i - 4) * 0.35, 9, 4, "#5f9a55");
+    for (let i = 0; i < 9; i++) {
+      ctx.strokeStyle = "#4f6a4a";
+      ctx.lineWidth = 1;
+      const px = x + w * 0.5 + (i - 4) * 1.6;
+      ctx.beginPath();
+      ctx.moveTo(px, y);
+      ctx.lineTo(px + (i - 4) * 0.8, y - 14 - (i % 3) * 3);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 8; i++) drawHeartLeaf(ctx, x + w * 0.8 + (i % 3) * 4 - 4, y - 4 - Math.floor(i / 3) * 5, 3, i % 2 ? "#7fbf6a" : "#6fae55");
+    ctx.fillStyle = "#f4ecdc"; // little labels
+    for (const fx of [0.2, 0.5, 0.8]) ctx.fillRect(x + w * fx - 3, box.face.y + 3, 6, 4);
+  },
+
+  // Fluffy pampas grass plumes in a tall stone vase.
+  pampasVase(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const top = drawVase(ctx, b.x, b.y - 2, "stone");
+    for (const [angle, len, color] of [[-0.45, 34, "#e8dcc2"], [-0.15, 42, "#f2e8d4"], [0.2, 38, "#ecdcbf"], [0.5, 30, "#f2e8d4"]]) {
+      const tx = b.x + Math.sin(angle) * len, ty = top - Math.cos(angle) * len;
+      ctx.strokeStyle = "#b8a888";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(b.x, top + 2);
+      ctx.lineTo(tx, ty + 8);
+      ctx.stroke();
+      ctx.fillStyle = color;
+      for (let k = 0; k < 6; k++) {
+        ctx.beginPath();
+        ctx.ellipse(tx + Math.sin(angle) * k * 1.5, ty + k * 2.5, 4, 5, angle, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  // Pink tulips in a glass vase.
+  tulipVase(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const top = drawVase(ctx, b.x, b.y - 2, "glass");
+    for (const [dx, h, color] of [[-7, 18, "#f2a0b8"], [0, 22, "#f7c0d0"], [6, 17, "#e880a0"], [-3, 14, "#fbd0dc"]]) {
+      ctx.strokeStyle = "#6f9a4a";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(b.x, top + 8);
+      ctx.lineTo(b.x + dx, top - h + 4);
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(b.x + dx - 3.5, top - h + 1);
+      ctx.lineTo(b.x + dx - 3.5, top - h - 4);
+      ctx.lineTo(b.x + dx - 1.5, top - h - 2);
+      ctx.lineTo(b.x + dx, top - h - 5);
+      ctx.lineTo(b.x + dx + 1.5, top - h - 2);
+      ctx.lineTo(b.x + dx + 3.5, top - h - 4);
+      ctx.lineTo(b.x + dx + 3.5, top - h + 1);
+      ctx.quadraticCurveTo(b.x + dx, top - h + 5, b.x + dx - 3.5, top - h + 1);
+      ctx.fill();
+    }
+    drawLeaf(ctx, b.x - 1, top + 6, -0.5, 12, 3, "#5f8a4a");
+  },
+
+  // Three sunflowers in a yellow jug.
+  sunflowerVase(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const top = drawVase(ctx, b.x, b.y - 2, "jug");
+    for (const [dx, h, r] of [[-8, 16, 6], [2, 22, 7], [9, 14, 5.5]]) {
+      const cx = b.x + dx, cy = top - h;
+      ctx.strokeStyle = "#5f8a3a";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(b.x, top + 3);
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
+      ctx.fillStyle = "#f2c230";
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(cx + Math.cos(a) * r * 0.8, cy + Math.sin(a) * r * 0.8, r * 0.45, r * 0.2, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#6b4226";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // Eucalyptus stems with round silvery leaves in an amber bud vase.
+  eucalyptusVase(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const top = drawVase(ctx, b.x, b.y - 2, "amber");
+    for (const [angle, len] of [[-0.35, 30], [0.05, 36], [0.4, 28]]) {
+      const tx = b.x + Math.sin(angle) * len, ty = top - Math.cos(angle) * len;
+      ctx.strokeStyle = "#8a7a6a";
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(b.x, top);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      for (let t = 0.2; t <= 1; t += 0.16) {
+        const px = b.x + (tx - b.x) * t, py = top + (ty - top) * t;
+        ctx.fillStyle = t > 0.6 ? "#a8c0b0" : "#8fae9e";
+        ctx.beginPath();
+        ctx.arc(px - 3, py, 2.4, 0, Math.PI * 2);
+        ctx.arc(px + 3, py - 1, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  // A cherry blossom branch in a tall cream vase.
+  cherryBlossom(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const top = drawVase(ctx, b.x, b.y - 2, "cream");
+    ctx.strokeStyle = "#5c4030";
+    ctx.lineWidth = 1.6;
+    const twigs = [[b.x, top, b.x - 10, top - 26], [b.x - 5, top - 13, b.x - 18, top - 22], [b.x, top, b.x + 8, top - 34], [b.x + 4, top - 17, b.x + 16, top - 24], [b.x + 7, top - 28, b.x + 2, top - 42]];
+    for (const [x1, y1, x2, y2] of twigs) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 22; i++) {
+      const [x1, y1, x2, y2] = twigs[i % twigs.length];
+      const t = 0.35 + noise(i * 4.7) * 0.65;
+      ctx.fillStyle = i % 3 ? "#f7c6d6" : "#fbe0ea";
+      ctx.beginPath();
+      ctx.arc(x1 + (x2 - x1) * t + (noise(i) - 0.5) * 4, y1 + (y2 - y1) * t + (noise(i + 9) - 0.5) * 4, 1.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A glass terrarium globe with moss, pebbles and tiny plants.
+  terrarium(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#8b5e3c";
+    roundRectPath(ctx, b.x - 11, b.y - 6, 22, 5, 2);
+    ctx.fill();
+    const cy = b.y - 17;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(b.x, cy, 12, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = "rgba(210, 235, 240, 0.35)";
+    ctx.fillRect(b.x - 12, cy - 12, 24, 24);
+    ctx.fillStyle = "#c9b089"; // sand and pebbles
+    ctx.fillRect(b.x - 12, cy + 5, 24, 7);
+    ctx.fillStyle = "#6fae55"; // moss
+    ctx.beginPath();
+    ctx.ellipse(b.x - 3, cy + 5, 8, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#9a9a94";
+    ctx.beginPath();
+    ctx.arc(b.x + 6, cy + 6, 2, 0, Math.PI * 2);
+    ctx.arc(b.x + 2, cy + 8, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    drawLeaf(ctx, b.x - 4, cy + 4, -0.3, 10, 3, "#4f8a4a");
+    drawLeaf(ctx, b.x - 2, cy + 4, 0.4, 8, 3, "#5f9a55");
+    ctx.restore();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(b.x, cy, 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(b.x - 4, cy - 5, 5, Math.PI * 1.1, Math.PI * 1.5);
+    ctx.stroke();
+  },
+
+  // A money tree: a braided trunk topped with fans of leaves.
+  moneyTree(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "glazed", 10, 15);
+    ctx.strokeStyle = "#8a6a4a"; // the braid
+    ctx.lineWidth = 2;
+    for (const phase of [0, 2.1, 4.2]) {
+      ctx.beginPath();
+      for (let y = 0; y <= 30; y += 2) ctx.lineTo(b.x + Math.sin(y * 0.35 + phase) * 2.5, soil - y);
+      ctx.stroke();
+    }
+    for (const [dx, dy] of [[-10, -38], [9, -40], [0, -48], [-4, -32], [6, -31]]) {
+      for (let i = -2; i <= 2; i++) drawLeaf(ctx, b.x + dx * 0.5, soil + dy + 6, i * 0.45 + dx * 0.04, 12, 3.2, i % 2 ? "#4f8a4a" : "#5f9a55");
+    }
+  },
+
+  // A jade plant: a chunky little tree with round, fleshy leaves.
+  jadePlant(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "clay", 10, 13);
+    ctx.strokeStyle = "#7a6a4a";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(b.x, soil);
+    ctx.lineTo(b.x, soil - 12);
+    ctx.lineTo(b.x - 9, soil - 22);
+    ctx.moveTo(b.x, soil - 12);
+    ctx.lineTo(b.x + 8, soil - 24);
+    ctx.stroke();
+    for (const [cx, cy] of [[b.x - 9, soil - 24], [b.x + 8, soil - 26], [b.x, soil - 18]]) {
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2;
+        ctx.fillStyle = "#5f9a55";
+        ctx.beginPath();
+        ctx.ellipse(cx + Math.cos(a) * 5, cy + Math.sin(a) * 4, 3.2, 2.4, a, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(200, 80, 80, 0.5)";
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+  },
+
+  // A spider plant: arching striped leaves, with babies dangling down.
+  spiderPlant(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "ceramic", 10, 15);
+    for (let i = -6; i <= 6; i++) {
+      const angle = i * 0.22, len = 22 - Math.abs(i);
+      const tx = b.x + Math.sin(angle) * len * 1.2, ty = soil - Math.cos(angle) * len + Math.abs(i) * 2.4;
+      ctx.strokeStyle = "#5f9a55";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(b.x, soil);
+      ctx.quadraticCurveTo(b.x + Math.sin(angle) * len * 0.5, soil - len, tx, ty);
+      ctx.stroke();
+      ctx.strokeStyle = "#e8f0d0";
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+    for (const side of [-1, 1]) {
+      ctx.strokeStyle = "#8fa87a";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(b.x + side * 8, soil - 6);
+      ctx.quadraticCurveTo(b.x + side * 20, soil - 12, b.x + side * 20, soil + 6);
+      ctx.stroke();
+      for (let i = -2; i <= 2; i++) drawLeaf(ctx, b.x + side * 20, soil + 6, i * 0.5, 7, 1.6, "#6fae55", null);
+    }
+  },
+
+  // A heartleaf philodendron trailing heart-shaped leaves over a pink pot.
+  philodendron(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const soil = drawPot(ctx, b.x, b.y - 2, "pink", 10, 15);
+    for (const [dx, dy, s, a] of [[-5, -8, 5, -0.3], [5, -10, 5.5, 0.3], [0, -16, 5, 0], [-9, -2, 4.5, -0.6], [9, -3, 4.5, 0.6]]) drawHeartLeaf(ctx, b.x + dx, soil + dy, s, "#4f8a4a", a);
+    for (const side of [-1, 1]) {
+      ctx.strokeStyle = "#5f7a3a";
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(b.x + side * 9, soil);
+      ctx.quadraticCurveTo(b.x + side * 14, soil + 8, b.x + side * 12, soil + 16);
+      ctx.stroke();
+      for (let k = 0; k < 4; k++) drawHeartLeaf(ctx, b.x + side * (12 + (k % 2) * 2), soil + 3 + k * 4, 3.2, k % 2 ? "#5f9a55" : "#4f8a4a", side * 0.4);
+    }
+  },
+
+  // Hung on a wall: a macramé hanger holding a golden pothos, trailing down.
+  macramePothos(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const cx = a.x + (f.w * TILE) / 2, top = a.y - WALL_HEIGHT + 2;
+    ctx.fillStyle = "#6b4a2e"; // hook
+    ctx.fillRect(cx - 1, top, 2, 3);
+    ctx.strokeStyle = "#e9dcc2"; // knotted cords
+    ctx.lineWidth = 1.2;
+    for (const dx of [-7, -3, 3, 7]) {
+      ctx.beginPath();
+      ctx.moveTo(cx, top + 3);
+      ctx.lineTo(cx + dx, top + 16);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#e9dcc2";
+    for (const dx of [-5, 5]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx * 0.8, top + 12, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#ece6dc"; // the pot
+    roundRectPath(ctx, cx - 7, top + 15, 14, 9, 3);
+    ctx.fill();
+    ctx.fillStyle = "#e9dcc2"; // tassel
+    ctx.fillRect(cx - 1, top + 24, 2, 6);
+    for (const [dx, len, lean] of [[-6, 24, -1], [6, 20, 1], [-2, 14, 1]]) {
+      ctx.strokeStyle = "#6f8a3a";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(cx + dx, top + 16);
+      ctx.quadraticCurveTo(cx + dx + lean * 4, top + 16 + len * 0.5, cx + dx + lean * 2, top + 16 + len);
+      ctx.stroke();
+      for (let k = 0; k < len / 4; k++) drawHeartLeaf(ctx, cx + dx + lean * (k % 2 ? 3 : 1), top + 18 + k * 4, 2.5, k % 2 ? "#a8c860" : "#6f9a4a", lean * 0.4);
+    }
+    for (const dx of [-4, 0, 4]) drawHeartLeaf(ctx, cx + dx, top + 13, 3, "#8fb850");
+  },
+
+  // Hung on a wall: string of pearls, little green beads spilling down.
+  stringOfPearls(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const cx = a.x + (f.w * TILE) / 2, top = a.y - WALL_HEIGHT + 4;
+    ctx.strokeStyle = "#8a6a4a";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx - 6, top + 8);
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx + 6, top + 8);
+    ctx.stroke();
+    ctx.fillStyle = "#c9b089"; // a little bowl
+    ctx.beginPath();
+    ctx.ellipse(cx, top + 10, 8, 4, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.fillRect(cx - 8, top + 8, 16, 2);
+    for (const [dx, len] of [[-6, 22], [-2, 28], [2, 18], [6, 25], [0, 12]]) {
+      ctx.strokeStyle = "rgba(90, 120, 60, 0.6)";
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(cx + dx, top + 11);
+      ctx.lineTo(cx + dx + Math.sin(dx) * 1.5, top + 11 + len);
+      ctx.stroke();
+      ctx.fillStyle = "#7fbf6a";
+      for (let y = 3; y < len; y += 2.6) {
+        ctx.beginPath();
+        ctx.arc(cx + dx + Math.sin(dx + y * 0.3) * 1.2, top + 11 + y, 1.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  // Hung on a wall: a hanging basket with a fern spilling over.
+  hangingFern(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const cx = a.x + (f.w * TILE) / 2, top = a.y - WALL_HEIGHT + 3;
+    ctx.strokeStyle = "#5c4530";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx - 8, top + 12);
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx + 8, top + 12);
+    ctx.stroke();
+    ctx.fillStyle = "#b08a50";
+    ctx.beginPath();
+    ctx.ellipse(cx, top + 13, 9, 5, 0, 0, Math.PI);
+    ctx.fill();
+    for (let i = -4; i <= 4; i++) {
+      const angle = Math.PI / 2 + i * 0.35 + (i < 0 ? 0.6 : -0.6) * 0;
+      const tx = cx + i * 4, ty = top + 14 + (6 - Math.abs(i)) * 3.5;
+      ctx.strokeStyle = ["#3f6b3c", "#4f7a48", "#5f8a50"][(i + 9) % 3];
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + i * 1.2, top + 11);
+      ctx.quadraticCurveTo(cx + i * 3, top + 6, tx, ty);
+      ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle;
+      for (let t = 0.3; t < 1; t += 0.2) {
+        const px = cx + i * 1.2 + (tx - cx - i * 1.2) * t, py = top + 11 + (ty - top - 11) * t - Math.sin(t * Math.PI) * 5;
+        ctx.beginPath();
+        ctx.ellipse(px, py, 2.2, 1, angle, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  // Hung on a wall: a little wooden rack holding three air plants.
+  airPlants(ctx, f) {
+    const shelf = drawWallShelf(ctx, f, 22, "#b08a60");
+    for (const fx of [0.22, 0.5, 0.78]) {
+      const cx = shelf.x + shelf.w * fx, cy = shelf.y - 2;
+      ctx.fillStyle = "#e9dcc2"; // a tiny holder
+      ctx.fillRect(cx - 3, cy - 2, 6, 2);
+      for (let i = -3; i <= 3; i++) drawLeaf(ctx, cx, cy - 1, i * 0.4, 9, 1.4, i % 2 ? "#a8c0a0" : "#8fae9e", null);
+    }
+  },
+
+  // --- Shelves ---
+
+  // Hung on a wall: a floating shelf of books, with a little candle.
+  floatingBooks(ctx, f) {
+    const shelf = drawWallShelf(ctx, f, 22);
+    drawBookRow(ctx, shelf.x + 3, shelf.y, shelf.w * 0.7, 1);
+    drawCandle(ctx, shelf.x + shelf.w - 8, shelf.y, performance.now() / 1000 + f.x, true);
+  },
+
+  // Hung on a wall: a shelf of candles and a little framed photo.
+  candleShelf(ctx, f) {
+    const shelf = drawWallShelf(ctx, f, 24, "#e9dcc2");
+    const t = performance.now() / 1000;
+    ctx.fillStyle = "#c9a24a"; // frame
+    ctx.fillRect(shelf.x + 4, shelf.y - 12, 10, 12);
+    ctx.fillStyle = "#f7d0da";
+    ctx.fillRect(shelf.x + 5.5, shelf.y - 10.5, 7, 9);
+    ctx.fillStyle = "#e37aa0";
+    ctx.beginPath();
+    ctx.arc(shelf.x + 9, shelf.y - 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    for (const [fx, h] of [[0.5, 10], [0.66, 14], [0.82, 8]]) {
+      const cx = shelf.x + shelf.w * fx;
+      ctx.fillStyle = "#f4ecdc";
+      ctx.fillRect(cx - 2.5, shelf.y - h, 5, h);
+      drawCandle(ctx, cx, shelf.y - h + 7, t + fx * 5);
+    }
+  },
+
+  // Hung on a wall: crystals, a moon and a little mushroom friend.
+  crystalShelf(ctx, f) {
+    const shelf = drawWallShelf(ctx, f, 22, "#b08a60");
+    const y = shelf.y;
+    for (const [fx, h, color] of [[0.18, 10, "#b69ad8"], [0.3, 7, "#f2b8d0"], [0.4, 12, "#c9e0f0"]]) {
+      const cx = shelf.x + shelf.w * fx;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(cx - 3, y);
+      ctx.lineTo(cx - 2, y - h + 2);
+      ctx.lineTo(cx, y - h);
+      ctx.lineTo(cx + 2, y - h + 2);
+      ctx.lineTo(cx + 3, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillRect(cx - 1, y - h + 3, 1, h - 5);
+    }
+    const mx = shelf.x + shelf.w * 0.6; // crescent moon
+    ctx.fillStyle = "#f2d45c";
+    ctx.beginPath();
+    ctx.arc(mx, y - 7, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b08a60";
+    ctx.beginPath();
+    ctx.arc(mx + 2.5, y - 8, 4.2, 0, Math.PI * 2);
+    ctx.fill();
+    const sx = shelf.x + shelf.w * 0.82; // mushroom
+    ctx.fillStyle = "#f4ecdc";
+    ctx.fillRect(sx - 1.5, y - 5, 3, 5);
+    ctx.fillStyle = "#c0554a";
+    ctx.beginPath();
+    ctx.ellipse(sx, y - 6, 5, 3.5, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    ctx.fillRect(sx - 3, y - 8, 1.3, 1.3);
+    ctx.fillRect(sx + 1, y - 9, 1.3, 1.3);
+  },
+
+  // Hung on a wall: tea tins on a shelf, with mugs on hooks underneath.
+  teaShelf(ctx, f) {
+    const shelf = drawWallShelf(ctx, f, 16);
+    let x = shelf.x + 4;
+    for (const color of ["#4f7a48", "#c0554a", "#d9a441", "#5f7a8c"]) {
+      if (x > shelf.x + shelf.w - 10) break;
+      ctx.fillStyle = color;
+      roundRectPath(ctx, x, shelf.y - 10, 7, 10, 1.5);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillRect(x + 1, shelf.y - 7, 5, 3);
+      x += 9;
+    }
+    for (const [fx, color] of [[0.25, "#f2ece2"], [0.5, "#f2b8c4"], [0.75, "#a8c8e0"]]) {
+      const mx = shelf.x + shelf.w * fx;
+      ctx.fillStyle = "#6b4a2e";
+      ctx.fillRect(mx - 0.5, shelf.y + 3, 1, 3);
+      ctx.fillStyle = color;
+      roundRectPath(ctx, mx - 4, shelf.y + 6, 8, 8, 2);
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(mx + 4.5, shelf.y + 10, 2.2, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+    }
+  },
+
+  // A 2-by-2 cube shelf with woven baskets, and a record and plant on top.
+  cubeShelf(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const s = drawBlock(ctx, f.x, f.y, f.w, f.h, 34, "#f2ece2");
+    const { x, y, w, h } = s.face;
+    ctx.fillStyle = "#d8cfbe";
+    ctx.fillRect(x + w / 2 - 1, y, 2, h);
+    ctx.fillRect(x, y + h / 2 - 1, w, 2);
+    for (const [cx, cy, basket] of [[0, 0, true], [1, 0, false], [0, 1, false], [1, 1, true]]) {
+      const bx = x + 3 + cx * (w / 2), by = y + 3 + cy * (h / 2), bw = w / 2 - 6, bh = h / 2 - 5;
+      if (basket) {
+        ctx.fillStyle = "#c49a5c";
+        ctx.fillRect(bx, by + 2, bw, bh - 2);
+        ctx.strokeStyle = "rgba(90, 60, 25, 0.4)";
+        ctx.lineWidth = 0.8;
+        for (let yy = by + 5; yy < by + bh; yy += 3) {
+          ctx.beginPath();
+          ctx.moveTo(bx, yy);
+          ctx.lineTo(bx + bw, yy);
+          ctx.stroke();
+        }
+      } else {
+        drawBookRow(ctx, bx + 1, by + bh, bw - 2, cx + cy * 3);
+      }
+    }
+    const t = s.top;
+    ctx.fillStyle = "#15151a"; // a record leaning on top
+    ctx.beginPath();
+    ctx.arc(t.x + t.w * 0.3, t.y + 2, 8, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#e37aa0";
+    ctx.beginPath();
+    ctx.arc(t.x + t.w * 0.3, t.y + 2, 2.5, Math.PI, 0);
+    ctx.fill();
+    drawPot(ctx, t.x + t.w * 0.75, t.y + t.h / 2 + 2, "ceramic", 5, 8);
+    drawHeartLeaf(ctx, t.x + t.w * 0.75 - 3, t.y - 6, 3.5, "#5f9a55", -0.3);
+    drawHeartLeaf(ctx, t.x + t.w * 0.75 + 3, t.y - 7, 3.5, "#4f8a4a", 0.3);
+  },
+
+  // A ladder shelf leaning on the wall, with a blanket, books and a plant.
+  ladderShelf(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x, f.y + f.h);
+    const w = f.w * TILE, x = b.x, by = b.y - 2;
+    ctx.fillStyle = "#b08a60"; // rails
+    ctx.fillRect(x + 2, by - 62, 3, 62);
+    ctx.fillRect(x + w - 5, by - 62, 3, 62);
+    const rungs = [by - 12, by - 28, by - 44, by - 58];
+    for (const [i, ry] of rungs.entries()) {
+      const inset = i * 1.5;
+      ctx.fillStyle = "#c9a57e";
+      ctx.fillRect(x + 2 + inset, ry, w - 4 - inset * 2, 3);
+    }
+    ctx.fillStyle = "#e8b8a0"; // a blanket draped over the bottom rung
+    ctx.fillRect(x + 6, rungs[0] - 2, w - 12, 12);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    for (let i = 0; i < 3; i++) ctx.fillRect(x + 6, rungs[0] + 1 + i * 3, w - 12, 1);
+    drawBookRow(ctx, x + 6, rungs[1], w * 0.45, 3);
+    drawPot(ctx, x + w * 0.5, rungs[2], "clay", 5, 7);
+    drawIvySprig(ctx, x + w * 0.5 - 3, rungs[2] - 7, 14, -1);
+    drawIvySprig(ctx, x + w * 0.5 + 3, rungs[2] - 7, 10, 1);
+    ctx.fillStyle = "#f2d45c"; // a little candle up top
+    ctx.fillRect(x + w * 0.5 - 2, rungs[3] - 6, 4, 6);
+  },
+
+  // A wooden crate full of vinyl records.
+  recordCrate(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 16, "#b08a60");
+    ctx.fillStyle = "rgba(90, 60, 30, 0.35)";
+    ctx.fillRect(c.face.x, c.face.y + c.face.h / 2, c.face.w, 1.5);
+    const colors = ["#e37aa0", "#3f6f9f", "#f2d45c", "#7a9e5c", "#c0554a", "#9a6fb0", "#2b2b30"];
+    for (let i = 0; i < 7; i++) {
+      ctx.fillStyle = colors[i];
+      ctx.fillRect(c.top.x + 3 + i * ((c.top.w - 6) / 7), c.top.y - 8 + (i % 2), (c.top.w - 6) / 7 - 1, 12);
+    }
+  },
+
+  // --- Decor ---
+
+  // A glowing mushroom lamp, red with white spots.
+  mushroomLamp(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#f4ecdc";
+    roundRectPath(ctx, b.x - 4, b.y - 16, 8, 14, 3);
+    ctx.fill();
+    const cap = ctx.createRadialGradient(b.x, b.y - 22, 2, b.x, b.y - 20, 14);
+    cap.addColorStop(0, "#ff8a70");
+    cap.addColorStop(1, "#c0554a");
+    ctx.fillStyle = cap;
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 17, 13, 11, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    for (const [dx, dy, r] of [[-6, -21, 2], [3, -24, 2.4], [7, -19, 1.6], [-1, -18, 1.4]]) {
+      ctx.beginPath();
+      ctx.arc(b.x + dx, b.y + dy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A glowing moon lamp on a little wooden stand.
+  moonLamp(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#8b5e3c";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 3, 7, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const moon = ctx.createRadialGradient(b.x - 3, b.y - 16, 1, b.x, b.y - 13, 10);
+    moon.addColorStop(0, "#fffbe8");
+    moon.addColorStop(1, "#f2dca0");
+    ctx.fillStyle = moon;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y - 13, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(200, 170, 110, 0.35)"; // craters
+    for (const [dx, dy, r] of [[-3, -15, 2], [3, -11, 1.5], [2, -17, 1]]) {
+      ctx.beginPath();
+      ctx.arc(b.x + dx, b.y + dy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A tall wavy-edged mirror standing on the floor.
+  wavyMirror(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const h = 56, top = b.y - 2 - h;
+    const path = (grow) => {
+      ctx.beginPath();
+      for (let i = 0; i <= 20; i++) {
+        const t = i / 20, y = top + t * h;
+        ctx.lineTo(b.x - 11 - grow + Math.sin(t * Math.PI * 4) * 2, y);
+      }
+      for (let i = 20; i >= 0; i--) {
+        const t = i / 20, y = top + t * h;
+        ctx.lineTo(b.x + 11 + grow + Math.sin(t * Math.PI * 4 + 1) * 2, y);
+      }
+      ctx.closePath();
+    };
+    path(2.5);
+    ctx.fillStyle = "#f2e0c0";
+    ctx.fill();
+    path(0);
+    const glass = ctx.createLinearGradient(b.x - 10, top, b.x + 10, top + h);
+    glass.addColorStop(0, "#dfeaf2");
+    glass.addColorStop(1, "#b8cad8");
+    ctx.fillStyle = glass;
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.fillRect(b.x - 5, top + 8, 2, 18);
+    ctx.fillRect(b.x - 1, top + 10, 1.2, 10);
+  },
+
+  // A full-length arched mirror leaning on the wall, with a gold frame.
+  archMirror(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x, f.y + f.h);
+    const w = f.w * TILE, h = 62;
+    ctx.fillStyle = "#c9a24a";
+    archPath(ctx, b.x + 2, b.y - 2 - h, w - 4, h);
+    ctx.fill();
+    const glass = ctx.createLinearGradient(b.x, b.y - h, b.x + w, b.y);
+    glass.addColorStop(0, "#e4eef4");
+    glass.addColorStop(1, "#b8cad8");
+    ctx.fillStyle = glass;
+    archPath(ctx, b.x + 5, b.y - h + 1, w - 10, h - 5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.fillRect(b.x + 9, b.y - h + 16, 2, 22);
+  },
+
+  // Hung on a wall: polaroid photos pegged to a string of warm lights.
+  polaroidWall(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 8;
+    ctx.strokeStyle = "rgba(90, 70, 50, 0.7)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + w / 2, y + 6, x + w, y);
+    ctx.stroke();
+    const photos = ["#f2b8c4", "#a8c8e0", "#b9d6a4", "#f2d9a0"];
+    const count = Math.max(2, Math.floor(w / 16));
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count, px = x + w * t, py = y + Math.sin(t * Math.PI) * 5;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((i % 2 ? 1 : -1) * 0.1);
+      ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+      ctx.fillRect(-4, 3, 10, 12);
+      ctx.fillStyle = "#fffdf8";
+      ctx.fillRect(-5, 2, 10, 12);
+      ctx.fillStyle = photos[i % photos.length];
+      ctx.fillRect(-4, 3, 8, 7);
+      ctx.fillStyle = "#b08a60"; // clothespin
+      ctx.fillRect(-1, 0, 2, 4);
+      ctx.restore();
+    }
+    for (let i = 0; i <= count; i++) {
+      const t = i / count;
+      ctx.fillStyle = "#ffd98a";
+      ctx.beginPath();
+      ctx.arc(x + w * t, y + Math.sin(t * Math.PI) * 5 + 1, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // Hung on a wall: a boho tapestry with a sun and mountains.
+  tapestry(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 3, h = 30;
+    ctx.fillStyle = "#6b4a2e";
+    ctx.fillRect(x - 2, y, w + 4, 2);
+    ctx.fillStyle = "#f2e0c4";
+    ctx.fillRect(x, y + 2, w, h);
+    ctx.fillStyle = "#e0845a";
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + 16, 6, Math.PI, 0);
+    ctx.fill();
+    ctx.strokeStyle = "#e0845a";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const ang = Math.PI + (i + 0.5) * (Math.PI / 5);
+      ctx.beginPath();
+      ctx.moveTo(x + w / 2 + Math.cos(ang) * 8, y + 16 + Math.sin(ang) * 8);
+      ctx.lineTo(x + w / 2 + Math.cos(ang) * 11, y + 16 + Math.sin(ang) * 11);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#a8785a";
+    ctx.beginPath();
+    ctx.moveTo(x, y + 26);
+    ctx.lineTo(x + w * 0.3, y + 18);
+    ctx.lineTo(x + w * 0.55, y + 26);
+    ctx.lineTo(x + w * 0.75, y + 20);
+    ctx.lineTo(x + w, y + 26);
+    ctx.lineTo(x + w, y + h + 2);
+    ctx.lineTo(x, y + h + 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#e9dcc2"; // fringe
+    for (let fx = x + 2; fx < x + w; fx += 3) {
+      ctx.beginPath();
+      ctx.moveTo(fx, y + h + 2);
+      ctx.lineTo(fx, y + h + 6);
+      ctx.stroke();
+    }
+  },
+
+  // Hung on a wall: a glowing pink neon heart.
+  heartNeon(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const cx = a.x + (f.w * TILE) / 2, cy = a.y - WALL_HEIGHT + 17;
+    ctx.save();
+    ctx.shadowColor = "rgba(255, 110, 170, 0.9)";
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = `rgba(255, 150, 200, ${0.85 + Math.sin(performance.now() / 350) * 0.1})`;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 9);
+    ctx.bezierCurveTo(cx - 14, cy, cx - 8, cy - 11, cx, cy - 4);
+    ctx.bezierCurveTo(cx + 8, cy - 11, cx + 14, cy, cx, cy + 9);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255, 240, 248, 0.9)";
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.restore();
+  },
+
+  // Hung on a wall: a curtain of warm fairy lights.
+  fairyCurtain(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 3;
+    const t = performance.now() / 1000;
+    ctx.strokeStyle = "rgba(90, 70, 50, 0.5)";
+    ctx.lineWidth = 0.6;
+    for (let sx = x + 3; sx < x + w - 1; sx += 5) {
+      const len = 18 + ((sx * 7) % 13);
+      ctx.beginPath();
+      ctx.moveTo(sx, y);
+      ctx.lineTo(sx, y + len);
+      ctx.stroke();
+      for (let ly = y + 4; ly < y + len; ly += 6) {
+        ctx.fillStyle = `rgba(255, 220, 140, ${0.6 + Math.sin(t * 2 + sx + ly) * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(sx, ly, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  },
+
+  // A little disco ball, catching the light.
+  discoBall(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const cy = b.y - 12, t = performance.now() / 1000;
+    ctx.fillStyle = "#b8bcc8";
+    ctx.beginPath();
+    ctx.arc(b.x, cy, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(b.x, cy, 10, 0, Math.PI * 2);
+    ctx.clip();
+    for (let gy = -10; gy < 10; gy += 3) {
+      for (let gx = -10; gx < 10; gx += 3) {
+        const shine = (Math.sin(gx * 0.9 + gy * 1.3 + t * 3) + 1) / 2;
+        ctx.fillStyle = `rgba(${200 + shine * 55}, ${210 + shine * 45}, ${230 + shine * 25}, 1)`;
+        ctx.fillRect(b.x + gx + 0.3, cy + gy + 0.3, 2.4, 2.4);
+      }
+    }
+    ctx.restore();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.beginPath();
+    ctx.arc(b.x - 4, cy - 4, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A basket of rolled-up chunky knit blankets.
+  blanketBasket(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const bk = drawBlock(ctx, f.x, f.y, f.w, f.h, 14, "#c49a5c");
+    ctx.strokeStyle = "rgba(90, 55, 20, 0.45)";
+    ctx.lineWidth = 1;
+    for (let yy = bk.face.y + 3; yy < bk.face.y + bk.face.h; yy += 3) {
+      ctx.beginPath();
+      ctx.moveTo(bk.face.x, yy);
+      ctx.lineTo(bk.face.x + bk.face.w, yy);
+      ctx.stroke();
+    }
+    for (const [fx, color] of [[0.3, "#f2e0c4"], [0.55, "#c98a8a"], [0.78, "#a8b89a"]]) {
+      const cx = bk.top.x + bk.top.w * fx, cy = bk.top.y + 2;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy - 4, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = shadeColor(color, -25);
+      ctx.beginPath();
+      ctx.arc(cx, cy - 4, 3.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  },
+
+  // A big, soft teddy bear sitting on the floor.
+  teddyBear(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const c = "#c49a6c";
+    petBlob(ctx, b.x - 7, b.y - 5, 5, 4, c); // feet
+    petBlob(ctx, b.x + 7, b.y - 5, 5, 4, c);
+    petBlob(ctx, b.x, b.y - 14, 11, 10, c); // body
+    ctx.fillStyle = "#f2e0c4";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 12, 6, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petBlob(ctx, b.x - 10, b.y - 17, 3.5, 5, c); // arms
+    petBlob(ctx, b.x + 10, b.y - 17, 3.5, 5, c);
+    petBlob(ctx, b.x - 7, b.y - 35, 4, 4, c); // ears
+    petBlob(ctx, b.x + 7, b.y - 35, 4, 4, c);
+    petBlob(ctx, b.x, b.y - 29, 9, 8, c); // head
+    ctx.fillStyle = "#f2e0c4";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 26, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+    ctx.beginPath();
+    ctx.arc(b.x - 3.5, b.y - 31, 1.2, 0, Math.PI * 2);
+    ctx.arc(b.x + 3.5, b.y - 31, 1.2, 0, Math.PI * 2);
+    ctx.ellipse(b.x, b.y - 27, 1.6, 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e37aa0"; // a bow
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y - 21);
+    ctx.lineTo(b.x - 5, b.y - 24);
+    ctx.lineTo(b.x - 5, b.y - 18);
+    ctx.moveTo(b.x, b.y - 21);
+    ctx.lineTo(b.x + 5, b.y - 24);
+    ctx.lineTo(b.x + 5, b.y - 18);
+    ctx.fill();
+  },
+
+  // --- More furniture ---
+
+  // A vanity table with a round mirror ringed with bulbs, and a stool.
+  vanity(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#f2ece2");
+    const cx = d.top.x + d.top.w / 2, cy = d.top.y - 14;
+    ctx.fillStyle = "#c9a24a";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#dfeaf2";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.fillRect(cx - 6, cy - 6, 2, 9);
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      ctx.fillStyle = "#fff4c8";
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * 15, cy + Math.sin(a) * 15, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e37aa0"; // perfume and a lipstick
+    ctx.fillRect(d.top.x + 6, d.top.y + d.top.h / 2 - 5, 5, 6);
+    ctx.fillStyle = "#b69ad8";
+    ctx.fillRect(d.top.x + d.top.w - 12, d.top.y + d.top.h / 2 - 6, 4, 7);
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(d.face.x + d.face.w / 2 - 5, d.face.y + 8, 10, 1.6);
+  },
+
+  // A bed with four posts, sheer drapes and fairy lights. You can sleep in it.
+  canopyBed(ctx, f) {
+    FURNITURE_DRAWERS.bed(ctx, f);
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+    const topY = a.y - 58;
+    ctx.fillStyle = "#e9dcc2"; // posts
+    for (const px of [a.x + 1, b.x - 4]) {
+      ctx.fillRect(px, topY, 3, a.y - topY);
+      ctx.fillRect(px, b.y - 40, 3, 30);
+    }
+    ctx.fillStyle = "#e9dcc2";
+    ctx.fillRect(a.x, topY - 2, b.x - a.x, 3);
+    ctx.fillStyle = "rgba(255, 250, 245, 0.45)"; // sheer drapes
+    for (const [x1, dir] of [[a.x + 3, 1], [b.x - 3, -1]]) {
+      ctx.beginPath();
+      ctx.moveTo(x1, topY);
+      ctx.quadraticCurveTo(x1 + dir * 14, topY + 30, x1 + dir * 4, b.y - 12);
+      ctx.lineTo(x1, b.y - 12);
+      ctx.closePath();
+      ctx.fill();
+    }
+    const t = performance.now() / 1000;
+    for (let i = 0; i <= 10; i++) {
+      const px = a.x + ((b.x - a.x) * i) / 10;
+      ctx.fillStyle = `rgba(255, 220, 140, ${0.7 + Math.sin(t * 2 + i) * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(px, topY + 3 + Math.sin((i / 10) * Math.PI) * 5, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A papasan chair: a big round rattan bowl with a thick cushion.
+  papasanChair(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#a8783e"; // base
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 4, 12, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#c49a5c"; // bowl
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 16, 22, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(90, 60, 25, 0.35)";
+    ctx.lineWidth = 0.8;
+    for (let r = 6; r < 22; r += 4) {
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y - 16, r, r * 0.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    const cushion = ctx.createRadialGradient(b.x, b.y - 20, 2, b.x, b.y - 17, 18);
+    cushion.addColorStop(0, "#f7e0d0");
+    cushion.addColorStop(1, "#e0b8a0");
+    ctx.fillStyle = cushion;
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 17, 17, 9.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(160, 110, 90, 0.35)";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y - 17, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A hanging rattan egg chair on its stand, gently swaying.
+  eggChair(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.strokeStyle = "#3a3a40"; // the stand
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(b.x - 12, b.y - 2);
+    ctx.lineTo(b.x + 12, b.y - 2);
+    ctx.moveTo(b.x + 8, b.y - 2);
+    ctx.lineTo(b.x + 8, b.y - 66);
+    ctx.quadraticCurveTo(b.x + 8, b.y - 74, b.x, b.y - 72);
+    ctx.stroke();
+    const sway = Math.sin(performance.now() / 900) * 0.05;
+    ctx.save();
+    ctx.translate(b.x, b.y - 72);
+    ctx.rotate(sway);
+    ctx.strokeStyle = "#5c4530";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, 8);
+    ctx.stroke();
+    ctx.fillStyle = "#c49a5c";
+    ctx.beginPath();
+    ctx.ellipse(0, 32, 14, 24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6b4a2e"; // the opening
+    ctx.beginPath();
+    ctx.ellipse(0, 36, 10, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2e0c4"; // cushion
+    ctx.beginPath();
+    ctx.ellipse(0, 44, 9, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(90, 60, 25, 0.35)";
+    ctx.lineWidth = 0.7;
+    for (let y = 12; y < 54; y += 4) {
+      ctx.beginPath();
+      ctx.moveTo(-13, y);
+      ctx.lineTo(-9, y);
+      ctx.moveTo(9, y);
+      ctx.lineTo(13, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+
+  // A puffy cream boucle "cloud" sofa.
+  cloudSofa(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+    const w = b.x - a.x;
+    const puff = (x, y, rx, ry, shade) => {
+      const g = ctx.createLinearGradient(0, y - ry, 0, y + ry);
+      g.addColorStop(0, shadeColor("#f2ece2", 10 + shade));
+      g.addColorStop(1, shadeColor("#f2ece2", -22 + shade));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    puff(a.x + w / 2, b.y - 34, w / 2 - 2, 14, -6); // back
+    puff(a.x + 10, b.y - 18, 11, 14, 0); // arms
+    puff(b.x - 10, b.y - 18, 11, 14, 0);
+    puff(a.x + w * 0.36, b.y - 14, w * 0.22, 10, 4); // seats
+    puff(a.x + w * 0.64, b.y - 14, w * 0.22, 10, 4);
+    ctx.fillStyle = "rgba(160, 140, 120, 0.25)"; // boucle texture
+    for (let i = 0; i < 40; i++) ctx.fillRect(a.x + 4 + noise(i * 3.3) * (w - 8), b.y - 44 + noise(i * 5.1) * 36, 1, 1);
+    ctx.fillStyle = "#e0b8a0"; // a pillow
+    roundRectPath(ctx, a.x + w * 0.62, b.y - 30, 14, 11, 4);
+    ctx.fill();
+  },
+
+  // A chunky knit pouf.
+  pouf(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const c = f.color || "#e0c8b0";
+    const g = ctx.createLinearGradient(0, b.y - 22, 0, b.y);
+    g.addColorStop(0, shadeColor(c, 20));
+    g.addColorStop(1, shadeColor(c, -20));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 10, 14, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = shadeColor(c, -30);
+    ctx.lineWidth = 1;
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.ellipse(b.x + i * 3.6, b.y - 10, 1.8, 9, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  },
+
+  // A round side table with a mug and a bud vase.
+  sideTable(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#8b5e3c";
+    ctx.fillRect(b.x - 1.5, b.y - 18, 3, 16);
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 3, 7, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#a8784e";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 19, 13, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2ece2";
+    ctx.fillRect(b.x - 7, b.y - 25, 5, 6);
+    const vt = drawVase(ctx, b.x + 5, b.y - 19, "amber");
+    ctx.fillStyle = "#f7c6d6";
+    ctx.beginPath();
+    ctx.arc(b.x + 5, vt - 3, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A clothes rail with cozy sweaters and a little hat on top.
+  clothesRack(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y + f.h), w = f.w * TILE;
+    const x = a.x, by = a.y - 2;
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(x + 2, by - 50, 2, 50);
+    ctx.fillRect(x + w - 4, by - 50, 2, 50);
+    ctx.fillRect(x + 2, by - 50, w - 4, 2);
+    const clothes = ["#e8b8a0", "#a8b89a", "#f2e0c4", "#b69ad8", "#c98a8a"];
+    const n = Math.floor((w - 10) / 9);
+    for (let i = 0; i < n; i++) {
+      const cx = x + 7 + i * 9;
+      ctx.strokeStyle = "#8a8a94";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(cx, by - 49);
+      ctx.lineTo(cx - 4, by - 45);
+      ctx.lineTo(cx + 4, by - 45);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillStyle = clothes[i % clothes.length];
+      roundRectPath(ctx, cx - 5, by - 45, 10, 22 + (i % 2) * 4, 3);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+      for (let k = 0; k < 3; k++) ctx.fillRect(cx - 4, by - 40 + k * 5, 8, 1);
+    }
+    ctx.fillStyle = "#f2e0c4"; // a shoe box underneath
+    ctx.fillRect(x + w * 0.3, by - 7, w * 0.4, 6);
+  },
+
+  // A little gold bar cart with a teapot and cups.
+  barCart(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y + f.h), w = f.w * TILE;
+    const x = a.x, by = a.y - 2;
+    ctx.fillStyle = "#c9a24a";
+    ctx.fillRect(x + 3, by - 26, 2, 24);
+    ctx.fillRect(x + w - 5, by - 26, 2, 24);
+    ctx.fillStyle = "#f2e4c4";
+    ctx.fillRect(x + 2, by - 26, w - 4, 3);
+    ctx.fillRect(x + 2, by - 11, w - 4, 3);
+    ctx.fillStyle = "#3a3a40";
+    for (const wx of [x + 5, x + w - 5]) {
+      ctx.beginPath();
+      ctx.arc(wx, by - 1, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f7c6d6"; // teapot
+    ctx.beginPath();
+    ctx.arc(x + w * 0.35, by - 31, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x + w * 0.35 + 4, by - 33, 4, 1.5);
+    for (const fx of [0.62, 0.78]) {
+      ctx.fillStyle = "#fffaf3";
+      ctx.fillRect(x + w * fx - 2.5, by - 30, 5, 4);
+    }
+    ctx.fillStyle = "#b9d6a4"; // a plant on the lower shelf
+    ctx.beginPath();
+    ctx.arc(x + w * 0.4, by - 15, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e8913a";
+    ctx.fillRect(x + w * 0.62, by - 16, 6, 5);
+  },
+
+  // A little mushroom stool.
+  mushroomStool(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#f4ecdc";
+    roundRectPath(ctx, b.x - 5, b.y - 12, 10, 11, 3);
+    ctx.fill();
+    ctx.fillStyle = "#e0845a";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 13, 12, 7, 0, Math.PI, 0);
+    ctx.ellipse(b.x, b.y - 13, 12, 3, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    for (const [dx, dy] of [[-5, -16], [3, -18], [7, -14]]) {
+      ctx.beginPath();
+      ctx.arc(b.x + dx, b.y + dy, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // An aesthetic desk: a pastel keyboard, a monitor with a sunset, a plant
+  // and a lamp.
+  aestheticDesk(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#f2ece2");
+    const { x, y, w, h } = d.top;
+    const mx = x + w / 2 - 20, my = y - 22;
+    ctx.fillStyle = "#e8e2d8";
+    roundRectPath(ctx, mx, my, 40, 26, 3);
+    ctx.fill();
+    const sky = ctx.createLinearGradient(0, my + 2, 0, my + 23);
+    sky.addColorStop(0, "#f7b8c8");
+    sky.addColorStop(1, "#f2d09a");
+    ctx.fillStyle = sky;
+    ctx.fillRect(mx + 2, my + 2, 36, 21);
+    ctx.fillStyle = "#fff4d0";
+    ctx.beginPath();
+    ctx.arc(mx + 20, my + 17, 5, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#e8e2d8";
+    ctx.fillRect(mx + 18, my + 26, 4, 5);
+    ctx.fillStyle = "#f7d0da"; // pastel keyboard and mouse
+    roundRectPath(ctx, x + w / 2 - 16, y + h - 12, 28, 7, 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2 + 18, y + h - 8, 2.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    drawPot(ctx, x + 9, y + h / 2 + 2, "pink", 5, 7);
+    drawLeaf(ctx, x + 9, y + h / 2 - 6, -0.4, 9, 3, "#5f9a55");
+    drawLeaf(ctx, x + 9, y + h / 2 - 6, 0.4, 9, 3, "#4f8a4a");
+    const lx = x + w - 10; // a little arch lamp
+    ctx.strokeStyle = "#f2ece2";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lx, y + h / 2);
+    ctx.quadraticCurveTo(lx, y - 20, lx - 8, y - 14);
+    ctx.stroke();
+    ctx.fillStyle = "#fff4c8";
+    ctx.beginPath();
+    ctx.arc(lx - 8, y - 12, 3.5, 0, Math.PI * 2);
+    ctx.fill();
   },
 
   // A LAN station: desk with a PC tower, keyboard and a monitor facing
@@ -3660,7 +5193,8 @@ function drawSittingCat(ctx, x, y, color, t) {
 }
 
 // A plant pot, centered at cx with its bottom at by: "clay" (terracotta),
-// "ceramic" (white), "basket" (woven), "glazed" (blue) or "cement". w is
+// "ceramic" (white), "basket" (woven), "glazed" (blue), "cement", "pink"
+// or "black". w is
 // half its width at the top, h its height. Returns the y of the soil,
 // where the plant grows from.
 function drawPot(ctx, cx, by, style = "clay", w = 11, h = 16) {
@@ -3670,6 +5204,8 @@ function drawPot(ctx, cx, by, style = "clay", w = 11, h = 16) {
     basket: ["#c49a5c", "#9c7440", "#d8b67e"],
     glazed: ["#4f7aa0", "#3a5f80", "#6f98bc"],
     cement: ["#9a9a94", "#7f7f79", "#b3b3ad"],
+    pink: ["#efb8c4", "#d898a8", "#f7d0da"],
+    black: ["#3a3a40", "#2b2b30", "#55555c"],
   }[style];
   ctx.fillStyle = body;
   ctx.beginPath();
@@ -3697,6 +5233,107 @@ function drawPot(ctx, cx, by, style = "clay", w = 11, h = 16) {
   ctx.fillStyle = rim;
   ctx.fillRect(cx - w - 1, by - h - 4, (w + 1) * 2, 5);
   return by - h - 2;
+}
+
+// --- Little drawing helpers for plants, vases and shelves ---
+
+// A pointed leaf growing from (x, y), pointing along `angle` (0 is
+// straight up), `len` long and `wid` wide at its middle.
+function drawLeaf(ctx, x, y, angle, len, wid, color, vein = "rgba(255, 255, 255, 0.2)") {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(wid, -len * 0.45, 0, -len);
+  ctx.quadraticCurveTo(-wid, -len * 0.45, 0, 0);
+  ctx.fill();
+  if (vein) {
+    ctx.strokeStyle = vein;
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(0, -1);
+    ctx.lineTo(0, -len + 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// A heart-shaped leaf centered at (x, y).
+function drawHeartLeaf(ctx, x, y, size, color, angle = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, size);
+  ctx.bezierCurveTo(-size * 1.3, 0, -size * 0.7, -size * 1.1, 0, -size * 0.45);
+  ctx.bezierCurveTo(size * 0.7, -size * 1.1, size * 1.3, 0, 0, size);
+  ctx.fill();
+  ctx.restore();
+}
+
+// A vase standing at (cx, by): "glass" (with water), "cream", "amber" (a
+// little bud vase), "stone" (tall and speckled) or "jug". Returns the y
+// of its mouth.
+function drawVase(ctx, cx, by, style = "glass") {
+  const shapes = {
+    glass: { w: 7, h: 22, neck: 4, color: "rgba(200, 225, 235, 0.55)" },
+    cream: { w: 8, h: 20, neck: 4, color: "#efe6d6" },
+    amber: { w: 5, h: 16, neck: 2.5, color: "rgba(200, 120, 50, 0.75)" },
+    stone: { w: 8, h: 30, neck: 4, color: "#d8cbb8" },
+    jug: { w: 9, h: 18, neck: 5, color: "#e9d27a" },
+  };
+  const s = shapes[style];
+  const top = by - s.h;
+  ctx.fillStyle = s.color;
+  ctx.beginPath();
+  ctx.moveTo(cx - s.neck, top);
+  ctx.quadraticCurveTo(cx - s.w * 1.4, by - s.h * 0.45, cx - s.w * 0.8, by);
+  ctx.lineTo(cx + s.w * 0.8, by);
+  ctx.quadraticCurveTo(cx + s.w * 1.4, by - s.h * 0.45, cx + s.neck, top);
+  ctx.closePath();
+  ctx.fill();
+  if (style === "glass") {
+    ctx.fillStyle = "rgba(150, 200, 220, 0.35)"; // water
+    ctx.fillRect(cx - s.w + 1, by - s.h * 0.5, (s.w - 1) * 2, s.h * 0.5 - 1);
+  }
+  if (style === "stone") {
+    ctx.fillStyle = "rgba(120, 100, 80, 0.25)";
+    for (let i = 0; i < 12; i++) ctx.fillRect(cx - 7 + noise(i * 3.3) * 14, top + 4 + noise(i * 7.1) * (s.h - 6), 1, 1);
+  }
+  ctx.fillStyle = "rgba(255, 255, 255, 0.35)"; // shine
+  ctx.fillRect(cx - s.w * 0.6, top + 4, 1.5, s.h * 0.5);
+  return top;
+}
+
+// A wooden wall shelf `dy` pixels down the wall. Returns where its top is.
+function drawWallShelf(ctx, f, dy = 20, color = WOOD) {
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + dy;
+  ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+  ctx.fillRect(x + 2, y + 2, w, 4);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, 3.5);
+  ctx.fillStyle = shadeColor(color, -25);
+  ctx.fillRect(x + 4, y + 3, 2, 5);
+  ctx.fillRect(x + w - 6, y + 3, 2, 5);
+  return { x, y, w };
+}
+
+// A row of book spines standing on a shelf at y, from x across width w.
+function drawBookRow(ctx, x, y, w, seed = 0) {
+  const colors = ["#c0554a", "#3f6f9f", "#e0a84c", "#7a9e5c", "#9a6fb0", "#d98c6a", "#e8c8d0", "#5f7a8c"];
+  let bx = x;
+  for (let i = 0; bx < x + w - 4; i++) {
+    const bw = 3 + ((i * 7 + seed) % 3), bh = 9 + ((i * 5 + seed) % 5);
+    ctx.fillStyle = colors[(i + seed) % colors.length];
+    ctx.fillRect(bx, y - bh, bw, bh);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(bx, y - bh + 2, bw, 0.8);
+    bx += bw + 0.6;
+  }
 }
 
 function drawCounter(ctx, f) {
@@ -3900,6 +5537,18 @@ function drawLights(ctx) {
       drawFluorescent(ctx, f, now);
     } else if (f.kind === "paperLantern") {
       drawPaperLantern(ctx, f);
+    } else if (f.kind === "mushroomLamp") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h);
+      drawGlow(ctx, p.x, p.y - 16, 30, "rgba(255, 150, 110, 0.4)");
+    } else if (f.kind === "moonLamp") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h);
+      drawGlow(ctx, p.x, p.y - 13, 30, "rgba(255, 240, 190, 0.45)");
+    } else if (f.kind === "heartNeon") {
+      const p = toScreen(f.x + f.w / 2, f.y);
+      drawGlow(ctx, p.x, p.y - WALL_HEIGHT + 17, 30, "rgba(255, 120, 180, 0.3)");
+    } else if (f.kind === "vanity") {
+      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+      drawGlow(ctx, p.x, p.y - 36, 30, "rgba(255, 240, 200, 0.4)");
     } else if (f.kind === "candles") {
       const p = toScreen(f.x + f.w / 2, f.y + f.h);
       drawGlow(ctx, p.x, p.y - 20, 26 + Math.sin(now * 8) * 1.5, "rgba(255, 170, 80, 0.5)");
@@ -5255,7 +6904,7 @@ function drawHeldPiece(ctx, held) {
 function drawDecorPreview(canvas, item, color) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const f = { kind: item.kind, x: 0, y: 0, w: item.w, h: item.wall ? undefined : item.h, color: item.ownerColor ? color : item.color, art: item.art, short: item.short };
+  const f = { ...item, x: 0, y: 0, h: item.wall ? undefined : item.h, color: item.ownerColor ? color : item.color };
   if (item.centered) f.x = item.w / 2;
   const a = toScreen(0, 0);
   const w = item.w * TILE, h = item.wall ? 0 : item.h * TILE;

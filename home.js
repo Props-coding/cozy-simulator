@@ -13,7 +13,7 @@ import { playCrumbSound, playClickSound } from "./audio.js";
 // size: "cozy" or "roomy". owned: item id -> how many you've bought.
 // placed: [{ item, x, y }], x and y from your room's top-left corner.
 const STORAGE_KEY = "cozy-house-home";
-let home = { size: "cozy", owned: {}, placed: [] };
+let home = { size: "cozy", owned: { starterDesk: 1, starterMattress: 1 }, placed: [] };
 try {
   const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if (loaded && typeof loaded === "object") {
@@ -27,11 +27,15 @@ try {
       counts[p?.item] = (counts[p?.item] || 0) + 1;
       return counts[p?.item] <= (home.owned[p?.item] || 0);
     });
-    home.placed = tidyDecor(home.size, mine);
+    home.placed = mine;
   }
 } catch {
-  // Nothing saved yet, or storage is blocked: start with an empty room.
+  // Nothing saved yet, or storage is blocked: start with a bare room.
 }
+// Every bedroom comes with a laptop desk and a plain mattress (they can be
+// moved like anything else). Rooms from before they could be moved get them
+// in their old spots.
+home.placed = tidyDecor(home.size, home.placed);
 
 function store() {
   try {
@@ -44,7 +48,7 @@ function store() {
 // Admin panel helpers (for testing): one of every Nest & Nook item, and
 // the Roomy upgrade.
 export function grantAllDecor() {
-  for (const id of Object.keys(DECOR)) home.owned[id] = Math.max(home.owned[id] || 0, 1);
+  for (const id of Object.keys(DECOR)) if (DECOR[id].tab) home.owned[id] = Math.max(home.owned[id] || 0, 1);
   store();
 }
 
@@ -108,16 +112,19 @@ function spareCount(id) {
 // shopkeeper bird (who picks something special each day and thanks you
 // when you buy), a tab for each part of the shop, and item cards.
 const STORE_TABS = [
-  ["furniture", "🛋️", "Furniture", "Pieces to sit, sleep and stash things on."],
-  ["cozy", "🌿", "Plants & rugs", "Green friends, soft rugs and little comforts."],
-  ["wall", "🖼️", "Walls", "Windows, pictures and things to hang up."],
+  ["furniture", "🛋️", "Furniture", "Beds, sofas, chairs and tables to fill your room."],
+  ["plants", "🪴", "Plants", "Leafy friends, flowers in vases and plants that trail from shelves."],
+  ["shelves", "📚", "Shelves", "Somewhere to put books, candles, crystals and mugs."],
+  ["decor", "🕯️", "Decor", "Rugs, lamps, mirrors, lights and things for your walls."],
   ["upgrades", "✨", "Upgrades", "Make your room itself a little bigger."],
 ];
-// Items added in build 0.40 get a "New!" ribbon.
+// Items added in build 0.42 get a "New!" ribbon.
 const NEW_ITEMS = new Set([
-  "loveseatSage", "loveseatRose", "coffeeTable", "dresser", "writingDesk", "rockingChair", "recordPlayer", "fishTank", "piano", "arcade", "telescope", "globe", "toyChest",
-  "fern", "monstera", "cactus", "snakePlant", "succulents", "fiddleFig", "palm", "lemonTree", "candles", "bookStacks", "floorCushions", "lavaLamp", "roundRugCream", "roundRugTeal",
-  "corkBoard", "jarShelf", "pothosShelf", "posterStars", "posterMountains", "posterCat", "worldMap", "neonSign",
+  "canopyBed", "vanity", "clothesRack", "cloudSofa", "papasanChair", "eggChair", "poufCream", "poufPink", "mushroomStool", "sideTable", "aestheticDesk", "barCart", "catTree",
+  "birdOfParadise", "oliveTree", "rubberPlant", "moneyTree", "zzPlant", "alocasia", "calathea", "peaceLily", "pilea", "philodendron", "spiderPlant", "jadePlant", "aloeVera",
+  "orchid", "lavenderPot", "herbGarden", "terrarium", "pampasVase", "tulipVase", "sunflowerVase", "eucalyptusVase", "cherryBlossom", "macramePothos", "stringOfPearls", "hangingFern", "airPlants",
+  "libraryShelf", "cubeShelf", "ladderShelf", "recordCrate", "floatingBooks", "candleShelf", "crystalShelf", "teaShelf",
+  "heartRug", "checkerRug", "fluffyRug", "mushroomLamp", "moonLamp", "discoBall", "wavyMirror", "archMirror", "teddyBear", "blanketBasket", "fairyCurtain", "polaroidWall", "tapestry", "heartNeon",
 ]);
 const WREN_HELLOS = [
   "Welcome in! Mind the dust bunnies, they're decorative.",
@@ -448,7 +455,7 @@ function placeHeld() {
   shareDecor();
   playCrumbSound();
   unlock("decorator");
-  if (home.placed.length >= 10) unlock("designer");
+  if (home.placed.length >= 12) unlock("designer");
   renderBar();
 }
 
@@ -460,8 +467,14 @@ function cancelHeld() {
   renderBar();
 }
 
-// Delete: the piece goes back in the list (you still own it).
+// Delete: the piece goes back in the list (you still own it). Not the
+// laptop desk, though: without it you couldn't get back to decorating.
 function putAwayHeld() {
+  if (DECOR[held.item].keep) {
+    playClickSound();
+    hooks.notice("Your laptop desk has to stay in your room, but you can move it anywhere.");
+    return;
+  }
   const wasPlaced = !!held.from;
   held = null;
   if (wasPlaced) {
