@@ -7687,6 +7687,8 @@ function drawPlayerBody(ctx, p) {
     sway = Math.sin(et * 1.3) * 4;
     bob = (Math.sin(et * 2.6) + 1) * 2.5;
     tilt = Math.sin(et * 1.3) * 0.07;
+  } else if (DANCE_MOVES[emote]) {
+    ({ step, bob, sway, tilt, kick } = { step: 0, bob: 0, sway: 0, tilt: 0, kick: 0, ...DANCE_MOVES[emote](et) });
   } else if (emote === "wave") {
     tilt = Math.sin(et * 8) * 0.12; // rocking side to side while waving
   } else if (emote === "laugh") {
@@ -7758,7 +7760,7 @@ function drawPlayerBody(ctx, p) {
     ctx.moveTo(cx + 2, cy - 1.5);
     ctx.lineTo(cx + 6, cy - 1.5);
     ctx.stroke();
-  } else if (emote === "laugh" || emote === "jig" || emote === "headbang" || emote === "glitch") {
+  } else if (emote === "laugh" || emote === "jig" || emote === "headbang" || emote === "glitch" || HAPPY_DANCES.has(emote)) {
     // Happy squinting eyes, like ^ ^.
     for (const ex of [cx - 4, cx + 4]) {
       ctx.beginPath();
@@ -7845,7 +7847,29 @@ function drawPlayerBody(ctx, p) {
 }
 
 // How long each emote lasts, in seconds (walking stops one early).
-const EMOTE_LENGTHS = { wave: 2.5, heart: 3, laugh: 3, jig: 6, headbang: 6, glitch: 5, sway: 6.5, sleepy: 5 };
+const EMOTE_LENGTHS = {
+  wave: 2.5, heart: 3, laugh: 3, sleepy: 5,
+  jig: 6, headbang: 6, glitch: 5, sway: 6.5,
+  disco: 6, rave: 6, boombap: 6, mosh: 5, pop: 6, twostep: 6, reggaeton: 6, swing: 5, synthwave: 7,
+};
+
+// How each of the newer dances moves: given seconds since it started,
+// the body's hop (bob), side-to-side (sway), lean (tilt) and feet (step,
+// kick). Each is timed to its music's tempo.
+const beats = (t, bpm) => t * (bpm / 60);
+const DANCE_MOVES = {
+  disco: (t) => { const b = beats(t, 118); return { sway: Math.sin(b * Math.PI) * 5, bob: Math.abs(Math.sin(b * Math.PI * 2)) * 3, tilt: Math.sin(b * Math.PI) * 0.1, step: Math.sin(b * Math.PI * 2) }; },
+  rave: (t) => { const b = beats(t, 128); return { bob: Math.pow(Math.abs(Math.sin(b * Math.PI)), 2) * 7, step: Math.sin(b * Math.PI * 2), kick: 2 }; },
+  boombap: (t) => { const b = beats(t, 90); return { sway: 2, bob: Math.abs(Math.sin(b * Math.PI)) * 2, tilt: 0.06 + Math.pow(Math.abs(Math.sin(b * Math.PI)), 3) * 0.12 }; },
+  mosh: (t) => { const b = beats(t, 180), n = Math.floor(t * 12); return { sway: (noise(n * 1.3) - 0.5) * 9, bob: Math.abs(Math.sin(b * Math.PI)) * 8, tilt: (noise(n * 2.7) - 0.5) * 0.4, step: Math.sin(b * Math.PI * 2), kick: 3 }; },
+  pop: (t) => { const b = beats(t, 120); return { bob: Math.abs(Math.sin(b * Math.PI)) * 6, sway: Math.sin(b * Math.PI / 2) * 2, tilt: Math.sin(b * Math.PI / 2) * 0.08, step: Math.sin(b * Math.PI * 2) }; },
+  twostep: (t) => { const b = beats(t, 100); return { sway: Math.sin(b * Math.PI / 2) * 7, bob: Math.abs(Math.sin(b * Math.PI)) * 2, step: Math.sin(b * Math.PI), kick: 2 }; },
+  reggaeton: (t) => { const b = beats(t, 95); return { sway: Math.sin(b * Math.PI * 2) * 3, tilt: Math.sin(b * Math.PI * 2) * 0.14, bob: Math.abs(Math.sin(b * Math.PI * 2)) * 1.5 }; },
+  swing: (t) => { const b = beats(t, 160); return { bob: Math.abs(Math.sin(b * Math.PI)) * 5, tilt: Math.sin(b * Math.PI) * 0.1, step: Math.sin(b * Math.PI), kick: 3 }; },
+  synthwave: (t) => { const b = beats(t, 100); return { sway: Math.sin(b * Math.PI / 2) * 3, tilt: Math.sin(b * Math.PI / 2) * 0.08, bob: 1 }; },
+};
+// Dances with the happy squinting eyes (the rest keep a cool open look).
+const HAPPY_DANCES = new Set(["disco", "rave", "mosh", "pop", "twostep", "reggaeton", "swing"]);
 
 // The little things floating above someone doing an emote: hearts, notes,
 // Z's, or an emoji. Drawn with the name tags, so they're never hidden.
@@ -7911,6 +7935,106 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
       ctx.arc(x, y, 9, 0, Math.PI * 2);
       ctx.fill();
     }
+  } else if (id === "disco") {
+    // A tiny mirror ball above them, throwing colorful sparkles.
+    const bx = cx, by = headTop - 34;
+    ctx.strokeStyle = "rgba(90, 80, 70, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bx, by - 12);
+    ctx.lineTo(bx, by - 6);
+    ctx.stroke();
+    ctx.fillStyle = "#cfd6de";
+    ctx.beginPath();
+    ctx.arc(bx, by, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    for (let k = 0; k < 6; k++) ctx.fillRect(bx - 4 + (k % 3) * 3, by - 3 + Math.floor(k / 3) * 3, 1.6, 1.6);
+    const colors = ["#ff6fa8", "#6fd8ff", "#ffe36f", "#b58cff"];
+    for (let i = 0; i < 6; i++) {
+      const a = t * 2 + i;
+      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 8 + i * 2);
+      ctx.fillStyle = colors[i % 4];
+      ctx.fillText("✦", cx + Math.cos(a) * 26, headTop + 10 + Math.sin(a * 1.3) * 16);
+    }
+  } else if (id === "rave") {
+    // Laser beams sweeping out from above their head.
+    const colors = ["rgba(80, 255, 170, 0.6)", "rgba(255, 60, 200, 0.6)", "rgba(80, 180, 255, 0.6)"];
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 3; i++) {
+      const a = -Math.PI / 2 + Math.sin(t * 2.2 + i * 2.1) * 1.1;
+      ctx.strokeStyle = colors[i];
+      ctx.beginPath();
+      ctx.moveTo(cx, headTop - 26);
+      ctx.lineTo(cx + Math.cos(a) * 60, headTop - 26 + Math.sin(a) * 60);
+      ctx.stroke();
+    }
+  } else if (id === "boombap") {
+    ctx.font = emojiFont(14);
+    ctx.fillText("🎤", cx + 22, headTop + 18);
+    ctx.fillStyle = "#d9a441";
+    ctx.font = "700 14px 'Quicksand', sans-serif";
+    const tt = (t * 0.6) % 1;
+    ctx.globalAlpha = 1 - tt;
+    ctx.fillText("♪", cx - 20, headTop + 10 - tt * 22);
+  } else if (id === "mosh") {
+    ctx.font = emojiFont(15);
+    const flip = Math.floor(t * 3) % 2;
+    ctx.fillText("🤘", cx + (flip ? 22 : -22), headTop + 14 + Math.sin(t * 18) * 2);
+  } else if (id === "pop") {
+    // Hearts and stars bubbling up in pastel colors.
+    const shapes = ["♥", "★", "♥", "★", "✦"];
+    const colors = ["#ff8fb8", "#ffd36f", "#b58cff", "#7fd8ff", "#ff8fb8"];
+    ctx.font = "700 13px 'Quicksand', sans-serif";
+    for (let i = 0; i < 5; i++) {
+      const tt = (t * 0.7 + i / 5) % 1;
+      ctx.globalAlpha = 1 - tt;
+      ctx.fillStyle = colors[i];
+      ctx.fillText(shapes[i], cx + Math.sin(t * 2 + i * 1.7) * 22, headTop + 16 - tt * 30);
+    }
+  } else if (id === "twostep") {
+    ctx.font = emojiFont(14);
+    ctx.fillText("🤠", cx - 22, headTop + 16);
+    ctx.fillStyle = "#a0703e";
+    ctx.font = "700 14px 'Quicksand', sans-serif";
+    const tt = (t * 0.8) % 1;
+    ctx.globalAlpha = 1 - tt;
+    ctx.fillText("♫", cx + 20, headTop + 10 - tt * 22);
+  } else if (id === "reggaeton") {
+    ctx.font = emojiFont(14);
+    for (let i = 0; i < 2; i++) {
+      const tt = (t * 0.7 + i / 2) % 1;
+      ctx.globalAlpha = 1 - tt;
+      ctx.fillText("🔥", cx + (i ? 20 : -20), headTop + 20 - tt * 20);
+    }
+  } else if (id === "swing") {
+    ctx.font = emojiFont(14);
+    ctx.fillText("🎷", cx + 22, headTop + 16 + Math.sin(t * 6) * 2);
+    ctx.fillStyle = "#d9a441";
+    ctx.font = "700 14px 'Quicksand', sans-serif";
+    for (let i = 0; i < 2; i++) {
+      const tt = (t * 0.9 + i / 2) % 1;
+      ctx.globalAlpha = 1 - tt;
+      ctx.fillText(i ? "♪" : "♫", cx - 18 - tt * 6, headTop + 12 - tt * 24);
+    }
+  } else if (id === "synthwave") {
+    // A little neon sunset floating above them, with scan lines.
+    const sx = cx, sy = headTop - 30;
+    const sun = ctx.createLinearGradient(0, sy - 9, 0, sy + 3);
+    sun.addColorStop(0, "#ffd36f");
+    sun.addColorStop(1, "#ff4f9a");
+    ctx.fillStyle = sun;
+    ctx.beginPath();
+    ctx.arc(sx, sy + 3, 10, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "rgba(40, 20, 60, 0.9)";
+    for (let k = 0; k < 3; k++) ctx.fillRect(sx - 10, sy - 2 + k * 2.5, 20, 0.9 + k * 0.4);
+    ctx.strokeStyle = `rgba(90, 220, 255, ${0.5 + Math.sin(t * 3) * 0.3})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx - 16, sy + 4);
+    ctx.lineTo(sx + 16, sy + 4);
+    ctx.stroke();
   } else if (id === "jig") {
     const colors = ["#c0554a", "#3f6f9f", "#d9a441", "#4f7a48"];
     ctx.font = "700 15px 'Quicksand', sans-serif";

@@ -331,6 +331,153 @@ export function playSwayTune() {
   });
 }
 
+// A single synth note (for bass lines, melodies and chords).
+function synthNote(freq, start, duration, { type = "sawtooth", gain = 0.05, cutoff = 1800, attack = 0.01 } = {}) {
+  const osc = toneContext.createOscillator();
+  const filter = toneContext.createBiquadFilter();
+  const g = toneContext.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  filter.type = "lowpass";
+  filter.frequency.value = cutoff;
+  g.gain.setValueAtTime(0.0001, start);
+  g.gain.linearRampToValueAtTime(gain * masterVolume, start + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(filter);
+  filter.connect(g);
+  g.connect(toneContext.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.05);
+}
+
+// A drum pattern: `pattern` is a string of steps ("k" kick, "s" snare,
+// "h" hat, "o" open hat, "." rest), played `bars` times at `step` seconds
+// per step, starting at `now`. `swing` delays every other step a little.
+function drums(now, pattern, step, bars = 2, swing = 0) {
+  for (let bar = 0; bar < bars; bar++) {
+    [...pattern].forEach((hit, i) => {
+      const t = now + (bar * pattern.length + i) * step + (i % 2 ? swing * step : 0);
+      if (hit === "k") kick(t, 0.3);
+      else if (hit === "s") noiseHit(t, 0.12, { gain: 0.08, highpass: 1200 });
+      else if (hit === "h") noiseHit(t, 0.03, { gain: 0.03, highpass: 7000 });
+      else if (hit === "o") noiseHit(t, 0.12, { gain: 0.03, highpass: 6000 });
+    });
+  }
+}
+
+// Disco and funk: four on the floor, open hats, and an octave-jumping bass.
+export function playDiscoTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 118 / 4;
+  drums(now, "k.o.k.o.k.o.k.o.", step, 3);
+  const bass = [82.41, 164.81, 82.41, 164.81, 98, 196, 98, 196]; // E and G, jumping octaves
+  for (let i = 0; i < 24; i++) synthNote(bass[i % bass.length], now + i * step * 2, step * 1.8, { gain: 0.06, cutoff: 900 });
+}
+
+// House and techno: a pounding kick, offbeat hats, and bright chord stabs.
+export function playRaveTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 128 / 4;
+  drums(now, "k.h.k.h.k.h.k.h.", step, 3);
+  for (let b = 0; b < 12; b++) {
+    const t = now + (b * 4 + 2) * step; // on the offbeat
+    for (const f of [440, 523.25, 659.25]) for (const detune of [0.995, 1.005]) synthNote(f * detune, t, 0.18, { gain: 0.012, cutoff: 3000 });
+  }
+}
+
+// Hip-hop boom bap: a laid-back swung beat and a mellow bass.
+export function playBoomBapTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 90 / 4;
+  drums(now, "k.h.s.h.h.k.s.h.", step, 2, 0.3);
+  [[55, 0], [55, 6], [65.41, 8], [49, 12], [55, 16], [55, 22], [65.41, 24], [73.42, 28]].forEach(([f, s]) =>
+    synthNote(f, now + s * step, step * 3, { type: "sine", gain: 0.12, attack: 0.02 })
+  );
+}
+
+// Metal: a fast double kick and chugging, crunchy power chords.
+export function playMoshTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 180 / 4;
+  drums(now, "kkkskkkskkkskkks", step, 2);
+  const crunch = toneContext.createWaveShaper(); // distortion
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i / 128) - 1;
+    curve[i] = Math.tanh(x * 6);
+  }
+  crunch.curve = curve;
+  const out = toneContext.createGain();
+  out.gain.value = 0.05 * masterVolume;
+  crunch.connect(out);
+  out.connect(toneContext.destination);
+  for (let i = 0; i < 16; i++) {
+    const t = now + i * step * 2;
+    for (const f of [82.41, 123.47]) { // E5 power chord
+      const osc = toneContext.createOscillator();
+      const g = toneContext.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.value = f;
+      g.gain.setValueAtTime(0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + step * 1.8);
+      osc.connect(g);
+      g.connect(crunch);
+      osc.start(t);
+      osc.stop(t + step * 2);
+    }
+  }
+}
+
+// Pop: a bright, bouncy melody over a kick and clap.
+export function playPopTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 120 / 4;
+  drums(now, "k...s...k.k.s...", step, 3);
+  const melody = [659.25, 783.99, 880, 783.99, 659.25, 587.33, 659.25, 0, 783.99, 880, 987.77, 880, 783.99, 659.25, 783.99, 0];
+  melody.forEach((f, i) => f && synthNote(f, now + i * step * 2, step * 1.8, { type: "square", gain: 0.02, cutoff: 3500 }));
+}
+
+// Country two-step: a boom-chick bass and chord, and a banjo-ish pluck.
+export function playTwoStepTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, beat = 60 / 100;
+  for (let b = 0; b < 6; b++) {
+    synthNote(b % 2 ? 73.42 : 98, now + b * beat, beat * 0.5, { type: "triangle", gain: 0.12 }); // boom
+    for (const f of [392, 493.88, 587.33]) synthNote(f, now + b * beat + beat / 2, 0.15, { type: "triangle", gain: 0.02 }); // chick
+  }
+  const pluck = [587.33, 783.99, 987.77, 783.99, 587.33, 659.25, 783.99, 659.25];
+  for (let i = 0; i < 24; i++) synthNote(pluck[i % pluck.length], now + (i * beat) / 4, 0.12, { type: "triangle", gain: 0.03, cutoff: 4000 });
+}
+
+// Reggaeton: the dembow beat and a low bass.
+export function playReggaetonTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 95 / 4;
+  drums(now, "k..sk.s.k..sk.s.", step, 3);
+  for (let b = 0; b < 12; b++) synthNote(b % 4 < 2 ? 55 : 49, now + b * step * 4, step * 3, { type: "sine", gain: 0.1 });
+}
+
+// Swing jazz: a walking bass and a swung ride cymbal.
+export function playSwingTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, beat = 60 / 160;
+  const walk = [98, 110, 123.47, 130.81, 146.83, 130.81, 123.47, 110, 98, 116.54, 123.47, 146.83];
+  walk.forEach((f, i) => {
+    synthNote(f, now + i * beat, beat * 0.9, { type: "sine", gain: 0.12, attack: 0.02 });
+    noiseHit(now + i * beat, 0.08, { gain: 0.025, highpass: 8000 }); // ride
+    if (i % 2) noiseHit(now + i * beat + beat * 0.66, 0.05, { gain: 0.02, highpass: 8000 }); // the swung "and"
+  });
+}
+
+// Synthwave: a gated snare and a glowing arpeggio.
+export function playSynthwaveTune() {
+  if (!canPlayDanceTune()) return;
+  const now = toneContext.currentTime + 0.02, step = 60 / 100 / 4;
+  drums(now, "k...s...k...s...", step, 3);
+  const arp = [220, 261.63, 329.63, 392, 329.63, 261.63]; // A minor
+  for (let i = 0; i < 48; i++) synthNote(arp[i % arp.length] * (i >= 24 ? 0.89 : 1), now + i * step, step * 1.5, { gain: 0.02, cutoff: 2400 });
+}
+
 // --- Rain for the Library ---
 // A real recording: "Rain" by ezwa, public domain (from pdsounds.org, via
 // Wikimedia Commons), stored in sounds/. It's a soft, steady patter with no

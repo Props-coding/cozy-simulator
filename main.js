@@ -42,6 +42,15 @@ import {
   playHeadbangTune,
   playGlitchTune,
   playSwayTune,
+  playDiscoTune,
+  playRaveTune,
+  playBoomBapTune,
+  playMoshTune,
+  playPopTune,
+  playTwoStepTune,
+  playReggaetonTune,
+  playSwingTune,
+  playSynthwaveTune,
   playPetSound,
   enterLibrary,
   leaveLibrary,
@@ -702,16 +711,21 @@ function refreshLook() {
 // chat. Friends see them too. Walking stops yours early.
 // "dance" is your own dance style, picked in your wardrobe (jig, headbang,
 // glitch or sway, or shuffle for a random one); /jig, /headbang, /glitch
-// and /sway do a particular one.
+// and /sway (and the other dance names, like /disco or /mosh) do a particular one.
 const EMOTE_KEYS = { 1: "wave", 2: "heart", 3: "laugh", 4: "dance", 5: "sleepy" };
 const EMOTE_COMMANDS = {
   "/wave": "wave", "/heart": "heart", "/laugh": "laugh", "/lol": "laugh", "/dance": "dance",
   "/jig": "jig", "/hit the jig": "jig", "/hitthejig": "jig", "/headbang": "headbang", "/glitch": "glitch", "/sway": "sway",
+  "/disco": "disco", "/rave": "rave", "/boombap": "boombap", "/mosh": "mosh", "/pop": "pop", "/twostep": "twostep", "/reggaeton": "reggaeton", "/swing": "swing", "/synthwave": "synthwave",
   "/sleepy": "sleepy", "/sleep": "sleepy", "/zzz": "sleepy",
 };
 // Each dance and the little tune that plays with it (you hear a friend's
 // too, if you're in the same room).
-const DANCE_TUNES = { jig: playJigTune, headbang: playHeadbangTune, glitch: playGlitchTune, sway: playSwayTune };
+const DANCE_TUNES = {
+  jig: playJigTune, headbang: playHeadbangTune, glitch: playGlitchTune, sway: playSwayTune,
+  disco: playDiscoTune, rave: playRaveTune, boombap: playBoomBapTune, mosh: playMoshTune, pop: playPopTune,
+  twostep: playTwoStepTune, reggaeton: playReggaetonTune, swing: playSwingTune, synthwave: playSynthwaveTune,
+};
 const isDance = (id) => Object.hasOwn(DANCE_TUNES, id);
 let myEmote = null; // { id, start }
 const peerEmotes = {}; // peer id -> { id, start }

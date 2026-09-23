@@ -82,6 +82,15 @@ export const DANCES = [
   ["headbang", "🔊", "Headbang", "Trap and dubstep, heavy bass"],
   ["glitch", "⚡", "Glitch", "Breakcore, twitchy and chopped"],
   ["sway", "🌙", "Sway", "Ambient, floating slow"],
+  ["disco", "🪩", "Disco", "Disco and funk, side-stepping"],
+  ["rave", "💚", "Rave", "House and techno, jumping to the beat"],
+  ["boombap", "🎤", "Boom Bap", "Hip-hop, a cool head nod"],
+  ["mosh", "🤘", "Mosh", "Metal and rock, going wild"],
+  ["pop", "💖", "Pop", "Pop and K-pop, bouncy and bright"],
+  ["twostep", "🤠", "Two-Step", "Country, stepping side to side"],
+  ["reggaeton", "🔥", "Reggaeton", "Latin, hips on the dembow"],
+  ["swing", "🎷", "Swing", "Jazz, springy and swung"],
+  ["synthwave", "🌆", "Synthwave", "80s neon, a slow cool lean"],
   ["shuffle", "🎲", "Shuffle", "A different one each time"],
 ];
 const DANCE_KEY = "cozy-house-dance";
