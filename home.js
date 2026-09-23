@@ -289,6 +289,19 @@ const WREN_NOTES = {
 const pickLine = (list) => list[Math.floor(Math.random() * list.length)];
 
 let storeTab = "furniture";
+let storeQuery = ""; // what's typed in the search bar ("" when browsing a tab)
+
+// The items matching a search: every word you type has to appear in the
+// item's name, Wren's note about it, or its section's name.
+function searchDecor(query) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const tabNames = Object.fromEntries(STORE_TABS.map(([id, , label]) => [id, label]));
+  return Object.entries(DECOR).filter(([id, item]) => {
+    if (!item.tab) return false; // the starter desk and mattress aren't sold
+    const text = `${item.name} ${WREN_NOTES[id] ?? ""} ${tabNames[item.tab]}`.toLowerCase();
+    return words.every((word) => text.includes(word));
+  });
+}
 let wrenSays = pickLine(WREN_HELLOS);
 
 // Draws the store into `page` (a laptop page). `onTab` hears which
@@ -298,7 +311,8 @@ let storePage = null; // where the store was last drawn
 export function renderStore(page, onTab = tellTab) {
   storePage = page;
   tellTab = onTab;
-  tellTab(storeTab);
+  const hadFocus = document.activeElement?.classList.contains("nook-search-input"); // (checked before the redraw clears it)
+  tellTab(storeQuery ? "search?q=" + encodeURIComponent(storeQuery) : storeTab);
   const scroll = page.scrollTop;
   page.innerHTML = "";
   page.classList.add("nook-page");
@@ -327,14 +341,30 @@ export function renderStore(page, onTab = tellTab) {
   wren.innerHTML = '<svg class="nook-wren-bird" aria-hidden="true"><use href="#nook-bird"></use></svg>';
   wren.appendChild(make("p", "nook-bubble", wrenSays));
 
+  // The search bar. Typing only redraws the results below it, so the box
+  // keeps its place and you can keep typing.
+  const search = make("label", "nook-search");
+  search.appendChild(make("span", "nook-search-icon", "🔍"));
+  const input = make("input", "nook-search-input");
+  input.type = "text";
+  input.placeholder = "Search Nest & Nook (try \"pink\", \"lamp\" or \"hoya\")";
+  input.value = storeQuery;
+  input.setAttribute("aria-label", "Search Nest & Nook");
+  const clear = make("button", "nook-search-clear", "✕");
+  clear.type = "button";
+  clear.title = "Clear the search";
+  clear.hidden = !storeQuery;
+  search.append(input, clear);
+
   const tabs = make("nav", "nook-tabs");
   for (const [id, icon, label] of STORE_TABS) {
     const tab = make("button", "nook-tab-" + id);
     tab.type = "button";
     tab.append(make("span", "nook-tab-icon", icon), label);
-    tab.classList.toggle("active", id === storeTab);
+    tab.classList.toggle("active", !storeQuery && id === storeTab);
     tab.addEventListener("click", () => {
       storeTab = id;
+      storeQuery = ""; // picking a section ends the search
       playClickSound();
       page.scrollTop = 0;
       renderStore(page);
@@ -342,6 +372,52 @@ export function renderStore(page, onTab = tellTab) {
     tabs.appendChild(tab);
   }
 
+  let section = storeSection(page, make);
+  const showResults = () => {
+    const fresh = storeSection(page, make);
+    section.replaceWith(fresh);
+    section = fresh;
+    clear.hidden = !storeQuery;
+    for (const tab of tabs.children) tab.classList.toggle("active", !storeQuery && tab.className.includes("nook-tab-" + storeTab));
+    tellTab(storeQuery ? "search?q=" + encodeURIComponent(storeQuery) : storeTab);
+  };
+  input.addEventListener("input", () => {
+    storeQuery = input.value.trim();
+    showResults();
+  });
+  clear.addEventListener("click", () => {
+    storeQuery = "";
+    input.value = "";
+    playClickSound();
+    showResults();
+    input.focus();
+  });
+
+  const footer = make("footer", "nook-footer", "Nest & Nook · free delivery to your bedroom · est. 2026 · 🪺");
+  page.append(front, wren, search, tabs, section, footer);
+  page.scrollTop = scroll;
+  if (hadFocus) {
+    input.focus(); // a redraw (like crumbs arriving) shouldn't interrupt your typing
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+}
+
+// What's below the tabs: search results, or the current section.
+function storeSection(page, make) {
+  if (storeQuery) {
+    const results = searchDecor(storeQuery);
+    const section = make("section", "nook-section nook-results");
+    const heading = make("div", "nook-heading");
+    heading.append(
+      make("h3", "", `Results for "${storeQuery}"`),
+      make("p", "", results.length ? `${results.length} thing${results.length === 1 ? "" : "s"} found.` : "Hmm, nothing by that name. Try \"plant\", \"rug\" or \"lamp\"!")
+    );
+    section.appendChild(heading);
+    const grid = make("div", "nook-grid");
+    for (const [id, item] of results) grid.appendChild(itemCard(page, id, item));
+    section.appendChild(grid);
+    return section;
+  }
   const [, , label, blurb] = STORE_TABS.find(([id]) => id === storeTab);
   const section = make("section", "nook-section nook-" + storeTab);
   const heading = make("div", "nook-heading");
@@ -360,10 +436,7 @@ export function renderStore(page, onTab = tellTab) {
     for (const [id, item] of items) grid.appendChild(itemCard(page, id, item));
     section.appendChild(grid);
   }
-
-  const footer = make("footer", "nook-footer", "Nest & Nook · free delivery to your bedroom · est. 2026 · 🪺");
-  page.append(front, wren, tabs, section, footer);
-  page.scrollTop = scroll;
+  return section;
 }
 
 // Buying something: pay, add it to your home, a heart pops up, and Wren
