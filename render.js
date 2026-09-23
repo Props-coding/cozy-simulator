@@ -201,13 +201,40 @@ const OFFICE_THEME_STYLE = {
   scholar: { floor: { style: "planks", color: "#7a4a32" }, wall: "#eadcc0", wallPattern: "lacquer", tint: "rgba(255, 190, 120, 0.08)" },
 };
 
+// Outside the house: a soft lawn with little tufts of grass and a few
+// flowers, so empty office spots look like garden, not a dark gap.
+function paintYard(ctx) {
+  const { left, right, top, bottom } = houseBounds();
+  ctx.fillStyle = "#93b06c";
+  ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
+  const w = right - left, h = bottom - top;
+  for (let i = 0; i < (w * h) / 700; i++) {
+    const x = left + noise(i * 1.7) * w, y = top + noise(i * 2.3 + 5) * h;
+    ctx.strokeStyle = noise(i + 11) > 0.5 ? "rgba(70, 110, 50, 0.45)" : "rgba(180, 210, 130, 0.5)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x - 2, y);
+    ctx.lineTo(x, y - 4);
+    ctx.lineTo(x + 2, y);
+    ctx.stroke();
+    if (noise(i + 23) > 0.93) {
+      ctx.fillStyle = noise(i + 31) > 0.5 ? "#f7f1e6" : "#f2c94c";
+      ctx.beginPath();
+      ctx.arc(x + 4, y - 2, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 function paintFloors(ctx) {
-  ctx.fillStyle = WOOD_DARK;
-  ctx.fillRect(-2000, -2000, 6000, 6000);
+  paintYard(ctx);
   for (const room of ROOMS) {
     const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
-    const box = { x: a.x, y: a.y, w: room.rect.w * TILE, h: room.rect.h * TILE };
+    // Rooms north of the hallway also get floor under the hallway's wall,
+    // so their doorways show floor, not grass.
+    const underWall = room.rect.y < 0 ? WALL_THICKNESS : 0;
+    const box = { x: a.x, y: a.y, w: room.rect.w * TILE, h: (room.rect.h + underWall) * TILE };
     ctx.save();
     ctx.beginPath();
     ctx.rect(box.x, box.y, box.w, box.h);
@@ -249,11 +276,29 @@ function paintFloors(ctx) {
 // picture and for how far the camera can scroll.
 function houseBounds() {
   return {
-    left: toScreen(-1, 0).x,
-    right: toScreen(19, 0).x,
-    top: toScreen(0, houseTopY - 0.6).y - WALL_HEIGHT,
-    bottom: toScreen(0, 12).y,
+    left: toScreen(-WALL_THICKNESS, 0).x - 6,
+    right: toScreen(18 + WALL_THICKNESS, 0).x + 6,
+    // Room above the north wall for its height and tall things against it.
+    top: toScreen(0, houseTopY).y - WALL_HEIGHT - 14,
+    bottom: toScreen(0, 11 + WALL_THICKNESS).y + 6,
   };
+}
+
+// The whole house's size, in the house's own pixels (before scaling).
+// main.js uses this to size the view to fit the window.
+function houseViewSize() {
+  const b = houseBounds();
+  return { w: b.right - b.left, h: b.bottom - b.top };
+}
+
+// How many screen pixels each of the house's own pixels takes up. main.js
+// sets this to fit the window (already including high-resolution screens).
+let viewScale = 1;
+
+function setViewScale(scale) {
+  if (scale === viewScale) return;
+  viewScale = scale;
+  floorVersion = -1; // repaint the floor at the new size so it stays crisp
 }
 
 let floorCanvas = null;
@@ -263,17 +308,19 @@ function drawFloors(ctx) {
   // Repaint only when the house has changed (an office was added, removed
   // or locked), not every frame.
   if (floorVersion !== houseVersion) {
+    // Painted at full screen resolution, so copying it in is pixel-for-pixel.
     const { left, right, top, bottom } = houseBounds();
     floorCanvas = document.createElement("canvas");
-    floorCanvas.width = right - left;
-    floorCanvas.height = bottom - top;
+    floorCanvas.width = Math.ceil((right - left) * viewScale);
+    floorCanvas.height = Math.ceil((bottom - top) * viewScale);
     const fctx = floorCanvas.getContext("2d");
+    fctx.scale(viewScale, viewScale);
     fctx.translate(-left, -top);
     paintFloors(fctx);
     floorVersion = houseVersion;
   }
   const { left, top } = houseBounds();
-  ctx.drawImage(floorCanvas, left, top);
+  ctx.drawImage(floorCanvas, left, top, floorCanvas.width / viewScale, floorCanvas.height / viewScale);
 }
 
 // --- Walls ---
@@ -625,7 +672,11 @@ const FURNITURE_DRAWERS = {
     roundRectPath(ctx, a.x - 2, y - 2, w + 4, boardH + 4, 3);
     ctx.fill();
     const live = document.getElementById("whiteboard-canvas");
-    if (live) ctx.drawImage(live, a.x + 1, y + 1, w - 2, boardH - 2);
+    if (live) {
+      ctx.imageSmoothingEnabled = true; // shrinking the drawing: smooth, so thin lines don't vanish
+      ctx.drawImage(live, a.x + 1, y + 1, w - 2, boardH - 2);
+      ctx.imageSmoothingEnabled = false;
+    }
     else {
       ctx.fillStyle = "white";
       ctx.fillRect(a.x + 1, y + 1, w - 2, boardH - 2);
@@ -2216,30 +2267,18 @@ function drawStudySign(ctx, text) {
   ctx.textAlign = "left";
 }
 
-// The camera: how far the view is scrolled, in pixels. In each direction,
-// when the whole house fits on screen it stays centered; once offices
-// make it bigger, it follows `focus` (your own character), stopping at
-// the edges.
-function camera(focus) {
-  const { left, right, top, bottom } = houseBounds();
-  const center = toScreen(focus.x + PLAYER_SIZE / 2, focus.y + PLAYER_SIZE / 2);
-  // Along one direction: centered if the house fits, else follow `at`.
-  const follow = (lo, hi, view, at) => (hi - lo <= view ? (lo + hi) / 2 - view / 2 : Math.max(lo, Math.min(hi - view, at - view / 2)));
-  return {
-    x: follow(left, right, CONFIG.canvasWidth, center.x),
-    y: follow(top, bottom, CONFIG.canvasHeight, center.y),
-  };
-}
 
-// Draws the whole house for one frame. `players` is an array of
-// { x, y, color, name, badge }, including yourself; `focus` is who the
-// camera follows.
-function drawScene(ctx, players, focus, studySign) {
-  ctx.fillStyle = WOOD_DARK;
-  ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+
+// Draws the whole house for one frame, scaled to fit the view (see
+// setViewScale). `players` is an array of { x, y, color, name, badge },
+// including yourself. Name tags and labels are drawn in the house's own
+// pixels too, so they grow and shrink with it.
+function drawScene(ctx, players, studySign) {
   ctx.save();
-  const cam = camera(focus);
-  ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
+  ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  const { left, top } = houseBounds();
+  ctx.translate(-left, -top);
 
   drawFloors(ctx);
 

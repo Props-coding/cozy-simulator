@@ -93,8 +93,6 @@ setLofiVolume(CONFIG.defaultLofiVolume);
 lofiVolumeSlider.value = CONFIG.defaultLofiVolume;
 
 const canvas = document.getElementById("house");
-canvas.width = CONFIG.canvasWidth;
-canvas.height = CONFIG.canvasHeight;
 const ctx = canvas.getContext("2d");
 
 let myName = "Friend";
@@ -137,8 +135,9 @@ joinButton.addEventListener("click", async () => {
   primeSoundEffects();
   playClickSound();
 
-  // Start drawing the house right away, instead of waiting for you to
-  // answer the browser's microphone question.
+  // Size the house to the window, then start drawing it right away,
+  // instead of waiting for you to answer the browser's microphone question.
+  fitHouse();
   requestAnimationFrame(tick);
 
   try {
@@ -374,6 +373,43 @@ window.addEventListener("keydown", (e) => {
     });
   }
 });
+
+// --- Fitting the house to the window ---
+// The house is scaled up (or down) so the whole thing fits beside the
+// sidebar and under the header with no scrolling, and redrawn at the
+// screen's real resolution so it stays sharp. Runs again whenever the
+// window changes size (including zooming the page).
+const houseWrap = document.getElementById("house-wrap");
+const houseColumn = document.getElementById("house-column");
+const sideColumn = document.getElementById("side-column");
+const STACK_BELOW = 900; // narrower windows put the sidebar under the house (matches style.css)
+const SIDEBAR_SPACE = 230 + 20; // sidebar width plus the gap
+const FRAME = 8; // the house frame's border, both sides together
+
+function fitHouse() {
+  if (gameScreen.hidden) return;
+  const { w, h } = houseViewSize();
+  const stacked = window.innerWidth < STACK_BELOW;
+  const availW = window.innerWidth - 32 - FRAME - (stacked ? 0 : SIDEBAR_SPACE);
+  const top = houseWrap.getBoundingClientRect().top + window.scrollY;
+  const below = houseColumn.offsetHeight - houseWrap.offsetHeight; // the prompt and controls lines
+  const availH = window.innerHeight - top - below - FRAME - 8;
+  let scale = Math.min(availW / w, availH / h);
+  // Whole-number sizes (1x, 2x...) when that only costs a little space.
+  if (scale >= 1 && Math.floor(scale) / scale >= 0.9) scale = Math.floor(scale);
+  scale = Math.max(0.4, scale);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = `${Math.round(w * scale)}px`;
+  canvas.style.height = `${Math.round(h * scale)}px`;
+  canvas.width = Math.round(w * scale * dpr);
+  canvas.height = Math.round(h * scale * dpr);
+  setViewScale(canvas.width / w);
+  // Beside the house, the sidebar column is as tall as the house, and the
+  // chat box stretches to fill the extra height.
+  sideColumn.style.minHeight = stacked ? "" : `${Math.round(h * scale) + FRAME}px`;
+}
+
+window.addEventListener("resize", fitHouse);
 
 // --- Theater ---
 // Theater messages only go to the people standing in the Theater.
@@ -706,7 +742,7 @@ function tick(now) {
   });
   scenePlayers.push({ x: player.x, y: player.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, name: myName, badge: currentRoom.id === "dinner" ? "eating" : null, bubble: bubbleFor("me") });
   updateChatTabs(currentRoom);
-  drawScene(ctx, scenePlayers, player, studySignText());
+  drawScene(ctx, scenePlayers, studySignText());
 
   updateSidebar(currentRoom.name);
 

@@ -78,6 +78,8 @@
 
 - Not pushed yet: emoji codes in chat, like Discord. Type :joy: and it turns into 😂 the moment you type the closing colon (also :sob:, :heart:, :fire:, :skull:, :thumbsup:, :eyes:, :pray:, :tada:, :raccoon: and about 60 more). Text faces like :) :D <3 xD turn into emoji when you send. The list lives in `emoji.js`, easy to add to.
 
+- Not pushed yet: the house now fills the screen. The whole house is always in view (no scrolling, no cropped rooms), trimmed to its edges, and scaled up as big as the window allows beside the sidebar (whole-number sizes when that costs little space). It's drawn at the screen's real resolution, so it stays sharp on high-resolution screens, and it resizes when the window does. Name tags and room labels scale with it. Empty office spots are now a little garden lawn instead of a dark gap. The chat box grows to fill the height beside the house. Narrow windows still put the sidebar under the house.
+
 ## Next
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - New big ideas are in the backlog in `CLAUDE.md`, with a suggested order: rooms on the north side of the hallway too (offices first, closing gaps when one is removed), bedrooms, Theater (replacing Gaming), then coins, achievements, unlockable customization (sold by three raccoons in a trenchcoat), pets, a Library with rain sounds, and emotes.

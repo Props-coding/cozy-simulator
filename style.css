@@ -31,6 +31,11 @@ body:has(#game-screen:not([hidden])) #join-title {
   display: none;
 }
 
+/* In the house, keep the top of the page tight so the house can be big. */
+body:has(#game-screen:not([hidden])) {
+  padding-top: 14px;
+}
+
 /* Everything in the house view lives in one centered box, as wide as the
    house plus the sidebar, so all edges line up. */
 #game-container {
@@ -47,7 +52,7 @@ body:has(#game-screen:not([hidden])) #join-title {
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 #game-header h1 {
@@ -97,7 +102,8 @@ canvas {
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  width: 640px;
+  width: min(640px, calc(100% - 28px));
+  box-sizing: border-box;
   padding: 10px;
   background: #1c1418;
   border: 3px solid var(--wood);
@@ -168,7 +174,8 @@ canvas {
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  width: 740px;
+  width: min(740px, calc(100% - 28px));
+  box-sizing: border-box;
   padding: 10px;
   background: #fffaf3;
   border: 3px solid var(--wood);
@@ -391,6 +398,9 @@ canvas {
 
 /* Chat card: same cream card style as the sidebar. */
 #chat-card {
+  flex: 1; /* fills the rest of the column's height */
+  display: flex;
+  flex-direction: column;
   text-align: left;
   background: #fffaf3;
   border-radius: 14px;
@@ -444,7 +454,9 @@ canvas {
   list-style: none;
   margin: 0 0 8px;
   padding: 6px 8px;
-  height: 170px;
+  flex: 1;
+  min-height: 110px;
+  height: 0; /* lets it stretch to fill the card without pushing it taller */
   overflow-y: auto;
   background: #f7eddc;
   border-radius: 10px;
@@ -549,10 +561,10 @@ canvas {
   cursor: pointer;
 }
 
-/* Too narrow for the house and sidebar side by side (house 1008 + gap 20
-   + sidebar 230 + edges 32): stack the sidebar under the house instead,
-   so the header lines up with the house. */
-@media (max-width: 1290px) {
+/* Too narrow for the house and sidebar side by side: stack the sidebar
+   under the house instead, so the header lines up with the house. (The
+   900px here matches STACK_BELOW in main.js.) */
+@media (max-width: 899px) {
   #game-layout {
     flex-direction: column;
     align-items: center;

@@ -9,10 +9,6 @@ const TURN_USERNAME = "699927adb612d03f8a3cadf1";
 const TURN_PASSWORD = "K9PZnt1CKh6d65PN";
 
 const CONFIG = {
-  // Canvas size (the house view), in pixels.
-  canvasWidth: 1000,
-  canvasHeight: 620,
-
   // How fast your character walks, in grid units per second (a "grid
   // unit" is roughly one floor tile; each room is about 6 units wide).
   playerSpeed: 5,
