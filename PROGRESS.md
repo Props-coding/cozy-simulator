@@ -223,6 +223,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - The Workshop (upstairs, south of the landing's west end; voice on, like the Conference Room): a workbench with the "done jar", a tool pegboard, stools, a toolbox, and a big corkboard showing the house's project boards live (sticky notes in To do / Doing / Done, colored by who claimed them). Press E at the corkboard for the full boards: project tabs (add, rename, archive, and a toggle to see archived ones), quick add (type a title, Enter), card details (color label, due date, note, link, delete), click a card to claim it (your face is pinned on as a thumbtack), drag cards between columns. Finishing a card plays a little "ding-ding" and drops a paper star in the done jar. New and finished cards are announced in the house chat. Anyone in the Workshop with a card in Doing gets a 🔨 over their head. Boards are saved on the server and every change is applied there one at a time, so two people editing at once don't lose anything. No crumbs for finishing cards (yet).
   - Server changes for these: /api/whiteboard (GET, PUT) and /api/kanban (GET, POST), deployed with the release (a copy of the data was saved first as backups/db-before-0.48.json).
 
+- After 0.48 (not pushed yet):
+  - Whiteboard saving fix: it waited 3 seconds after you stopped drawing before saving, so a quick refresh lost the drawing. Now it saves under a second after each stroke, right away when you close the whiteboard, and on the way out if you reload or leave with unsaved changes.
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

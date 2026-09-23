@@ -89,16 +89,29 @@ const stopDrawing = () => {
 };
 
 // --- Saving on the server ---
-// Uploads the board a few seconds after your last change (so a burst of
-// scribbles is one upload, not dozens).
-const SAVE_DELAY = 3000;
+// Uploads the board a moment after your last change (so a quick burst of
+// scribbles is one upload, not dozens), right away when you close the
+// whiteboard, and on the way out if you reload or leave with changes not
+// yet saved.
+const SAVE_DELAY = 800;
 let saveTimer = null;
+let unsaved = false;
 function saveSoon() {
+  unsaved = true;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    serverApi("PUT", "/api/whiteboard", { image: board.toDataURL("image/png") }).catch((err) => console.warn("Couldn't save the whiteboard:", err.message));
-  }, SAVE_DELAY);
+  saveTimer = setTimeout(saveNow, SAVE_DELAY);
 }
+
+function saveNow({ leaving = false } = {}) {
+  clearTimeout(saveTimer);
+  if (!unsaved) return;
+  unsaved = false;
+  serverApi("PUT", "/api/whiteboard", { image: board.toDataURL("image/png") }, { keepalive: leaving }).catch((err) => {
+    unsaved = true; // try again next time
+    console.warn("Couldn't save the whiteboard:", err.message);
+  });
+}
+window.addEventListener("pagehide", () => saveNow({ leaving: true }));
 
 // Loads the saved board when you arrive (unless a friend has already sent
 // you a fresher one, or you've started drawing).
@@ -189,4 +202,5 @@ export function openWhiteboard() {
 export function closeWhiteboard() {
   panel.hidden = true;
   stopDrawing();
+  saveNow();
 }

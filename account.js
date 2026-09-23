@@ -46,11 +46,14 @@ try {
 }
 
 // --- Talking to the server ---
-async function api(method, path, body) {
+// `keepalive` lets a request finish even as the page is closing or
+// reloading (browsers only allow small ones, about 64 KB).
+async function api(method, path, body, { keepalive = false } = {}) {
   let res;
   try {
     res = await fetch(SERVER + path, {
       method,
+      keepalive,
       headers: { "Content-Type": "application/json", ...(account?.token ? { Authorization: "Bearer " + account.token } : {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -282,8 +285,8 @@ export function isHouseReady() {
 
 // For other parts of the game (mail, profiles, the admin panel): talk to
 // the house server as the logged-in account.
-export function serverApi(method, path, body) {
-  return api(method, path, body);
+export function serverApi(method, path, body, options) {
+  return api(method, path, body, options);
 }
 
 // True if this account is an admin (sees the 🛠️ panel).
