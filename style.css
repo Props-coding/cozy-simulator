@@ -360,10 +360,19 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   width: min(700px, calc(100% - 28px));
+  max-height: calc(100% - 28px); /* never taller than the house view */
+  display: flex;
   perspective: 900px;
 }
 
+/* The header, Reginald's line, crumbs and tabs stay put at the top and the
+   Bye! button at the bottom; only the item grid in between scrolls. */
 .shop-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
   padding: 14px 16px 16px;
   border: 6px solid #c8a878;
   border-radius: 20px;
@@ -485,12 +494,31 @@ canvas {
 
 /* Each item is a cream price tag hanging from a little string. */
 #shop-items {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  align-content: start;
   gap: 16px 12px;
-  max-height: 340px;
   overflow-y: auto;
-  padding: 10px 4px 4px;
+  padding: 14px 8px 18px; /* room for the tag strings on top, and a little below the last row */
+  scrollbar-width: thin;
+  scrollbar-color: #e8c9a0 rgba(0, 0, 0, 0.18);
+}
+
+#shop-items::-webkit-scrollbar {
+  width: 10px;
+}
+
+#shop-items::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+}
+
+#shop-items::-webkit-scrollbar-thumb {
+  background: #e8c9a0;
+  border: 2px solid #7a2e2e;
+  border-radius: 999px;
 }
 
 .shop-item {
@@ -565,7 +593,8 @@ canvas {
 .shop-bottom {
   display: flex;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 10px;
+  flex: none;
 }
 
 /* The in-game "are you sure?" card: dims the house a little and shows a
@@ -684,7 +713,8 @@ canvas {
   color: var(--wood);
 }
 
-#hat-input {
+#hat-input,
+#shoes-input {
   font-family: inherit;
   font-size: 0.95em;
   padding: 4px 8px;

@@ -336,7 +336,7 @@ function studySignText() {
 function actionHintFor(room) {
   if (performance.now() < notice.until) return notice.text;
   if (isShopBusy()) return "";
-  if (isNearRaccoons(player)) return "Press E to talk to the raccoons.";
+  if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
   const lockedDoor = lockedDoorInFront(player);
   if (lockedDoor) return `${lockedDoor.office.ownerName}'s office is locked. Press K to knock.`;
   if (room.office?.mine) {
@@ -363,7 +363,7 @@ window.addEventListener("keydown", (e) => {
   if (gameScreen.hidden || e.repeat || dialogOpen || isShopBusy() || isTyping(e)) return;
   const key = e.key.toLowerCase();
 
-  if (key === "e" && isNearRaccoons(player)) {
+  if (key === "e" && nearestInteraction(player) === "raccoons") {
     for (const k in keysDown) keysDown[k] = false; // stop walking while you chat
     talkToRaccoons();
     return;

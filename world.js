@@ -15,17 +15,16 @@ const WALL_THICKNESS = 0.4;
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
-// match wins. "sign" is where the room's name goes, centered on x. For
-// rooms north of the hallway it's a sign over the doorway (y is the bottom
-// edge of the wall it's on). Rooms south of the hallway get a doormat with
-// their name on the hallway floor in front of their door instead ("mat"),
-// since the hallway side of their wall can't be seen from above.
+// match wins. "sign" is where the room's name goes: a doormat with the
+// name on it, on the hallway floor in front of the room's door (x is its
+// center, matY how far down the hallway it lies). People walk over mats
+// like rugs, so names never float over anyone.
 const BASE_ROOMS = [
-  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3.2, mat: true } },
-  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3.2, mat: true } },
-  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3.2, mat: true } },
+  { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, matY: 2.12 } },
+  { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, matY: 2.12 } },
+  { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, matY: 2.12 } },
   // North side, at the west end (same depth as the offices next to it).
-  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: 0 } },
+  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, matY: 0.74 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -74,10 +73,11 @@ const BASE_FURNITURE = [
   // Hallway: a long runner rug, and along the back wall (west to east):
   // coat hooks with boots underneath, a cushioned bench under a flower
   // painting between warm wall lamps, a side table with a lamp and flowers
-  // under a mirror, the Hallway's name plaque between lamps, and an umbrella stand
-  // and a plant under a hills painting. They're spaced to leave the
-  // doorways clear: Conference Room (x 2 to 3.6) and the three office
-  // spots (7 to 8.6, 11 to 12.6, 15 to 16.6).
+  // under a mirror, the Hallway's name plaque between lamps, and a hills
+  // painting in the east corner where the raccoons hang out. A plant sits
+  // in the bottom-right corner. They're spaced to leave the doorways
+  // clear: Conference Room (x 2 to 3.6) and the three office spots (7 to
+  // 8.6, 11 to 12.6, 15 to 16.6).
   { kind: "rug", x: 1.5, y: 0.95, w: 15, h: 0.95, color: "#b5603c", solid: false },
   { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
   { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
@@ -88,14 +88,14 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 6.4, y: 0, solid: false },
   { kind: "mirror", x: 9.45, y: 0, w: 0.7, short: true, solid: false },
   { kind: "console", x: 8.9, y: 0.1, w: 1.8, h: 0.45 },
-  { kind: "sconce", x: 12.95, y: 0, solid: false },
-  { kind: "sconce", x: 14.7, y: 0, solid: false },
-  { kind: "picture", x: 16.85, y: 0, w: 0.9, art: "hills", solid: false },
-  { kind: "umbrellaStand", x: 16.75, y: 0.2, w: 0.4, h: 0.4 },
-  { kind: "plant", x: 17.3, y: 0.3, w: 0.6, h: 0.6 },
-  // Three raccoons in a trenchcoat, lurking in the east corner. They sell
-  // hats and shoes for crumbs (walk up and press E; see shop.js).
-  { kind: "raccoons", x: 17.0, y: 1.95, w: 0.7, h: 0.5 },
+  { kind: "sconce", x: 12.7, y: 0, solid: false },
+  { kind: "sconce", x: 14.35, y: 0, solid: false },
+  { kind: "picture", x: 16.7, y: 0, w: 0.75, art: "hills", solid: false },
+  { kind: "plant", x: 17.3, y: 2.05, w: 0.6, h: 0.6 },
+  // Three raccoons in a trenchcoat, lurking in the hallway's east corner,
+  // to the right of the Hallway plaque and past the last office door. They
+  // sell hats and shoes for crumbs (walk up and press E; see shop.js).
+  { kind: "raccoons", x: 17.3, y: 0.12, w: 0.65, h: 0.45 },
 
   // Conference Room: a rolling whiteboard at the front, a big table with
   // seats all round (stand on one to sit), a plant, and a coffee cart.
@@ -216,7 +216,7 @@ function buildHouse(offices) {
     const x0 = officeX(office.slot);
     const inner = OFFICE_WIDTH - t;
     const theme = officeThemeFor(office.ownerName);
-    rooms.push({ id: "office-" + office.since, name: office.ownerName + "'s Office", rect: { x: x0, y: OFFICE_TOP, w: inner, h: OFFICE_DEPTH }, office, theme, sign: { x: x0 + 1.8, y: 0 } });
+    rooms.push({ id: "office-" + office.since, name: office.ownerName + "'s Office", rect: { x: x0, y: OFFICE_TOP, w: inner, h: OFFICE_DEPTH }, office, theme, sign: { x: x0 + 1.8, matY: 0.74 } });
     walls.push(
       { x: x0 - t, y: OFFICE_TOP - t, w: OFFICE_WIDTH + t, h: t }, // north wall
       { x: x0 - t, y: OFFICE_TOP - t, w: t, h: OFFICE_DEPTH + t }, // left side, down to the hallway wall
@@ -236,7 +236,7 @@ function buildHouse(offices) {
 
   // The hallway's sign is a carved wooden plaque hanging on its back wall,
   // between two lamps on the right (onWall: on the wall, not on its top).
-  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 }, sign: { x: 13.82, y: 0, plaque: true, onWall: true } });
+  rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: 18, h: 3 }, sign: { x: 13.5, y: 0, plaque: true, onWall: true } });
 
   ROOMS = rooms;
   WALLS = walls;
@@ -344,6 +344,21 @@ function isNearRaccoons(player) {
   const dx = player.x + PLAYER_SIZE / 2 - (r.x + r.w / 2);
   const dy = player.y + PLAYER_SIZE / 2 - (r.y + r.h / 2);
   return Math.hypot(dx, dy) < 1.4;
+}
+
+// What pressing E would do right here: talk to the raccoons, build an
+// office at the "+" door, or nothing. If both are in reach (the raccoons
+// stand near the third office's doorway), whichever is closer wins.
+function nearestInteraction(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  const options = [];
+  if (isNearRaccoons(player)) {
+    const r = FURNITURE.find((f) => f.kind === "raccoons");
+    options.push(["raccoons", Math.hypot(cx - (r.x + r.w / 2), cy - (r.y + r.h / 2))]);
+  }
+  if (isNearBuildDoor(player)) options.push(["buildDoor", Math.hypot(cx - (buildDoorX + 1.8), cy - 0.3)]);
+  options.sort((a, b) => a[1] - b[1]);
+  return options[0]?.[0] ?? null;
 }
 
 // True if the player's center is inside some room (false means a room

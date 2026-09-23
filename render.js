@@ -273,7 +273,7 @@ function paintFloors(ctx) {
   // Name doormats in front of the south rooms' doors, flat on the hallway
   // floor so people walk over them (see "sign" in world.js).
   for (const room of ROOMS) {
-    if (room.sign?.mat) drawNameMat(ctx, room);
+    if (room.sign?.matY !== undefined) drawNameMat(ctx, room);
   }
 }
 
@@ -2140,7 +2140,8 @@ function getStaticSprites() {
     staticSprites = [
       ...WALLS.map((wall) => ({ sortY: wall.y + wall.h, draw: (ctx) => drawWall(ctx, wall) })),
       // Name signs sort just after the wall they're on (and after a locked door).
-      ...ROOMS.filter((room) => room.sign && !room.sign.mat).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
+      // The Hallway's plaque on the wall (every other room has a doormat).
+      ...ROOMS.filter((room) => room.sign?.plaque).map((room) => ({ sortY: room.sign.y + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
         sortY: f.h === undefined ? f.y + 0.001 : coversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
         draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
@@ -2612,10 +2613,7 @@ function drawPlayerTag(ctx, p) {
 // A doormat with a room's name on it, on the hallway floor just in front
 // of the room's door.
 function drawNameMat(ctx, room) {
-  const { x, y } = room.sign;
-  // Centered a little way into the hallway, where the floor isn't hidden
-  // behind the wall standing in front of it.
-  const p = toScreen(x, y - 1.08);
+  const p = toScreen(room.sign.x, room.sign.matY);
   ctx.font = "700 12px 'Quicksand', sans-serif";
   const w = ctx.measureText(room.name).width + 26, h = 20;
   roundRectPath(ctx, p.x - w / 2, p.y - h / 2, w, h, 5);
