@@ -85,11 +85,14 @@ const phraseHello = document.getElementById("phrase-hello");
 
 let mode = "login"; // "login", "signup" or "reset"
 
+const settingsCard = document.getElementById("account-settings");
+
 function showCard(card) {
   document.getElementById("account-loading").hidden = true;
   accountScreen.hidden = card === null;
   loginCard.hidden = card !== loginCard;
   phraseCard.hidden = card !== phraseCard;
+  settingsCard.hidden = card !== settingsCard;
   joinScreen.hidden = card !== null;
 }
 
@@ -150,6 +153,62 @@ phraseForm.addEventListener("submit", async (e) => {
 });
 
 for (const button of document.querySelectorAll(".account-logout")) button.addEventListener("click", () => logOut());
+
+// --- Account settings (from the Join screen) ---
+const renameForm = document.getElementById("rename-form");
+const renameName = document.getElementById("rename-name");
+const renamePassword = document.getElementById("rename-password");
+const renameNote = document.getElementById("rename-note");
+const passwordForm = document.getElementById("password-form");
+const passwordNote = document.getElementById("password-note");
+
+function showOk(el, message) {
+  el.textContent = message;
+  el.classList.remove("error");
+  el.classList.add("ok");
+}
+
+document.getElementById("account-open-settings").addEventListener("click", () => {
+  renameName.value = account?.name ?? "";
+  showCard(settingsCard);
+});
+document.getElementById("account-settings-done").addEventListener("click", () => showCard(null));
+
+renameForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const button = renameForm.querySelector("button");
+  button.disabled = true;
+  try {
+    const { user } = await api("POST", "/api/account/name", { name: renameName.value, password: renamePassword.value });
+    renamePassword.value = "";
+    account.name = user.name;
+    storage.set(ACCOUNT_KEY, JSON.stringify(account));
+    document.getElementById("name-input").value = user.name;
+    document.getElementById("account-who").textContent = user.name;
+    showOk(renameNote, `You're ${user.name} now.`);
+  } catch (err) {
+    showError(renameNote, err.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+passwordForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const [current, next, again] = ["password-current", "password-new", "password-again"].map((id) => document.getElementById(id));
+  if (next.value !== again.value) return showError(passwordNote, "The two new passwords don't match.");
+  const button = passwordForm.querySelector("button");
+  button.disabled = true;
+  try {
+    await api("POST", "/api/account/password", { current: current.value, password: next.value });
+    current.value = next.value = again.value = "";
+    showOk(passwordNote, "Password changed.");
+  } catch (err) {
+    showError(passwordNote, err.message);
+  } finally {
+    button.disabled = false;
+  }
+});
 
 // --- Cloud saves ---
 function collectSave() {

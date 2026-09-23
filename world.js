@@ -118,7 +118,7 @@ const BASE_FURNITURE = [
   // coat hooks with boots underneath, a cushioned bench under a flower
   // painting between warm wall lamps, a side table with a lamp and flowers
   // under a mirror, the Hallway's name plaque between lamps, and a hills
-  // painting in the east corner where the raccoons hang out. A plant sits
+  // painting in the east corner where the raccoons hang out. A fiddle-leaf fig sits
   // in the bottom-right corner. They're spaced to leave the doorways
   // clear: Conference Room (x 2 to 3.6) and the three office spots (7 to
   // 8.6, 11 to 12.6, 15 to 16.6).
@@ -139,14 +139,14 @@ const BASE_FURNITURE = [
   { kind: "picture", x: 18.6, y: 0, w: 1.1, art: "sea", solid: false },
   { kind: "sconce", x: 22.3, y: 0, solid: false },
   { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", solid: false },
-  { kind: "plant", x: 23.3, y: 2.05, w: 0.6, h: 0.6 },
+  { kind: "fiddleFig", x: 23.3, y: 2.05, w: 0.6, h: 0.6 },
   // Three raccoons in a trenchcoat, lurking in the hallway's east corner
   // under the hills painting, clear of every door. They sell hats and
   // shoes for crumbs (walk up and press E; see shop.js).
   { kind: "raccoons", x: 23.15, y: 0.12, w: 0.65, h: 0.45 },
 
   // Conference Room: a rolling whiteboard at the front, a big table with
-  // seats all round (stand on one to sit), a plant, and a coffee cart.
+  // seats all round (stand on one to sit), a snake plant, and a coffee cart.
   { kind: "whiteboard", x: 1.0, y: -5.3, w: 3.6, h: 0.3 },
   { kind: "conferenceTable", x: 1.0, y: -3.8, w: 3.6, h: 1.4 },
   { kind: "chair", x: 1.3, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
@@ -157,7 +157,7 @@ const BASE_FURNITURE = [
   { kind: "chair", x: 3.7, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
   { kind: "chair", x: 0.3, y: -3.4, w: 0.6, h: 0.6, facing: "right", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
   { kind: "chair", x: 4.7, y: -3.4, w: 0.6, h: 0.6, facing: "left", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "plant", x: 0.15, y: -5.3, w: 0.6, h: 0.6 },
+  { kind: "snakePlant", x: 0.15, y: -5.3, w: 0.6, h: 0.6 },
   { kind: "teaCart", x: 4.3, y: -1.5, w: 1.2, h: 0.6 },
 
   // Theater: a big screen along the top wall, two rows of plush cinema
@@ -178,13 +178,13 @@ const BASE_FURNITURE = [
   // Study
   // Study
   // Study: a shared study table on a big rug with cushions to sit on, a
-  // reading armchair and floor lamp by the window, string lights, a
-  // beanbag, and plants.
+  // reading armchair and floor lamp under a cork board (no window: that wall faces the hallway), string lights, a
+  // beanbag, and a monstera.
   { kind: "rug", x: 7, y: 5.3, w: 4, h: 3, color: "#a8473a", solid: false },
   { kind: "lights", x: 6, y: 3.2, w: 2, solid: false },
   { kind: "lights", x: 10, y: 3.2, w: 2, solid: false },
   { kind: "bookshelf", x: 6.3, y: 3.3, w: 1.5, h: 0.5 },
-  { kind: "window", x: 10.3, y: 3.2, w: 1.4, solid: false },
+  { kind: "corkBoard", x: 10.3, y: 3.2, w: 1.4, solid: false },
   { kind: "armchair", x: 10.1, y: 3.6, w: 1.1, h: 0.8 },
   { kind: "floorLamp", x: 11.3, y: 3.4, w: 0.4, h: 0.4 },
   { kind: "studyTable", x: 7.6, y: 6.2, w: 2.8, h: 0.9 },
@@ -192,20 +192,19 @@ const BASE_FURNITURE = [
   { kind: "stool", x: 8.7, y: 7.15, w: 0.6, h: 0.6, color: "#7a9e5c", solid: false },
   { kind: "stool", x: 9.6, y: 7.15, w: 0.6, h: 0.6, color: "#c0554a", solid: false },
   { kind: "beanbag", x: 6.4, y: 9.5, w: 0.9, h: 0.8 },
-  { kind: "plant", x: 11.1, y: 10.1, w: 0.6, h: 0.6 },
-  { kind: "plant", x: 6.4, y: 4.3, w: 0.6, h: 0.6 },
+  { kind: "monstera", x: 11.1, y: 10.1, w: 0.6, h: 0.6 },
 
   // Dinner: a little kitchen along the back wall (stove counter under a
-  // window, sink, fridge), a rug under the dining table with chairs facing
-  // it from all four sides, a tea cart, and a plant. A chair's "facing"
+  // shelf of jars and spices, sink, fridge), a rug under the dining table with chairs facing
+  // it from all four sides, a tea cart, and a little lemon tree. A chair's "facing"
   // says which way you'd look sitting in it.
   { kind: "rug", x: 13.3, y: 5.1, w: 3.4, h: 3.6, color: "#b5763a", solid: false },
-  { kind: "window", x: 12.3, y: 3.2, w: 1.5, short: true, solid: false },
+  { kind: "jarShelf", x: 12.3, y: 3.2, w: 1.5, solid: false },
   { kind: "stove", x: 12.2, y: 3.3, w: 1.7, h: 0.6 },
   { kind: "sink", x: 16.1, y: 3.3, w: 0.75, h: 0.6 },
   { kind: "fridge", x: 16.9, y: 3.3, w: 0.8, h: 0.6 },
   { kind: "teaCart", x: 12.4, y: 9.9, w: 1.2, h: 0.6 },
-  { kind: "plant", x: 17.2, y: 10.1, w: 0.6, h: 0.6 },
+  { kind: "lemonTree", x: 17.2, y: 10.1, w: 0.6, h: 0.6 },
   { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6, facing: "down" },
   { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6, facing: "right" },
   { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6, facing: "left" },
@@ -233,17 +232,17 @@ const BASE_FURNITURE = [
   { kind: "rug", x: 18.3, y: -2.4, w: 1.9, h: 1.55, color: "#4f6b52", solid: false },
   { kind: "readingTable", x: 18.45, y: -2.2, w: 1.6, h: 0.6 },
   { kind: "chair", x: 18.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
-  { kind: "plant", x: 23.2, y: -1.8, w: 0.6, h: 0.6 },
+  { kind: "fern", x: 23.2, y: -1.8, w: 0.6, h: 0.6 },
 
   // Stairs (downstairs): the staircase up along the east side, a lamp
-  // and a plant. Walk onto the steps to go up.
+  // and a palm. Walk onto the steps to go up.
   { kind: "staircase", x: 21.3, y: 3.3, w: 2.4, h: 2.7, solid: false },
   { kind: "sconce", x: 18.7, y: 3.2, solid: false },
-  { kind: "plant", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
 
   // Upstairs: a runner down the landing, lamps and paintings between the
   // bedroom doors (x0 + 2.2 to x0 + 3.8 for x0 = 0, 6, 12, 18), a side
-  // table, a bench and plants, and the staircase down in its stairwell.
+  // table, a bench, a cactus and a fern, and the staircase down in its stairwell.
   // The landing's "Upstairs" plaque hangs at x 12, between two lamps.
   { kind: "rug", x: 1.5, y: UPSTAIRS + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
   { kind: "sconce", x: 1.2, y: UPSTAIRS, solid: false },
@@ -256,11 +255,10 @@ const BASE_FURNITURE = [
   { kind: "console", x: 16.0, y: UPSTAIRS + 0.1, w: 1.8, h: 0.45 },
   { kind: "sconce", x: 19.3, y: UPSTAIRS, solid: false },
   { kind: "picture", x: 22.4, y: UPSTAIRS, w: 0.9, art: "hills", solid: false },
-  { kind: "plant", x: 23.3, y: UPSTAIRS + 2.05, w: 0.6, h: 0.6 },
-  { kind: "plant", x: 0.15, y: UPSTAIRS + 2.05, w: 0.6, h: 0.6 },
+  { kind: "cactus", x: 0.15, y: UPSTAIRS + 2.05, w: 0.6, h: 0.6 },
   { kind: "staircase", x: 21.3, y: UPSTAIRS + 3.3, w: 2.4, h: 2.7, down: true, solid: false },
   { kind: "sconce", x: 18.7, y: UPSTAIRS + 3.2, solid: false },
-  { kind: "plant", x: 18.3, y: UPSTAIRS + 6.0, w: 0.6, h: 0.6 },
+  { kind: "fern", x: 18.3, y: UPSTAIRS + 6.0, w: 0.6, h: 0.6 },
 ];
 
 // Where the stairs take you: step onto a staircase (the middle of it, so
@@ -401,11 +399,11 @@ buildHouse([], []);
 const OFFICE_FURNITURE = {
   default: (x0, top, office) => [
     { kind: "rug", x: x0 + 0.4, y: top + 2.0, w: 2.8, h: 1.6, color: "#7d6a8f", solid: false },
-    { kind: "plant", x: x0 + 0.15, y: top + 0.1, w: 0.6, h: 0.6 },
+    { kind: "succulents", x: x0 + 0.15, y: top + 0.1, w: 0.6, h: 0.6 },
     { kind: "pcDesk", x: x0 + 0.95, y: top + 0.15, w: 1.7, h: 0.7, screen: office.color },
     { kind: "stool", x: x0 + 1.5, y: top + 0.9, w: 0.6, h: 0.6, color: office.color, solid: false },
     { kind: "bookshelf", x: x0 + 2.85, y: top + 0.1, w: 0.65, h: 0.5 },
-    { kind: "plant", x: x0 + 2.9, y: top + 3.8, w: 0.6, h: 0.6 },
+    { kind: "snakePlant", x: x0 + 2.9, y: top + 3.8, w: 0.6, h: 0.6 },
   ],
 
   // Cozy lake house: a stone fireplace with a rug in front, a window onto
@@ -498,9 +496,34 @@ const DECOR = {
   floorLamp: { name: "Floor Lamp", tab: "furniture", price: 25, kind: "floorLamp", w: 0.4, h: 0.4 },
   fireplace: { name: "Stone Fireplace", tab: "furniture", price: 120, kind: "fireplace", w: 1.1, h: 0.6 },
   catBed: { name: "Cat Bed (cat included)", tab: "furniture", price: 50, kind: "catBed", w: 0.75, h: 0.5, solid: false },
+  loveseatSage: { name: "Sage Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#7a9e8c" },
+  loveseatRose: { name: "Rose Loveseat", tab: "furniture", price: 70, kind: "loveseat", w: 1.6, h: 0.8, color: "#c98a8a" },
+  coffeeTable: { name: "Coffee Table", tab: "furniture", price: 30, kind: "coffeeTable", w: 1.2, h: 0.6 },
+  dresser: { name: "Dresser", tab: "furniture", price: 45, kind: "dresser", w: 1.1, h: 0.5 },
+  writingDesk: { name: "Writing Desk", tab: "furniture", price: 40, kind: "writingDesk", w: 1.3, h: 0.6 },
+  rockingChair: { name: "Rocking Chair", tab: "furniture", price: 45, kind: "rockingChair", w: 0.8, h: 0.6 },
+  recordPlayer: { name: "Record Player", tab: "furniture", price: 55, kind: "recordPlayer", w: 0.9, h: 0.5 },
+  fishTank: { name: "Fish Tank", tab: "furniture", price: 80, kind: "fishTank", w: 1.0, h: 0.5 },
+  piano: { name: "Upright Piano", tab: "furniture", price: 140, kind: "piano", w: 1.5, h: 0.7 },
+  arcade: { name: "Arcade Cabinet", tab: "furniture", price: 110, kind: "arcade", w: 0.8, h: 0.6 },
+  telescope: { name: "Telescope", tab: "furniture", price: 65, kind: "telescope", w: 0.6, h: 0.5 },
+  globe: { name: "Globe", tab: "furniture", price: 35, kind: "globe", w: 0.5, h: 0.45 },
+  toyChest: { name: "Toy Chest", tab: "furniture", price: 30, kind: "toyChest", w: 0.9, h: 0.5 },
 
   // Plants, rugs and cozy bits
   plant: { name: "Potted Plant", tab: "cozy", price: 10, kind: "plant", w: 0.6, h: 0.6 },
+  fern: { name: "Boston Fern", tab: "cozy", price: 15, kind: "fern", w: 0.6, h: 0.6 },
+  monstera: { name: "Monstera", tab: "cozy", price: 25, kind: "monstera", w: 0.6, h: 0.6 },
+  cactus: { name: "Tall Cactus", tab: "cozy", price: 20, kind: "cactus", w: 0.6, h: 0.6 },
+  snakePlant: { name: "Snake Plant", tab: "cozy", price: 18, kind: "snakePlant", w: 0.6, h: 0.6 },
+  succulents: { name: "Succulent Dish", tab: "cozy", price: 12, kind: "succulents", w: 0.6, h: 0.5 },
+  fiddleFig: { name: "Fiddle-Leaf Fig", tab: "cozy", price: 30, kind: "fiddleFig", w: 0.6, h: 0.6 },
+  palm: { name: "Kentia Palm", tab: "cozy", price: 28, kind: "palm", w: 0.6, h: 0.6 },
+  lemonTree: { name: "Lemon Tree", tab: "cozy", price: 35, kind: "lemonTree", w: 0.6, h: 0.6 },
+  candles: { name: "Candle Cluster", tab: "cozy", price: 12, kind: "candles", w: 0.6, h: 0.4 },
+  bookStacks: { name: "Book Stacks", tab: "cozy", price: 12, kind: "bookStacks", w: 0.7, h: 0.4 },
+  floorCushions: { name: "Floor Cushions", tab: "cozy", price: 20, kind: "floorCushions", w: 1.0, h: 0.6, solid: false },
+  lavaLamp: { name: "Lava Lamp", tab: "cozy", price: 22, kind: "lavaLamp", w: 0.4, h: 0.4 },
   ivyPlant: { name: "Trailing Ivy", tab: "cozy", price: 18, kind: "ivyPlant", w: 0.6, h: 0.5 },
   bamboo: { name: "Potted Bamboo", tab: "cozy", price: 22, kind: "bamboo", w: 0.6, h: 0.5 },
   bonsai: { name: "Bonsai", tab: "cozy", price: 30, kind: "bonsai", w: 0.6, h: 0.5 },
@@ -510,6 +533,8 @@ const DECOR = {
   rugSage: { name: "Sage Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f8a6a", solid: false },
   rugHoney: { name: "Honey Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#c98f3c", solid: false },
   rugPlum: { name: "Plum Rug", tab: "cozy", price: 20, kind: "rug", w: 2.4, h: 1.6, color: "#6f5a8c", solid: false },
+  roundRugCream: { name: "Round Cream Rug", tab: "cozy", price: 22, kind: "rug", w: 1.8, h: 1.4, color: "#e9dcc2", round: true, solid: false },
+  roundRugTeal: { name: "Round Teal Rug", tab: "cozy", price: 22, kind: "rug", w: 1.8, h: 1.4, color: "#4f8a8a", round: true, solid: false },
 
   // On the wall
   rainWindow: { name: "Rainy Window", tab: "wall", price: 40, kind: "rainWindow", w: 1.2, wall: true },
@@ -524,6 +549,14 @@ const DECOR = {
   mirror: { name: "Mirror", tab: "wall", price: 25, kind: "mirror", w: 0.7, wall: true, short: true },
   driedHerbs: { name: "Dried Herbs", tab: "wall", price: 12, kind: "driedHerbs", w: 0.9, wall: true },
   scroll: { name: "Calligraphy Scroll", tab: "wall", price: 15, kind: "scroll", w: 0.55, wall: true },
+  corkBoard: { name: "Cork Board", tab: "wall", price: 15, kind: "corkBoard", w: 1.2, wall: true },
+  jarShelf: { name: "Shelf of Jars", tab: "wall", price: 18, kind: "jarShelf", w: 1.2, wall: true },
+  pothosShelf: { name: "Pothos Shelf", tab: "wall", price: 16, kind: "pothosShelf", w: 0.8, wall: true },
+  posterStars: { name: "Night Sky Poster", tab: "wall", price: 12, kind: "poster", art: "stars", w: 0.7, wall: true },
+  posterMountains: { name: "Mountain Poster", tab: "wall", price: 12, kind: "poster", art: "mountains", w: 0.7, wall: true },
+  posterCat: { name: "Cat Poster", tab: "wall", price: 12, kind: "poster", art: "cat", w: 0.7, wall: true },
+  worldMap: { name: "World Map", tab: "wall", price: 25, kind: "worldMap", w: 1.3, wall: true },
+  neonSign: { name: "Neon \"cozy\" Sign", tab: "wall", price: 40, kind: "neonSign", w: 0.9, wall: true },
 };
 
 // The starter pieces every bedroom has, as spots inside the room (x, y

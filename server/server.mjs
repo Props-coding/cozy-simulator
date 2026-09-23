@@ -262,6 +262,43 @@ const routes = {
     return { updatedAt: user.save.updatedAt };
   },
 
+  // Account settings: change your name (checked with your password).
+  "POST /api/account/name": async (req, ip) => {
+    const { user, key } = currentUser(req);
+    if (!allowed("account:" + ip, 10)) throw new Oops(429, "Too many tries. Please wait a few minutes.");
+    const body = await readJson(req, 10_000);
+    const hash = await hashPassword(String(body.password ?? ""), user.salt);
+    if (!timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(user.hash, "hex"))) throw new Oops(401, "That password isn't right.");
+    const name = cleanName(body.name);
+    if (!name) throw new Oops(400, "Names are 2 to 16 letters or numbers (spaces, - and _ are OK too).");
+    const newKey = name.toLowerCase();
+    if (newKey !== key && db.users[newKey]) throw new Oops(409, "That name is taken. Try another.");
+    user.name = name;
+    if (newKey !== key) {
+      db.users[newKey] = user;
+      delete db.users[key];
+      for (const s of Object.values(db.sessions)) if (s.user === key) s.user = newKey;
+    }
+    await saveDb();
+    return { user: publicUser(user) };
+  },
+
+  // Account settings: change your password (logs you out everywhere else).
+  "POST /api/account/password": async (req, ip) => {
+    const { user, key, tokenHash } = currentUser(req);
+    if (!allowed("account:" + ip, 10)) throw new Oops(429, "Too many tries. Please wait a few minutes.");
+    const body = await readJson(req, 10_000);
+    const hash = await hashPassword(String(body.current ?? ""), user.salt);
+    if (!timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(user.hash, "hex"))) throw new Oops(401, "Your current password isn't right.");
+    const password = String(body.password ?? "");
+    if (password.length < 8 || password.length > 200) throw new Oops(400, "Passwords need at least 8 characters.");
+    user.salt = randomBytes(16).toString("hex");
+    user.hash = await hashPassword(password, user.salt);
+    for (const [k, s] of Object.entries(db.sessions)) if (s.user === key && k !== tokenHash) delete db.sessions[k];
+    await saveDb();
+    return { ok: true };
+  },
+
   // Forgot your password: the house owner gives you a one-time code
   // (see admin.mjs), and you pick a new password with it.
   "POST /api/reset": async (req, ip) => {

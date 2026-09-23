@@ -1,6 +1,8 @@
-// The laptop on your bedroom desk (press E there). Its home screen has
-// four apps: Mail (letters to friends), News (what's new in the house),
-// Nest & Nook (the furniture store, see home.js) and Decorate.
+// The laptop on your bedroom desk (press E there). It's a little web
+// browser: a start page with shortcuts to Mail (letters to friends), The
+// Cozy Times (what's new in the house), Nest & Nook (the furniture store,
+// see home.js), and Decorate. Back, Forward and Reload work, and the
+// address bar shows where you are.
 //
 // Mail with no server: a letter waits in your outbox until you and that
 // friend are in the house at the same time, then it's handed over and
@@ -14,7 +16,10 @@ import { playClickSound } from "./audio.js";
 
 const laptop = document.getElementById("laptop");
 const title = document.getElementById("laptop-title");
-const backButton = document.getElementById("laptop-back");
+const favicon = document.getElementById("browser-favicon");
+const address = document.getElementById("browser-url");
+const backButton = document.getElementById("browser-back");
+const forwardButton = document.getElementById("browser-forward");
 const pages = {
   home: document.getElementById("laptop-home"),
   mail: document.getElementById("laptop-mail"),
@@ -37,7 +42,9 @@ export function isLaptopOpen() {
 
 export function openLaptop() {
   laptop.hidden = false;
-  showPage("home");
+  history = [];
+  ahead = [];
+  show("home");
   playClickSound();
 }
 
@@ -47,17 +54,72 @@ export function closeLaptop() {
   document.activeElement?.blur();
 }
 
-const TITLES = { home: "Home", mail: "Mail", news: "News", store: "Nest & Nook" };
+// --- The browser ---
+// Each "site" has a tab title, a little icon and an address. The address
+// bar only shows where you are (it isn't for typing).
+const SITES = {
+  home: { title: "New tab", icon: "🏠", url: "https://start.cozy" },
+  mail: { title: "Mail", icon: "✉️", url: "https://mail.cozy/inbox" },
+  news: { title: "The Cozy Times", icon: "📰", url: "https://news.cozy" },
+  store: { title: "Nest & Nook", icon: "🪺", url: "https://nestandnook.cozy/furniture" },
+};
+let current = "home";
+let history = []; // pages before this one (for Back)
+let ahead = []; // pages after it (for Forward)
 
-function showPage(name) {
+// Shows a different address (and tab title) without leaving the page,
+// like when you open a letter or switch store sections.
+function setAddress(url, tabTitle) {
+  address.textContent = url;
+  title.textContent = tabTitle ?? SITES[current].title;
+}
+
+function show(name) {
+  current = name;
   for (const [id, el] of Object.entries(pages)) el.hidden = id !== name;
-  title.textContent = TITLES[name];
-  backButton.hidden = name === "home";
+  favicon.textContent = SITES[name].icon;
+  setAddress(SITES[name].url);
+  if (name === "home") renderStart();
   if (name === "mail") showInbox();
   if (name === "news") renderNews();
-  if (name === "store") renderStore(pages.store);
+  if (name === "store") renderStore(pages.store, (tab) => setAddress("https://nestandnook.cozy/" + tab));
+  pages[name].scrollTop = 0;
+  backButton.disabled = history.length === 0;
+  forwardButton.disabled = ahead.length === 0;
   updateBadge();
 }
+
+// Goes to a page, remembering where you were for Back.
+function visit(name) {
+  if (!laptop.hidden && current && name !== current && pages[current] && !pages[current].hidden) history.push(current);
+  ahead = [];
+  show(name);
+}
+
+backButton.addEventListener("click", () => {
+  if (!history.length) return;
+  playClickSound();
+  ahead.push(current);
+  show(history.pop());
+});
+forwardButton.addEventListener("click", () => {
+  if (!ahead.length) return;
+  playClickSound();
+  history.push(current);
+  show(ahead.pop());
+});
+document.getElementById("browser-reload").addEventListener("click", () => {
+  playClickSound();
+  show(current);
+});
+document.getElementById("browser-home").addEventListener("click", () => {
+  playClickSound();
+  visit("home");
+});
+document.getElementById("laptop-close").addEventListener("click", () => {
+  playClickSound();
+  closeLaptop();
+});
 
 for (const app of document.querySelectorAll("#laptop-home .app")) {
   app.addEventListener("click", () => {
@@ -66,28 +128,28 @@ for (const app of document.querySelectorAll("#laptop-home .app")) {
       closeLaptop();
       startDecorating();
     } else {
-      showPage(app.dataset.app);
+      visit(app.dataset.app);
     }
   });
 }
-backButton.addEventListener("click", () => {
-  playClickSound();
-  showPage("home");
-});
-document.getElementById("laptop-close").addEventListener("click", () => {
-  playClickSound();
-  closeLaptop();
-});
 
-// Escape closes the laptop (or goes back to its home screen). While it's
-// open, the game's keys are off, so typing a letter doesn't walk you away.
+// The start page: a greeting for the time of day, and the clock.
+function renderStart() {
+  const hour = new Date().getHours();
+  const part = hour < 5 ? "Up late" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  document.getElementById("start-greeting").textContent = `${part}, ${hooks.name()}!`;
+  document.getElementById("start-clock").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+// Escape closes the laptop (or goes back a page). While it's open, the
+// game's keys are off, so typing a letter doesn't walk you away.
 window.addEventListener("keydown", (e) => {
   if (laptop.hidden) return;
   e.stopImmediatePropagation();
   if (e.key === "Escape") {
     e.preventDefault();
-    if (!pages.home.hidden) closeLaptop();
-    else showPage("home");
+    if (history.length) backButton.click();
+    else closeLaptop();
   }
 });
 
@@ -223,6 +285,7 @@ function when(ms) {
 }
 
 function showInbox() {
+  setAddress("https://mail.cozy/inbox", "Mail · Inbox");
   const page = pages.mail;
   page.innerHTML = "";
   const write = el("button", "warm-button mail-write", "✏️ Write a letter");
@@ -262,6 +325,7 @@ function showInbox() {
 }
 
 function showLetter(letter) {
+  setAddress("https://mail.cozy/letter/" + letter.id, "Mail · " + (letter.subject || "(no subject)"));
   letter.read = true;
   store();
   updateBadge();
@@ -297,6 +361,7 @@ function showLetter(letter) {
 }
 
 function showCompose(to = "", subject = "") {
+  setAddress("https://mail.cozy/new", "Mail · New letter");
   const page = pages.mail;
   page.innerHTML = "";
   const form = el("form", "mail-compose");

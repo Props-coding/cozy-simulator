@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.40",
+    title: "A proper browser, and a lot more furniture",
+    text: "Your laptop is now a real little web browser with tabs, back and forward, and an address bar: visit start.cozy, mail.cozy, news.cozy and nestandnook.cozy. Nest & Nook doubled in size, with loveseats, a fish tank, a record player, an upright piano, an arcade cabinet, a telescope, eight new plants, round rugs, posters, a neon sign and more. The house got a garden's worth of different plants too, and you can change your name or password from the Join screen.",
+  },
+  {
     build: "0.39",
     title: "Accounts and cloud saves",
     text: "The house now has a front door. Make an account, enter the house phrase once, and you'll walk straight in on every visit. Your crumbs, hats, pets, achievements, bedroom and letters are saved to your account, so they follow you to any computer. Forgot your password? Ask the house owner for a reset code.",

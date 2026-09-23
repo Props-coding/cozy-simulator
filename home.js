@@ -100,8 +100,12 @@ const STORE_TABS = [
 ];
 let storeTab = "furniture";
 
-// Draws the store into `page` (a laptop page).
-export function renderStore(page) {
+// Draws the store into `page` (a laptop page). `onTab` hears which
+// section is showing (the laptop puts it in the address bar).
+let tellTab = () => {};
+export function renderStore(page, onTab = tellTab) {
+  tellTab = onTab;
+  tellTab(storeTab);
   page.innerHTML = "";
   const top = document.createElement("div");
   top.className = "nook-top";

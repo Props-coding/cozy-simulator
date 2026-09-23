@@ -156,6 +156,15 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 
 - Server access decided (2026-09-23): you chose to keep Claude Code's admin access. `props` can use sudo without a password (`/etc/sudoers.d/90-props-admin`), only `props` may log in over SSH, and only with the key on your PC. Details in `server/README.md`.
 
+- Build 0.40 work (not pushed yet):
+  - Laptop: a bigger screen, set up like a real browser, with a tab strip (the site's icon and title), back, forward, reload and home buttons, and an address bar that shows where you are (start.cozy, mail.cozy/inbox, mail.cozy/new, news.cozy, nestandnook.cozy/furniture and so on). You can't type in it, on purpose. The start page greets you by name with the time, and has shortcuts to Mail, The Cozy Times, Nest & Nook and Decorate.
+  - Nest & Nook now has 69 items, up from 34. New: sage and rose loveseats, a coffee table, a dresser, a writing desk, a rocking chair that rocks, a record player with a spinning record, a fish tank with swimming fish and bubbles, an upright piano, an arcade cabinet, a telescope, a spinning globe, a toy chest, eight plants (Boston fern, monstera, tall cactus, snake plant, succulent dish, fiddle-leaf fig, kentia palm, lemon tree), a candle cluster, book stacks, floor cushions, a lava lamp, round cream and teal rugs, a cork board, a shelf of jars, a pothos shelf, three posters, a world map, and a glowing neon "cozy" sign.
+  - Plants: the same potted plant was copied all over the first floor. Now each spot has its own kind (a snake plant in the Conference Room, a fiddle-leaf fig by the raccoons, a fern in the Library, a monstera in the Study, a lemon tree in Dinner, a palm by the stairs, a cactus and a fern upstairs, succulents and a snake plant in normal offices), and three extra copies were removed.
+  - The Study's window (which looked straight into the hallway) is now a cork board with pinned notes, and the kitchen window above the stove is a shelf of jars and spices.
+  - Account settings: an "Account" link on the Join screen lets you change your name (with your password) or your password (which logs you out on your other computers).
+  - Fixed: darker shades of darker shades came out black (it showed on the new loveseat's back and arms).
+  - Claude Code now has its own account ("Claude"), which it only uses in private test rooms.
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

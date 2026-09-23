@@ -95,11 +95,44 @@
       </form>
       <button type="button" class="link-button account-logout">Log out</button>
     </div>
+    <div id="account-settings" class="account-card" hidden>
+      <h2 class="account-heading">Your account</h2>
+      <form id="rename-form" autocomplete="off">
+        <label>
+          Name
+          <input id="rename-name" type="text" maxlength="16" required>
+        </label>
+        <label>
+          Your password (to confirm)
+          <input id="rename-password" type="password" maxlength="200" autocomplete="current-password" required>
+        </label>
+        <p id="rename-note" class="account-note">Letters friends already sent to your old name will wait until they write to your new one.</p>
+        <button type="submit" class="soft-button">Change name</button>
+      </form>
+      <hr>
+      <form id="password-form" autocomplete="off">
+        <label>
+          Current password
+          <input id="password-current" type="password" maxlength="200" autocomplete="current-password" required>
+        </label>
+        <label>
+          New password
+          <input id="password-new" type="password" maxlength="200" autocomplete="new-password" required>
+        </label>
+        <label>
+          New password again
+          <input id="password-again" type="password" maxlength="200" autocomplete="new-password" required>
+        </label>
+        <p id="password-note" class="account-note">This logs you out on your other computers.</p>
+        <button type="submit" class="soft-button">Change password</button>
+      </form>
+      <button id="account-settings-done" type="button" class="big-button">Done</button>
+    </div>
   </div>
 
   <!-- Join screen: shown once you're logged in, hidden once you click Join. -->
   <div id="join-screen" hidden>
-    <p class="account-who">Hi, <strong id="account-who"></strong>! <button type="button" class="link-button account-logout">Log out</button></p>
+    <p class="account-who">Hi, <strong id="account-who"></strong>! <button id="account-open-settings" type="button" class="link-button">Account</button> · <button type="button" class="link-button account-logout">Log out</button></p>
     <!-- Your name comes from your account (account.js fills this in). -->
     <input id="name-input" type="hidden" maxlength="16">
     <label>
@@ -239,20 +272,31 @@
               </div>
             </div>
           </div>
-          <!-- The bedroom laptop (laptop.js): a screen with four apps. -->
+          <!-- The bedroom laptop (laptop.js): a little web browser with four
+               "sites" (a start page, mail, news and the Nest & Nook store). -->
           <div id="laptop" hidden>
             <div class="laptop-lid">
               <div class="laptop-screen">
-                <div class="laptop-bar">
-                  <button id="laptop-back" type="button" hidden>‹ Back</button>
-                  <span id="laptop-title">Home</span>
-                  <button id="laptop-close" type="button" aria-label="Close the laptop">✕</button>
+                <div class="browser-tabs">
+                  <div class="browser-tab"><span id="browser-favicon">🏠</span><span id="laptop-title">New tab</span></div>
+                  <span class="browser-tabs-space"></span>
+                  <button id="laptop-close" type="button" aria-label="Close the laptop" title="Close the laptop">✕</button>
+                </div>
+                <div class="browser-toolbar">
+                  <button id="browser-back" type="button" aria-label="Back" title="Back">←</button>
+                  <button id="browser-forward" type="button" aria-label="Forward" title="Forward">→</button>
+                  <button id="browser-reload" type="button" aria-label="Reload" title="Reload">↻</button>
+                  <div class="browser-url"><span class="url-lock" aria-hidden="true">🔒</span><span id="browser-url">https://start.cozy</span></div>
+                  <button id="browser-home" type="button" aria-label="Start page" title="Start page">⌂</button>
                 </div>
                 <div id="laptop-home" class="laptop-page">
-                  <button type="button" class="app" data-app="mail"><span class="app-icon">✉️</span>Mail<span id="mail-badge" class="app-badge" hidden></span></button>
-                  <button type="button" class="app" data-app="news"><span class="app-icon">📰</span>News</button>
-                  <button type="button" class="app" data-app="store"><span class="app-icon">🪺</span>Nest &amp; Nook</button>
-                  <button type="button" class="app" data-app="decorate"><span class="app-icon">🛋️</span>Decorate</button>
+                  <div class="start-hello"><span id="start-clock"></span><h2 id="start-greeting">Hello!</h2></div>
+                  <div class="start-apps">
+                    <button type="button" class="app" data-app="mail"><span class="app-icon">✉️</span>Mail<span id="mail-badge" class="app-badge" hidden></span></button>
+                    <button type="button" class="app" data-app="news"><span class="app-icon">📰</span>The Cozy Times</button>
+                    <button type="button" class="app" data-app="store"><span class="app-icon">🪺</span>Nest &amp; Nook</button>
+                    <button type="button" class="app" data-app="decorate"><span class="app-icon">🛋️</span>Decorate my room</button>
+                  </div>
                 </div>
                 <div id="laptop-mail" class="laptop-page" hidden></div>
                 <div id="laptop-news" class="laptop-page" hidden></div>
