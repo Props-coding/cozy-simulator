@@ -8632,6 +8632,8 @@ function drawPlayerBody(ctx, p) {
     sway = Math.sin(et * 1.3) * 4;
     bob = (Math.sin(et * 2.6) + 1) * 2.5;
     tilt = Math.sin(et * 1.3) * 0.07;
+  } else if (p.whisper) {
+    tilt = p.whisper.dir * 0.2; // leaning in toward the person they're whispering to
   } else if (DANCE_MOVES[emote]) {
     ({ step, bob, sway, tilt, kick } = { step: 0, bob: 0, sway: 0, tilt: 0, kick: 0, ...DANCE_MOVES[emote](et) });
   } else if (emote === "wave") {
@@ -8848,6 +8850,29 @@ function drawPlayerBody(ctx, p) {
     ctx.fill();
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+// Someone whispering: a little curl of air and a "psst" by their head, on
+// the side of the person they're whispering to. Everyone can see a whisper
+// is happening; only that one person hears it.
+function drawWhisperSwirl(ctx, cx, headTop, dir) {
+  const t = performance.now() / 1000;
+  const x = cx + dir * 17, y = headTop + 20;
+  ctx.save();
+  ctx.strokeStyle = "rgba(120, 140, 170, 0.75)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let a = 0; a < Math.PI * 3; a += 0.25) {
+    const rr = 1 + a * 1.1;
+    ctx.lineTo(x + dir * Math.cos(a + t * 3) * rr, y + Math.sin(a + t * 3) * rr * 0.6);
+  }
+  ctx.stroke();
+  ctx.fillStyle = "rgba(90, 105, 135, 0.9)";
+  ctx.font = "italic 700 9px 'Quicksand', sans-serif";
+  ctx.textAlign = "center";
+  ctx.globalAlpha = 0.6 + Math.sin(t * 4) * 0.3;
+  ctx.fillText("psst", x + dir * 6, y - 10);
   ctx.restore();
 }
 
@@ -9116,6 +9141,7 @@ function drawPlayerTag(ctx, p) {
   const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
 
   if (p.emote) drawEmoteFloaters(ctx, p, cx, headTop);
+  if (p.whisper) drawWhisperSwirl(ctx, cx, headTop, p.whisper.dir);
 
   ctx.font = "600 11px 'Quicksand', sans-serif";
   ctx.textAlign = "center";

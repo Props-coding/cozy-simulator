@@ -52,6 +52,11 @@ const CONFIG = {
   // is live.
   speaking: { threshold: 0.02, holdMs: 300 },
 
+  // Whispering: stand within `range` tiles of a friend and hold `key` to
+  // whisper to only them (in any room). It ends if you drift more than
+  // `endRange` tiles apart.
+  whisper: { key: "v", range: 1.3, endRange: 1.8 },
+
   // Sitting: press E within this many tiles of a free seat to sit down.
   sit: { reach: 1.0 },
 

@@ -16,6 +16,7 @@ import {
   sendChat,
   onEmote,
   sendEmote,
+  myPeerId,
 } from "./network.js";
 import {
   requestMic,
@@ -42,6 +43,8 @@ import {
   playDanceTune,
   isDanceId,
   isSpeaking,
+  setWhisperTarget,
+  whisperTarget,
   playPetSound,
   enterLibrary,
   leaveLibrary,
@@ -882,6 +885,70 @@ function updateIdle() {
 // same moment, the name that comes first alphabetically keeps it.
 let mySeat = null; // { key, x, y, face, from: { x, y } } while sitting
 let mySpeaking = false; // is your mic hearing you right now (see audio.js)
+
+// --- Whispering ---
+// Hold CONFIG.whisper.key (V) right next to a friend to whisper to only
+// them, in any room. Your whisper's sound goes only to them (see
+// audio.js); everyone nearby just sees you lean in with a little "psst".
+// It ends when you let go, or if you drift apart.
+function nearestFriendFor(range) {
+  let best = null, bestDistance = range;
+  for (const peer of getPeers()) {
+    if (floorOf(peer.y) !== floorOf(player.y)) continue;
+    const d = Math.hypot(peer.x - player.x, peer.y - player.y);
+    if (d < bestDistance) {
+      best = peer;
+      bestDistance = d;
+    }
+  }
+  return best;
+}
+
+function startWhisper() {
+  if (whisperTarget()) return;
+  const friend = nearestFriendFor(CONFIG.whisper.range);
+  if (!friend) {
+    showNotice("Stand right next to someone to whisper to them.");
+    return;
+  }
+  if (!setWhisperTarget(friend.id)) {
+    showNotice("Whispering needs your microphone.");
+    return;
+  }
+  showNotice(`Whispering to ${friend.name}... (let go of ${CONFIG.whisper.key.toUpperCase()} to stop)`);
+}
+
+function stopWhisper(why) {
+  if (!whisperTarget()) return;
+  setWhisperTarget(null);
+  if (why) showNotice(why);
+}
+
+// Ends the whisper if the two of you drifted apart (or they left).
+function checkWhisper() {
+  const to = whisperTarget();
+  if (!to) return;
+  const friend = getPeers().find((p) => p.id === to);
+  if (!friend || floorOf(friend.y) !== floorOf(player.y) || Math.hypot(friend.x - player.x, friend.y - player.y) > CONFIG.whisper.endRange) {
+    stopWhisper("The whisper ended: you moved apart.");
+  }
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === CONFIG.whisper.key && !e.repeat && !isTyping(e) && !gameScreen.hidden && !uiBusy() && !dialogOpen) startWhisper();
+});
+window.addEventListener("keyup", (e) => {
+  if (e.key.toLowerCase() === CONFIG.whisper.key) stopWhisper();
+});
+window.addEventListener("blur", () => stopWhisper());
+
+// Which way someone whispering is leaning: -1 left, 1 right, toward the
+// person they're whispering to (their peer id, or ours).
+function whisperLean(fromX, toId) {
+  const to = toId === myPeerId ? player : getPeers().find((p) => p.id === toId);
+  if (!to) return null;
+  return { dir: to.x >= fromX ? 1 : -1 };
+}
 const SEAT_FACES = ["up", "upTall", "down", "left", "right"];
 
 function isSeated() {
@@ -1657,6 +1724,7 @@ function tick(now) {
   checkMySeat();
   updateElevator(dt);
   showDanceCooldown();
+  checkWhisper();
   mySpeaking = isSpeaking();
   updateIdle();
   updateSleep();
@@ -1692,7 +1760,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: whisperTarget() });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -1704,12 +1772,12 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
   });
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 
