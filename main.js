@@ -41,6 +41,7 @@ import {
   playChatSound,
   playDanceTune,
   isDanceId,
+  isSpeaking,
   playPetSound,
   enterLibrary,
   leaveLibrary,
@@ -880,6 +881,7 @@ function updateIdle() {
 // come with their position, and if two people grab the same spot at the
 // same moment, the name that comes first alphabetically keeps it.
 let mySeat = null; // { key, x, y, face, from: { x, y } } while sitting
+let mySpeaking = false; // is your mic hearing you right now (see audio.js)
 const SEAT_FACES = ["up", "upTall", "down", "left", "right"];
 
 function isSeated() {
@@ -1655,6 +1657,7 @@ function tick(now) {
   checkMySeat();
   updateElevator(dt);
   showDanceCooldown();
+  mySpeaking = isSpeaking();
   updateIdle();
   updateSleep();
 
@@ -1689,7 +1692,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -1701,12 +1704,12 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true };
   });
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 

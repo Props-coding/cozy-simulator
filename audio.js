@@ -749,15 +749,90 @@ export async function requestMic() {
 
 // Turns your mic on or off depending on which room you're standing in.
 // Called every frame, so it also keeps track of your room for the chimes.
+// (While you whisper, your normal voice is off: only the whisper goes out.)
 export function updateMicForRoom(roomId) {
   currentRoomId = roomId;
   if (localTrack) {
-    localTrack.enabled = isVoiceRoom(roomId);
+    localTrack.enabled = isVoiceRoom(roomId) && !whisperingTo;
   }
 }
 
-// Called when a friend's voice stream arrives, so we can play it.
-export function handlePeerStream(stream, peerId) {
+// --- Speaking: is your mic picking up your voice right now? ---
+// Measured here from your own mic's loudness (never sent anywhere); only
+// the yes/no goes to friends, so your character can bounce while you talk.
+// Only counts while your mic is live (in a voice room, not whispering).
+let micAnalyser = null;
+let micSamples = null;
+let lastLoud = -Infinity;
+export function isSpeaking() {
+  if (!localTrack || !localTrack.enabled || !toneContext) return false;
+  if (!micAnalyser) {
+    micAnalyser = toneContext.createAnalyser();
+    micAnalyser.fftSize = 512;
+    micSamples = new Float32Array(micAnalyser.fftSize);
+    toneContext.createMediaStreamSource(new MediaStream([localTrack])).connect(micAnalyser);
+  }
+  micAnalyser.getFloatTimeDomainData(micSamples);
+  let sum = 0;
+  for (const v of micSamples) sum += v * v;
+  const level = Math.sqrt(sum / micSamples.length);
+  const now = performance.now();
+  if (level > CONFIG.speaking.threshold) lastLoud = now;
+  return now - lastLoud < CONFIG.speaking.holdMs;
+}
+
+// --- Whispering ---
+// Every friend gets their own private copy of your mic line, switched off.
+// Whispering switches on just the one to the friend you're whispering to
+// (and turns your normal voice off), so the whisper's sound only ever goes
+// to them: everyone else's copy stays off and carries nothing.
+const whisperTracks = {}; // peer id -> your private (usually switched-off) line to them
+let whisperingTo = null;
+
+// Makes a private line for one friend. network.js sends it to them only.
+export function makeWhisperStream(peerId) {
+  if (!localTrack || whisperTracks[peerId]) return null;
+  const track = localTrack.clone();
+  track.enabled = false;
+  whisperTracks[peerId] = track;
+  return new MediaStream([track]);
+}
+
+export function forgetWhisperLine(peerId) {
+  whisperTracks[peerId]?.stop();
+  delete whisperTracks[peerId];
+  delete whisperAudioElements[peerId];
+  if (whisperingTo === peerId) setWhisperTarget(null);
+}
+
+// Starts whispering to one friend (their peer id), or stops (null).
+// Returns false if there's no mic, or no private line to them yet.
+export function setWhisperTarget(peerId) {
+  if (peerId && !whisperTracks[peerId]) return false;
+  whisperingTo = peerId;
+  for (const [id, track] of Object.entries(whisperTracks)) track.enabled = id === peerId;
+  if (localTrack) localTrack.enabled = isVoiceRoom(currentRoomId) && !whisperingTo;
+  return true;
+}
+
+export function whisperTarget() {
+  return whisperingTo;
+}
+
+// Called when a friend's voice stream arrives, so we can play it. A
+// whisper line (metadata.whisper) is played on its own: it's silent unless
+// that friend is whispering to you, and then you hear it in any room
+// (except where everything is silent: Dinner, or asleep).
+const whisperAudioElements = {}; // peer id -> <audio> for their whisper line to you
+export function handlePeerStream(stream, peerId, metadata) {
+  if (metadata?.whisper) {
+    const el = document.createElement("audio");
+    el.srcObject = stream;
+    document.body.appendChild(el);
+    el.play().catch(() => {});
+    whisperAudioElements[peerId] = el;
+    return;
+  }
   const audioEl = document.createElement("audio");
   audioEl.srcObject = stream;
   audioEl.muted = true; // updateVoiceRouting unmutes it once room rules allow
@@ -775,12 +850,14 @@ export function soundIsBlocked() {
 // Called on the first click after that: lets sound (and friends' voices) play.
 export function resumeAudio() {
   toneContext?.resume();
-  for (const el of Object.values(peerAudioElements)) el.play().catch(() => {});
+  for (const el of [...Object.values(peerAudioElements), ...Object.values(whisperAudioElements)]) el.play().catch(() => {});
 }
 
 export function removePeerAudio(peerId) {
   peerAudioElements[peerId]?.remove();
   delete peerAudioElements[peerId];
+  whisperAudioElements[peerId]?.remove();
+  forgetWhisperLine(peerId);
 }
 
 // Call every frame with your current room and the list of peers, to
@@ -793,6 +870,10 @@ export function updateVoiceRouting(myRoomId, peers) {
     const sameVoiceRoom = iAmInVoiceRoom && peer.room === myRoomId;
     audioEl.muted = masterMuted || !sameVoiceRoom;
     audioEl.volume = masterVolume;
+  }
+  for (const el of Object.values(whisperAudioElements)) {
+    el.muted = masterMuted || isSilentSpot();
+    el.volume = masterVolume;
   }
 }
 

@@ -45,6 +45,13 @@ const CONFIG = {
   // tiles away (and from another floor). Everyone can still see dances.
   danceSoundRange: 10,
 
+  // Speaking: while your mic hears you (louder than `threshold`, 0 to 1),
+  // your character bounces gently and glows, so friends can see who's
+  // talking. `holdMs` keeps it going through tiny pauses between words.
+  // Only the yes/no is shared, never the sound, and only while your mic
+  // is live.
+  speaking: { threshold: 0.02, holdMs: 300 },
+
   // Sitting: press E within this many tiles of a free seat to sit down.
   sit: { reach: 1.0 },
 

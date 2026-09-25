@@ -6,7 +6,18 @@
 // local copy, because Trystero's built files depend on a couple of other
 // small packages that only resolve correctly when served through a CDN
 // like esm.sh. Pinning the version means it won't silently change on us.
-import { joinRoom } from "https://esm.sh/trystero@0.25.4/nostr";
+import { joinRoom, selfId } from "https://esm.sh/trystero@0.25.4/nostr";
+import { makeWhisperStream } from "./audio.js";
+
+// This browser's id in the room (the same one friends see us as).
+export const myPeerId = selfId;
+
+// Sends a friend their own private whisper line (see audio.js), only to
+// them, labelled so they can tell it from normal voice.
+function sendWhisperLine(peerId) {
+  const stream = makeWhisperStream(peerId);
+  if (stream) room.addStream(stream, { target: peerId, metadata: { whisper: true } });
+}
 
 let room = null;
 let positionAction = null;
@@ -153,6 +164,7 @@ export function addLocalStream(stream) {
   localStream = stream;
   if (room) {
     room.addStream(stream);
+    for (const peerId of Object.keys(peers)) sendWhisperLine(peerId);
   }
 }
 
@@ -221,7 +233,10 @@ export function connectToRoom(myName, myColor) {
     peers[peerId] = { name: "...", color: "#999", x: 8.7, y: 1.2, room: "hallway" };
     // addLocalStream only reaches friends who were already here, so
     // anyone arriving later needs our mic sent to them directly.
-    if (localStream) room.addStream(localStream, { target: peerId });
+    if (localStream) {
+      room.addStream(localStream, { target: peerId });
+      sendWhisperLine(peerId);
+    }
     // Tell the new friend who we are right away, don't wait for the next tick.
     positionAction(lastKnownPosition);
     externalOnPeerJoin?.(peerId);
@@ -232,8 +247,8 @@ export function connectToRoom(myName, myColor) {
     externalOnPeerLeave?.(peerId);
   };
 
-  room.onPeerStream = (stream, peerId) => {
-    externalOnPeerStream?.(stream, peerId);
+  room.onPeerStream = (stream, peerId, metadata) => {
+    externalOnPeerStream?.(stream, peerId, metadata);
   };
 }
 

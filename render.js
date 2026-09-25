@@ -8645,7 +8645,21 @@ function drawPlayerBody(ctx, p) {
   // Sitting (p.seated is the way they face): lower, feet tucked, and
   // facing the way the seat does.
   const seated = p.seated;
-  const cy = foot.y - r - 5 - bob + seatLift(seated); // (facing away on a tall seat, you sit up so your head shows over its back)
+  const speaking = p.speaking && !p.whisper && !p.asleep;
+  const speechBob = speaking ? Math.abs(Math.sin((performance.now() / 1000) * 9)) * 2 : 0; // bouncing gently while talking
+  const cy = foot.y - r - 5 - bob - speechBob + seatLift(seated); // (facing away on a tall seat, you sit up so your head shows over its back)
+
+  // Talking (p.speaking, while their mic hears them): a soft glow behind
+  // them and a gentle bounce. (Not while whispering: that has its own look.)
+  if (speaking) {
+    const glow = ctx.createRadialGradient(cx, cy, PLAYER_RADIUS * 0.6, cx, cy, PLAYER_RADIUS * 1.9);
+    glow.addColorStop(0, "rgba(255, 245, 200, 0.55)");
+    glow.addColorStop(1, "rgba(255, 245, 200, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, PLAYER_RADIUS * 1.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // The Exalted look's sigil circle (on the floor) and any floating
   // candles that are behind them right now.

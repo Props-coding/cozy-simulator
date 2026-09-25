@@ -240,6 +240,8 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 
   - Step 4, sitting: chairs, stools, theater seats, the cinema sofa, benches (2 spots), loveseats (2), the cloud sofa (3), armchairs, the papasan, egg and rocking chairs, beanbags, poufs, floor cushions and beds (sit on the edge) have seat spots, listed in `SEATS` in `world.js` (bought and turned Nest & Nook pieces too). Walk near a free spot and press E ("Press E to sit." shows); you snap into a seated pose facing the way the seat does (feet tucked, face turned sideways on side-facing seats, the back of your head when facing away, sitting up tall on seats with a high back). Moving, or E again, gets you up where you were standing. One person per spot; if two grab the same spot at the same moment, the name first in the alphabet keeps it. Friends see who's sitting where. Sitting on a bed's edge isn't going to bed. Reach is `sit.reach` in `config.js`.
 
+  - Step 5, speaking bounce: while your mic hears you, your character bounces gently with a soft glow behind it, so everyone can see who's talking. Measured from your own mic's loudness in your browser; only "speaking: yes/no" is shared (never the sound). Only while your mic is live (in a voice room, not whispering), so no bounce elsewhere. Sensitivity is `speaking.threshold` and `holdMs` in `config.js`. (The private whisper lines for step 6 are set up here too, switched off.)
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
