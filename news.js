@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.50",
+    title: "Feel & polish: sit, whisper, and an emote wheel",
+    text: "Lots of little things to make the house feel alive. Press E near a chair, sofa, bench or bed to sit (move to get up). Hold V right next to a friend to whisper to only them, even in a voice room. Hold Q for an emote wheel. Your character bounces gently while you talk, and does little stretches and yawns if you're away from the keyboard. Dances have a short cooldown now, and their music fades with distance. A grandfather clock in the hallway chimes on the hour (turn it off in Settings), and admins have a little shield by their name.",
+  },
+  {
     build: "0.49",
     title: "The raccoons restocked!",
     text: "Pip, Reginald and Bean got a big delivery (don't ask from where). 14 new hats, including a beret, cat ears, bunny ears, a flower crown, a propeller cap, a pirate hat, a viking helmet, a santa hat, a head sprout and a tiara. 8 new shoes, from flip-flops to ruby slippers. 8 new pets: a snail, hamster, turtle, sheep, owl, bat, capybara (with an orange) and an axolotl. And a whole new Glasses section: round, sunglasses, cat-eye, heart, 3D, star, goggles and a monocle. Your wardrobe has a Glasses tab too. Also: the whiteboard now saves your drawings right away, even if you refresh.",
