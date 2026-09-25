@@ -227,6 +227,11 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Whiteboard saving fix: it waited 3 seconds after you stopped drawing before saving, so a quick refresh lost the drawing. Now it saves under a second after each stroke, right away when you close the whiteboard, and on the way out if you reload or leave with unsaved changes.
   - The raccoons restocked: 14 new hats (beret, bucket hat, head sprout, cat ears, flower crown, straw hat, propeller cap, mushroom cap, bunny ears, graduation cap, santa hat, pirate hat, viking helmet, tiara), 8 new shoes (flip-flops, ballet flats, socks and sandals, clogs, hiking boots, moon boots, light-up sneakers, ruby slippers), 8 new pets (snail, hamster, turtle, sheep, owl, bat, capybara, axolotl), each with its own raccoon line. A new Glasses section (round, sunglasses, cat-eye, heart, 3D, star, goggles, monocle), worn on the face (hidden under the Exalted robe's hood), with a Glasses tab in the wardrobe and a pick on the Join screen; friends and profiles show them (server profile update deployed). Shop tabs list items cheapest first.
 
+- Update 1, Feel & Polish (in progress, not pushed yet):
+  - Step 1, small wins:
+    - A grandfather clock in the hallway (east of the middle office door) shows your real local time with a swinging pendulum. On each hour it plays a soft Westminster chime, then one low bong per hour. It follows master volume and mute, is silent in Dinner (and while asleep), and has an "Hourly clock chime" switch in Settings. Its volume, the bongs and how often it checks are in `hourlyChime` in `config.js`.
+    - Admin badge: a small 🛡️ (`adminBadge` in `config.js`) before admins' names in chat and on their name tag. Only the house server decides who's an admin: it gives each admin a signed "badge pass", and every browser checks the signature with the server's public key before showing the badge, so nobody can give themselves one (a copied or made-up pass is refused). Needs the server update deployed (new: /api/badge-key, and a badge pass in the login info).
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

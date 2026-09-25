@@ -3444,3 +3444,9 @@ input[type="range"]::-moz-range-thumb {
 .kanban-edit-buttons span {
   flex: 1;
 }
+
+/* An admin's badge before their name in chat. */
+.admin-badge {
+  margin-right: 3px;
+  font-size: 0.85em;
+}

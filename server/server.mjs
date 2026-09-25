@@ -10,7 +10,7 @@
 // come from /etc/cozy-server.env on the droplet, never from the public
 // repo. See server/README.md.
 import http from "node:http";
-import { scrypt as scryptCallback, randomBytes, timingSafeEqual, createHash, createHmac } from "node:crypto";
+import { scrypt as scryptCallback, randomBytes, timingSafeEqual, createHash, createHmac, generateKeyPairSync, createPrivateKey, createPublicKey, sign } from "node:crypto";
 import { readFile, writeFile, rename, mkdir, readdir, unlink, copyFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -186,7 +186,35 @@ function currentUser(req) {
   return { user, key: session.user, tokenHash: sha256(token) };
 }
 
-const publicUser = (u) => ({ name: u.name, member: !!u.member, admin: !!u.admin });
+// --- Admin badges ---
+// Admins get a small badge by their name in chat and on their name tag.
+// Only this server decides who's an admin, and it proves it with a signed
+// "badge pass": { payload: "name|expires", sig }. Everyone's browser checks
+// the signature with the server's public key (GET /api/badge-key) before
+// showing the badge, so nobody can make one for themselves.
+const BADGE_KEY_FILE = join(DATA_DIR, "badge-key.pem");
+const BADGE_DAYS = 7;
+let badgeKey = null; // the private key, loaded (or made) at startup
+
+async function loadBadgeKey() {
+  try {
+    badgeKey = createPrivateKey(await readFile(BADGE_KEY_FILE, "utf8"));
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
+    const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+    await writeFile(BADGE_KEY_FILE, privateKey.export({ type: "pkcs8", format: "pem" }), { mode: 0o600 });
+    badgeKey = privateKey;
+  }
+}
+
+function badgeFor(user) {
+  if (!user.admin || !badgeKey) return null;
+  const payload = `${user.name}|${Date.now() + BADGE_DAYS * 86400_000}`;
+  const sig = sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64");
+  return { payload, sig };
+}
+
+const publicUser = (u) => ({ name: u.name, member: !!u.member, admin: !!u.admin, badge: badgeFor(u) });
 
 // Used for unknown names, so a wrong name takes as long as a wrong password.
 const DUMMY_SALT = randomBytes(16).toString("hex");
@@ -309,6 +337,9 @@ function applyKanban(body, user) {
 
 const routes = {
   "GET /api/health": async () => ({ ok: true }),
+
+  // The public half of the badge key, for checking admin badges.
+  "GET /api/badge-key": async () => ({ key: createPublicKey(badgeKey).export({ type: "spki", format: "der" }).toString("base64") }),
 
   "POST /api/signup": async (req, ip) => {
     if (!allowed("signup:" + ip, 10)) throw new Oops(429, "Too many tries. Please wait a few minutes.");
@@ -695,6 +726,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 await loadDb();
+await loadBadgeKey();
 await backup();
 setInterval(backup, 24 * 3600_000).unref();
 server.listen(PORT, "127.0.0.1", () => console.log(`Cozy House server listening on 127.0.0.1:${PORT}`));

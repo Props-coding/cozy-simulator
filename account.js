@@ -289,6 +289,54 @@ export function serverApi(method, path, body, options) {
   return api(method, path, body, options);
 }
 
+// --- Admin badges ---
+// The server gives each admin a signed "badge pass" ({ payload:
+// "name|expires", sig }). It's shared with friends, and everyone checks
+// the signature with the server's public key before showing the badge, so
+// nobody can give themselves one.
+export function myBadge() {
+  return account?.badge ?? null;
+}
+
+let badgeKeyPromise = null;
+function badgeKey() {
+  badgeKeyPromise ??= fetch(SERVER + "/api/badge-key")
+    .then((res) => res.json())
+    .then(({ key }) => crypto.subtle.importKey("spki", Uint8Array.from(atob(key), (c) => c.charCodeAt(0)), { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]))
+    .catch(() => {
+      badgeKeyPromise = null; // try again later
+      return null;
+    });
+  return badgeKeyPromise;
+}
+
+const badgeChecks = new Map(); // "payload|sig" -> true, false, or "checking"
+
+// True if `badge` is a real, unexpired admin pass for `name`. Checking
+// takes a moment the first time, so it says false until it knows.
+export function checkBadge(badge, name) {
+  if (!badge || typeof badge.payload !== "string" || typeof badge.sig !== "string" || !name) return false;
+  const [who, expires] = badge.payload.split("|");
+  if (who.toLowerCase() !== String(name).toLowerCase() || !(Number(expires) > Date.now())) return false;
+  const key = badge.payload + "|" + badge.sig;
+  const known = badgeChecks.get(key);
+  if (known === true || known === false) return known;
+  if (!known && badgeChecks.size < 50) {
+    badgeChecks.set(key, "checking");
+    badgeKey().then(async (publicKey) => {
+      if (!publicKey) return badgeChecks.delete(key);
+      try {
+        const sig = Uint8Array.from(atob(badge.sig), (c) => c.charCodeAt(0));
+        const ok = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, publicKey, sig, new TextEncoder().encode(badge.payload));
+        badgeChecks.set(key, ok);
+      } catch {
+        badgeChecks.set(key, false);
+      }
+    });
+  }
+  return false;
+}
+
 // True if this account is an admin (sees the 🛠️ panel).
 export function isAdmin() {
   return !!account?.admin;
@@ -301,6 +349,7 @@ export function accountName() {
 async function afterLogin(user) {
   account.name = user.name;
   account.admin = !!user.admin;
+  account.badge = user.badge ?? null; // an admin's signed badge pass (see checkBadge)
   storage.set(ACCOUNT_KEY, JSON.stringify(account));
   if (!user.member) {
     phraseHello.textContent = `Hi ${user.name}! Enter the house phrase a friend gave you. You only need to do this once.`;

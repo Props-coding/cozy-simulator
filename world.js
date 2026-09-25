@@ -145,6 +145,8 @@ const BASE_FURNITURE = [
   { kind: "mirror", x: 9.45, y: 0, w: 0.7, short: true, solid: false },
   { kind: "console", x: 8.9, y: 0.1, w: 1.8, h: 0.45 },
   { kind: "sconce", x: 12.85, y: 0, solid: false },
+  // A grandfather clock showing the real (local) time; it chimes on the hour.
+  { kind: "grandfatherClock", x: 13.4, y: 0.05, w: 0.75, h: 0.45 },
   { kind: "sconce", x: 14.6, y: 0, solid: false },
   { kind: "sconce", x: 17.1, y: 0, solid: false },
   { kind: "picture", x: 18.6, y: 0, w: 1.1, art: "sea", solid: false },

@@ -22,6 +22,20 @@ const CONFIG = {
   // opens the full color picker).
   wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],
 
+  // The grandfather clock in the hallway chimes softly on every hour (your
+  // own local time). It follows the master volume and mute, is silent in
+  // Dinner, and can be turned off in Settings.
+  hourlyChime: {
+    on: true, // the starting setting for someone who hasn't chosen yet
+    volume: 0.06, // how loud (0 to 1, before the master volume)
+    strikes: true, // after the little tune, one low "bong" per hour (1 to 12)
+    checkSeconds: 15, // how often to check whether the hour has changed
+  },
+
+  // The little badge shown before an admin's name in chat and on their name
+  // tag. (Who's an admin is decided by the house server, not here.)
+  adminBadge: "🛡️",
+
   // Accounts that can wear the Exalted look (a hooded robe, sigil circle,
   // floating candles and rune footsteps), switched on in their wardrobe.
   exaltedNames: ["Props"],

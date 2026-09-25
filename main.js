@@ -35,6 +35,7 @@ import {
   playRoomChangeSound,
   playClickSound,
   playElevatorDing,
+  playHourlyChime,
   playKnockSound,
   playTimerChime,
   playChatSound,
@@ -75,7 +76,7 @@ import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
-import { isHouseReady } from "./account.js";
+import { isHouseReady, myBadge, checkBadge } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
@@ -104,6 +105,33 @@ const roomLabel = document.getElementById("room-label");
 const actionHint = document.getElementById("action-hint");
 const peerList = document.getElementById("peer-list");
 const muteToggle = document.getElementById("mute-toggle");
+
+// --- The hallway clock's hourly chime ---
+// Checks every few seconds whether your local hour has changed, and if so
+// chimes (unless you've turned it off in Settings). The setting is
+// remembered in this browser.
+const chimeToggle = document.getElementById("chime-toggle");
+const CHIME_KEY = "cozy-house-chime";
+try {
+  const saved = localStorage.getItem(CHIME_KEY);
+  chimeToggle.checked = saved === null ? CONFIG.hourlyChime.on : saved === "on";
+} catch {
+  chimeToggle.checked = CONFIG.hourlyChime.on;
+}
+chimeToggle.addEventListener("change", () => {
+  try {
+    localStorage.setItem(CHIME_KEY, chimeToggle.checked ? "on" : "off");
+  } catch {
+    // Storage blocked: it just won't be remembered.
+  }
+});
+let lastChimeHour = new Date().getHours();
+setInterval(() => {
+  const hour = new Date().getHours();
+  if (hour === lastChimeHour) return;
+  lastChimeHour = hour;
+  if (chimeToggle.checked && !gameScreen.hidden) playHourlyChime(hour);
+}, CONFIG.hourlyChime.checkSeconds * 1000);
 const volumeSlider = document.getElementById("volume-slider");
 const lofiVolumeSlider = document.getElementById("lofi-volume-slider");
 const rainVolumeSlider = document.getElementById("rain-volume-slider");
@@ -920,6 +948,13 @@ function renderChat({ toBottom = false, newMessage = false } = {}) {
     name.className = "chat-name";
     name.style.color = safeColor(line.color);
     name.textContent = line.name + ": ";
+    if (line.admin) {
+      const badge = document.createElement("span");
+      badge.className = "admin-badge";
+      badge.textContent = CONFIG.adminBadge;
+      badge.title = "House admin";
+      name.prepend(badge);
+    }
     li.append(name, document.createTextNode(line.text));
     chatLog.appendChild(li);
   }
@@ -997,10 +1032,10 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
   if (chatTab === "office" && lastOfficeRoomId) {
     const inThisOffice = getPeers().filter((p) => p.room === lastOfficeRoomId).map((p) => p.id);
     sendChat({ text, office: lastOfficeRoomId }, inThisOffice);
-    addChatLine({ channel: lastOfficeRoomId, name: myName, color: myColor, text }, true);
+    addChatLine({ channel: lastOfficeRoomId, name: myName, color: myColor, text, admin: checkBadge(myBadge(), myName) }, true);
   } else {
     sendChat({ text });
-    addChatLine({ channel: "house", name: myName, color: myColor, text }, true);
+    addChatLine({ channel: "house", name: myName, color: myColor, text, admin: checkBadge(myBadge(), myName) }, true);
   }
   bubbles.me = { text, until: performance.now() + 6000 };
 });
@@ -1079,7 +1114,7 @@ onChat((message, peerId) => {
     if (message.office !== getCurrentRoom(player).id) return;
     channel = message.office;
   }
-  addChatLine({ channel, name: peerName, color: peer?.color, text });
+  addChatLine({ channel, name: peerName, color: peer?.color, text, admin: checkBadge(peer?.badge, peer?.name) });
   bubbles[peerId] = { text, until: performance.now() + 6000 };
   playChatSound();
 });
@@ -1443,7 +1478,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura() });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge() });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -1455,12 +1490,12 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name) };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name) };
   });
   lastScenePlayers = scenePlayers;
   const myBed = bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura() });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName) });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 

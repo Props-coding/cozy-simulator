@@ -160,6 +160,17 @@ export function playElevatorDing() {
   playTone(830.61, 260, { gain: 0.08, duration: 0.8, type: "sine" });
 }
 
+// The hallway clock's hourly chime: the first line of the Westminster
+// chimes, softly, then one low bong for each hour (if turned on).
+export function playHourlyChime(hour) {
+  const { volume, strikes } = CONFIG.hourlyChime;
+  const tune = [415.3, 369.99, 329.63, 246.94]; // G#4 F#4 E4 B3
+  tune.forEach((f, i) => playTone(f, i * 650, { gain: volume, duration: 1.4, type: "sine" }));
+  if (!strikes) return;
+  const count = hour % 12 || 12;
+  for (let i = 0; i < count; i++) playTone(164.81, 3200 + i * 1300, { gain: volume * 1.2, duration: 1.8, type: "sine" });
+}
+
 // A card moved to Done in the Workshop: a bright little "ding-ding!".
 export function playCardDoneSound() {
   playTone(783.99, 0, { gain: 0.08, duration: 0.15, type: "triangle" });

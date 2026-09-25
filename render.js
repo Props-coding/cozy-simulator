@@ -5177,6 +5177,61 @@ const FURNITURE_DRAWERS = {
     drawIvySprig(ctx, b.x + 1, b.y - 18, 11, 1);
   },
 
+  // A tall grandfather clock: a wooden case, a face showing the real local
+  // time, and a brass pendulum swinging behind a little glass window.
+  grandfatherClock(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const c = drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, f.h, 72, "#6b4630");
+    const { x, y, w, h } = c.face;
+    ctx.fillStyle = "#4a2f20"; // the crown on top
+    ctx.fillRect(c.top.x - 2, c.top.y - 3, c.top.w + 4, 4);
+    const cx = x + w / 2, fy = y + 13;
+    ctx.fillStyle = "#f7f1e6"; // the face
+    ctx.beginPath();
+    ctx.arc(cx, fy, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c9a24a";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = "#5c4530";
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      ctx.fillRect(cx + Math.cos(a) * 7 - 0.4, fy + Math.sin(a) * 7 - 0.4, 0.8, 0.8);
+    }
+    const now = new Date();
+    const hand = (turn, len, width) => {
+      const a = turn * Math.PI * 2 - Math.PI / 2;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(cx, fy);
+      ctx.lineTo(cx + Math.cos(a) * len, fy + Math.sin(a) * len);
+      ctx.stroke();
+    };
+    ctx.strokeStyle = "#2b2b2b";
+    hand(((now.getHours() % 12) + now.getMinutes() / 60) / 12, 4.5, 1.4);
+    hand((now.getMinutes() + now.getSeconds() / 60) / 60, 6.5, 1);
+    ctx.fillStyle = "rgba(200, 225, 235, 0.25)"; // the glass window
+    ctx.fillRect(x + 5, y + 26, w - 10, h - 36);
+    const swing = Math.sin(performance.now() / 1000 * Math.PI) * 0.35; // one tick a second
+    ctx.save();
+    ctx.translate(cx, y + 26);
+    ctx.rotate(swing);
+    ctx.strokeStyle = "#c9a24a";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, h - 44);
+    ctx.stroke();
+    ctx.fillStyle = "#d9b04a";
+    ctx.beginPath();
+    ctx.arc(0, h - 42, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = "rgba(40, 25, 10, 0.4)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 5, y + 26, w - 10, h - 36);
+  },
+
   // --- The Workshop ---
 
   // The house's project board on the Workshop wall: a big corkboard with
@@ -8983,12 +9038,19 @@ function drawPlayerTag(ctx, p) {
 
   ctx.font = "600 11px 'Quicksand', sans-serif";
   ctx.textAlign = "center";
-  const tagWidth = ctx.measureText(p.name).width + 12;
+  // Admins get a little badge before their name (checked with the server's
+  // signature, see checkBadge in account.js).
+  const badgeWidth = p.admin ? 13 : 0;
+  const tagWidth = ctx.measureText(p.name).width + 12 + badgeWidth;
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
   roundRectPath(ctx, cx - tagWidth / 2, headTop - 18, tagWidth, 14, 7);
   ctx.fill();
   ctx.fillStyle = "#333";
-  ctx.fillText(p.name, cx, headTop - 7.5);
+  ctx.fillText(p.name, cx + badgeWidth / 2, headTop - 7.5);
+  if (p.admin) {
+    ctx.font = "9px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
+    ctx.fillText(CONFIG.adminBadge, cx - tagWidth / 2 + 10, headTop - 7.5);
+  }
 
   if (p.badge) {
     ctx.font = "13px sans-serif";
