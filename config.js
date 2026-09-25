@@ -45,6 +45,12 @@ const CONFIG = {
   // tiles away (and from another floor). Everyone can still see dances.
   danceSoundRange: 10,
 
+  // Idle animations: after this many seconds with no keys or mouse, your
+  // character starts stretching, yawning and looking around (with a
+  // random pause of gapMin to gapMax seconds between them). Sitting
+  // characters do a gentler one.
+  idle: { afterSeconds: 25, gapMin: 3, gapMax: 8 },
+
   // The little badge shown before an admin's name in chat and on their name
   // tag. (Who's an admin is decided by the house server, not here.)
   adminBadge: "🛡️",

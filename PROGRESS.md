@@ -236,6 +236,8 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
     - Dance cooldown: after you dance, dancing is unavailable for `danceCooldownSeconds` (12, counted from the start). The dance button and wheel slot show a ring filling back up; presses during it are ignored. Everyone's browser also ignores a friend's dance that comes too soon, so it can't be skipped by changing your own browser.
     - Dance sound by distance: everyone still sees dances from anywhere, but the music fades with distance and is silent `danceSoundRange` (10) tiles away, and from another floor.
 
+  - Step 3, idle animations: after `idle.afterSeconds` (25) with no keys or mouse, your character stretches (with little sparkles), yawns (with a sleepy "~") or looks around, with a random pause of `gapMin` to `gapMax` seconds between them. Any key, click, scroll or mouse movement stops them instantly. Friends see them (they're sent like emotes). They never start during an emote or while asleep; sitting characters get a gentler one (breathing with eyes closed).
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

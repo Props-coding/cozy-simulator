@@ -794,6 +794,7 @@ function startEmote(id) {
     if (danceCooldownLeft() > 0) return; // still cooling down
     id = myDance();
   }
+  stopIdle();
   if (!Object.hasOwn(EMOTE_LENGTHS, id)) return;
   if (isDance(id)) {
     if (danceCooldownLeft() > 0) return;
@@ -818,6 +819,48 @@ function stopMyEmote() {
   if (!myEmote) return;
   myEmote = null;
   sendEmote(null);
+}
+
+// --- Idle animations ---
+// After CONFIG.idle.afterSeconds with no keys or mouse, your character
+// stretches, yawns or looks around now and then (a gentler one while
+// sitting). Friends see them too (they're sent like emotes). Any input
+// stops them straight away, and they never start during an emote.
+const IDLE_MOVES = ["idleStretch", "idleYawn", "idleLook"];
+let lastInput = performance.now();
+let nextIdleAt = 0;
+const isIdleEmote = (id) => id?.startsWith("idle");
+
+function stopIdle() {
+  if (isIdleEmote(myEmote?.id)) stopMyEmote();
+}
+
+function noteInput() {
+  lastInput = performance.now();
+  nextIdleAt = 0;
+  stopIdle();
+}
+window.addEventListener("keydown", noteInput, true);
+window.addEventListener("mousedown", noteInput, true);
+window.addEventListener("mousemove", noteInput, true);
+window.addEventListener("wheel", noteInput, true);
+
+function updateIdle() {
+  const now = performance.now();
+  if (gameScreen.hidden || amAsleep || now - lastInput < CONFIG.idle.afterSeconds * 1000) return;
+  if (emoteNow(myEmote)) return; // one's already playing (an emote, or an idle one)
+  const gap = () => (CONFIG.idle.gapMin + Math.random() * (CONFIG.idle.gapMax - CONFIG.idle.gapMin)) * 1000;
+  if (!nextIdleAt) nextIdleAt = now + gap();
+  if (now < nextIdleAt) return;
+  const id = isSeated() ? "idleSeated" : IDLE_MOVES[Math.floor(Math.random() * IDLE_MOVES.length)];
+  myEmote = { id, start: now };
+  sendEmote(id);
+  nextIdleAt = now + EMOTE_LENGTHS[id] * 1000 + gap();
+}
+
+// (Sitting is added in step 4 of Update 1.)
+function isSeated() {
+  return false;
 }
 
 // An emote in the form the drawing code wants ({ id, t } with t in
@@ -1543,6 +1586,7 @@ function tick(now) {
   }
   updateElevator(dt);
   showDanceCooldown();
+  updateIdle();
   updateSleep();
 
   const currentRoom = getCurrentRoom(player);

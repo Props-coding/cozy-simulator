@@ -8691,15 +8691,34 @@ function drawPlayerBody(ctx, p) {
   ctx.strokeStyle = "#2b2b2b";
   ctx.fillStyle = "#2b2b2b";
   ctx.lineWidth = 1.5;
-  if (emote === "sleepy" || emote === "sway") {
-    // Closed eyes: sleepy, or lost in the music.
+  if (emote === "idleYawn") {
+    // A big yawn: eyes squeezed shut, mouth opening wide and closing.
+    const open = Math.sin(Math.min(1, et / 2.8) * Math.PI);
+    for (const ex of [cx - 4, cx + 4]) {
+      ctx.beginPath();
+      ctx.arc(ex, cy - 3, 2, Math.PI * 0.15, Math.PI * 0.85); // closed, relaxed eyes
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#6b2a2a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 3.5, 2 + open * 1.5, 1 + open * 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (emote === "idleLook") {
+    // Looking around: eyes glancing one way, then the other.
+    const look = Math.sin(et * 2) * 2.5;
+    ctx.beginPath();
+    ctx.arc(cx - 4 + look, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.arc(cx + 4 + look, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (emote === "sleepy" || emote === "sway" || emote === "idleSeated") {
+    // Closed eyes: sleepy, lost in the music, or resting in a seat.
     ctx.beginPath();
     ctx.moveTo(cx - 6, cy - 1.5);
     ctx.lineTo(cx - 2, cy - 1.5);
     ctx.moveTo(cx + 2, cy - 1.5);
     ctx.lineTo(cx + 6, cy - 1.5);
     ctx.stroke();
-  } else if (emote === "laugh" || emote === "jig" || emote === "headbang" || emote === "glitch" || HAPPY_DANCES.has(emote)) {
+  } else if (emote === "laugh" || emote === "jig" || emote === "headbang" || emote === "glitch" || emote === "idleStretch" || HAPPY_DANCES.has(emote)) {
     // Happy squinting eyes, like ^ ^.
     for (const ex of [cx - 4, cx + 4]) {
       ctx.beginPath();
@@ -8728,7 +8747,9 @@ function drawPlayerBody(ctx, p) {
   ctx.ellipse(cx - 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
   ctx.ellipse(cx + 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
   ctx.fill();
-  if (emote === "laugh") {
+  if (emote === "idleYawn") {
+    // (the yawning mouth is drawn with the eyes)
+  } else if (emote === "laugh") {
     ctx.fillStyle = "#6b2a2a"; // wide open laughing mouth
     ctx.beginPath();
     ctx.arc(cx, cy + 2.5, 3.5, 0, Math.PI);
@@ -8791,6 +8812,7 @@ function drawPlayerBody(ctx, p) {
 const EMOTE_LENGTHS = {
   wave: 2.5, heart: 3, laugh: 3, sleepy: 5,
   jig: 6, headbang: 6, glitch: 5, sway: 6.5,
+  idleStretch: 2.6, idleYawn: 2.8, idleLook: 3.2, idleSeated: 3.5, // idle animations (not picked by you)
   disco: 6, rave: 6, boombap: 6, mosh: 5, pop: 6, twostep: 6, reggaeton: 6, swing: 5, synthwave: 7,
 };
 
@@ -8799,6 +8821,11 @@ const EMOTE_LENGTHS = {
 // kick). Each is timed to its music's tempo.
 const beats = (t, bpm) => t * (bpm / 60);
 const DANCE_MOVES = {
+  // Idle animations (they share this table with the dances).
+  idleStretch: (t) => { const up = Math.sin(Math.min(1, t / 2.6) * Math.PI); return { bob: up * 5, tilt: Math.sin(t * 5) * 0.04 * up }; },
+  idleYawn: (t) => ({ tilt: -Math.sin(Math.min(1, t / 2.8) * Math.PI) * 0.08 }),
+  idleLook: () => ({}),
+  idleSeated: (t) => ({ bob: (Math.sin(t * 1.8) + 1) * 0.8 }),
   disco: (t) => { const b = beats(t, 118); return { sway: Math.sin(b * Math.PI) * 5, bob: Math.abs(Math.sin(b * Math.PI * 2)) * 3, tilt: Math.sin(b * Math.PI) * 0.1, step: Math.sin(b * Math.PI * 2) }; },
   rave: (t) => { const b = beats(t, 128); return { bob: Math.pow(Math.abs(Math.sin(b * Math.PI)), 2) * 7, step: Math.sin(b * Math.PI * 2), kick: 2 }; },
   boombap: (t) => { const b = beats(t, 90); return { sway: 2, bob: Math.abs(Math.sin(b * Math.PI)) * 2, tilt: 0.06 + Math.pow(Math.abs(Math.sin(b * Math.PI)), 3) * 0.12 }; },
@@ -8876,6 +8903,17 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
       ctx.arc(x, y, 9, 0, Math.PI * 2);
       ctx.fill();
     }
+  } else if (id === "idleYawn") {
+    ctx.fillStyle = "#8a7560"; // a little sleepy "~"
+    ctx.font = "700 11px 'Quicksand', sans-serif";
+    ctx.globalAlpha = Math.sin(Math.min(1, t / 2.8) * Math.PI);
+    ctx.fillText("~", cx + 14, headTop + 16 - t * 3);
+  } else if (id === "idleStretch") {
+    ctx.fillStyle = "#d9a441";
+    ctx.font = "700 10px 'Quicksand', sans-serif";
+    ctx.globalAlpha = Math.sin(Math.min(1, t / 2.6) * Math.PI);
+    ctx.fillText("✧", cx - 14, headTop + 10);
+    ctx.fillText("✧", cx + 14, headTop + 10);
   } else if (id === "disco") {
     // A tiny mirror ball above them, throwing colorful sparkles.
     const bx = cx, by = headTop - 34;
