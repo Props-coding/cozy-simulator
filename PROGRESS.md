@@ -231,6 +231,10 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Step 1, small wins:
     - A grandfather clock in the hallway (east of the middle office door) shows your real local time with a swinging pendulum. On each hour it plays a soft Westminster chime, then one low bong per hour. It follows master volume and mute, is silent in Dinner (and while asleep), and has an "Hourly clock chime" switch in Settings. Its volume, the bongs and how often it checks are in `hourlyChime` in `config.js`.
     - Admin badge: a small 🛡️ (`adminBadge` in `config.js`) before admins' names in chat and on their name tag. Only the house server decides who's an admin: it gives each admin a signed "badge pass", and every browser checks the signature with the server's public key before showing the badge, so nobody can give themselves one (a copied or made-up pass is refused). Needs the server update deployed (new: /api/badge-key, and a badge pass in the login info).
+  - Step 2, emotes:
+    - Emote wheel: hold Q to open a wheel of emotes around your character, point the mouse at one, let go to do it (or click one). Escape closes it. The buttons and number keys still work. Key and size are in `emoteWheel` in `config.js`.
+    - Dance cooldown: after you dance, dancing is unavailable for `danceCooldownSeconds` (12, counted from the start). The dance button and wheel slot show a ring filling back up; presses during it are ignored. Everyone's browser also ignores a friend's dance that comes too soon, so it can't be skipped by changing your own browser.
+    - Dance sound by distance: everyone still sees dances from anywhere, but the music fades with distance and is silent `danceSoundRange` (10) tiles away, and from another floor.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

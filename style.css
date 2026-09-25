@@ -3450,3 +3450,54 @@ input[type="range"]::-moz-range-thumb {
   margin-right: 3px;
   font-size: 0.85em;
 }
+
+/* The emote wheel (hold Q): round emote buttons in a ring around your
+   character, the one you're pointing at lifted and outlined. */
+#emote-wheel {
+  position: fixed;
+  width: 0;
+  height: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+#emote-wheel::before {
+  content: "";
+  position: absolute;
+  left: -96px;
+  top: -96px;
+  width: 192px;
+  height: 192px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 250, 243, 0.55) 30%, rgba(255, 250, 243, 0) 72%);
+}
+
+.emote-slot {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fffaf3;
+  box-shadow: 0 0 0 2px #ead8bd, 0 3px 8px rgba(60, 35, 15, 0.25);
+  font-size: 20px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.emote-slot.chosen {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px var(--accent), 0 4px 12px rgba(60, 35, 15, 0.3);
+}
+
+/* The dance's cooldown: a ring filling back up around the button. */
+.cooling {
+  opacity: 0.7;
+  background:
+    radial-gradient(circle, #fffaf3 58%, transparent 61%),
+    conic-gradient(var(--accent) var(--cooldown), #e6dccb var(--cooldown)) !important;
+}

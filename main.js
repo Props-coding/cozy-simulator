@@ -39,19 +39,8 @@ import {
   playKnockSound,
   playTimerChime,
   playChatSound,
-  playJigTune,
-  playHeadbangTune,
-  playGlitchTune,
-  playSwayTune,
-  playDiscoTune,
-  playRaveTune,
-  playBoomBapTune,
-  playMoshTune,
-  playPopTune,
-  playTwoStepTune,
-  playReggaetonTune,
-  playSwingTune,
-  playSynthwaveTune,
+  playDanceTune,
+  isDanceId,
   playPetSound,
   enterLibrary,
   leaveLibrary,
@@ -774,23 +763,45 @@ const EMOTE_COMMANDS = {
   "/disco": "disco", "/rave": "rave", "/boombap": "boombap", "/mosh": "mosh", "/pop": "pop", "/twostep": "twostep", "/reggaeton": "reggaeton", "/swing": "swing", "/synthwave": "synthwave",
   "/sleepy": "sleepy", "/sleep": "sleepy", "/zzz": "sleepy",
 };
-// Each dance and the little tune that plays with it (you hear a friend's
-// too, if you're in the same room).
-const DANCE_TUNES = {
-  jig: playJigTune, headbang: playHeadbangTune, glitch: playGlitchTune, sway: playSwayTune,
-  disco: playDiscoTune, rave: playRaveTune, boombap: playBoomBapTune, mosh: playMoshTune, pop: playPopTune,
-  twostep: playTwoStepTune, reggaeton: playReggaetonTune, swing: playSwingTune, synthwave: playSynthwaveTune,
-};
-const isDance = (id) => Object.hasOwn(DANCE_TUNES, id);
+// Each dance plays a little tune (see audio.js). You hear a friend's too,
+// quieter the further away they are, and not from another floor.
+const isDance = (id) => isDanceId(id);
 let myEmote = null; // { id, start }
 const peerEmotes = {}; // peer id -> { id, start }
 
+// Dancing has a cooldown (CONFIG.danceCooldownSeconds, counted from when
+// the dance starts). Presses during it are ignored, not saved for later.
+// Everyone checks friends' dances against it too, so a changed browser
+// can't spam dances at the rest of the house.
+const DANCE_COOLDOWN_MS = CONFIG.danceCooldownSeconds * 1000;
+let myLastDance = -Infinity;
+const peerLastDance = {}; // peer id -> when their last dance started
+function danceCooldownLeft() {
+  return Math.max(0, 1 - (performance.now() - myLastDance) / DANCE_COOLDOWN_MS); // 1 just danced, 0 ready
+}
+
+// How loud a friend's dance music is for you: full up close, fading to
+// nothing at CONFIG.danceSoundRange tiles away, and silent from another
+// floor.
+function danceVolumeFor(peer) {
+  if (!peer || floorOf(peer.y) !== floorOf(player.y)) return 0;
+  const distance = Math.hypot(peer.x - player.x, peer.y - player.y);
+  return Math.max(0, 1 - distance / CONFIG.danceSoundRange);
+}
+
 function startEmote(id) {
-  if (id === "dance") id = myDance();
+  if (id === "dance") {
+    if (danceCooldownLeft() > 0) return; // still cooling down
+    id = myDance();
+  }
   if (!Object.hasOwn(EMOTE_LENGTHS, id)) return;
+  if (isDance(id)) {
+    if (danceCooldownLeft() > 0) return;
+    myLastDance = performance.now();
+  }
   myEmote = { id, start: performance.now() };
   sendEmote(id);
-  if (isDance(id)) DANCE_TUNES[id]();
+  if (isDance(id)) playDanceTune(id);
 
   // Achievements for emotes (any dance counts as one).
   const room = getCurrentRoom(player).id;
@@ -823,11 +834,18 @@ onEmote((id, peerId) => {
     return;
   }
   if (typeof id !== "string" || !Object.hasOwn(EMOTE_LENGTHS, id)) return;
+  if (isDance(id)) {
+    // A dance before their cooldown is over is ignored (with a little
+    // leeway for network timing).
+    const now = performance.now();
+    if (now - (peerLastDance[peerId] ?? -Infinity) < DANCE_COOLDOWN_MS - 750) return;
+    peerLastDance[peerId] = now;
+  }
   peerEmotes[peerId] = { id, start: performance.now() };
   if (isDance(id) && isDance(emoteNow(myEmote)?.id)) unlock("jigParty");
-  // A friend dancing in the same room as you: you hear their music too.
+  // A friend dancing: you hear their music, quieter the further away.
   const peer = getPeers().find((p) => p.id === peerId);
-  if (isDance(id) && peer?.room === getCurrentRoom(player).id) DANCE_TUNES[id]();
+  if (isDance(id)) playDanceTune(id, danceVolumeFor(peer));
 });
 
 for (const button of document.querySelectorAll("#emote-bar button")) {
@@ -835,6 +853,85 @@ for (const button of document.querySelectorAll("#emote-bar button")) {
     startEmote(button.dataset.emote);
     button.blur(); // give the keyboard back to walking
   });
+}
+
+// --- The emote wheel ---
+// Hold CONFIG.emoteWheel.key (Q) to open a wheel of emotes around your
+// character, point the mouse at one, and let go to do it. (The buttons
+// and number keys still work too.) Escape closes it without choosing.
+const wheel = document.getElementById("emote-wheel");
+const WHEEL_EMOTES = [...document.querySelectorAll("#emote-bar button")].map((b) => ({ id: b.dataset.emote, icon: b.firstChild.textContent, title: b.title }));
+let wheelChoice = null;
+let wheelCenter = { x: 0, y: 0 };
+const wheelSlots = WHEEL_EMOTES.map(({ id, icon, title }, i) => {
+  const slot = document.createElement("div");
+  slot.className = "emote-slot" + (id === "dance" ? " dance-slot" : "");
+  slot.textContent = icon;
+  slot.title = title;
+  const angle = (i / WHEEL_EMOTES.length) * Math.PI * 2 - Math.PI / 2;
+  slot.style.left = `${Math.cos(angle) * CONFIG.emoteWheel.radius}px`;
+  slot.style.top = `${Math.sin(angle) * CONFIG.emoteWheel.radius}px`;
+  wheel.appendChild(slot);
+  return { id, angle, slot };
+});
+
+function openWheel() {
+  if (!wheel.hidden) return;
+  const at = gridToPage(canvas, player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
+  wheelCenter = at;
+  wheel.style.left = `${at.x}px`;
+  wheel.style.top = `${at.y}px`;
+  wheelChoice = null;
+  wheelSlots.forEach((s) => s.slot.classList.remove("chosen"));
+  wheel.hidden = false;
+}
+
+function closeWheel(play) {
+  if (wheel.hidden) return;
+  wheel.hidden = true;
+  if (play && wheelChoice) startEmote(wheelChoice);
+  wheelChoice = null;
+}
+
+window.addEventListener("mousemove", (e) => {
+  if (wheel.hidden) return;
+  const dx = e.clientX - wheelCenter.x, dy = e.clientY - wheelCenter.y;
+  // Pointing: the slot nearest the direction of the mouse (not too close
+  // to the middle, so a tiny nudge doesn't pick anything).
+  let best = null;
+  if (Math.hypot(dx, dy) > 18) {
+    const angle = Math.atan2(dy, dx);
+    const gap = (s) => Math.abs(Math.atan2(Math.sin(angle - s.angle), Math.cos(angle - s.angle)));
+    best = wheelSlots.reduce((a, b) => (gap(a) < gap(b) ? a : b));
+  }
+  wheelChoice = best?.id ?? null;
+  wheelSlots.forEach((s) => s.slot.classList.toggle("chosen", s === best));
+});
+wheelSlots.forEach((s) =>
+  s.slot.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    wheelChoice = s.id;
+    closeWheel(true);
+  })
+);
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === CONFIG.emoteWheel.key && !e.repeat && !isTyping(e) && !gameScreen.hidden && !uiBusy() && !dialogOpen) openWheel();
+  if (e.key === "Escape") closeWheel(false);
+});
+window.addEventListener("keyup", (e) => {
+  if (e.key.toLowerCase() === CONFIG.emoteWheel.key) closeWheel(true);
+});
+
+// The dance slot (in the wheel and the sidebar) shows the cooldown as a
+// ring filling back up.
+const danceButton = document.querySelector('#emote-bar button[data-emote="dance"]');
+function showDanceCooldown() {
+  const left = danceCooldownLeft();
+  const fill = `${Math.round((1 - left) * 360)}deg`;
+  for (const el of [danceButton, wheel.querySelector(".dance-slot")]) {
+    el?.style.setProperty("--cooldown", fill);
+    el?.classList.toggle("cooling", left > 0);
+  }
 }
 
 // --- Whiteboard ---
@@ -1445,6 +1542,7 @@ function tick(now) {
     stopMyEmote(); // walking off ends an emote
   }
   updateElevator(dt);
+  showDanceCooldown();
   updateSleep();
 
   const currentRoom = getCurrentRoom(player);

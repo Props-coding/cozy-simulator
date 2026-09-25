@@ -32,6 +32,19 @@ const CONFIG = {
     checkSeconds: 15, // how often to check whether the hour has changed
   },
 
+  // Emotes. Hold the wheel key to open a wheel of emotes around your
+  // character; point at one with the mouse and let go. `radius` is how far
+  // the emotes sit from the middle, in pixels.
+  emoteWheel: { key: "q", radius: 70 },
+
+  // After you dance, the dance is unavailable for this many seconds
+  // (counted from when it starts; dances last 5 to 7 seconds).
+  danceCooldownSeconds: 12,
+
+  // A friend's dance music fades with distance and is silent this many
+  // tiles away (and from another floor). Everyone can still see dances.
+  danceSoundRange: 10,
+
   // The little badge shown before an admin's name in chat and on their name
   // tag. (Who's an admin is decided by the house server, not here.)
   adminBadge: "🛡️",

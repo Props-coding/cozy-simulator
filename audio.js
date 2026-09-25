@@ -221,7 +221,7 @@ function playFiddleNote(freq, delayMs, duration) {
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   osc.connect(filter);
   filter.connect(gain);
-  gain.connect(toneContext.destination);
+  gain.connect(danceOut());
   osc.start(start);
   vibrato.start(start);
   osc.stop(start + duration + 0.05);
@@ -257,7 +257,7 @@ function noiseHit(start, duration, { gain = 0.1, highpass = 2000 } = {}) {
   g.gain.value = gain * masterVolume;
   src.connect(filter);
   filter.connect(g);
-  g.connect(toneContext.destination);
+  g.connect(danceOut());
   src.start(start);
 }
 
@@ -270,7 +270,7 @@ function kick(start, gain = 0.35) {
   g.gain.setValueAtTime(gain * masterVolume, start);
   g.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
   osc.connect(g);
-  g.connect(toneContext.destination);
+  g.connect(danceOut());
   osc.start(start);
   osc.stop(start + 0.32);
 }
@@ -305,7 +305,7 @@ export function playHeadbangTune() {
   g.gain.exponentialRampToValueAtTime(0.0001, end);
   osc.connect(filter);
   filter.connect(g);
-  g.connect(toneContext.destination);
+  g.connect(danceOut());
   osc.start(now + beat * 2);
   lfo.start(now + beat * 2);
   osc.stop(end + 0.05);
@@ -342,7 +342,7 @@ export function playSwayTune() {
       g.gain.linearRampToValueAtTime(0.018 * masterVolume, start + 1.2);
       g.gain.linearRampToValueAtTime(0.0001, start + 3.2);
       osc.connect(g);
-      g.connect(toneContext.destination);
+      g.connect(danceOut());
       osc.start(start);
       osc.stop(start + 3.3);
     }
@@ -363,7 +363,7 @@ function synthNote(freq, start, duration, { type = "sawtooth", gain = 0.05, cuto
   g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   osc.connect(filter);
   filter.connect(g);
-  g.connect(toneContext.destination);
+  g.connect(danceOut());
   osc.start(start);
   osc.stop(start + duration + 0.05);
 }
@@ -428,7 +428,7 @@ export function playMoshTune() {
   const out = toneContext.createGain();
   out.gain.value = 0.05 * masterVolume;
   crunch.connect(out);
-  out.connect(toneContext.destination);
+  out.connect(danceOut());
   for (let i = 0; i < 16; i++) {
     const t = now + i * step * 2;
     for (const f of [82.41, 123.47]) { // E5 power chord
@@ -494,6 +494,37 @@ export function playSynthwaveTune() {
   drums(now, "k...s...k...s...", step, 3);
   const arp = [220, 261.63, 329.63, 392, 329.63, 261.63]; // A minor
   for (let i = 0; i < 48; i++) synthNote(arp[i % arp.length] * (i >= 24 ? 0.89 : 1), now + i * step, step * 1.5, { gain: 0.02, cutoff: 2400 });
+}
+
+// Dance tunes all play through one volume knob (a "bus"), so a friend's
+// dance can sound quieter the further away they are. `volume` is 0 to 1;
+// main.js works it out from the distance (see CONFIG.danceSoundRange).
+let danceBus = null;
+function danceOut() {
+  return danceBus ?? toneContext.destination;
+}
+
+const DANCE_TUNES = {
+  jig: playJigTune, headbang: playHeadbangTune, glitch: playGlitchTune, sway: playSwayTune,
+  disco: playDiscoTune, rave: playRaveTune, boombap: playBoomBapTune, mosh: playMoshTune, pop: playPopTune,
+  twostep: playTwoStepTune, reggaeton: playReggaetonTune, swing: playSwingTune, synthwave: playSynthwaveTune,
+};
+
+// True if this emote is one of the dances.
+export function isDanceId(id) {
+  return Object.hasOwn(DANCE_TUNES, id);
+}
+
+export function playDanceTune(id, volume = 1) {
+  if (!isDanceId(id) || !toneContext || !(volume > 0)) return;
+  danceBus = toneContext.createGain();
+  danceBus.gain.value = Math.min(1, volume);
+  danceBus.connect(toneContext.destination);
+  try {
+    DANCE_TUNES[id]();
+  } finally {
+    danceBus = null;
+  }
 }
 
 // --- Rain for the Library ---

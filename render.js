@@ -9428,6 +9428,15 @@ function lawnAreas() {
 
 // Turns a point on the canvas (in CSS pixels from its top-left corner)
 // into a grid position on the floor being drawn.
+// The other way: where a grid spot is on the page, in page pixels (for
+// placing things like the emote wheel over the house view).
+function gridToPage(canvas, gx, gy) {
+  const { left, top } = houseBounds();
+  const perPixel = canvas.width / canvas.clientWidth / viewScale;
+  const r = canvas.getBoundingClientRect();
+  return { x: r.left + (ORIGIN_X + gx * TILE - left) / perPixel, y: r.top + (ORIGIN_Y + gy * TILE - top) / perPixel };
+}
+
 function screenToGrid(canvas, px, py) {
   const { left, top } = houseBounds();
   const perPixel = canvas.width / canvas.clientWidth / viewScale; // house pixels per CSS pixel
