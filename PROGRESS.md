@@ -245,6 +245,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Step 6, whisper: stand within `whisper.range` (1.3) tiles of a friend and hold V to whisper to only them, in any room (voice rooms too). How it stays private: every friend has their own private copy of your mic line, switched off; whispering switches on only the one to that friend and turns your normal voice off, so the whisper's sound never reaches anyone else (tested with three players by measuring sound levels: the listener got it, the third person got nothing, not even your normal voice). Everyone sees you lean toward them with a little "psst" swirl (your speaking bounce is replaced by it). Drifting more than `whisper.endRange` (1.8) tiles apart, or letting go of V, ends it. A whisper to someone in Dinner or asleep stays silent for them (those rooms keep their "everything silent" rule).
   - Known: when two people stand very close (sitting side by side, whispering), their name tags overlap.
 
+- After 0.50 (not pushed yet):
+  - Hat fixes: the bucket hat, straw hat and propeller cap no longer cover the eyes (brims and panels moved up onto the forehead); the mushroom cap and pirate hat now sit down over the head instead of perching on top; the viking helmet's horns have an outline and shading so they show up in previews (they were almost the same color as the background).
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

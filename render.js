@@ -7659,19 +7659,20 @@ Object.assign(HAT_DRAWERS, {
 
   // A soft bucket hat with a wide floppy brim.
   bucketHat(ctx, cx, cy, r) {
+    const brimY = cy - r * 0.6; // the brim sits on the forehead, above the eyes
     ctx.fillStyle = "#c9b27a";
     ctx.beginPath();
-    ctx.ellipse(cx, cy - r * 0.35, r + 5, 4.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, brimY, r + 5, 3.2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#d9c38a";
     ctx.beginPath();
-    ctx.moveTo(cx - r + 1, cy - r * 0.4);
-    ctx.quadraticCurveTo(cx - r + 2, cy - r - 5, cx, cy - r - 5);
-    ctx.quadraticCurveTo(cx + r - 2, cy - r - 5, cx + r - 1, cy - r * 0.4);
+    ctx.moveTo(cx - r + 2, brimY);
+    ctx.quadraticCurveTo(cx - r + 3, cy - r - 6, cx, cy - r - 6);
+    ctx.quadraticCurveTo(cx + r - 3, cy - r - 6, cx + r - 2, brimY);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = "#8a6a3a"; // band
-    ctx.fillRect(cx - r + 2, cy - r * 0.6, r * 2 - 4, 2.5);
+    ctx.fillRect(cx - r + 3, brimY - 3.5, r * 2 - 6, 2.5);
   },
 
   // Cat ears on a headband.
@@ -7744,31 +7745,48 @@ Object.assign(HAT_DRAWERS, {
 
   // A red mushroom cap with white spots.
   mushroomCap(ctx, cx, cy, r) {
+    // A dome that sits down over the top of the head, like a real cap.
+    const rimY = cy - r * 0.4;
+    ctx.fillStyle = "#efe4cf"; // the frilly underside, peeking out at the rim
+    ctx.beginPath();
+    ctx.ellipse(cx, rimY, r + 3, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#d8423a";
     ctx.beginPath();
-    ctx.ellipse(cx, cy - r + 2, r + 4, r * 0.8, 0, Math.PI, 0);
+    ctx.ellipse(cx, rimY - 0.5, r + 4, 14, 0, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // lit from above
+    ctx.beginPath();
+    ctx.ellipse(cx - 4, rimY - 10, 6, 3, -0.3, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#f7f1e6";
-    for (const [dx, dy, s] of [[-7, -4, 2.2], [1, -9, 2.6], [8, -4, 2], [-2, -3, 1.5]]) {
+    for (const [dx, dy, s] of [[-8, -5, 2.2], [1, -11, 2.6], [8, -6, 2], [-2, -4, 1.5], [5, -12, 1.3]]) {
       ctx.beginPath();
-      ctx.arc(cx + dx, cy - r + 2 + dy, s, 0, Math.PI * 2);
+      ctx.arc(cx + dx, rimY + dy, s, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
-    ctx.fillRect(cx - r - 3, cy - r + 1, (r + 3) * 2, 1.5);
   },
 
   // A striped beanie with a spinning propeller on top.
   propellerCap(ctx, cx, cy, r) {
+    // Colored panels on the top of the head only (clipped above the eyes).
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cx - r - 3, cy - r - 4, r * 2 + 6, r * 0.55 + 4);
+    ctx.clip();
     const stripes = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a"];
     stripes.forEach((c, i) => {
       ctx.fillStyle = c;
       ctx.beginPath();
       ctx.moveTo(cx, cy - 1);
-      ctx.arc(cx, cy - 1, r + 1, Math.PI * (1.08 + i * 0.21), Math.PI * (1.08 + (i + 1) * 0.21));
+      ctx.arc(cx, cy - 1, r + 1, Math.PI * (1 + i * 0.25), Math.PI * (1 + (i + 1) * 0.25));
       ctx.closePath();
       ctx.fill();
     });
+    ctx.restore();
+    ctx.fillStyle = "#3a5f80"; // the band along the bottom edge
+    ctx.fillRect(cx - r + 1, cy - r * 0.45 - 2, r * 2 - 2, 2.5);
     ctx.fillStyle = "#6b6b70";
     ctx.fillRect(cx - 0.8, cy - r - 6, 1.6, 6);
     const spin = performance.now() / 70;
@@ -7780,49 +7798,63 @@ Object.assign(HAT_DRAWERS, {
 
   // A black pirate hat with gold trim and a tiny skull.
   pirateHat(ctx, cx, cy, r) {
+    // A black pirate hat whose bottom edge curves over the head, so it sits
+    // on it rather than floating above.
+    const rimY = cy - r * 0.35;
     ctx.fillStyle = "#26222a";
     ctx.beginPath();
-    ctx.moveTo(cx - r - 5, cy - r + 3);
-    ctx.quadraticCurveTo(cx - r + 2, cy - r - 10, cx, cy - r - 12);
-    ctx.quadraticCurveTo(cx + r - 2, cy - r - 10, cx + r + 5, cy - r + 3);
-    ctx.quadraticCurveTo(cx, cy - r - 2, cx - r - 5, cy - r + 3);
+    ctx.moveTo(cx - r - 5, rimY);
+    ctx.quadraticCurveTo(cx - r + 1, cy - r - 8, cx, cy - r - 11);
+    ctx.quadraticCurveTo(cx + r - 1, cy - r - 8, cx + r + 5, rimY);
+    ctx.quadraticCurveTo(cx, cy - r * 1.05, cx - r - 5, rimY);
     ctx.fill();
     ctx.strokeStyle = "#d9a441";
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.3;
     ctx.beginPath();
-    ctx.moveTo(cx - r - 4, cy - r + 2.5);
-    ctx.quadraticCurveTo(cx, cy - r - 2.5, cx + r + 4, cy - r + 2.5);
+    ctx.moveTo(cx - r - 4, rimY - 0.5);
+    ctx.quadraticCurveTo(cx, cy - r * 1.05 - 1, cx + r + 4, rimY - 0.5);
     ctx.stroke();
     ctx.fillStyle = "#f7f1e6"; // skull
     ctx.beginPath();
-    ctx.arc(cx, cy - r - 5, 2.6, 0, Math.PI * 2);
+    ctx.arc(cx, cy - r - 4, 2.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#26222a";
-    ctx.fillRect(cx - 1.4, cy - r - 5.5, 1, 1);
-    ctx.fillRect(cx + 0.4, cy - r - 5.5, 1, 1);
+    ctx.fillRect(cx - 1.5, cy - r - 4.6, 1.1, 1.1);
+    ctx.fillRect(cx + 0.4, cy - r - 4.6, 1.1, 1.1);
   },
 
   // A viking helmet with horns.
   vikingHelmet(ctx, cx, cy, r) {
+    // Horns first (behind the helmet): ivory with a darker outline and
+    // shading, so they show up on any background.
     for (const side of [-1, 1]) {
-      ctx.fillStyle = "#efe4cf";
       ctx.beginPath();
-      ctx.moveTo(cx + side * (r - 2), cy - r * 0.55);
-      ctx.quadraticCurveTo(cx + side * (r + 9), cy - r * 0.6, cx + side * (r + 6), cy - r - 8);
-      ctx.quadraticCurveTo(cx + side * (r + 3), cy - r * 0.9, cx + side * (r - 3), cy - r * 0.95);
+      ctx.moveTo(cx + side * (r - 2), cy - r * 0.5);
+      ctx.quadraticCurveTo(cx + side * (r + 10), cy - r * 0.55, cx + side * (r + 7), cy - r - 9);
+      ctx.quadraticCurveTo(cx + side * (r + 3), cy - r * 0.95, cx + side * (r - 3), cy - r * 0.95);
+      ctx.closePath();
+      const horn = ctx.createLinearGradient(cx + side * r, cy - r - 9, cx + side * r, cy - r * 0.5);
+      horn.addColorStop(0, "#fdf8ee");
+      horn.addColorStop(1, "#d9c7a0");
+      ctx.fillStyle = horn;
       ctx.fill();
+      ctx.strokeStyle = "#8a7550";
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
     ctx.fillStyle = "#8a8f96";
     ctx.beginPath();
     ctx.arc(cx, cy - 1, r + 1, Math.PI * 1.06, Math.PI * 1.94);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
     ctx.beginPath();
     ctx.ellipse(cx - 4, cy - r + 2, 4, 2, -0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#6b6f75";
+    ctx.fillStyle = "#6b6f75"; // the rim, with rivets
     ctx.fillRect(cx - r, cy - r * 0.5, r * 2, 3);
+    ctx.fillStyle = "#c9ccd0";
+    for (const dx of [-8, 0, 8]) ctx.fillRect(cx + dx - 0.6, cy - r * 0.5 + 0.8, 1.2, 1.2);
   },
 
   // A graduation cap with a swinging tassel.
@@ -7908,23 +7940,24 @@ Object.assign(HAT_DRAWERS, {
 
   // A wide straw sun hat with a ribbon.
   strawHat(ctx, cx, cy, r) {
+    const brimY = cy - r * 0.6; // above the eyes
     ctx.fillStyle = "#e3c27a";
     ctx.beginPath();
-    ctx.ellipse(cx, cy - r * 0.4, r + 8, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, brimY, r + 8, 3.6, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#edd08e";
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - r + 1, r - 3, 6, 0, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = "#e8607a";
-    ctx.fillRect(cx - r + 3, cy - r * 0.62, r * 2 - 6, 2.5);
     ctx.strokeStyle = "rgba(150, 110, 40, 0.3)";
     ctx.lineWidth = 0.6;
-    for (let k = -2; k <= 2; k++) {
+    for (let k = 1; k <= 2; k++) {
       ctx.beginPath();
-      ctx.ellipse(cx, cy - r * 0.4, r + 8 - Math.abs(k) * 2, 4, 0, 0, Math.PI);
+      ctx.ellipse(cx, brimY, r + 8 - k * 3, 3.6 - k * 0.8, 0, 0, Math.PI);
       ctx.stroke();
     }
+    ctx.fillStyle = "#edd08e";
+    ctx.beginPath();
+    ctx.ellipse(cx, brimY - 1, r - 3, 7, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#e8607a";
+    ctx.fillRect(cx - r + 3, brimY - 4, r * 2 - 6, 2.5);
   },
 });
 
