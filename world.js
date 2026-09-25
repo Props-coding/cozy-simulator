@@ -266,22 +266,11 @@ const BASE_FURNITURE = [
   { kind: "bench", x: 18.3, y: 4.2, w: 1.5, h: 0.5 },
   { kind: "palm", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
 
-  // Upstairs: a runner down the landing, lamps and paintings between the
-  // bedroom doors (x0 + 1 to x0 + 2.6 for x0 = 0, 6, 12, 18), a side
-  // table, a bench, a cactus and a fern, and the elevator lobby.
+  // Upstairs, the bedroom hallway: a runner down the landing and a cactus
+  // (the bedroom doors and the lamps between them come from buildHouse),
+  // and the elevator lobby.
   { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
-  { kind: "sconce", x: 3.0, y: LANDING, solid: false },
-  { kind: "picture", x: 4.4, y: LANDING, w: 1.0, art: "flowers", solid: false },
-  { kind: "bench", x: 4.2, y: LANDING + 0.1, w: 1.5, h: 0.5 },
-  { kind: "sconce", x: 6.4, y: LANDING, solid: false },
-  { kind: "sconce", x: 10.6, y: LANDING, solid: false },
-  { kind: "sconce", x: 12.75, y: LANDING, solid: false },
-  { kind: "sconce", x: 15.4, y: LANDING, solid: false },
-  { kind: "picture", x: 16.4, y: LANDING, w: 1.0, art: "sea", solid: false },
-  { kind: "console", x: 16.0, y: LANDING + 0.1, w: 1.8, h: 0.45 },
-  { kind: "sconce", x: 18.4, y: LANDING, solid: false },
-  { kind: "sconce", x: 21.4, y: LANDING, solid: false },
-  { kind: "picture", x: 22.4, y: LANDING, w: 0.9, art: "hills", solid: false },
+  // (The bedroom doors and the lamps between them are added in buildHouse.)
   { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
 
@@ -311,6 +300,13 @@ const BASE_FURNITURE = [
 // wide open), set by main.js while you ride and read when drawing.
 const ELEVATOR_OPEN = [0, 0];
 
+// The bedroom door you're standing right in front of (its furniture
+// piece, with .door from the server), or null.
+function bedroomDoorInReach(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.find((f) => f.kind === "bedroomDoor" && cx > f.x - 0.2 && cx < f.x + f.w + 0.2 && cy > f.y && cy < f.y + 1.2) ?? null;
+}
+
 // The floor (0 or 1) of the elevator you're standing in front of, or -1.
 function elevatorInReach(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
@@ -339,8 +335,6 @@ const SEASONAL = {
   spots: [
     { size: "small", x: 5.85, y: 0.12 }, // hallway, by the bench
     { size: "big", x: 18.9, y: 0.1 }, // hallway, under the sea painting
-    { size: "small", x: 5.8, y: LANDING + 0.12 }, // landing, by the bench
-    { size: "big", x: 22.9, y: LANDING + 0.1 }, // landing, under the hills painting
     { size: "small", x: 7.4, y: 9.8 }, // Study, by the beanbag
     { size: "big", x: 10.9, y: 8.7 }, // Study, beside the rug
     { size: "small", x: 13.8, y: 10.15 }, // Dinner, by the tea cart
@@ -497,12 +491,14 @@ let houseVersion = 0;
 let houseTopY = -5.8; // the house's northern edge on each floor (for the camera)
 const buildDoors = { office: null, bedroom: null }; // left edge of each kind's next free spot, or null if all are taken
 
-// offices and bedrooms: lists of { slot, since, ownerName, color, locked,
-// mine }, already in order (slot 1 first). A room's id comes from when it
-// was made, so it stays the same when it slides to a different spot.
+// offices: a list of { slot, since, ownerName, color, locked, mine },
+// already in order (slot 1 first). An office's id comes from when it was
+// made, so it stays the same when it slides to a different spot.
+// doors: everyone's bedroom door, from the house server (see rooms.js),
+// in the order they go along the landing.
 let lastBuild = [[], []]; // what the house was last built with (see previewSeason)
-function buildHouse(offices, bedrooms = []) {
-  lastBuild = [offices, bedrooms];
+function buildHouse(offices, doors = []) {
+  lastBuild = [offices, doors];
   const t = WALL_THICKNESS;
   const rooms = [...BASE_ROOMS];
   const walls = [...BASE_WALLS];
@@ -555,12 +551,20 @@ function buildHouse(offices, bedrooms = []) {
   };
 
   // The hallway's top wall, with a doorway into the Conference Room (x 2 to
-  // 3.6), the Library (x 20.2 to 21.8) and each office. The landing's has
-  // one for each bedroom.
+  // 3.6), the Library (x 20.2 to 21.8) and each office.
   corridorWall(0, [2, 20.2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
-  corridorWall(LANDING, bedrooms.map((b) => wingX("bedroom", b.slot) + WINGS.bedroom.doorX));
   add("office", offices);
-  add("bedroom", bedrooms);
+
+  // The bedroom hallway (the upstairs landing): one solid wall with every
+  // member's bedroom door on it, and a warm lamp between each pair.
+  corridorWall(LANDING, []);
+  const { doorSpacing, firstDoorX } = CONFIG.bedrooms;
+  const doorCount = Math.min(doors.length, Math.floor((HOUSE_WIDTH - firstDoorX) / doorSpacing));
+  for (let i = 0; i < doorCount; i++) {
+    const x = firstDoorX + i * doorSpacing;
+    furniture.push({ kind: "bedroomDoor", x, y: LANDING, w: DOOR_WIDTH, door: doors[i], solid: false });
+    if (i < doorCount - 1 || x + doorSpacing < HOUSE_WIDTH) furniture.push({ kind: "sconce", x: x + DOOR_WIDTH + (doorSpacing - DOOR_WIDTH) / 2 - 0.15, y: LANDING, solid: false });
+  }
 
   // The hallway and landing are last, so rooms off them are found first.
   // They have no sign: the header already says where you are.
@@ -996,6 +1000,7 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
+  if (bedroomDoorInReach(player)) options.push(["bedroomDoor", 0]);
   // The Workshop's corkboard: stand below it.
   const cork = FURNITURE.find((f) => f.kind === "kanbanBoard");
   if (floorOf(player.y) === floorOf(cork.y) && cx > cork.x - 0.2 && cx < cork.x + cork.w + 0.2 && cy > cork.y && cy < cork.y + 1.4) options.push(["kanban", cy - cork.y]);

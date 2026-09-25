@@ -66,6 +66,7 @@ import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDeco
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
+import { startRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen } from "./rooms.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
@@ -269,6 +270,8 @@ joinButton.addEventListener("click", async () => {
   startEarningCrumbs();
   applyMyLofi(); // your Study station (it may have come with your cloud save)
   loadSavedBoard(); // the Conference Room whiteboard, as it was left
+  // Everyone's bedroom door on the landing, from the house server.
+  startRooms({ changed: () => (houseSignature = ""), notice: (text) => showNotice(text) });
   // The Workshop's project boards: kept up to date, and new or finished
   // cards announced in the house chat.
   startKanban({
@@ -310,11 +313,14 @@ joinButton.addEventListener("click", async () => {
   }
 });
 
-// --- Offices and bedrooms ---
-// Your own office and bedroom, if you've made them: { since, locked }.
-// Your browser remembers them, so they come back each time you join.
-// Nobody else stores them: they only exist while you're here.
-const KINDS = ["office", "bedroom"];
+// --- Offices (and the old bedroom claims) ---
+// Your own office, if you've made one: { since, locked }. Your browser
+// remembers it, so it comes back each time you join. Nobody else stores
+// it: it only exists while you're here.
+// (Bedrooms used to work the same way; now every member has one kept on
+// the house server, see rooms.js. The old bedroom claim is left in your
+// save, unused, in case we ever need to go back.)
+const KINDS = ["office"];
 const STORAGE_KEYS = { office: "cozy-house-office", bedroom: "cozy-house-bedroom" };
 const mine = {}; // "office" or "bedroom" -> { since, locked }, or null
 for (const kind of KINDS) {
@@ -342,7 +348,7 @@ function claimInfo(kind) {
   return info;
 }
 
-let privateRooms = { office: [], bedroom: [] }; // everyone's, as passed to buildHouse
+let privateRooms = { office: [] }; // everyone's offices, as passed to buildHouse
 let houseSignature = "";
 
 // A message about someone's office or bedroom is only trusted if it looks right.
@@ -395,11 +401,11 @@ function spawnPoint(floor) {
 // moved or got locked/unlocked since last frame.
 function updatePrivateRooms() {
   for (const kind of KINDS) privateRooms[kind] = gatherClaims(kind, getPeers());
-  const signature = JSON.stringify(privateRooms);
+  const signature = JSON.stringify([privateRooms, bedroomDoors()]);
   if (signature === houseSignature) return;
   houseSignature = signature;
   const before = getCurrentRoom(player);
-  buildHouse(privateRooms.office, privateRooms.bedroom);
+  buildHouse(privateRooms.office, bedroomDoors());
   // If your room slid over to fill a gap, slide along with it.
   const after = ROOMS.find((r) => r.id === before.id);
   if (before.owned && after) player.x += after.rect.x - before.rect.x;
@@ -497,6 +503,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
+  if (nearestInteraction(player) === "bedroomDoor" && bedroomDoorInReach(player).door.owner.toLowerCase() === myName.toLowerCase()) return "Your door. Press E to change who can come in, your note and decoration.";
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   if (mySeat) return "Sitting. Move (or press E) to get up.";
@@ -544,6 +551,14 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     ride = { from: elevatorInReach(player), t: 0, arrived: false };
     playClickSound();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "bedroomDoor") {
+    for (const k in keysDown) keysDown[k] = false;
+    const door = bedroomDoorInReach(player).door;
+    if (door.owner.toLowerCase() === myName.toLowerCase()) openDoorPanel();
+    else showNotice(`${door.owner}'s room.`);
     return;
   }
 
@@ -1138,7 +1153,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || !!ride;
 }
 
 // Riding the elevator: the doors slide open, you step in, and they open
@@ -1760,7 +1775,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: whisperTarget() });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: whisperTarget() });
   }
 
   const scenePlayers = getPeers().map((peer) => {

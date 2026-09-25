@@ -40,6 +40,7 @@ const TURN_HOST = env.TURN_HOST || "api.thecozy.world";
 // --- The data file ---
 // users: lowercase name -> { name, salt, hash, createdAt, member, save, reset, inbox, bio }
 // kanban: the Workshop's boards (see applyKanban)
+// rooms: everyone's bedroom (see ensureRoom)
 // sessions: hash of a login token -> { user, createdAt, lastUsed }
 let db = { users: {}, sessions: {} };
 
@@ -183,6 +184,7 @@ function currentUser(req) {
   const user = session && db.users[session.user];
   if (!user) throw new Oops(401, "Please log in again.");
   session.lastUsed = Date.now();
+  user.lastSeen = session.lastUsed; // (for "who's online": offline people sleep in their bedrooms)
   return { user, key: session.user, tokenHash: sha256(token) };
 }
 
@@ -333,6 +335,82 @@ function applyKanban(body, user) {
     default:
       throw new Oops(400, "That's not something the board can do.");
   }
+}
+
+// --- Bedrooms ---
+// Every member has one bedroom, kept here so it's there even when they're
+// offline: db.rooms[account key] = { owner, map, style, size, placed,
+// privacy, note, deco, audio, migratedAt }. `map` is which bedroom map it
+// is (each room is its own little map). The first time a room is needed,
+// it's made from that person's saved bedroom (their layout and size), so
+// nothing they placed is lost.
+const ROOM_PRIVACY = ["open", "knock", "private", "party"];
+const DOOR_DECOS = ["none", "wreath", "flowers", "star", "heart", "plant", "pumpkin", "snowflake"];
+const ROOM_STYLES = ["classic", "cabin", "apartment", "beachHut", "lakehouse", "stalker", "scholar", "cottage"];
+const ROOM_AUDIO = ["voice", "lofi", "silent"];
+const ROOM_SIZES = ["cozy", "roomy"];
+// The personal themes, only for their owners.
+const THEME_OWNERS = { lakehouse: "props", stalker: "brightness", scholar: "kxiven", cottage: "lyss" };
+const ONLINE_MS = 90_000; // seen this recently = online (the page checks in every 30 seconds)
+
+function savedData(user, key) {
+  try {
+    return JSON.parse(user.save?.data?.[key] ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+// A placed piece of decor, checked: { item, x, y } and maybe r (turned).
+function cleanPiece(p) {
+  if (!p || typeof p.item !== "string" || p.item.length > 40 || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+  const piece = { item: p.item, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000 };
+  if (p.r === 1 || p.r === 3) piece.r = p.r;
+  return piece;
+}
+
+function ensureRoom(key, user) {
+  db.rooms ??= {};
+  let room = db.rooms[key];
+  if (!room) {
+    const home = savedData(user, "cozy-house-home") ?? {};
+    const maps = Object.values(db.rooms).map((r) => r.map);
+    const theme = Object.keys(THEME_OWNERS).find((t) => THEME_OWNERS[t] === key);
+    room = {
+      owner: user.name,
+      map: maps.length ? Math.max(...maps) + 1 : 0,
+      style: theme ?? "classic",
+      size: home.size === "roomy" ? "roomy" : "cozy",
+      placed: (Array.isArray(home.placed) ? home.placed : []).slice(0, 80).map(cleanPiece).filter(Boolean),
+      privacy: "open",
+      note: "",
+      deco: "none",
+      audio: "voice",
+      migratedAt: Date.now(),
+    };
+    db.rooms[key] = room;
+    roomsChanged = true;
+  }
+  room.owner = user.name; // (follows a name change)
+  return room;
+}
+let roomsChanged = false;
+
+// What everyone sees of a room from the hallway: the door.
+function doorInfo(key, user) {
+  const room = ensureRoom(key, user);
+  const look = savedData(user, "cozy-house-profile") ?? {};
+  return {
+    owner: user.name,
+    map: room.map,
+    color: /^#[0-9a-fA-F]{6}$/.test(look.color) ? look.color : "#999999",
+    privacy: room.privacy,
+    note: room.note,
+    deco: room.deco,
+    style: room.style,
+    size: room.size,
+    online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
+  };
 }
 
 const routes = {
@@ -530,6 +608,40 @@ const routes = {
     return { ...kanbanState(), result };
   },
 
+  // --- Bedrooms: everyone's door (for the bedroom hallway) ---
+  "GET /api/rooms": async (req) => {
+    const { user: me } = currentUser(req);
+    if (!me.member) throw new Oops(403, "Enter the house phrase first.");
+    const doors = Object.entries(db.users)
+      .filter(([, u]) => u.member)
+      .map(([key, u]) => doorInfo(key, u))
+      .sort((a, b) => a.owner.toLowerCase().localeCompare(b.owner.toLowerCase()));
+    if (roomsChanged) {
+      roomsChanged = false;
+      await saveDb();
+    }
+    return { doors };
+  },
+
+  // Your own door: who can come in, a short note, and a decoration.
+  "PUT /api/room/door": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 5_000);
+    const room = ensureRoom(key, user);
+    if (body.privacy !== undefined) {
+      if (!ROOM_PRIVACY.includes(body.privacy)) throw new Oops(400, "That's not a door setting.");
+      room.privacy = body.privacy;
+    }
+    if (body.note !== undefined) room.note = String(body.note).replace(/\s+/g, " ").trim().slice(0, 40);
+    if (body.deco !== undefined) {
+      if (!DOOR_DECOS.includes(body.deco)) throw new Oops(400, "That's not a door decoration.");
+      room.deco = body.deco;
+    }
+    await saveDb();
+    return { door: doorInfo(key, user) };
+  },
+
   // --- Profiles: what friends see when they click on you. Your look,
   // achievements and hours come from your cloud save; the bio you write.
   "GET /api/profile": async (req) => {
@@ -622,6 +734,10 @@ const routes = {
       db.users[newKey] = user;
       delete db.users[key];
       for (const s of Object.values(db.sessions)) if (s.user === key) s.user = newKey;
+      if (db.rooms?.[key]) {
+        db.rooms[newKey] = db.rooms[key]; // your bedroom comes with you
+        delete db.rooms[key];
+      }
     }
     await saveDb();
     return { user: publicUser(user) };
@@ -693,6 +809,7 @@ const adminRoutes = {
     if (!db.users[key]) throw new Oops(404, "No account with that name.");
     const name = db.users[key].name;
     delete db.users[key];
+    delete db.rooms?.[key]; // and their bedroom
     for (const [k, s] of Object.entries(db.sessions)) if (s.user === key) delete db.sessions[k];
     await saveDb();
     return { name };

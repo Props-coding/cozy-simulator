@@ -57,6 +57,12 @@ const CONFIG = {
   // `endRange` tiles apart.
   whisper: { key: "v", range: 1.3, endRange: 1.8 },
 
+  // Bedrooms: everyone's door is on the upstairs landing (the bedroom
+  // hallway). Doors are checked with the house server every `pollSeconds`
+  // (and right away when a friend changes theirs). Doors are `doorSpacing`
+  // tiles apart, starting `firstDoorX` tiles from the west wall.
+  bedrooms: { pollSeconds: 20, doorSpacing: 3, firstDoorX: 1 },
+
   // Sitting: press E within this many tiles of a free seat to sit down.
   sit: { reach: 1.0 },
 

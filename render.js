@@ -775,6 +775,56 @@ function drawDeskSide(ctx, f, color, topper) {
   }
 }
 
+// A bedroom door's little decoration, centered at (cx, cy).
+function drawDoorDeco(ctx, deco, cx, cy) {
+  if (deco === "wreath") {
+    ctx.strokeStyle = "#3f7a4a";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#c0303a";
+    ctx.fillRect(cx - 2, cy + 3, 4, 2.5);
+  } else if (deco === "flowers") {
+    for (const [dx, dy, c] of [[-2.5, -1, "#f2a0b8"], [2.5, -1.5, "#fff2a8"], [0, -3.5, "#c8b0e8"]]) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#6aa05a";
+    ctx.fillRect(cx - 0.6, cy, 1.2, 4);
+  } else if (deco === "star" || deco === "snowflake") {
+    ctx.fillStyle = deco === "star" ? "#f2c94c" : "#ffffff";
+    ctx.beginPath();
+    for (let k = 0; k < (deco === "star" ? 10 : 12); k++) {
+      const n = deco === "star" ? 10 : 12;
+      const r = k % 2 ? (deco === "star" ? 1.8 : 1.2) : 4.5, a = (k / n) * Math.PI * 2 - Math.PI / 2;
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    ctx.fill();
+  } else if (deco === "heart") {
+    ctx.fillStyle = "#f06a9a";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 4);
+    ctx.bezierCurveTo(cx - 6, cy, cx - 3.5, cy - 5, cx, cy - 2);
+    ctx.bezierCurveTo(cx + 3.5, cy - 5, cx + 6, cy, cx, cy + 4);
+    ctx.fill();
+  } else if (deco === "plant") {
+    ctx.fillStyle = "#c98a5a";
+    ctx.fillRect(cx - 2.5, cy + 1, 5, 3.5);
+    drawLeaf(ctx, cx, cy + 1, -0.5, 5, 2, "#5a9a4a", null);
+    drawLeaf(ctx, cx, cy + 1, 0.5, 5, 2, "#6aaa5a", null);
+  } else if (deco === "pumpkin") {
+    ctx.fillStyle = "#e07a2e";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 1, 4.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5a7a3a";
+    ctx.fillRect(cx - 0.6, cy - 3.5, 1.2, 2);
+  }
+}
+
 // The shapes for wall cutouts, each drawn around (0, 0), about 16 pixels
 // across (see wallCutout).
 function drawBat(ctx, s = 1) {
@@ -5232,6 +5282,89 @@ const FURNITURE_DRAWERS = {
     ctx.strokeRect(x + 5, y + 26, w - 10, h - 36);
   },
 
+  // A bedroom door on the bedroom hallway's wall (f.door comes from the
+  // house server): a wooden frame, a panel in the owner's color, their
+  // nameplate, a little decoration, a sticky note if they left one, and a
+  // light showing who can come in: green open, amber knock first, red
+  // private, or a balloon for a party.
+  bedroomDoor(ctx, f) {
+    const door = f.door;
+    if (!door) return;
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, bottom = a.y, top = a.y - WALL_HEIGHT + 4;
+    const h = bottom - top;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
+    ctx.fillRect(x - 1, top + 2, w + 4, h);
+    ctx.fillStyle = "#6b4630"; // frame
+    ctx.fillRect(x - 2, top - 2, w + 4, h + 2);
+    const panel = ctx.createLinearGradient(0, top, 0, bottom);
+    panel.addColorStop(0, shadeColor(door.color, 25));
+    panel.addColorStop(1, shadeColor(door.color, -20));
+    ctx.fillStyle = panel;
+    ctx.fillRect(x + 1, top + 1, w - 2, h - 1);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.18)"; // two inset panels
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 5, top + 12, w - 10, h * 0.32);
+    ctx.strokeRect(x + 5, top + 14 + h * 0.36, w - 10, h * 0.28);
+    ctx.fillStyle = "#e0b84c"; // the knob
+    ctx.beginPath();
+    ctx.arc(x + w - 7, top + h * 0.62, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    // The nameplate.
+    ctx.font = "700 7px 'Quicksand', sans-serif";
+    const name = clipText(door.owner, 10, "…");
+    const pw = Math.min(w - 6, ctx.measureText(name).width + 8);
+    ctx.fillStyle = "#f7f1e6";
+    roundRectPath(ctx, x + w / 2 - pw / 2, top + 3, pw, 8, 2);
+    ctx.fill();
+    ctx.fillStyle = "#4a3a2c";
+    ctx.textAlign = "center";
+    ctx.fillText(name, x + w / 2, top + 9.5, pw - 2);
+    ctx.textAlign = "left";
+    // The decoration, in the middle of the door.
+    drawDoorDeco(ctx, door.deco, x + w / 2, top + h * 0.42);
+    // A sticky note, if they left one (read it up close).
+    if (door.note) {
+      ctx.fillStyle = "#fff2a8";
+      ctx.save();
+      ctx.translate(x + 6, top + h * 0.72);
+      ctx.rotate(-0.12);
+      ctx.fillRect(0, 0, 8, 7);
+      ctx.fillStyle = "rgba(90, 70, 40, 0.5)";
+      ctx.fillRect(1.5, 2, 5, 0.8);
+      ctx.fillRect(1.5, 4, 4, 0.8);
+      ctx.restore();
+    }
+    // The light over the door (or a balloon for a party).
+    if (door.privacy === "party") {
+      const t = performance.now() / 1000;
+      const bx = x + w + 5, by = top - 10 + Math.sin(t * 1.5 + x) * 1.5;
+      ctx.strokeStyle = "rgba(90, 70, 50, 0.7)";
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 6);
+      ctx.quadraticCurveTo(bx - 2, by + 12, x + w - 1, top + 6);
+      ctx.stroke();
+      ctx.fillStyle = "#e84a5a";
+      ctx.beginPath();
+      ctx.ellipse(bx, by, 4.5, 5.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.beginPath();
+      ctx.ellipse(bx - 1.5, by - 2, 1.2, 2, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const light = { open: "#5fd07a", knock: "#f2a640", private: "#e8505a" }[door.privacy] ?? "#5fd07a";
+      ctx.fillStyle = "#3a2a22";
+      roundRectPath(ctx, x + w / 2 - 4, top - 6, 8, 4, 2);
+      ctx.fill();
+      ctx.fillStyle = light;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, top - 4, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
   // --- The Workshop ---
 
   // The house's project board on the Workshop wall: a big corkboard with
@@ -9500,6 +9633,32 @@ function drawDoorTags(ctx, me) {
     ctx.stroke();
     ctx.fillStyle = "#5c4530";
     ctx.fillText(room.name, c.x, y + 12.5);
+  }
+  // Bedroom doors: whose room, whether you can come in, and their note.
+  for (const f of FURNITURE) {
+    if (f.kind !== "bedroomDoor" || !f.door || floorOf(f.y) !== viewFloor) continue;
+    const id = "door-" + f.door.owner;
+    const near = me && Math.abs(me.x + PLAYER_SIZE / 2 - (f.x + f.w / 2)) < NEAR_DOOR && Math.abs(me.y + PLAYER_SIZE / 2 - f.y) < NEAR_DOOR;
+    const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
+    signFade[id] = fade;
+    if (fade === 0) continue;
+    const status = { open: "Open", knock: "Knock first", private: "Private", party: "Party!" }[f.door.privacy] ?? "Open";
+    const lines = [`${f.door.owner}'s room · ${status}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
+    const c = toScreen(f.x + f.w / 2, f.y);
+    const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14, h = 6 + lines.length * 13;
+    const x = c.x - w / 2, y = c.y + 4;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    roundRectPath(ctx, x + 1, y + 2, w, h, 8);
+    ctx.fill();
+    roundRectPath(ctx, x, y, w, h, 8);
+    ctx.fillStyle = "#fffaf3";
+    ctx.fill();
+    ctx.strokeStyle = "#c9955f";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#5c4530";
+    lines.forEach((l, i) => ctx.fillText(l, c.x, y + 13 + i * 13));
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = "left";

@@ -40,6 +40,8 @@ let theaterAction = null;
 let externalOnBoard = null;
 let boardAction = null;
 let kanbanAction = null;
+let roomsAction = null;
+let externalOnRooms = null;
 let externalOnKanban = null;
 let externalOnEmote = null;
 let emoteAction = null;
@@ -153,6 +155,16 @@ export function sendKanbanPing() {
   kanbanAction?.send(1);
 }
 
+// Someone changed their bedroom door (or room): friends fetch the latest
+// from the server right away. Just a nudge, no details.
+export function onRoomsPing(callback) {
+  externalOnRooms = callback;
+}
+
+export function sendRoomsPing() {
+  roomsAction?.send(1);
+}
+
 // Knock on one friend's office or bedroom door (only they get the message).
 export function sendKnock(peerId, kind) {
   knockAction?.send(kind, { target: peerId });
@@ -212,6 +224,9 @@ export function connectToRoom(myName, myColor) {
 
   boardAction = room.makeAction("board");
   boardAction.onMessage = (message, { peerId }) => externalOnBoard?.(message, peerId);
+
+  roomsAction = room.makeAction("rooms");
+  roomsAction.onMessage = () => externalOnRooms?.();
 
   kanbanAction = room.makeAction("kanban");
   kanbanAction.onMessage = () => externalOnKanban?.();

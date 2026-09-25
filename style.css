@@ -2774,7 +2774,8 @@ input[type="range"]::-moz-range-thumb {
 /* The Study's turntable (turntable.js): a warm wooden crate of records,
    one per lo-fi type. The one you're playing spins and has a ring. */
 #turntable-panel:not([hidden]),
-#wardrobe-panel:not([hidden]) {
+#wardrobe-panel:not([hidden]),
+#door-panel:not([hidden]) {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -3500,4 +3501,66 @@ input[type="range"]::-moz-range-thumb {
   background:
     radial-gradient(circle, #fffaf3 58%, transparent 61%),
     conic-gradient(var(--accent) var(--cooldown), #e6dccb var(--cooldown)) !important;
+}
+
+/* Your bedroom door's settings (rooms.js): rows of choice buttons, a
+   note, in the same cream card as the turntable. */
+#door-panel {
+  width: min(430px, calc(100% - 28px)) !important;
+}
+
+#door-panel h3 {
+  margin: 0;
+}
+
+.door-label {
+  align-self: flex-start;
+  margin: 4px 0 0;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: #6b4f38;
+}
+
+.door-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.door-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 2px solid #ead8bd;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #6b4f38;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.door-choice.chosen {
+  background: #f3e6d0;
+  border-color: #c98a3a;
+  color: #4a3a2c;
+}
+
+#door-note {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 7px 10px;
+  border: 2px solid #ead8bd;
+  border-radius: 10px;
+  background: #fffdf8;
+  color: #4a3a2c;
+  outline: none;
+}
+
+#door-note:focus {
+  border-color: #c98a3a;
 }

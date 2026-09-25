@@ -247,6 +247,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 
 - After 0.50 (not pushed yet):
   - Hat fixes: the bucket hat, straw hat and propeller cap no longer cover the eyes (brims and panels moved up onto the forehead); the mushroom cap and pirate hat now sit down over the head instead of perching on top; the viking helmet's horns have an outline and shading so they show up in previews (they were almost the same color as the background).
+  - Update 2, Bedrooms (in progress, one step at a time):
+    - Step 0: a full backup of the house server's data was made before anything changed.
+    - Step 1: the upstairs landing is now the bedroom hallway, with one door per member (from the house server, so doors stay even when their owner is offline). Each door has the owner's color, a nameplate, a little decoration, an optional sticky note, and a light: green open, amber knock first, red private, or a balloon for a party. Press E at your own door to change it; walk up to anyone's door to read whose it is and their note.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
