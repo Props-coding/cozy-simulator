@@ -409,6 +409,7 @@ function doorInfo(key, user) {
     deco: room.deco,
     style: room.style,
     size: room.size,
+    placed: room.placed, // what's inside (friends see it when they visit)
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
   };
 }
@@ -638,8 +639,26 @@ const routes = {
       if (!DOOR_DECOS.includes(body.deco)) throw new Oops(400, "That's not a door decoration.");
       room.deco = body.deco;
     }
+    if (body.style !== undefined) {
+      if (!ROOM_STYLES.includes(body.style)) throw new Oops(400, "That's not a room style.");
+      if (THEME_OWNERS[body.style] && THEME_OWNERS[body.style] !== key) throw new Oops(403, "That style belongs to someone else.");
+      room.style = body.style;
+    }
     await saveDb();
     return { door: doorInfo(key, user) };
+  },
+
+  // What's in your own room (from your decorating), and its size.
+  "PUT /api/room/home": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 20_000);
+    const room = ensureRoom(key, user);
+    if (!Array.isArray(body.placed) || !ROOM_SIZES.includes(body.size)) throw new Oops(400, "That doesn't look like a room.");
+    room.placed = body.placed.slice(0, 80).map(cleanPiece).filter(Boolean);
+    room.size = body.size;
+    await saveDb();
+    return { ok: true };
   },
 
   // --- Profiles: what friends see when they click on you. Your look,

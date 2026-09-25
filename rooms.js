@@ -59,11 +59,25 @@ const DECOS = [
   ["pumpkin", "🎃", "Pumpkin"],
   ["snowflake", "❄️", "Snowflake"],
 ];
+// How your room looks inside. The personal themes only show for their owner.
+const STYLES = [
+  ["classic", "🛏️", "Classic"],
+  ["cabin", "🌲", "Cabin"],
+  ["apartment", "🏙️", "Apartment"],
+  ["beachHut", "🏖️", "Beach hut"],
+  ["lakehouse", "🛶", "Lake house"],
+  ["stalker", "☢️", "Zone"],
+  ["scholar", "📜", "Scholar"],
+  ["cottage", "🍄", "Cottage"],
+];
+const PERSONAL = ["lakehouse", "stalker", "scholar", "cottage"];
+
 export const DOOR_STATUS = Object.fromEntries(PRIVACY.map(([id, , label]) => [id, label]));
 
 const panel = document.getElementById("door-panel");
 const privacyRow = document.getElementById("door-privacy");
 const decoRow = document.getElementById("door-decos");
+const styleRow = document.getElementById("door-styles");
 const noteInput = document.getElementById("door-note");
 
 async function save(change) {
@@ -101,6 +115,11 @@ function renderPanel() {
   });
   choiceButtons(decoRow, DECOS, door.deco, async (id) => {
     await save({ deco: id });
+    renderPanel();
+  });
+  const myTheme = officeThemeFor(door.owner);
+  choiceButtons(styleRow, STYLES.filter(([id]) => !PERSONAL.includes(id) || id === myTheme), door.style, async (id) => {
+    await save({ style: id });
     renderPanel();
   });
   if (document.activeElement !== noteInput) noteInput.value = door.note;

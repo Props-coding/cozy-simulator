@@ -20,7 +20,7 @@ export const ACHIEVEMENTS = [
   { id: "movie", icon: "🍿", name: "Movie Night", desc: "Play a video in the Theater.", crumbs: 10 },
   { id: "bookworm", icon: "📚", name: "Bookworm", desc: "Spend 15 minutes in the Library.", crumbs: 15 },
   { id: "snack", icon: "🍝", name: "Snack Break", desc: "Spend 10 minutes in the Dinner room.", crumbs: 10 },
-  { id: "bedroomMade", icon: "🛏️", name: "A Room of One's Own", desc: "Make your own bedroom upstairs.", crumbs: 10 },
+  { id: "bedroomMade", icon: "🛏️", name: "A Room of One's Own", desc: "Step into your own bedroom upstairs.", crumbs: 10 },
   { id: "goodnight", icon: "🌙", name: "Goodnight", desc: "Get into bed.", crumbs: 5 },
   { id: "wellRested", icon: "😴", name: "Well Rested", desc: "Sleep for 30 minutes in total.", crumbs: 25 },
   { id: "sleepover", icon: "🧸", name: "Sleepover", desc: "Hang out in a bedroom with a friend.", crumbs: 15 },

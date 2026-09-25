@@ -45,8 +45,6 @@ let externalOnRooms = null;
 let externalOnKanban = null;
 let externalOnEmote = null;
 let emoteAction = null;
-let externalOnDecor = null;
-let decorAction = null;
 let externalOnMail = null;
 let mailAction = null;
 
@@ -112,16 +110,6 @@ export function onEmote(callback) {
 // Tells everyone we started an emote, or stopped (null).
 export function sendEmote(id) {
   emoteAction?.send(id);
-}
-
-// Bedroom decor: the list of pieces a friend has placed in their bedroom.
-export function onDecor(callback) {
-  externalOnDecor = callback;
-}
-
-// Sends your bedroom's decor to everyone, or to one friend if peerId is given.
-export function sendDecor(message, peerId) {
-  decorAction?.send(message, peerId ? { target: peerId } : undefined);
 }
 
 // Laptop mail: a letter, or a note saying a letter arrived.
@@ -216,8 +204,6 @@ export function connectToRoom(myName, myColor) {
   emoteAction = room.makeAction("emote");
   emoteAction.onMessage = (id, { peerId }) => externalOnEmote?.(id, peerId);
 
-  decorAction = room.makeAction("decor");
-  decorAction.onMessage = (message, { peerId }) => externalOnDecor?.(message, peerId);
 
   mailAction = room.makeAction("mail");
   mailAction.onMessage = (message, { peerId }) => externalOnMail?.(message, peerId);

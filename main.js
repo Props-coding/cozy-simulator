@@ -62,7 +62,7 @@ import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theate
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
-import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
+import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
@@ -138,7 +138,6 @@ onPeerStream(handlePeerStream);
 onPeerLeave((peerId) => {
   removePeerAudio(peerId);
   delete petTrails[peerId];
-  forgetFriendDecor(peerId);
   playLeaveSound();
 });
 onPeerJoin((peerId) => {
@@ -147,8 +146,6 @@ onPeerJoin((peerId) => {
   sendBoardTo(peerId);
   // Let a friend who just arrived see the Study timer, if one is running.
   if (focusTimer) sendFocus(focusMessage(), peerId);
-  // And how your bedroom is decorated.
-  sendMyDecorTo(peerId);
 });
 
 muteToggle.addEventListener("change", () => {
@@ -271,6 +268,8 @@ joinButton.addEventListener("click", async () => {
   applyMyLofi(); // your Study station (it may have come with your cloud save)
   loadSavedBoard(); // the Conference Room whiteboard, as it was left
   // Everyone's bedroom door on the landing, from the house server.
+  // (And your own room, as it is in this browser, goes up to the server.)
+  shareMyRoom();
   startRooms({ changed: () => (houseSignature = ""), notice: (text) => showNotice(text) });
   // The Workshop's project boards: kept up to date, and new or finished
   // cards announced in the house chat.
@@ -340,12 +339,10 @@ function saveMine(kind) {
   }
 }
 
-// What we tell friends about our office or bedroom (or null).
+// What we tell friends about our office (or null).
 function claimInfo(kind) {
   if (!mine[kind]) return null;
-  const info = { since: mine[kind].since, locked: mine[kind].locked };
-  if (kind === "bedroom") info.size = myHome().size;
-  return info;
+  return { since: mine[kind].since, locked: mine[kind].locked };
 }
 
 let privateRooms = { office: [] }; // everyone's offices, as passed to buildHouse
@@ -356,7 +353,7 @@ function isValidClaim(o) {
   return o && typeof o.since === "number" && Number.isFinite(o.since);
 }
 
-// Collects everyone's offices (or bedrooms), in the order they were made
+// Collects everyone's offices, in the order they were made
 // (earliest first), and gives them spots 1, 2, 3... in that order. So when
 // one is removed, the ones after it slide over to fill the gap. Every
 // browser runs this same rule, so everyone agrees on who is where. If two
@@ -367,18 +364,10 @@ function gatherClaims(kind, peers) {
     if (!isValidClaim(p[kind])) continue;
     const ownerName = String(p.name).slice(0, 16);
     const claim = { since: p[kind].since, locked: !!p[kind].locked, ownerName, ownerId: p.id, color: safeColor(p.color), mine: false };
-    if (kind === "bedroom") {
-      claim.size = Object.hasOwn(BEDROOM_SIZES, p[kind].size) ? p[kind].size : "cozy";
-      claim.decor = friendDecor(p.id, claim.size);
-    }
     claims.set(p[kind].since + "|" + ownerName, claim);
   }
   if (mine[kind]) {
     const claim = { since: mine[kind].since, locked: !!mine[kind].locked, ownerName: myName, color: safeColor(myColor), mine: true };
-    if (kind === "bedroom") {
-      claim.size = myHome().size;
-      claim.decor = myHome().placed;
-    }
     claims.set(mine[kind].since + "|" + myName, claim);
   }
   const sorted = [...claims.values()].sort((a, b) => a.since - b.since || a.ownerName.localeCompare(b.ownerName));
@@ -392,20 +381,28 @@ function gatherClaims(kind, peers) {
 }
 
 // Where you pop back to if the room you're in disappears: the middle of
-// the hallway, or of the landing if you're upstairs.
+// the hallway, or of the landing if you're upstairs (or in a bedroom).
 function spawnPoint(floor) {
   return { x: 8.7, y: floor ? LANDING + 1.2 : 1.2 };
 }
 
-// Rebuilds the house if anyone's office or bedroom appeared, disappeared,
-// moved or got locked/unlocked since last frame.
+// Everyone's bedroom door (and room) as buildHouse wants them: yours
+// straight from your own decorating, so changes show right away.
+function doorsForHouse() {
+  return bedroomDoors().map((door) => (isMe(door.owner) ? { ...door, mine: true, placed: myHome().placed, size: myHome().size } : door));
+}
+const isMe = (name) => String(name).toLowerCase() === String(myName).toLowerCase();
+
+// Rebuilds the house if anyone's office appeared, disappeared, moved or
+// got locked/unlocked since last frame, or a bedroom changed (then
+// houseSignature is cleared).
 function updatePrivateRooms() {
   for (const kind of KINDS) privateRooms[kind] = gatherClaims(kind, getPeers());
-  const signature = JSON.stringify([privateRooms, bedroomDoors()]);
+  const signature = JSON.stringify(privateRooms);
   if (signature === houseSignature) return;
   houseSignature = signature;
   const before = getCurrentRoom(player);
-  buildHouse(privateRooms.office, bedroomDoors());
+  buildHouse(privateRooms.office, doorsForHouse());
   // If your room slid over to fill a gap, slide along with it.
   const after = ROOMS.find((r) => r.id === before.id);
   if (before.owned && after) player.x += after.rect.x - before.rect.x;
@@ -503,25 +500,28 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
-  if (nearestInteraction(player) === "bedroomDoor" && bedroomDoorInReach(player).door.owner.toLowerCase() === myName.toLowerCase()) return "Your door. Press E to change who can come in, your note and decoration.";
+  if (nearestInteraction(player) === "bedroomDoor") {
+    const door = bedroomDoorInReach(player).door;
+    return isMe(door.owner) ? "Your door. Press E to go in, or C to change your door and room style." : `${door.owner}'s room. Press E to go in.`;
+  }
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   if (mySeat) return "Sitting. Move (or press E) to get up.";
   if (!nearestInteraction(player) && nearestFreeSeat()) return "Press E to sit.";
   const lockedDoor = lockedDoorInFront(player);
   if (lockedDoor) return `${lockedDoor.owned.ownerName}'s ${lockedDoor.owned.kind} is locked. Press K to knock.`;
+  if (room.owned?.mine && room.owned.kind === "bedroom") return "Your bedroom. Your laptop has Nest & Nook and decorating. Step into bed to sleep.";
   if (room.owned?.mine) {
     const kind = room.owned.kind;
     const lock = mine[kind].locked ? "Press L to unlock the door" : "Press L to lock the door";
-    const bed = kind === "bedroom" ? " Step into bed to sleep." : "";
-    return `Your ${kind}. ${lock}, or R to remove your ${kind}.${bed}`;
+    return `Your ${kind}. ${lock}, or R to remove your ${kind}.`;
   }
   if (room.owned?.kind === "bedroom") return "Step into the bed to sleep.";
   const buildKind = isNearBuildDoor(player);
   if (buildKind) {
-    if (mine[buildKind]) return `You already have ${buildKind === "office" ? "an office" : "a bedroom"}.`;
-    if (privateRooms[buildKind].length >= WINGS[buildKind].slots) return `All ${WINGS[buildKind].slots} ${buildKind}s are taken right now.`;
-    return buildKind === "office" ? "Press E to build your office." : "Press E to make your bedroom.";
+    if (mine[buildKind]) return "You already have an office.";
+    if (privateRooms[buildKind].length >= WINGS[buildKind].slots) return `All ${WINGS[buildKind].slots} offices are taken right now.`;
+    return "Press E to build your office.";
   }
   if (ride) return "";
   if (nearestInteraction(player) === "elevator") return `Press E to take the elevator ${elevatorInReach(player) === 0 ? "up" : "down"}.`;
@@ -556,9 +556,13 @@ window.addEventListener("keydown", (e) => {
 
   if (key === "e" && nearestInteraction(player) === "bedroomDoor") {
     for (const k in keysDown) keysDown[k] = false;
-    const door = bedroomDoorInReach(player).door;
-    if (door.owner.toLowerCase() === myName.toLowerCase()) openDoorPanel();
-    else showNotice(`${door.owner}'s room.`);
+    enterBedroom(bedroomDoorInReach(player).door);
+    return;
+  }
+
+  if (key === "c" && nearestInteraction(player) === "bedroomDoor" && isMe(bedroomDoorInReach(player).door.owner)) {
+    for (const k in keysDown) keysDown[k] = false;
+    openDoorPanel();
     return;
   }
 
@@ -613,11 +617,11 @@ window.addEventListener("keydown", (e) => {
     mine[buildKind] = { since: Date.now(), locked: false };
     saveMine(buildKind);
     playClickSound();
-    unlock(buildKind === "office" ? "office" : "bedroomMade");
+    unlock("office");
   }
 
   const here = getCurrentRoom(player).owned;
-  if (key === "l" && here?.mine) {
+  if (key === "l" && here?.mine && here.kind === "office") {
     mine[here.kind].locked = !mine[here.kind].locked;
     saveMine(here.kind);
     playClickSound();
@@ -655,7 +659,7 @@ window.addEventListener("keydown", (e) => {
   // Removing asks first, since it can't be undone (though you can always
   // make a new one). You get moved back to the hallway or landing once
   // it's gone.
-  if (key === "r" && here?.mine) {
+  if (key === "r" && here?.mine && here.kind === "office") {
     const kind = here.kind;
     askConfirm({
       title: `Remove your ${kind}?`,
@@ -706,6 +710,7 @@ const STACK_BELOW = 900; // narrower windows put the sidebar under the house (ma
 const SIDEBAR_SPACE = 230 + 20; // sidebar width plus the gap
 const FRAME = 8; // the house frame's border, both sides together
 
+let lastDrawnFloor = 0;
 function fitHouse() {
   if (gameScreen.hidden) return;
   const { w, h } = houseViewSize();
@@ -1156,6 +1161,22 @@ function uiBusy() {
   return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || !!ride;
 }
 
+// Going into a bedroom (E at its door on the landing), and out again
+// (walk out through its doorway).
+function enterBedroom(door) {
+  if (!ROOMS.some((r) => r.bedroom && r.owned.ownerName === door.owner)) return;
+  Object.assign(player, bedroomEntry(door));
+  playClickSound();
+  if (isMe(door.owner)) unlock("bedroomMade");
+}
+
+function checkLeftBedroom() {
+  if (floorOf(player.y) < 2 || isInsideARoom(player)) return;
+  const room = ROOMS.find((r) => r.bedroom && floorOf(r.rect.y) === floorOf(player.y));
+  Object.assign(player, bedroomExit(room?.owned.ownerName));
+  playClickSound();
+}
+
 // Riding the elevator: the doors slide open, you step in, and they open
 // again on the other floor (with a ding) and close behind you. You can't
 // walk while it's moving.
@@ -1417,6 +1438,7 @@ renderChat();
 initHome({
   color: () => myColor,
   myRoom: () => ROOMS.find((r) => r.owned?.mine && r.owned.kind === "bedroom")?.rect ?? null,
+  changed: () => (houseSignature = ""), // redraw your room with the change
   notice: (text) => showNotice(text),
 });
 initLaptop({
@@ -1738,6 +1760,7 @@ function tick(now) {
   }
   checkMySeat();
   updateElevator(dt);
+  checkLeftBedroom();
   showDanceCooldown();
   checkWhisper();
   mySpeaking = isSpeaking();
@@ -1795,6 +1818,11 @@ function tick(now) {
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
+  // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.
+  if (floorOf(player.y) !== lastDrawnFloor) {
+    lastDrawnFloor = floorOf(player.y);
+    fitHouse();
+  }
 
   updateSidebar(currentRoom.name);
 

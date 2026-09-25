@@ -2,9 +2,12 @@
 // and where you've put it. Also the Nest & Nook store (shown on the
 // laptop) and decorating (moving pieces around your room).
 //
-// Like crumbs, this is saved in your own browser only. Friends get a copy
-// of your decor when they join, and again whenever you change it.
-import { sendDecor, onDecor } from "./network.js";
+// Like crumbs, what you own is saved in your own browser (and your cloud
+// save). What's placed, and the room's size, also go to the house server
+// whenever they change, so friends can visit your room even while you're
+// away.
+import { serverApi } from "./account.js";
+import { sendRoomsPing } from "./network.js";
 import { spendCrumbs, crumbBalance } from "./shop.js";
 import { unlock } from "./achievements.js";
 import { playCrumbSound, playClickSound } from "./audio.js";
@@ -43,6 +46,18 @@ function store() {
   } catch {
     // Storage blocked (e.g. a private window): just won't be remembered.
   }
+  hooks.changed();
+  shareMyRoom();
+}
+
+// Sends your room (what's placed, and its size) to the house server.
+// Also called once when you join, so it's up to date.
+export function shareMyRoom() {
+  serverApi("PUT", "/api/room/home", { placed: home.placed, size: home.size })
+    .then(() => sendRoomsPing()) // friends fetch it right away
+    .catch(() => {
+      // Offline for a moment: it goes up with your next change.
+    });
 }
 
 // Admin panel helpers (for testing): one of every Nest & Nook item, and
@@ -62,41 +77,11 @@ export function myHome() {
   return home;
 }
 
-// --- Sharing decor with friends ---
-function shareDecor() {
-  sendDecor({ placed: home.placed });
-}
-
-// Called when a friend joins, so they see your room as it is.
-export function sendMyDecorTo(peerId) {
-  sendDecor({ placed: home.placed }, peerId);
-}
-
-// Friends' decor, as they sent it, tidied (checked piece by piece) for
-// the size their room is right now.
-const friendsDecor = {}; // peer id -> { raw, size, clean }
-onDecor((message, peerId) => {
-  friendsDecor[peerId] = { raw: message?.placed, size: null, clean: [] };
-});
-
-export function friendDecor(peerId, size) {
-  const d = friendsDecor[peerId];
-  if (!d) return [];
-  if (d.size !== size) {
-    d.size = size;
-    d.clean = tidyDecor(size, d.raw);
-  }
-  return d.clean;
-}
-
-export function forgetFriendDecor(peerId) {
-  delete friendsDecor[peerId];
-}
-
 // --- Connecting to main.js ---
 // main.js tells us your color, where your bedroom is right now (its rect,
-// or null), and how to show a short message.
-let hooks = { color: () => "#e05a47", myRoom: () => null, notice: () => {} };
+// or null), how to show a short message, and what to do when your room
+// changes (redraw it).
+let hooks = { color: () => "#e05a47", myRoom: () => null, notice: () => {}, changed: () => {} };
 export function initHome(options) {
   hooks = options;
 }
@@ -561,8 +546,8 @@ function upgradeCard(page) {
   name.textContent = "The Roomy Room";
   const line = document.createElement("p");
   line.textContent = roomy
-    ? "Done! The partition wall is gone and your bedroom is roomy. Enjoy the space."
-    : "Our builders take down your bedroom's partition wall, making it a good bit wider. Plenty of room for a sofa and a fish tank.";
+    ? "Done! Your bedroom is roomy now. Enjoy the space."
+    : "Our builders knock through into the next room, making your bedroom half as wide again. Plenty of room for a sofa and a fish tank.";
   const row = document.createElement("div");
   row.className = "nook-pick-row";
   const button = document.createElement("button");
@@ -658,6 +643,7 @@ function pickUpNew(id) {
 function pickUpPlaced(index) {
   const [piece] = home.placed.splice(index, 1);
   held = { ...piece, from: { x: piece.x, y: piece.y, r: piece.r } };
+  hooks.changed();
   playClickSound();
   renderBar();
 }
@@ -723,7 +709,6 @@ function placeHeld() {
   home.placed.push({ item: held.item, x: held.x, y: held.y, ...(held.r ? { r: held.r } : {}) });
   held = null;
   store();
-  shareDecor();
   playCrumbSound();
   unlock("decorator");
   if (home.placed.length >= 12) unlock("designer");
@@ -735,6 +720,7 @@ function placeHeld() {
 function cancelHeld() {
   if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y, ...(held.from.r ? { r: held.from.r } : {}) });
   held = null;
+  hooks.changed();
   renderBar();
 }
 
@@ -748,10 +734,7 @@ function putAwayHeld() {
   }
   const wasPlaced = !!held.from;
   held = null;
-  if (wasPlaced) {
-    store();
-    shareDecor();
-  }
+  if (wasPlaced) store();
   playClickSound();
   renderBar();
 }

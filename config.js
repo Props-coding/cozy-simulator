@@ -61,7 +61,7 @@ const CONFIG = {
   // hallway). Doors are checked with the house server every `pollSeconds`
   // (and right away when a friend changes theirs). Doors are `doorSpacing`
   // tiles apart, starting `firstDoorX` tiles from the west wall.
-  bedrooms: { pollSeconds: 20, doorSpacing: 3, firstDoorX: 1 },
+  bedrooms: { pollSeconds: 20, doorSpacing: 2.8, firstDoorX: 1 },
 
   // Sitting: press E within this many tiles of a free seat to sit down.
   sit: { reach: 1.0 },

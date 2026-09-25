@@ -10,8 +10,9 @@
 // (north), each with a doorway down into the hallway. South of the
 // hallway's east end is the elevator lobby, with a bit of garden below it.
 //
-// Upstairs is a landing (a second hallway) with bedrooms along its north
-// side and the elevator at its east end; the rest is roof. The upstairs is
+// Upstairs is a landing (the bedroom hallway) with everyone's bedroom
+// door along its north wall and the elevator at its east end; the rest
+// is roof. Each bedroom is its own little map behind its door. The upstairs is
 // kept further down the same grid (UPSTAIRS units lower), so the two
 // floors never overlap and all the walking and room rules work the same
 // on both. Only the floor you're on is drawn.
@@ -27,9 +28,10 @@ const UPSTAIRS = 40; // how much further down the grid the upstairs floor is kep
 // (the wall with the bedroom doors).
 const LANDING = UPSTAIRS + 3;
 
-// Which floor a grid y position is on: 0 downstairs, 1 upstairs.
+// Which floor a grid y position is on: 0 downstairs, 1 upstairs, and 2
+// and up for the bedrooms (each is its own little map, see bedroomTop).
 function floorOf(y) {
-  return y > UPSTAIRS / 2 ? 1 : 0;
+  return Math.max(0, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
 }
 
 // Open floor areas, in grid units, used to figure out which room the
@@ -300,6 +302,28 @@ const BASE_FURNITURE = [
 // wide open), set by main.js while you ride and read when drawing.
 const ELEVATOR_OPEN = [0, 0];
 
+// Where a bedroom's map is: its own "floor" further down the grid (map 0
+// is floor 2, map 1 floor 3...), centered across the view like the house.
+// x0 and top are its floor's top-left corner, w its width.
+function bedroomSpot(door) {
+  const w = bedroomWidth(door.size);
+  return { x0: (HOUSE_WIDTH - w) / 2, top: (door.map + 2) * UPSTAIRS - 1.2, w };
+}
+const BEDROOM_DOOR_X = 1; // the doorway in a bedroom's front wall, from its left edge
+
+// Stepping into someone's bedroom: just inside its doorway.
+function bedroomEntry(door) {
+  const { x0, top } = bedroomSpot(door);
+  return { x: x0 + BEDROOM_DOOR_X + DOOR_WIDTH / 2 - PLAYER_SIZE / 2, y: top + BEDROOM_DEPTH - 1 };
+}
+
+// Walking out of a bedroom: back on the landing, in front of its door
+// (or the middle of the landing if its door isn't there any more).
+function bedroomExit(owner) {
+  const f = FURNITURE.find((f) => f.kind === "bedroomDoor" && f.door.owner === owner);
+  return f ? { x: f.x + f.w / 2 - PLAYER_SIZE / 2, y: LANDING + 0.35 } : { x: 8.7, y: LANDING + 1.2 };
+}
+
 // The bedroom door you're standing right in front of (its furniture
 // piece, with .door from the server), or null.
 function bedroomDoorInReach(player) {
@@ -456,12 +480,11 @@ function seatsOnFloor(floor) {
   return FURNITURE.filter((f) => floorOf(f.y) === floor).flatMap(seatSpots);
 }
 
-// --- Private rooms: offices and bedrooms ---
-// Offices sit north of the hallway in up to three spots, and bedrooms
-// north of the upstairs landing in up to four, filled left to right. When
-// one is removed, the ones after it slide over to close the gap. The "+"
-// door for making a new one is always on the wall at the next free spot.
-// Each kind's layout:
+// --- Private rooms: offices ---
+// Offices sit north of the hallway in up to three spots, filled left to
+// right. When one is removed, the ones after it slide over to close the
+// gap. The "+" door for making a new one is always on the wall at the
+// next free spot. The layout:
 //   slots: how many can exist at once. width: grid units per room,
 //   including its wall. firstX: left edge of the first spot. floorY: the y
 //   of the corridor wall they open onto (the hallway, or the landing).
@@ -469,9 +492,8 @@ function seatsOnFloor(floor) {
 //   far north it reaches from the corridor.
 const WINGS = {
   office: { slots: 3, width: 4, firstX: 6, floorY: 0, doorX: 1, depth: 5, name: "Office" },
-  bedroom: { slots: 4, width: 6, firstX: 0, floorY: LANDING, doorX: 1, depth: 8, name: "Bedroom" },
 };
-const BEDROOM_DEPTH = WINGS.bedroom.depth;
+const BEDROOM_DEPTH = 8; // every bedroom, from its back wall to its door
 const DOOR_WIDTH = 1.6;
 const OFFICE_TOP = -WALL_THICKNESS - WINGS.office.depth; // the office floor's north edge
 
@@ -489,7 +511,7 @@ let FURNITURE = [];
 let SOLIDS = []; // everything you bump into: walls plus solid furniture
 let houseVersion = 0;
 let houseTopY = -5.8; // the house's northern edge on each floor (for the camera)
-const buildDoors = { office: null, bedroom: null }; // left edge of each kind's next free spot, or null if all are taken
+const buildDoors = { office: null }; // left edge of each kind's next free spot, or null if all are taken
 
 // offices: a list of { slot, since, ownerName, color, locked, mine },
 // already in order (slot 1 first). An office's id comes from when it was
@@ -519,9 +541,8 @@ function buildHouse(offices, doors = []) {
     const top = wing.floorY - t - wing.depth;
     for (const info of list) {
       const x0 = wingX(kind, info.slot);
-      // Bedrooms come in two sizes (see BEDROOM_SIZES); offices fill their spot.
-      const inner = kind === "bedroom" ? bedroomWidth(info.size) : wing.width - t;
-      const theme = kind === "office" ? officeThemeFor(info.ownerName) : null;
+      const inner = wing.width - t;
+      const theme = officeThemeFor(info.ownerName);
       rooms.push({
         id: kind + "-" + info.since,
         name: `${info.ownerName}'s ${wing.name}`,
@@ -537,8 +558,7 @@ function buildHouse(offices, doors = []) {
         { x: x0 - t, y: top - t, w: t, h: wing.depth + t }, // left side, down to the corridor wall
         { x: x0 + inner, y: top - t, w: t, h: wing.depth + t } // right side
       );
-      const pieces = kind === "office" ? OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default : BEDROOM_FURNITURE;
-      furniture.push(...pieces(x0, top, info));
+      furniture.push(...(OFFICE_FURNITURE[theme] || OFFICE_FURNITURE.default)(x0, top, info));
       if (info.locked) {
         furniture.push({ kind: "closedDoor", x: x0 + wing.doorX, y: wing.floorY, w: DOOR_WIDTH, solid: false });
       }
@@ -564,6 +584,31 @@ function buildHouse(offices, doors = []) {
     const x = firstDoorX + i * doorSpacing;
     furniture.push({ kind: "bedroomDoor", x, y: LANDING, w: DOOR_WIDTH, door: doors[i], solid: false });
     if (i < doorCount - 1 || x + doorSpacing < HOUSE_WIDTH) furniture.push({ kind: "sconce", x: x + DOOR_WIDTH + (doorSpacing - DOOR_WIDTH) / 2 - 0.15, y: LANDING, solid: false });
+  }
+
+  // Each bedroom, on its own map: four walls with a doorway in the bottom
+  // one (walk out of it and you're back on the landing), and everything
+  // its owner has placed inside.
+  for (const door of doors) {
+    const { x0, top, w } = bedroomSpot(door);
+    const bottom = top + BEDROOM_DEPTH;
+    rooms.push({
+      id: "bedroom-" + door.owner.toLowerCase(),
+      name: `${door.owner}'s Bedroom`,
+      rect: { x: x0, y: top, w, h: BEDROOM_DEPTH },
+      owned: { kind: "bedroom", ownerName: door.owner, color: door.color, mine: !!door.mine, map: door.map },
+      theme: door.style, // its look (see ROOM_STYLES in render.js)
+      bedroom: true,
+    });
+    walls.push(
+      { x: x0 - t, y: top - t, w: w + 2 * t, h: t }, // back wall
+      { x: x0 - t, y: top - t, w: t, h: BEDROOM_DEPTH + 2 * t }, // left
+      { x: x0 + w, y: top - t, w: t, h: BEDROOM_DEPTH + 2 * t }, // right
+      { x: x0 - t, y: bottom, w: t + BEDROOM_DOOR_X, h: t }, // front, left of the doorway
+      { x: x0 + BEDROOM_DOOR_X + DOOR_WIDTH, y: bottom, w: w - BEDROOM_DOOR_X - DOOR_WIDTH + t, h: t } // and right of it
+    );
+    const decor = door.mine ? door.placed : tidyDecor(door.size, door.placed);
+    furniture.push(...BEDROOM_FURNITURE(x0, top, { color: door.color, mine: !!door.mine, decor }));
   }
 
   // The hallway and landing are last, so rooms off them are found first.
@@ -659,11 +704,11 @@ const OFFICE_FURNITURE = {
 };
 
 // --- Bedrooms: the starter room, and Nest & Nook decor ---
-// A new bedroom is "cozy": 4.1 wide, with a partition wall on its right.
-// The "Roomy" upgrade (bought at Nest & Nook) takes the wall down, making
-// it 5.6 wide. Either way it's 8 deep, with the doorway at the bottom
-// between x0 + 1 and x0 + 2.6.
-const BEDROOM_SIZES = { cozy: 4.1, roomy: 5.6 };
+// A bedroom is "cozy" (8 wide) until the "Roomy" upgrade (bought at Nest
+// & Nook) makes it 12 wide. Either way it's 8 deep, with the doorway at
+// the bottom between x0 + 1 and x0 + 2.6. (Bedrooms used to be 4.1 and
+// 5.6 wide, so everything placed back then still fits where it was.)
+const BEDROOM_SIZES = { cozy: 8, roomy: 12 };
 const ROOMY_PRICE = 150; // crumbs
 
 function bedroomWidth(size) {
@@ -958,12 +1003,10 @@ function roomNameFor(id) {
   return ROOMS.find((r) => r.id === id)?.name || CONFIG.roomNames[id] || "somewhere";
 }
 
-// Which "+" door the player is standing right by ("office" in the
-// hallway, "bedroom" on the landing), or null.
+// "office" if the player is standing right by the hallway's "+" door, or null.
 function isNearBuildDoor(player) {
-  const corridor = getCurrentRoom(player).id;
-  const kind = corridor === "hallway" ? "office" : corridor === "landing" ? "bedroom" : null;
-  if (!kind || buildDoors[kind] === null) return null;
+  const kind = "office";
+  if (getCurrentRoom(player).id !== "hallway" || buildDoors[kind] === null) return null;
   const cx = player.x + PLAYER_SIZE / 2;
   const doorX = buildDoors[kind] + WINGS[kind].doorX;
   return cx >= doorX - 0.2 && cx <= doorX + 1.8 && player.y < WINGS[kind].floorY + 1.2 ? kind : null;
@@ -1062,5 +1105,5 @@ function getCurrentRoom(player) {
   const cx = player.x + PLAYER_SIZE / 2;
   const cy = player.y + PLAYER_SIZE / 2;
   const room = ROOMS.find((r) => cx >= r.rect.x && cx <= r.rect.x + r.rect.w && cy >= r.rect.y && cy <= r.rect.y + r.rect.h);
-  return room || ROOMS.find((r) => r.id === (floorOf(cy) ? "landing" : "hallway"));
+  return room || ROOMS.find((r) => r.id === (floorOf(cy) ? "landing" : "hallway")); // (a bedroom's doorway counts as the landing)
 }
