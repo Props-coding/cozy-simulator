@@ -43,11 +43,42 @@ const CATALOG = [
   { id: "frogHat", type: "hat", name: "Frog Hat", price: 60, height: 6, line: "ribbit. that's the whole sales pitch." },
   { id: "crown", type: "hat", name: "Crown", price: 120, height: 7, line: "fell off a king. we think. don't ask." },
   { id: "halo", type: "hat", name: "Halo", price: 200, height: 22, line: "for when you've been good. very rare." },
+  { id: "beret", type: "hat", name: "Beret", price: 20, height: 7, line: "ooh la la. we don't know what that means." },
+  { id: "bucketHat", type: "hat", name: "Bucket Hat", price: 20, height: 5, line: "holds a hat's worth of stuff. which is your head." },
+  { id: "sproutHat", type: "hat", name: "Head Sprout", price: 25, height: 11, line: "water daily. or don't. it's fake. probably." },
+  { id: "catEars", type: "hat", name: "Cat Ears", price: 30, height: 8, line: "meow. that's free. the ears are 30." },
+  { id: "flowerCrown", type: "hat", name: "Flower Crown", price: 35, height: 3, line: "picked fresh from someone's garden. not yours. don't check." },
+  { id: "strawHat", type: "hat", name: "Straw Hat", price: 35, height: 7, line: "for summer. or for pretending it's summer." },
+  { id: "propellerCap", type: "hat", name: "Propeller Cap", price: 40, height: 12, line: "doesn't fly. we tried. bean tried. twice." },
+  { id: "mushroomCap", type: "hat", name: "Mushroom Cap", price: 45, height: 9, line: "not the eating kind. please don't eat it." },
+  { id: "bunnyEars", type: "hat", name: "Bunny Ears", price: 50, height: 20, line: "one ear's floppy. it's a feature. a cute one." },
+  { id: "gradCap", type: "hat", name: "Graduation Cap", price: 55, height: 9, line: "congratulations on graduating. from what? who knows." },
+  { id: "santaHat", type: "hat", name: "Santa Hat", price: 60, height: 12, line: "ho ho... we're not allowed to finish that." },
+  { id: "pirateHat", type: "hat", name: "Pirate Hat", price: 70, height: 14, line: "arr. we traded a map for it. the map was fake too." },
+  { id: "vikingHelmet", type: "hat", name: "Viking Helmet", price: 80, height: 10, line: "horns sold separately. kidding. horns included." },
+  { id: "tiara", type: "hat", name: "Tiara", price: 120, height: 9, line: "real diamonds. fake diamonds. same sparkle." },
   { id: "sneakers", type: "shoes", name: "Sneakers", price: 15, line: "zoom zoom. that's a feature." },
   { id: "rainBoots", type: "shoes", name: "Rain Boots", price: 25, line: "puddles fear you now." },
   { id: "bunnySlippers", type: "shoes", name: "Bunny Slippers", price: 30, line: "they're not real bunnies. we checked." },
   { id: "cowboyBoots", type: "shoes", name: "Cowboy Boots", price: 40, line: "pairs well with a hat. we sell hats." },
   { id: "rollerSkates", type: "shoes", name: "Roller Skates", price: 75, line: "wheeee. sorry. professional voice. wheee." },
+  { id: "flipFlops", type: "shoes", name: "Flip-Flops", price: 10, line: "flip. flop. that's the sound. that's the name." },
+  { id: "balletFlats", type: "shoes", name: "Ballet Flats", price: 25, line: "twirl twice before wearing. house rules." },
+  { id: "sockSandals", type: "shoes", name: "Socks & Sandals", price: 25, line: "bold. fearless. a little crunchy." },
+  { id: "clogs", type: "shoes", name: "Clogs", price: 30, line: "clip clop. very sturdy. very loud on stairs." },
+  { id: "hikingBoots", type: "shoes", name: "Hiking Boots", price: 45, line: "for adventures. or the walk to the kitchen." },
+  { id: "moonBoots", type: "shoes", name: "Moon Boots", price: 55, line: "one small step. very puffy." },
+  { id: "glowSneakers", type: "shoes", name: "Light-Up Sneakers", price: 65, line: "they blink when you walk. like us when we see crumbs." },
+  { id: "rubySlippers", type: "shoes", name: "Ruby Slippers", price: 150, line: "click your heels. results not guaranteed." },
+  // Glasses go on your face.
+  { id: "roundGlasses", type: "glasses", name: "Round Glasses", price: 20, line: "you look very smart. smarter than us. low bar." },
+  { id: "sunglasses", type: "glasses", name: "Sunglasses", price: 25, line: "too cool for the house. but stay anyway." },
+  { id: "catEyeGlasses", type: "glasses", name: "Cat-Eye Glasses", price: 35, line: "fancy. a little mysterious. like us." },
+  { id: "heartGlasses", type: "glasses", name: "Heart Glasses", price: 40, line: "everything looks lovelier. even bean." },
+  { id: "glasses3d", type: "glasses", name: "3D Glasses", price: 40, line: "for the theater. or for everything. your call." },
+  { id: "starGlasses", type: "glasses", name: "Star Glasses", price: 50, line: "you're a star. the glasses say so." },
+  { id: "goggles", type: "glasses", name: "Goggles", price: 60, line: "for the workshop. safety first. second: style." },
+  { id: "monocle", type: "glasses", name: "Monocle", price: 90, line: "one eye fancy. the other eye regular. balance." },
   // Pets follow you around the house (one at a time).
   { id: "duck", type: "pet", name: "Duckling", price: 50, line: "it imprinted on us first. awkward. it's yours now." },
   { id: "frog", type: "pet", name: "Frog", price: 50, line: "ribbit. same pitch as the hat. we're consistent." },
@@ -60,6 +91,14 @@ const CATALOG = [
   { id: "ghost", type: "pet", name: "Ghost", price: 150, line: "found it in the library. it followed us out. boo." },
   { id: "dragon", type: "pet", name: "Baby Dragon", price: 250, line: "small now. keep it away from the curtains." },
   { id: "raccoonKit", type: "pet", name: "Raccoon Kit", price: 300, line: "our cousin. very trustworthy. unlike us." },
+  { id: "snail", type: "pet", name: "Snail", price: 40, line: "slow. steady. will get there eventually." },
+  { id: "hamster", type: "pet", name: "Hamster", price: 55, line: "cheeks full of snacks. respect." },
+  { id: "turtle", type: "pet", name: "Turtle", price: 65, line: "brings its own house. very efficient." },
+  { id: "sheep", type: "pet", name: "Sheep", price: 75, line: "fluffy. counts itself to sleep." },
+  { id: "owl", type: "pet", name: "Owl", price: 90, line: "wise. or it just looks wise. same thing, really." },
+  { id: "bat", type: "pet", name: "Bat", price: 95, line: "spooky season, all season." },
+  { id: "capybara", type: "pet", name: "Capybara", price: 120, line: "the calmest creature alive. the orange is included." },
+  { id: "axolotl", type: "pet", name: "Axolotl", price: 140, line: "smiles all the time. we're a bit jealous." },
 ];
 
 // --- Saved progress ---
@@ -104,6 +143,10 @@ export function ownedShoes() {
 // An item's name, like "Baby Dragon" for "dragon".
 export function itemName(id) {
   return CATALOG.find((item) => item.id === id)?.name ?? id;
+}
+
+export function ownedGlasses() {
+  return CATALOG.filter((item) => item.type === "glasses" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 export function ownedPets() {
@@ -355,7 +398,7 @@ function closeShop() {
 function renderShop() {
   shopItems.innerHTML = "";
   const current = look.get();
-  for (const item of CATALOG.filter((i) => i.type === shopTab)) {
+  for (const item of CATALOG.filter((i) => i.type === shopTab).sort((a, b) => a.price - b.price)) {
     const owned = save.owned.includes(item.id);
     const wearing = current[item.type] === item.id;
     const tag = document.createElement("div");
@@ -368,7 +411,7 @@ function renderShop() {
     preview.width = 88;
     preview.height = 132;
     if (item.type === "pet") drawPetPreview(preview, item.id);
-    else drawCharacterPreview(preview, current.color, item.type === "hat" ? item.id : current.hat, item.type === "shoes" ? item.id : current.shoes);
+    else drawCharacterPreview(preview, current.color, item.type === "hat" ? item.id : current.hat, item.type === "shoes" ? item.id : current.shoes, null, item.type === "glasses" ? item.id : current.glasses);
 
     const name = document.createElement("div");
     name.className = "shop-item-name";

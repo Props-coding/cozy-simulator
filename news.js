@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.49",
+    title: "The raccoons restocked!",
+    text: "Pip, Reginald and Bean got a big delivery (don't ask from where). 14 new hats, including a beret, cat ears, bunny ears, a flower crown, a propeller cap, a pirate hat, a viking helmet, a santa hat, a head sprout and a tiara. 8 new shoes, from flip-flops to ruby slippers. 8 new pets: a snail, hamster, turtle, sheep, owl, bat, capybara (with an orange) and an axolotl. And a whole new Glasses section: round, sunglasses, cat-eye, heart, 3D, star, goggles and a monocle. Your wardrobe has a Glasses tab too. Also: the whiteboard now saves your drawings right away, even if you refresh.",
+  },
+  {
     build: "0.48",
     title: "The Workshop, a whiteboard that remembers, and more dances",
     text: "Upstairs, south of the landing, there's a new Workshop! Press E at the big corkboard to open the house's project boards: add cards, claim them (your face gets pinned on), drag them from To do to Doing to Done, and watch the done jar on the workbench fill up. New and finished cards show up in the house chat. The Conference Room whiteboard is now saved, so your doodles are still there tomorrow. And there are nine more dances in your wardrobe: Disco, Rave, Boom Bap, Mosh, Pop, Two-Step, Reggaeton, Swing and Synthwave.",

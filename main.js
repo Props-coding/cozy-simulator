@@ -66,7 +66,7 @@ import {
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
-import { FREE_HATS, ownedHats, ownedShoes, ownedPets, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
+import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, friendDecor, forgetFriendDecor, sendMyDecorTo, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
@@ -97,6 +97,7 @@ const colorInput = document.getElementById("color-input");
 const hatInput = document.getElementById("hat-input");
 const shoesInput = document.getElementById("shoes-input");
 const petInput = document.getElementById("pet-input");
+const glassesInput = document.getElementById("glasses-input");
 const characterPreview = document.getElementById("character-preview");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
@@ -155,12 +156,14 @@ let myColor = "#e05a47";
 let myHat = "none";
 let myShoes = "none";
 let myPet = "none";
+let myGlasses = "none";
 
 // The hats and shoes you can pick: the free hats, plus whatever you've
 // bought from the raccoons.
 const hatChoices = () => [...FREE_HATS, ...ownedHats()];
 const shoeChoices = () => [["none", "Plain feet"], ...ownedShoes()];
 const petChoices = () => [["none", "No pet"], ...ownedPets()];
+const glassesChoices = () => [["none", "No glasses"], ...ownedGlasses()];
 
 function fillSelect(select, choices, chosen) {
   select.innerHTML = "";
@@ -183,16 +186,18 @@ if (savedProfile) {
 fillSelect(hatInput, hatChoices(), savedProfile?.hat);
 fillSelect(shoesInput, shoeChoices(), savedProfile?.shoes);
 fillSelect(petInput, petChoices(), savedProfile?.pet);
+fillSelect(glassesInput, glassesChoices(), savedProfile?.glasses);
 
 function saveProfile() {
   try {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet }));
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses }));
   } catch {
     // Storage blocked (e.g. private window): just won't be remembered.
   }
 }
 
-const updatePreview = () => drawCharacterPreview(characterPreview, colorInput.value, hatInput.value, shoesInput.value);
+const updatePreview = () => drawCharacterPreview(characterPreview, colorInput.value, hatInput.value, shoesInput.value, null, glassesInput.value);
+glassesInput.addEventListener("change", () => updatePreview());
 colorInput.addEventListener("input", updatePreview);
 hatInput.addEventListener("change", updatePreview);
 shoesInput.addEventListener("change", updatePreview);
@@ -201,12 +206,13 @@ updatePreview();
 // The wardrobe (wardrobe.js) changes your look from your bedroom.
 initWardrobe({
   name: () => myName,
-  look: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet }),
-  choices: () => ({ hats: hatChoices(), shoes: shoeChoices(), pets: petChoices() }),
+  look: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses }),
+  choices: () => ({ hats: hatChoices(), shoes: shoeChoices(), pets: petChoices(), glasses: glassesChoices() }),
   wear: (type, id) => {
     if (type === "color") myColor = colorInput.value = id;
     else if (type === "hat") myHat = id;
     else if (type === "shoes") myShoes = id;
+    else if (type === "glasses") myGlasses = id;
     else myPet = id;
     saveProfile();
     refreshLook();
@@ -216,15 +222,14 @@ initWardrobe({
 
 // The raccoons' shop can read and change what you're wearing.
 initShop({
-  get: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet }),
+  get: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses }),
   wear: (type, id) => {
     if (type === "hat") myHat = id;
     else if (type === "shoes") myShoes = id;
+    else if (type === "glasses") myGlasses = id;
     else myPet = id;
     saveProfile();
-    fillSelect(hatInput, hatChoices(), myHat);
-    fillSelect(shoesInput, shoeChoices(), myShoes);
-    fillSelect(petInput, petChoices(), myPet);
+    refreshLook();
   },
 });
 
@@ -238,6 +243,7 @@ joinButton.addEventListener("click", async () => {
   myHat = hatChoices().some(([id]) => id === hatInput.value) ? hatInput.value : "none";
   myShoes = shoeChoices().some(([id]) => id === shoesInput.value) ? shoesInput.value : "none";
   myPet = petChoices().some(([id]) => id === petInput.value) ? petInput.value : "none";
+  myGlasses = glassesChoices().some(([id]) => id === glassesInput.value) ? glassesInput.value : "none";
   saveProfile();
   startEarningCrumbs();
   applyMyLofi(); // your Study station (it may have come with your cloud save)
@@ -723,6 +729,7 @@ function refreshLook() {
   fillSelect(hatInput, hatChoices(), myHat);
   fillSelect(shoesInput, shoeChoices(), myShoes);
   fillSelect(petInput, petChoices(), myPet);
+  fillSelect(glassesInput, glassesChoices(), myGlasses);
 }
 
 // --- Emotes ---
@@ -1436,7 +1443,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura() });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura() });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -1445,14 +1452,15 @@ function tick(now) {
     const hat = Object.hasOwn(HAT_DRAWERS, peer.hat) ? peer.hat : "none";
     const shoes = Object.hasOwn(SHOE_DRAWERS, peer.shoes) ? peer.shoes : "none";
     const pet = Object.hasOwn(PET_DRAWERS, peer.pet) ? peer.pet : "none";
+    const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name) };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name) };
   });
   lastScenePlayers = scenePlayers;
   const myBed = bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura() });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 

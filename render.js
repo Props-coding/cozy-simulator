@@ -7582,6 +7582,741 @@ const PET_SCALE = 1.45; // pets are drawn small, then scaled up to sit nicely be
 
 // Draws one pet: `pet` is { kind, x, y, facing, moving } where x, y is the
 // spot on the floor (grid units) its feet touch.
+// --- More of the raccoons' stock (build 0.49) ---
+// Hats are drawn around the head at (cx, cy) with radius r (the top of the
+// head is cy - r); shoes around each foot at (x, y); glasses on the face
+// (eyes at cx ± 4, cy - 2); pets standing at (0, 0), facing right.
+
+Object.assign(HAT_DRAWERS, {
+  // A French beret, tilted, with a little stalk.
+  beret(ctx, cx, cy, r) {
+    ctx.fillStyle = "#b8323a";
+    ctx.beginPath();
+    ctx.ellipse(cx + 2, cy - r + 1, r + 2, 5.5, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r - 1, r - 3, 2.5, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a2430";
+    ctx.fillRect(cx + 1, cy - r - 7, 2, 4);
+  },
+
+  // A soft bucket hat with a wide floppy brim.
+  bucketHat(ctx, cx, cy, r) {
+    ctx.fillStyle = "#c9b27a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r * 0.35, r + 5, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#d9c38a";
+    ctx.beginPath();
+    ctx.moveTo(cx - r + 1, cy - r * 0.4);
+    ctx.quadraticCurveTo(cx - r + 2, cy - r - 5, cx, cy - r - 5);
+    ctx.quadraticCurveTo(cx + r - 2, cy - r - 5, cx + r - 1, cy - r * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#8a6a3a"; // band
+    ctx.fillRect(cx - r + 2, cy - r * 0.6, r * 2 - 4, 2.5);
+  },
+
+  // Cat ears on a headband.
+  catEars(ctx, cx, cy, r) {
+    for (const side of [-1, 1]) {
+      const ex = cx + side * (r * 0.55);
+      ctx.fillStyle = "#3a3440";
+      ctx.beginPath();
+      ctx.moveTo(ex - 5, cy - r + 3);
+      ctx.lineTo(ex + side * 2, cy - r - 8);
+      ctx.lineTo(ex + 5, cy - r + 3);
+      ctx.fill();
+      ctx.fillStyle = "#f3b8c8";
+      ctx.beginPath();
+      ctx.moveTo(ex - 2.5, cy - r + 2);
+      ctx.lineTo(ex + side * 1.5, cy - r - 4);
+      ctx.lineTo(ex + 2.5, cy - r + 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#3a3440";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 0.5, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+  },
+
+  // Tall bunny ears, one flopped over.
+  bunnyEars(ctx, cx, cy, r) {
+    ctx.strokeStyle = "#f2ede4";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 0.5, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    const ear = (x, angle) => {
+      ctx.save();
+      ctx.translate(x, cy - r + 2);
+      ctx.rotate(angle);
+      ctx.fillStyle = "#f7f3ec";
+      ctx.beginPath();
+      ctx.ellipse(0, -10, 4, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f3b8c8";
+      ctx.beginPath();
+      ctx.ellipse(0, -10, 2, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+    ear(cx - 5, -0.15);
+    ear(cx + 5, 0.9);
+  },
+
+  // A crown of little flowers and leaves.
+  flowerCrown(ctx, cx, cy, r) {
+    const colors = ["#f2a0b8", "#fff2a8", "#c8b0e8", "#f7c68a", "#f2a0b8", "#a8d8e8", "#fff2a8"];
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI * (1.12 + i * 0.127);
+      const x = cx + Math.cos(a) * (r - 1), y = cy + Math.sin(a) * (r - 1);
+      drawLeaf(ctx, x, y, a + Math.PI / 2 + 0.5, 5, 2, "#6aa05a", null);
+      ctx.fillStyle = colors[i];
+      for (let p = 0; p < 5; p++) {
+        const pa = (p / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(pa) * 1.8, y + Math.sin(pa) * 1.8, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#e0a83a";
+      ctx.fillRect(x - 0.8, y - 0.8, 1.6, 1.6);
+    }
+  },
+
+  // A red mushroom cap with white spots.
+  mushroomCap(ctx, cx, cy, r) {
+    ctx.fillStyle = "#d8423a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r + 2, r + 4, r * 0.8, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#f7f1e6";
+    for (const [dx, dy, s] of [[-7, -4, 2.2], [1, -9, 2.6], [8, -4, 2], [-2, -3, 1.5]]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy - r + 2 + dy, s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
+    ctx.fillRect(cx - r - 3, cy - r + 1, (r + 3) * 2, 1.5);
+  },
+
+  // A striped beanie with a spinning propeller on top.
+  propellerCap(ctx, cx, cy, r) {
+    const stripes = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a"];
+    stripes.forEach((c, i) => {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 1);
+      ctx.arc(cx, cy - 1, r + 1, Math.PI * (1.08 + i * 0.21), Math.PI * (1.08 + (i + 1) * 0.21));
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.fillStyle = "#6b6b70";
+    ctx.fillRect(cx - 0.8, cy - r - 6, 1.6, 6);
+    const spin = performance.now() / 70;
+    ctx.fillStyle = "#e04a5a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r - 6, Math.abs(Math.cos(spin)) * 8 + 1, 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A black pirate hat with gold trim and a tiny skull.
+  pirateHat(ctx, cx, cy, r) {
+    ctx.fillStyle = "#26222a";
+    ctx.beginPath();
+    ctx.moveTo(cx - r - 5, cy - r + 3);
+    ctx.quadraticCurveTo(cx - r + 2, cy - r - 10, cx, cy - r - 12);
+    ctx.quadraticCurveTo(cx + r - 2, cy - r - 10, cx + r + 5, cy - r + 3);
+    ctx.quadraticCurveTo(cx, cy - r - 2, cx - r - 5, cy - r + 3);
+    ctx.fill();
+    ctx.strokeStyle = "#d9a441";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - r - 4, cy - r + 2.5);
+    ctx.quadraticCurveTo(cx, cy - r - 2.5, cx + r + 4, cy - r + 2.5);
+    ctx.stroke();
+    ctx.fillStyle = "#f7f1e6"; // skull
+    ctx.beginPath();
+    ctx.arc(cx, cy - r - 5, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#26222a";
+    ctx.fillRect(cx - 1.4, cy - r - 5.5, 1, 1);
+    ctx.fillRect(cx + 0.4, cy - r - 5.5, 1, 1);
+  },
+
+  // A viking helmet with horns.
+  vikingHelmet(ctx, cx, cy, r) {
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = "#efe4cf";
+      ctx.beginPath();
+      ctx.moveTo(cx + side * (r - 2), cy - r * 0.55);
+      ctx.quadraticCurveTo(cx + side * (r + 9), cy - r * 0.6, cx + side * (r + 6), cy - r - 8);
+      ctx.quadraticCurveTo(cx + side * (r + 3), cy - r * 0.9, cx + side * (r - 3), cy - r * 0.95);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#8a8f96";
+    ctx.beginPath();
+    ctx.arc(cx, cy - 1, r + 1, Math.PI * 1.06, Math.PI * 1.94);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(cx - 4, cy - r + 2, 4, 2, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6b6f75";
+    ctx.fillRect(cx - r, cy - r * 0.5, r * 2, 3);
+  },
+
+  // A graduation cap with a swinging tassel.
+  gradCap(ctx, cx, cy, r) {
+    ctx.fillStyle = "#26222a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r + 2, r - 2, 4, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.beginPath(); // the flat board, seen at an angle
+    ctx.moveTo(cx - r - 4, cy - r - 2);
+    ctx.lineTo(cx, cy - r - 7);
+    ctx.lineTo(cx + r + 4, cy - r - 2);
+    ctx.lineTo(cx, cy - r + 3);
+    ctx.closePath();
+    ctx.fill();
+    const sway = Math.sin(performance.now() / 500) * 1.5;
+    ctx.strokeStyle = "#d9a441";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r - 2);
+    ctx.lineTo(cx + r, cy - r);
+    ctx.lineTo(cx + r + sway, cy - r + 7);
+    ctx.stroke();
+    ctx.fillStyle = "#d9a441";
+    ctx.fillRect(cx + r - 1 + sway, cy - r + 6, 2, 4);
+  },
+
+  // A floppy santa hat with a white trim and pompom.
+  santaHat(ctx, cx, cy, r) {
+    ctx.fillStyle = "#c0303a";
+    ctx.beginPath();
+    ctx.moveTo(cx - r + 1, cy - r * 0.45);
+    ctx.quadraticCurveTo(cx - 2, cy - r - 16, cx + r + 6, cy - r - 4);
+    ctx.lineTo(cx + r - 1, cy - r * 0.45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f7f3ec";
+    roundRectPath(ctx, cx - r, cy - r * 0.6, r * 2, 5, 2.5);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + r + 6, cy - r - 4, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A little sprout growing out of the top of your head.
+  sproutHat(ctx, cx, cy, r) {
+    ctx.strokeStyle = "#5a8a3a";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r + 1);
+    ctx.quadraticCurveTo(cx - 1, cy - r - 4, cx, cy - r - 7);
+    ctx.stroke();
+    const wiggle = Math.sin(performance.now() / 700) * 0.15;
+    drawLeaf(ctx, cx, cy - r - 6, -1.1 + wiggle, 8, 3.5, "#7ac05a", null);
+    drawLeaf(ctx, cx, cy - r - 6, 1.1 + wiggle, 8, 3.5, "#8fd06a", null);
+  },
+
+  // A sparkly silver tiara with gems.
+  tiara(ctx, cx, cy, r) {
+    ctx.fillStyle = "#dfe3e8";
+    ctx.beginPath();
+    ctx.moveTo(cx - r + 2, cy - r + 3);
+    for (const [dx, dy] of [[-8, -4], [-5, -2], [-2, -7], [0, -3], [2, -7], [5, -2], [8, -4]]) ctx.lineTo(cx + dx, cy - r + dy);
+    ctx.lineTo(cx + r - 2, cy - r + 3);
+    ctx.quadraticCurveTo(cx, cy - r + 1, cx - r + 2, cy - r + 3);
+    ctx.fill();
+    ctx.fillStyle = "#e37aa0";
+    ctx.beginPath();
+    ctx.arc(cx, cy - r - 2.5, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6fb8e8";
+    for (const dx of [-5, 5]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy - r + 0.5, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (Math.sin(performance.now() / 300) > 0.6) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(cx + 1.5, cy - r - 8, 1, 3);
+      ctx.fillRect(cx + 0.5, cy - r - 7, 3, 1);
+    }
+  },
+
+  // A wide straw sun hat with a ribbon.
+  strawHat(ctx, cx, cy, r) {
+    ctx.fillStyle = "#e3c27a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r * 0.4, r + 8, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#edd08e";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r + 1, r - 3, 6, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#e8607a";
+    ctx.fillRect(cx - r + 3, cy - r * 0.62, r * 2 - 6, 2.5);
+    ctx.strokeStyle = "rgba(150, 110, 40, 0.3)";
+    ctx.lineWidth = 0.6;
+    for (let k = -2; k <= 2; k++) {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - r * 0.4, r + 8 - Math.abs(k) * 2, 4, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+  },
+});
+
+// Glasses, drawn over the face (eyes at cx ± 4, cy - 2).
+const GLASSES_DRAWERS = {
+  none: null,
+
+  roundGlasses(ctx, cx, cy) {
+    ctx.strokeStyle = "#c9a24a";
+    ctx.lineWidth = 1.2;
+    for (const ex of [cx - 4.2, cx + 4.2]) {
+      ctx.beginPath();
+      ctx.arc(ex, cy - 2, 3.2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx - 1, cy - 2.5);
+    ctx.lineTo(cx + 1, cy - 2.5);
+    ctx.stroke();
+  },
+
+  sunglasses(ctx, cx, cy) {
+    ctx.fillStyle = "#1e1c22";
+    for (const ex of [cx - 4.4, cx + 4.4]) {
+      roundRectPath(ctx, ex - 3.6, cy - 4.5, 7.2, 5, 2);
+      ctx.fill();
+    }
+    ctx.fillRect(cx - 1, cy - 3.6, 2, 1);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+    for (const ex of [cx - 5.5, cx + 3.3]) ctx.fillRect(ex, cy - 3.8, 1.2, 2.5);
+  },
+
+  heartGlasses(ctx, cx, cy) {
+    for (const ex of [cx - 4.4, cx + 4.4]) {
+      ctx.fillStyle = "#f06a9a";
+      ctx.beginPath();
+      ctx.moveTo(ex, cy + 1.5);
+      ctx.bezierCurveTo(ex - 5, cy - 1.5, ex - 3, cy - 6, ex, cy - 3.5);
+      ctx.bezierCurveTo(ex + 3, cy - 6, ex + 5, cy - 1.5, ex, cy + 1.5);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillRect(ex - 2, cy - 3.5, 1, 1.5);
+    }
+    ctx.fillStyle = "#f06a9a";
+    ctx.fillRect(cx - 1, cy - 3, 2, 1);
+  },
+
+  starGlasses(ctx, cx, cy) {
+    for (const ex of [cx - 4.6, cx + 4.6]) {
+      ctx.fillStyle = "#f2c94c";
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const rr = k % 2 ? 2 : 4.5, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+        ctx.lineTo(ex + Math.cos(a) * rr, cy - 2 + Math.sin(a) * rr);
+      }
+      ctx.fill();
+      ctx.fillStyle = "rgba(90, 60, 20, 0.6)";
+      ctx.beginPath();
+      ctx.arc(ex, cy - 2, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  monocle(ctx, cx, cy) {
+    ctx.strokeStyle = "#d9a441";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.arc(cx + 4.2, cy - 2, 3.6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(200, 225, 240, 0.35)";
+    ctx.fill();
+    ctx.lineWidth = 0.7; // its little chain
+    ctx.beginPath();
+    ctx.moveTo(cx + 7.6, cy - 1);
+    ctx.quadraticCurveTo(cx + 10, cy + 5, cx + 6, cy + 9);
+    ctx.stroke();
+  },
+
+  glasses3d(ctx, cx, cy) {
+    ctx.fillStyle = "#f7f3ec";
+    roundRectPath(ctx, cx - 9, cy - 5, 18, 6, 1.5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(230, 60, 70, 0.85)";
+    ctx.fillRect(cx - 8, cy - 4, 6.5, 4);
+    ctx.fillStyle = "rgba(60, 170, 230, 0.85)";
+    ctx.fillRect(cx + 1.5, cy - 4, 6.5, 4);
+  },
+
+  catEyeGlasses(ctx, cx, cy) {
+    ctx.fillStyle = "#26222a";
+    for (const side of [-1, 1]) {
+      const ex = cx + side * 4.4;
+      ctx.beginPath();
+      ctx.moveTo(ex - side * 3.5, cy - 1);
+      ctx.quadraticCurveTo(ex - side * 3.5, cy - 4.5, ex, cy - 4.5);
+      ctx.lineTo(ex + side * 5, cy - 6.5); // the flick at the corner
+      ctx.quadraticCurveTo(ex + side * 4, cy + 0.5, ex, cy + 0.5);
+      ctx.quadraticCurveTo(ex - side * 3.5, cy + 0.5, ex - side * 3.5, cy - 1);
+      ctx.fill();
+      ctx.fillStyle = "rgba(200, 225, 240, 0.55)";
+      ctx.beginPath();
+      ctx.ellipse(ex, cy - 2, 2.2, 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#26222a";
+    }
+  },
+
+  goggles(ctx, cx, cy) {
+    ctx.strokeStyle = "#6b4630"; // the strap
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 13, cy - 2);
+    ctx.lineTo(cx + 13, cy - 2);
+    ctx.stroke();
+    for (const ex of [cx - 4.5, cx + 4.5]) {
+      ctx.fillStyle = "#b8904a";
+      ctx.beginPath();
+      ctx.arc(ex, cy - 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(240, 180, 80, 0.8)";
+      ctx.beginPath();
+      ctx.arc(ex, cy - 2, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.fillRect(ex - 1.8, cy - 3.8, 1, 1.5);
+    }
+  },
+};
+
+Object.assign(SHOE_DRAWERS, {
+  flipFlops(ctx, x, y) {
+    ctx.fillStyle = "#6fc2d4";
+    ctx.beginPath();
+    ctx.ellipse(x, y + 1, 4.8, 2.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#f2c94c";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x - 3, y + 1);
+    ctx.lineTo(x, y - 1.5);
+    ctx.lineTo(x + 3, y + 1);
+    ctx.stroke();
+  },
+
+  clogs(ctx, x, y) {
+    ctx.fillStyle = "#c49a5c";
+    roundRectPath(ctx, x - 4.5, y - 3, 9, 5.5, 2.5);
+    ctx.fill();
+    ctx.fillStyle = "#8a6a3a";
+    ctx.fillRect(x - 4.5, y + 1.3, 9, 1.4);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(x - 3, y - 2.3, 4, 1);
+  },
+
+  moonBoots(ctx, x, y) {
+    ctx.fillStyle = "#e8e6ee";
+    roundRectPath(ctx, x - 4.5, y - 7, 9, 10, 3.5);
+    ctx.fill();
+    ctx.fillStyle = "#b8b4c8";
+    for (let k = 0; k < 3; k++) ctx.fillRect(x - 4.5, y - 5 + k * 2.6, 9, 0.8);
+    ctx.fillStyle = "#8a86a0";
+    ctx.fillRect(x - 4.5, y + 1.6, 9, 1.5);
+  },
+
+  rubySlippers(ctx, x, y) {
+    ctx.fillStyle = "#c0203a";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 4.6, 2.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const t = performance.now() / 200;
+    ctx.fillStyle = "#ffd0d8";
+    for (let k = 0; k < 3; k++) {
+      if (Math.sin(t + k * 2.1 + x) > 0.3) ctx.fillRect(x - 3 + k * 2.5, y - 1.5 + (k % 2), 1, 1);
+    }
+    ctx.fillStyle = "#e84a60";
+    ctx.beginPath();
+    ctx.arc(x + 1, y - 1.5, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  hikingBoots(ctx, x, y) {
+    ctx.fillStyle = "#8a5a3a";
+    roundRectPath(ctx, x - 4, y - 6, 8, 8.5, 2);
+    ctx.fill();
+    ctx.fillStyle = "#3a2a22"; // chunky sole
+    ctx.fillRect(x - 4.6, y + 1.5, 9.2, 2);
+    ctx.strokeStyle = "#e0b84c"; // laces
+    ctx.lineWidth = 0.7;
+    for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.moveTo(x - 1.5, y - 4.5 + k * 2);
+      ctx.lineTo(x + 1.5, y - 3.5 + k * 2);
+      ctx.stroke();
+    }
+  },
+
+  balletFlats(ctx, x, y) {
+    ctx.fillStyle = "#f2b8c8";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 4.4, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e37aa0";
+    ctx.fillRect(x - 1.8, y - 2.2, 1.6, 1.4);
+    ctx.fillRect(x + 0.2, y - 2.2, 1.6, 1.4);
+  },
+
+  sockSandals(ctx, x, y) {
+    ctx.fillStyle = "#f7f4ee"; // the socks
+    roundRectPath(ctx, x - 3.4, y - 6, 6.8, 8, 2.5);
+    ctx.fill();
+    ctx.fillStyle = "#c0554a";
+    ctx.fillRect(x - 3.4, y - 5.5, 6.8, 1.2);
+    ctx.fillStyle = "#6b4630"; // sandal sole and straps
+    ctx.fillRect(x - 4.4, y + 1.2, 8.8, 1.6);
+    ctx.fillRect(x - 3.6, y - 1.5, 7.2, 1.3);
+  },
+
+  glowSneakers(ctx, x, y) {
+    ctx.fillStyle = "#f7f4ee";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 4.6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const hue = (performance.now() / 8 + x * 10) % 360;
+    ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+    ctx.fillRect(x - 4.4, y + 1.4, 8.8, 1.6);
+    ctx.fillStyle = "#5a5a66";
+    ctx.fillRect(x - 3, y - 1, 6, 1.2);
+  },
+});
+
+Object.assign(PET_DRAWERS, {
+  // A round little owl with big eyes and ear tufts.
+  owl(ctx, t, moving, blink) {
+    const c = "#9a7456";
+    petLegs(ctx, "#e0a84c", t, moving, [-2.5, 2.5]);
+    petBlob(ctx, 0, -9, 7.5, 8.5, c);
+    ctx.fillStyle = "#e8d7bf"; // belly
+    ctx.beginPath();
+    ctx.ellipse(0.5, -6, 4.5, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petEar(ctx, -4, -16, 3, 5, c, c);
+    petEar(ctx, 4, -16, 3, 5, c, c);
+    for (const ex of [-2.8, 2.8]) {
+      ctx.fillStyle = "#fffaf3";
+      ctx.beginPath();
+      ctx.arc(ex, -12, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      petEye(ctx, ex, -12, blink, 1.5);
+    }
+    ctx.fillStyle = "#e0a84c";
+    ctx.beginPath();
+    ctx.moveTo(-1, -10);
+    ctx.lineTo(1, -10);
+    ctx.lineTo(0, -8);
+    ctx.fill();
+    const flap = moving ? Math.sin(t * 16) * 0.3 : 0;
+    ctx.fillStyle = shadeColor(c, -20);
+    ctx.beginPath();
+    ctx.ellipse(-7, -8, 2.2, 4.5, 0.2 + flap, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A pink axolotl with frilly gills and a sweet smile.
+  axolotl(ctx, t, moving, blink) {
+    const c = "#f4a6bd";
+    ctx.strokeStyle = shadeColor(c, -10);
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-6, -5);
+    ctx.quadraticCurveTo(-11, -6, -13, -4 + Math.sin(t * 5) * 1.5);
+    ctx.stroke();
+    petLegs(ctx, c, t, moving, [-4, -1, 2, 5]);
+    petBlob(ctx, -1, -5, 7, 3.8, c);
+    petBlob(ctx, 6, -8, 5, 4.2, c);
+    ctx.strokeStyle = "#e0608a"; // gills
+    ctx.lineWidth = 1.4;
+    for (const [dx, dy, a] of [[3, -12, -2.2], [4.5, -13, -1.8], [6, -13.2, -1.3]]) {
+      ctx.beginPath();
+      ctx.moveTo(dx, dy + 2);
+      ctx.lineTo(dx + Math.cos(a) * 4, dy + Math.sin(a) * 4);
+      ctx.stroke();
+    }
+    petEye(ctx, 7.5, -9, blink, 1.1);
+    ctx.strokeStyle = "#8a3a50";
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.arc(8.5, -7, 1.6, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    petCheek(ctx, 10, -7.5);
+  },
+
+  // A calm capybara, with a little orange balanced on its head.
+  capybara(ctx, t, moving, blink) {
+    const c = "#a47a54";
+    petLegs(ctx, c, t, moving);
+    petBlob(ctx, -1, -6, 8.5, 5.5, c);
+    ctx.fillStyle = c; // the blocky head
+    roundRectPath(ctx, 3, -14, 9, 7, 3);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(c, -20);
+    ctx.fillRect(10, -11, 2, 2.5); // nose
+    petEar(ctx, 4.5, -14, 2.5, 2.5, c, shadeColor(c, -20));
+    ctx.strokeStyle = "#2b2b2b"; // half-closed, very relaxed eyes
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(6.5, -11.5);
+    ctx.lineTo(8.5, -11.5);
+    ctx.stroke();
+    ctx.fillStyle = "#f0a040"; // the orange
+    ctx.beginPath();
+    ctx.arc(6.5, -16.5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5a8a3a";
+    ctx.fillRect(6.2, -19.5, 1, 1.5);
+  },
+
+  // A little turtle with a patterned shell.
+  turtle(ctx, t, moving, blink) {
+    const skin = "#8fb86a";
+    petLegs(ctx, skin, t, moving, [-4, 4]);
+    petBlob(ctx, 8, -5, 3.5, 3, skin); // head
+    petEye(ctx, 9.5, -5.5, blink, 1);
+    const shell = "#5f8a4a";
+    ctx.fillStyle = shell;
+    ctx.beginPath();
+    ctx.ellipse(0, -5, 8, 6, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(shell, 25);
+    for (const [x, y] of [[-3.5, -7], [0, -9], [3.5, -7], [0, -5.5]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = shadeColor(shell, -25);
+    ctx.fillRect(-8, -5.5, 16, 1.5);
+  },
+
+  // A tiny bat that flutters beside you instead of walking.
+  bat(ctx, t, moving, blink) {
+    const hover = Math.sin(t * 4) * 1.5 - 10;
+    const flap = Math.sin(t * 18) * 0.5;
+    ctx.save();
+    ctx.translate(0, hover);
+    ctx.fillStyle = "#4a3a52";
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.scale(side, 1);
+      ctx.rotate(flap);
+      ctx.beginPath();
+      ctx.moveTo(2, -2);
+      ctx.quadraticCurveTo(8, -8, 11, -3);
+      ctx.quadraticCurveTo(9, -2, 8, 0);
+      ctx.quadraticCurveTo(6, -1, 5, 1);
+      ctx.quadraticCurveTo(3, 0, 2, 1);
+      ctx.fill();
+      ctx.restore();
+    }
+    petBlob(ctx, 0, -1, 3.8, 4, "#5a4a62");
+    petEar(ctx, -2, -5, 2, 3, "#5a4a62", "#c8a0b8");
+    petEar(ctx, 2, -5, 2, 3, "#5a4a62", "#c8a0b8");
+    petEye(ctx, -1.3, -1.5, blink, 0.9);
+    petEye(ctx, 1.3, -1.5, blink, 0.9);
+    ctx.fillStyle = "#fffaf3"; // tiny fangs
+    ctx.fillRect(-0.9, 0.8, 0.6, 1);
+    ctx.fillRect(0.3, 0.8, 0.6, 1);
+    ctx.restore();
+  },
+
+  // A round golden hamster with stuffed cheeks.
+  hamster(ctx, t, moving, blink) {
+    const c = "#e0a860";
+    petLegs(ctx, "#f3c8b0", t, moving, [-2.5, 2.5]);
+    petBlob(ctx, 0, -6, 7.5, 6, c);
+    ctx.fillStyle = "#fbeede"; // white belly and cheeks
+    ctx.beginPath();
+    ctx.ellipse(2.5, -4, 4, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(5.5, -6.5, 2.8, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petEar(ctx, -1.5, -11.5, 2.5, 2.5, c, "#f3b8b8");
+    petEar(ctx, 3, -11.5, 2.5, 2.5, c, "#f3b8b8");
+    petEye(ctx, 3.5, -8.5, blink, 1.1);
+    ctx.fillStyle = "#e37aa0";
+    ctx.fillRect(6.8, -8, 1, 0.8);
+    petCheek(ctx, 5.5, -6);
+  },
+
+  // A slow, happy snail.
+  snail(ctx, t, moving, blink) {
+    const body = "#d9c4a0";
+    const stretch = moving ? Math.sin(t * 6) * 0.8 : 0;
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(1 + stretch, -1.5, 9 + stretch, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = body; // eye stalks
+    ctx.lineWidth = 1;
+    for (const dx of [7, 9]) {
+      ctx.beginPath();
+      ctx.moveTo(dx - 1, -3);
+      ctx.lineTo(dx + 0.5, -9);
+      ctx.stroke();
+      petEye(ctx, dx + 0.5, -9.5, blink, 1);
+    }
+    ctx.fillStyle = "#c0785a"; // the shell
+    ctx.beginPath();
+    ctx.arc(-1, -7, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8a4a3a";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 5; a += 0.2) {
+      const rr = 5.2 - a * 0.32;
+      ctx.lineTo(-1 + Math.cos(a) * rr, -7 + Math.sin(a) * rr);
+    }
+    ctx.stroke();
+  },
+
+  // A fluffy sheep: a little cloud on legs.
+  sheep(ctx, t, moving, blink) {
+    petLegs(ctx, "#3a3440", t, moving);
+    ctx.fillStyle = "#f7f3ec";
+    for (const [x, y, rr] of [[-5, -7, 4], [-1, -9, 4.5], [3, -8, 4], [-3, -4.5, 4], [2, -4.5, 4]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    ctx.beginPath();
+    ctx.ellipse(-1, -4, 6, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    petBlob(ctx, 7, -10, 3.5, 4, "#3a3440"); // face
+    petEar(ctx, 5, -13, 2, 2.5, "#3a3440", "#3a3440");
+    ctx.fillStyle = "#f7f3ec"; // a tuft of wool on top
+    ctx.beginPath();
+    ctx.arc(6.5, -13.5, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    ctx.beginPath();
+    ctx.arc(8.3, -10.5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    petEye(ctx, 8.3, -10.5, blink, 0.8);
+  },
+});
+
 function drawPet(ctx, pet) {
   const drawer = Object.hasOwn(PET_DRAWERS, pet.kind) ? PET_DRAWERS[pet.kind] : null;
   if (!drawer) return;
@@ -7954,6 +8689,8 @@ function drawPlayerBody(ctx, p) {
     ctx.stroke();
   }
 
+  // Glasses go on the face (a robe's hood hides them).
+  if (!aura?.robe && Object.hasOwn(GLASSES_DRAWERS, p.glasses) && GLASSES_DRAWERS[p.glasses]) GLASSES_DRAWERS[p.glasses](ctx, cx, cy);
   // A robe's hood takes the place of a hat.
   if (aura?.robe) drawRobe(ctx, cx, cy, r);
   else (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
@@ -8200,10 +8937,10 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
 
 // Draws a character by itself, centered in a small canvas, for the
 // preview on the Join screen.
-function drawCharacterPreview(canvas, color, hat, shoes, aura = null) {
+function drawCharacterPreview(canvas, color, hat, shoes, aura = null, glasses = "none") {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const p = { x: 0, y: 0, color, hat, shoes, moving: false, aura: aura && { robe: aura.robe } }; // (just the robe: the rest wouldn't fit)
+  const p = { x: 0, y: 0, color, hat, shoes, glasses, moving: false, aura: aura && { robe: aura.robe } }; // (just the robe: the rest wouldn't fit)
   const foot = playerFeet(p);
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height - 13);

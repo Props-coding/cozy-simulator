@@ -126,7 +126,7 @@ function drawPreview() {
   ctx.clearRect(0, 0, preview.width, preview.height);
   const hasPet = look.pet && look.pet !== "none";
   const me = canvas(96, 136);
-  drawCharacterPreview(me, look.color, look.hat, look.shoes, myAura());
+  drawCharacterPreview(me, look.color, look.hat, look.shoes, myAura(), look.glasses);
   ctx.drawImage(me, preview.width / 2 - 48 - (hasPet ? 26 : 0), preview.height - 136);
   if (hasPet) {
     const pet = canvas(88, 92);
@@ -139,9 +139,9 @@ function drawPreview() {
 // an Exalted piece.
 function tilePicture(tab, id) {
   const look = hooks.look();
-  if (tab === "hats" || tab === "shoes") {
+  if (tab === "hats" || tab === "shoes" || tab === "glasses") {
     const c = canvas(96, 136);
-    drawCharacterPreview(c, look.color, tab === "hats" ? id : "none", tab === "shoes" ? id : "none");
+    drawCharacterPreview(c, look.color, tab === "hats" ? id : "none", tab === "shoes" ? id : "none", null, tab === "glasses" ? id : "none");
     return c;
   }
   if (tab === "pets") {
@@ -200,7 +200,7 @@ function drawRuneTrail(ctx) {
 let tab = "hats";
 
 function tabsFor() {
-  const list = [["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
+  const list = [["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
   if (myAura()) list.push(["exalted", "✦ Exalted"]);
   return list;
 }
@@ -327,7 +327,7 @@ function renderItems() {
     return;
   }
   const look = hooks.look();
-  const type = { hats: "hat", shoes: "shoes", pets: "pet" }[tab];
+  const type = { hats: "hat", shoes: "shoes", pets: "pet", glasses: "glasses" }[tab];
   const owned = hooks.choices()[tab].filter(([id]) => id !== "none");
   if (!owned.length) {
     const empty = document.createElement("p");
@@ -358,10 +358,11 @@ function render() {
 // pet you own (or none).
 const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
 document.getElementById("wardrobe-random").addEventListener("click", () => {
-  const { hats, shoes, pets } = hooks.choices();
+  const { hats, shoes, pets, glasses } = hooks.choices();
   hooks.wear("color", pickFrom(CONFIG.wardrobeColors));
   hooks.wear("hat", pickFrom(hats)[0]);
   hooks.wear("shoes", pickFrom(shoes)[0]);
+  hooks.wear("glasses", pickFrom(glasses)[0]);
   hooks.wear("pet", pickFrom(pets)[0]);
   playClickSound();
   render();
