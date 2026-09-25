@@ -238,6 +238,8 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 
   - Step 3, idle animations: after `idle.afterSeconds` (25) with no keys or mouse, your character stretches (with little sparkles), yawns (with a sleepy "~") or looks around, with a random pause of `gapMin` to `gapMax` seconds between them. Any key, click, scroll or mouse movement stops them instantly. Friends see them (they're sent like emotes). They never start during an emote or while asleep; sitting characters get a gentler one (breathing with eyes closed).
 
+  - Step 4, sitting: chairs, stools, theater seats, the cinema sofa, benches (2 spots), loveseats (2), the cloud sofa (3), armchairs, the papasan, egg and rocking chairs, beanbags, poufs, floor cushions and beds (sit on the edge) have seat spots, listed in `SEATS` in `world.js` (bought and turned Nest & Nook pieces too). Walk near a free spot and press E ("Press E to sit." shows); you snap into a seated pose facing the way the seat does (feet tucked, face turned sideways on side-facing seats, the back of your head when facing away, sitting up tall on seats with a high back). Moving, or E again, gets you up where you were standing. One person per spot; if two grab the same spot at the same moment, the name first in the alphabet keeps it. Friends see who's sitting where. Sitting on a bed's edge isn't going to bed. Reach is `sit.reach` in `config.js`.
+
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).

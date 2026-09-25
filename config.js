@@ -45,6 +45,9 @@ const CONFIG = {
   // tiles away (and from another floor). Everyone can still see dances.
   danceSoundRange: 10,
 
+  // Sitting: press E within this many tiles of a free seat to sit down.
+  sit: { reach: 1.0 },
+
   // Idle animations: after this many seconds with no keys or mouse, your
   // character starts stretching, yawning and looking around (with a
   // random pause of gapMin to gapMax seconds between them). Sitting

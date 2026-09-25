@@ -495,6 +495,8 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
+  if (mySeat) return "Sitting. Move (or press E) to get up.";
+  if (!nearestInteraction(player) && nearestFreeSeat()) return "Press E to sit.";
   const lockedDoor = lockedDoorInFront(player);
   if (lockedDoor) return `${lockedDoor.owned.ownerName}'s ${lockedDoor.owned.kind} is locked. Press K to knock.`;
   if (room.owned?.mine) {
@@ -563,6 +565,19 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false; // stop walking while you chat
     talkToRaccoons();
     return;
+  }
+
+  // Sitting down (or getting up), when nothing else is in reach.
+  if (key === "e" && !nearestInteraction(player)) {
+    if (mySeat) {
+      standUp();
+      return;
+    }
+    const seat = nearestFreeSeat();
+    if (seat) {
+      sitDown(seat);
+      return;
+    }
   }
 
   // Petting a pet (yours or a friend's), when nothing else is in reach.
@@ -858,9 +873,60 @@ function updateIdle() {
   nextIdleAt = now + EMOTE_LENGTHS[id] * 1000 + gap();
 }
 
-// (Sitting is added in step 4 of Update 1.)
+// --- Sitting ---
+// Chairs, sofas, benches, beds and more have seat spots (SEATS in
+// world.js). Press E near a free one to sit; moving (or E again) gets you
+// up, back where you were standing. One person per spot: friends' seats
+// come with their position, and if two people grab the same spot at the
+// same moment, the name that comes first alphabetically keeps it.
+let mySeat = null; // { key, x, y, face, from: { x, y } } while sitting
+const SEAT_FACES = ["up", "upTall", "down", "left", "right"];
+
 function isSeated() {
-  return false;
+  return !!mySeat;
+}
+
+function takenSeats() {
+  return new Set(getPeers().map((p) => p.seat?.key).filter(Boolean));
+}
+
+function nearestFreeSeat() {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  const taken = takenSeats();
+  let best = null, bestDistance = CONFIG.sit.reach;
+  for (const seat of seatsOnFloor(floorOf(player.y))) {
+    const d = Math.hypot(seat.x - cx, seat.y - cy);
+    if (d < bestDistance && !taken.has(seat.key)) {
+      best = seat;
+      bestDistance = d;
+    }
+  }
+  return best;
+}
+
+function sitDown(seat) {
+  stopMyEmote();
+  mySeat = { ...seat, from: { x: player.x, y: player.y } };
+  player.x = seat.x - PLAYER_SIZE / 2;
+  player.y = seat.y - PLAYER_SIZE / 2;
+  for (const k in keysDown) keysDown[k] = false;
+  playClickSound();
+}
+
+function standUp() {
+  if (!mySeat) return;
+  Object.assign(player, mySeat.from);
+  mySeat = null;
+  stopIdle();
+}
+
+// Stand up if the seat went away (a friend's bedroom closed) or someone
+// else got it first.
+function checkMySeat() {
+  if (!mySeat) return;
+  const stillThere = seatsOnFloor(floorOf(player.y)).some((s) => s.key === mySeat.key);
+  const rival = getPeers().find((p) => p.seat?.key === mySeat.key && String(p.name) < myName);
+  if (!stillThere || rival) standUp();
 }
 
 // An emote in the form the drawing code wants ({ id, t } with t in
@@ -1290,7 +1356,7 @@ let amAsleep = false;
 let lastBedtimeNote = -Infinity;
 
 function updateSleep() {
-  const asleepNow = !!bedAt(player);
+  const asleepNow = !mySeat && !!bedAt(player); // (sitting on the edge of a bed isn't bedtime)
   if (asleepNow === amAsleep) return;
   if (asleepNow) {
     playGoodnightChime(); // before sounds go quiet
@@ -1580,10 +1646,13 @@ function tick(now) {
   updatePrivateRooms();
 
   const { dx, dy } = readMovement(dt);
-  if (dx !== 0 || dy !== 0) {
+  if ((dx !== 0 || dy !== 0) && mySeat) {
+    standUp(); // moving gets you up (back where you were)
+  } else if (dx !== 0 || dy !== 0) {
     movePlayer(player, dx, dy);
     stopMyEmote(); // walking off ends an emote
   }
+  checkMySeat();
   updateElevator(dt);
   showDanceCooldown();
   updateIdle();
@@ -1620,7 +1689,7 @@ function tick(now) {
   timeSinceLastBroadcast += dt;
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
-    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge() });
+    broadcastPosition({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), bedroom: claimInfo("bedroom"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null });
   }
 
   const scenePlayers = getPeers().map((peer) => {
@@ -1630,14 +1699,14 @@ function tick(now) {
     const shoes = Object.hasOwn(SHOE_DRAWERS, peer.shoes) ? peer.shoes : "none";
     const pet = Object.hasOwn(PET_DRAWERS, peer.pet) ? peer.pet : "none";
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
-    const bed = bedAt(shown);
+    const bed = peer.seat ? null : bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name) };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null };
   });
   lastScenePlayers = scenePlayers;
-  const myBed = bedAt(player);
+  const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName) });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
 

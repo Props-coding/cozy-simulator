@@ -8593,6 +8593,12 @@ function drawRuneMarks(ctx) {
 // shadow, two little feet, and a round body lit from above (lighter on
 // top, darker underneath) like everything else, with their hat on top.
 // While walking (p.moving), the body bobs and the feet take turns lifting.
+// How far sitting moves someone up or down, in pixels: down a little on
+// most seats, up on a tall-backed seat they're facing away from.
+function seatLift(seated) {
+  return seated === "upTall" ? -12 : seated ? 4 : 0;
+}
+
 function drawPlayerBody(ctx, p) {
   const foot = playerFeet(p);
   const r = PLAYER_RADIUS;
@@ -8636,7 +8642,10 @@ function drawPlayerBody(ctx, p) {
     bob = (Math.sin(et * 1.5) + 1) * 0.8; // slow, sleepy breathing
   }
   const cx = foot.x + sway;
-  const cy = foot.y - r - 5 - bob;
+  // Sitting (p.seated is the way they face): lower, feet tucked, and
+  // facing the way the seat does.
+  const seated = p.seated;
+  const cy = foot.y - r - 5 - bob + seatLift(seated); // (facing away on a tall seat, you sit up so your head shows over its back)
 
   // The Exalted look's sigil circle (on the floor) and any floating
   // candles that are behind them right now.
@@ -8657,8 +8666,15 @@ function drawPlayerBody(ctx, p) {
   // Feet, peeking out under the body (or shoes, if they're wearing some).
   const shoe = Object.hasOwn(SHOE_DRAWERS, p.shoes) ? SHOE_DRAWERS[p.shoes] : null;
   const liftSize = emote === "jig" ? 6 : 3;
-  for (const [side, lift] of p.asleep ? [] : [[-1, Math.max(0, step) * liftSize], [1, Math.max(0, -step) * liftSize]]) {
-    const fx = foot.x + side * (5.5 + (lift > 0 ? kick : 0)), fy = foot.y - 2.5 - lift;
+  const facingAway = seated === "up" || seated === "upTall";
+  const feet = p.asleep || facingAway ? [] : seated ? [[-1, 0], [1, 0]] : [[-1, Math.max(0, step) * liftSize], [1, Math.max(0, -step) * liftSize]];
+  for (const [side, lift] of feet) {
+    let fx = foot.x + side * (5.5 + (lift > 0 ? kick : 0)), fy = foot.y - 2.5 - lift;
+    if (seated === "down") fy = foot.y + 0.5; // feet out in front
+    if (seated === "left" || seated === "right") {
+      fx = foot.x + (seated === "right" ? 7 : -7) + side * 2.5; // pointing the way they face
+      fy = foot.y - 1 + side;
+    }
     if (shoe) {
       shoe(ctx, fx, fy, side);
     } else {
@@ -8687,6 +8703,18 @@ function drawPlayerBody(ctx, p) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  // Sitting facing away shows the back of the head; facing sideways moves
+  // the face that way.
+  const faceShift = seated === "left" ? -3.5 : seated === "right" ? 3.5 : 0;
+  if (facingAway) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, r - 3, 0, Math.PI);
+    ctx.fill();
+  }
+  ctx.save();
+  ctx.translate(faceShift, 0);
+  if (facingAway) ctx.globalAlpha = 0; // (the face is on the other side)
   // Face: eyes, rosy cheeks and a mouth, which change with some emotes.
   ctx.strokeStyle = "#2b2b2b";
   ctx.fillStyle = "#2b2b2b";
@@ -8767,6 +8795,7 @@ function drawPlayerBody(ctx, p) {
 
   // Glasses go on the face (a robe's hood hides them).
   if (!aura?.robe && Object.hasOwn(GLASSES_DRAWERS, p.glasses) && GLASSES_DRAWERS[p.glasses]) GLASSES_DRAWERS[p.glasses](ctx, cx, cy);
+  ctx.restore();
   // A robe's hood takes the place of a hat.
   if (aura?.robe) drawRobe(ctx, cx, cy, r);
   else (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
@@ -9070,7 +9099,7 @@ function drawPlayerTag(ctx, p) {
   tagLifts[p.id] = lift + (target - lift) * step;
   // The top of their head plus room for their hat. The name, badge, speech
   // bubbles and emotes all sit above this, so none of them cover the hat.
-  const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id];
+  const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
 
   if (p.emote) drawEmoteFloaters(ctx, p, cx, headTop);
 
