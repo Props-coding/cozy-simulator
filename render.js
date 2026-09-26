@@ -296,8 +296,8 @@ const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChec
 // wall color, a pattern on the walls, a tint over the whole room (warm or
 // cold), and for bedrooms what you see outside it.
 const OFFICE_THEME_STYLE = {
-  // Bedroom styles anyone can pick (the four themes below are only for
-  // their owners' bedrooms).
+  // Bedroom styles anyone can pick (the four themes below are the secret
+  // office themes, only for offices).
   classic: { floor: { style: "carpet", color: "#b7a2c4" }, wall: "#a9b8cf", wallPattern: null, tint: "rgba(0, 0, 0, 0)", outside: "lawn" },
   cabin: { floor: { style: "planks", color: "#946244" }, wall: "#8a5c3c", wallPattern: "logs", tint: "rgba(255, 150, 70, 0.08)", outside: "snow" },
   apartment: { floor: { style: "planks", color: "#c49a6c" }, wall: "#d9d0c4", wallPattern: "brick", tint: "rgba(0, 0, 0, 0)", outside: "city" },
