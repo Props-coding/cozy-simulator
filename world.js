@@ -11,8 +11,8 @@
 //    the hallway, and the Library above its east end (north). South of the
 //    hallway's east end is the elevator lobby, with a bit of garden below.
 // 2. Business floor: a corridor with the Conference Room and the offices
-//    on its north side, and the Workshop and the elevator lobby on its
-//    south side. The rest is roof.
+//    on its north side, and the Workshop, the Lounge and the elevator
+//    lobby on its south side.
 // 3. Bedroom hall: everyone's bedroom door along its north wall. Each
 //    bedroom is its own little map behind its door. The upstairs is
 // Each floor is kept further down the same grid (UPSTAIRS units lower
@@ -56,6 +56,8 @@ const BASE_ROOMS = [
   // to make things together, with the house's project boards on its wall).
   { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: BUSINESS - 5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: BUSINESS - WALL_THICKNESS / 2 }, north: true },
   { id: "workshop", name: CONFIG.roomNames.workshop, rect: { x: 0, y: BUSINESS + 3, w: 8, h: 5 }, sign: { x: 6.2, y: BUSINESS + 3 } },
+  // Between the Workshop and the elevator: the Lounge, for a break and a chat.
+  { id: "lounge", name: CONFIG.roomNames.lounge, rect: { x: 8, y: BUSINESS + 3, w: 10, h: 5 }, sign: { x: 13, y: BUSINESS + 3 } },
   // The business corridor and the bedroom hall are added in buildHouse;
   // here are their elevator lobbies.
   { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: BUSINESS + 3, w: 6, h: 4 }, sign: { x: 20, y: BUSINESS + 3 } },
@@ -97,7 +99,12 @@ const BASE_WALLS = [
   { x: HOUSE_WIDTH, y: BUSINESS - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
   // (the landing's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
   { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.4 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 7.0, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 12.2, h: WALL_THICKNESS },
+  // (and the Lounge's, x 12.2 to 13.8)
+  { x: 7.0, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.2, h: WALL_THICKNESS },
+  { x: 13.8, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.4, h: WALL_THICKNESS },
+  // The Lounge's right side (below the lobby's) and its bottom (drawn short).
+  { x: 18 - WALL_THICKNESS / 2, y: BUSINESS + 7, w: WALL_THICKNESS, h: 1 + WALL_THICKNESS },
+  { x: 8, y: BUSINESS + 8, w: 10 + WALL_THICKNESS / 2, h: WALL_THICKNESS, low: true },
   // The Workshop: its left side, its right side, and its bottom (drawn short).
   { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS * 1.5 },
   { x: 8 - WALL_THICKNESS / 2, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS },
@@ -291,10 +298,28 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 5.2, y: BUSINESS, solid: false },
   { kind: "sconce", x: 9.65, y: BUSINESS, solid: false },
   { kind: "sconce", x: 13.65, y: BUSINESS, solid: false },
-  { kind: "picture", x: 18.4, y: BUSINESS, w: 1.1, art: "hills", solid: false },
-  { kind: "sconce", x: 20.2, y: BUSINESS, solid: false },
+  // Rain windows on the outside wall east of the offices (indoors, the
+  // weather only shows through windows).
+  { kind: "rainWindow", x: 18.35, y: BUSINESS, w: 1.3, solid: false },
+  { kind: "sconce", x: 20.05, y: BUSINESS, solid: false },
+  { kind: "rainWindow", x: 20.75, y: BUSINESS, w: 1.3, solid: false },
   { kind: "snakePlant", x: 23.3, y: BUSINESS + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: BUSINESS + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
+
+  // The Lounge: a sage loveseat and an armchair round a coffee table on a
+  // rug, a fridge and a tea cart for snacks, an arcade cabinet, a beanbag,
+  // a lava lamp and plants. Voice is on, like the Conference Room.
+  { kind: "rug", x: 8.7, y: BUSINESS + 4.5, w: 3.2, h: 2.3, color: "#6f8a6a", solid: false },
+  { kind: "loveseat", x: 8.6, y: BUSINESS + 3.35, w: 1.6, h: 0.8, color: "#7a9e8c" },
+  { kind: "armchair", x: 10.6, y: BUSINESS + 3.35, w: 1.1, h: 0.8 },
+  { kind: "coffeeTable", x: 9.4, y: BUSINESS + 5.2, w: 1.2, h: 0.6 },
+  { kind: "beanbag", x: 11.1, y: BUSINESS + 6.2, w: 0.9, h: 0.8 },
+  { kind: "fridge", x: 14.3, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
+  { kind: "teaCart", x: 15.3, y: BUSINESS + 3.35, w: 1.2, h: 0.6 },
+  { kind: "arcade", x: 16.9, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
+  { kind: "lavaLamp", x: 14.4, y: BUSINESS + 7.3, w: 0.4, h: 0.4 },
+  { kind: "monstera", x: 8.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 17.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
 
   // The Workshop: the house's project board (a big corkboard) and a tool
   // pegboard on the back wall, a long workbench with the "done jar" on it
@@ -610,12 +635,15 @@ function buildHouse(offices, doors = []) {
   // The bedroom hallway (the upstairs landing): one solid wall with every
   // member's bedroom door on it, and a warm lamp between each pair.
   corridorWall(LANDING, []);
+  // Spots with no door yet get a rain window instead (the only place the
+  // weather shows, indoors).
   const { doorSpacing, firstDoorX } = CONFIG.bedrooms;
-  const doorCount = Math.min(doors.length, Math.floor((HOUSE_WIDTH - firstDoorX) / doorSpacing));
-  for (let i = 0; i < doorCount; i++) {
+  const spots = Math.floor((HOUSE_WIDTH - firstDoorX) / doorSpacing);
+  for (let i = 0; i < spots; i++) {
     const x = firstDoorX + i * doorSpacing;
-    furniture.push({ kind: "bedroomDoor", x, y: LANDING, w: DOOR_WIDTH, door: doors[i], solid: false });
-    if (i < doorCount - 1 || x + doorSpacing < HOUSE_WIDTH) furniture.push({ kind: "sconce", x: x + DOOR_WIDTH + (doorSpacing - DOOR_WIDTH) / 2 - 0.15, y: LANDING, solid: false });
+    if (i < doors.length) furniture.push({ kind: "bedroomDoor", x, y: LANDING, w: DOOR_WIDTH, door: doors[i], solid: false });
+    else furniture.push({ kind: "rainWindow", x: x + (DOOR_WIDTH - 1.3) / 2, y: LANDING, w: 1.3, solid: false });
+    if (i < spots - 1 || x + doorSpacing < HOUSE_WIDTH) furniture.push({ kind: "sconce", x: x + DOOR_WIDTH + (doorSpacing - DOOR_WIDTH) / 2 - 0.15, y: LANDING, solid: false });
   }
 
   // Each bedroom, on its own map: four walls with a doorway in the bottom

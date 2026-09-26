@@ -15,6 +15,7 @@ const CONFIG = {
     dinner: "Dinner",
     elevator: "Elevator",
     business: "Business Floor",
+    lounge: "Lounge",
     landing: "Bedroom Hall",
     workshop: "Workshop",
   },
@@ -23,7 +24,7 @@ const CONFIG = {
   // (shown on the elevator's buttons).
   floors: [
     { name: "Ground floor", rooms: "Hallway, Theater, Study, Dinner, Library" },
-    { name: "Business floor", rooms: "Offices, Conference Room, Workshop" },
+    { name: "Business floor", rooms: "Offices, Conference Room, Workshop, Lounge" },
     { name: "Bedrooms", rooms: "Everyone's bedroom" },
   ],
 
@@ -139,6 +140,7 @@ const CONFIG = {
     elevatorUp: "elevator",
     elevatorTop: "elevator",
     workshop: "hammer",
+    lounge: "gamepad",
   },
 
   // Each room's floor: a style ("planks" for wood boards, "carpet",
@@ -157,6 +159,7 @@ const CONFIG = {
     elevatorTop: { style: "checker", color: "#d9cbb4" },
     workshop: { style: "planks", color: "#b88a5a" },
     business: { style: "planks", color: "#b9a58c" },
+    lounge: { style: "carpet", color: "#a8876a" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
   },
@@ -175,6 +178,7 @@ const CONFIG = {
     elevatorTop: "#d8c3a0",
     workshop: "#c9b28a",
     business: "#dcd6cc",
+    lounge: "#c7b49a",
     landing: "#e6d6c6",
     bedroom: "#a9b8cf", // used for every bedroom
   },

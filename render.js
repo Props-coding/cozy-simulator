@@ -293,19 +293,19 @@ function drawCinemaCarpet(ctx, box, color) {
 const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker, concrete: drawConcrete, cinema: drawCinemaCarpet };
 
 // The look of each secret office theme (and each bedroom style): floor,
-// wall color, a pattern on the walls, a tint over the whole room (warm or
-// cold), and for bedrooms what you see outside it.
+// wall color, a pattern on the walls, and a tint over the whole room
+// (warm or cold).
 const OFFICE_THEME_STYLE = {
   // Bedroom styles anyone can pick (the four themes below are the secret
   // office themes, only for offices).
-  classic: { floor: { style: "carpet", color: "#b7a2c4" }, wall: "#a9b8cf", wallPattern: null, tint: "rgba(0, 0, 0, 0)", outside: "lawn" },
-  cabin: { floor: { style: "planks", color: "#946244" }, wall: "#8a5c3c", wallPattern: "logs", tint: "rgba(255, 150, 70, 0.08)", outside: "snow" },
-  apartment: { floor: { style: "planks", color: "#c49a6c" }, wall: "#d9d0c4", wallPattern: "brick", tint: "rgba(0, 0, 0, 0)", outside: "city" },
-  beachHut: { floor: { style: "planks", color: "#d9c29a" }, wall: "#8fcac6", wallPattern: "slats", tint: "rgba(255, 230, 170, 0.08)", outside: "beach" },
-  lakehouse: { floor: { style: "planks", color: "#a8744c" }, wall: "#9c6b43", wallPattern: "logs", tint: "rgba(255, 160, 80, 0.10)", outside: "lake" },
-  stalker: { floor: { style: "concrete", color: "#8e908b" }, wall: "#8a8d88", wallPattern: "concrete", tint: "rgba(30, 60, 50, 0.16)", outside: "wasteland" },
-  scholar: { floor: { style: "planks", color: "#7a4a32" }, wall: "#eadcc0", wallPattern: "lacquer", tint: "rgba(255, 190, 120, 0.08)", outside: "lawn" },
-  cottage: { floor: { style: "planks", color: "#5c3d2a" }, wall: "#3e4a36", wallPattern: "ivy", tint: "rgba(110, 55, 20, 0.14)", outside: "lawn" },
+  classic: { floor: { style: "carpet", color: "#b7a2c4" }, wall: "#a9b8cf", wallPattern: null, tint: "rgba(0, 0, 0, 0)" },
+  cabin: { floor: { style: "planks", color: "#946244" }, wall: "#8a5c3c", wallPattern: "logs", tint: "rgba(255, 150, 70, 0.08)" },
+  apartment: { floor: { style: "planks", color: "#c49a6c" }, wall: "#d9d0c4", wallPattern: "brick", tint: "rgba(0, 0, 0, 0)" },
+  beachHut: { floor: { style: "planks", color: "#d9c29a" }, wall: "#8fcac6", wallPattern: "slats", tint: "rgba(255, 230, 170, 0.08)" },
+  lakehouse: { floor: { style: "planks", color: "#a8744c" }, wall: "#9c6b43", wallPattern: "logs", tint: "rgba(255, 160, 80, 0.10)" },
+  stalker: { floor: { style: "concrete", color: "#8e908b" }, wall: "#8a8d88", wallPattern: "concrete", tint: "rgba(30, 60, 50, 0.16)" },
+  scholar: { floor: { style: "planks", color: "#7a4a32" }, wall: "#eadcc0", wallPattern: "lacquer", tint: "rgba(255, 190, 120, 0.08)" },
+  cottage: { floor: { style: "planks", color: "#5c3d2a" }, wall: "#3e4a36", wallPattern: "ivy", tint: "rgba(110, 55, 20, 0.14)" },
 };
 
 // The bedroom whose map is being drawn (floors 2 and up), or undefined.
@@ -313,46 +313,39 @@ function viewedBedroom() {
   return viewFloor >= 3 ? ROOMS.find((r) => r.bedroom && floorOf(r.rect.y) === viewFloor) : undefined;
 }
 
-// Around a bedroom: what you'd see out of it, by its style.
-const OUTSIDES = {
-  lawn: { ground: "#93b06c", bits: ["rgba(70, 110, 50, 0.45)", "rgba(180, 210, 130, 0.5)"] },
-  snow: { ground: "#e8eef2", bits: ["rgba(150, 170, 190, 0.5)", "rgba(255, 255, 255, 0.9)"] },
-  beach: { ground: "#e8d3a2", bits: ["rgba(180, 150, 100, 0.5)", "rgba(255, 245, 220, 0.8)"], water: "#6fb7c9" },
-  lake: { ground: "#8aa866", bits: ["rgba(70, 110, 50, 0.45)", "rgba(180, 210, 130, 0.5)"], water: "#5a8fa8" },
-  city: { ground: "#5d5a66", bits: ["rgba(40, 38, 48, 0.6)", "rgba(255, 220, 140, 0.55)"] },
-  wasteland: { ground: "#7c7a62", bits: ["rgba(60, 58, 40, 0.5)", "rgba(150, 140, 100, 0.5)"] },
-};
-
-function paintOutside(ctx, kind) {
-  const look = OUTSIDES[kind] ?? OUTSIDES.lawn;
+// Indoor floors (every floor above the ground, bedrooms included): the
+// floor floats like a cutaway dollhouse on a calm, dark warm background
+// (a little lighter in the middle), with a soft shadow round its rooms,
+// cast a little downward since the light comes from above. No roof and
+// no weather out here: rain only shows through the windows.
+function paintIndoorBackdrop(ctx) {
   const { left, right, top, bottom } = houseBounds();
-  ctx.fillStyle = look.ground;
+  const cx = (left + right) / 2, cy = (top + bottom) / 2, reach = Math.max(right - left, bottom - top) * 0.75;
+  const glow = ctx.createRadialGradient(cx, cy, reach * 0.15, cx, cy, reach);
+  glow.addColorStop(0, "#4a3628");
+  glow.addColorStop(1, "#24190f");
+  ctx.fillStyle = glow;
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
-  if (look.water) {
-    // Water along the bottom of the view, with a few ripples.
-    const y = bottom - (bottom - top) * 0.22;
-    ctx.fillStyle = look.water;
-    ctx.fillRect(left - 20, y, right - left + 40, bottom - y + 20);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-    for (let i = 0; i < 40; i++) ctx.fillRect(left + noise(i * 3.1) * (right - left), y + 6 + noise(i * 5.7) * (bottom - y - 8), 8, 1.5);
+  const t = WALL_THICKNESS;
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+  ctx.shadowBlur = 22 * viewScale; // (shadows are measured in screen pixels)
+  ctx.shadowOffsetY = 8 * viewScale;
+  ctx.fillStyle = "#24190f";
+  for (const room of ROOMS) {
+    if (floorOf(room.rect.y) !== viewFloor) continue;
+    const a = toScreen(room.rect.x - t, room.rect.y - t), b = toScreen(room.rect.x + room.rect.w + t, room.rect.y + room.rect.h + t);
+    ctx.fillRect(a.x, a.y - WALL_HEIGHT, b.x - a.x, b.y - a.y + WALL_HEIGHT);
   }
-  const w = right - left, h = bottom - top;
-  for (let i = 0; i < (w * h) / 700; i++) {
-    const x = left + noise(i * 1.7) * w, y = top + noise(i * 2.3 + 5) * h;
-    ctx.fillStyle = look.bits[noise(i + 11) > 0.5 ? 0 : 1];
-    ctx.fillRect(x, y, kind === "city" ? 3 : 2, kind === "city" ? 3 : 2);
-  }
+  ctx.restore();
 }
 
-// Outside the house: a soft lawn with little tufts of grass and a few
-// flowers, so empty office spots look like garden, not a dark gap.
+// Outside the house (on the ground floor): a soft lawn with little tufts
+// of grass and a few flowers, so the space north of the hallway looks like
+// garden, not a dark gap. Upper floors are indoors (see above).
 function paintYard(ctx) {
-  if (viewFloor === 1 || viewFloor === 2) {
-    paintRoof(ctx);
-    return;
-  }
-  if (viewFloor >= 3) {
-    paintOutside(ctx, OFFICE_THEME_STYLE[viewedBedroom()?.theme]?.outside);
+  if (viewFloor >= 1) {
+    paintIndoorBackdrop(ctx);
     return;
   }
   const { left, right, top, bottom } = houseBounds();
@@ -373,23 +366,6 @@ function paintYard(ctx) {
       ctx.beginPath();
       ctx.arc(x + 4, y - 2, 1.8, 0, Math.PI * 2);
       ctx.fill();
-    }
-  }
-}
-
-// Upstairs, everything outside the rooms is the roof below you: rows of
-// warm clay shingles, each a slightly different shade.
-function paintRoof(ctx) {
-  const { left, right, top, bottom } = houseBounds();
-  ctx.fillStyle = "#6a3f33";
-  ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
-  for (let y = top - 6, row = 0; y < bottom + 12; y += 11, row++) {
-    for (let x = left - 18 + (row % 2) * 9, i = 0; x < right + 18; x += 18, i++) {
-      ctx.fillStyle = shadeColor("#8a5242", Math.round((noise(row * 37 + i * 1.3) - 0.5) * 22));
-      roundRectPath(ctx, x, y, 17, 12, 5);
-      ctx.fill();
-      ctx.fillStyle = "rgba(30, 15, 10, 0.3)";
-      ctx.fillRect(x + 1, y + 10, 15, 2);
     }
   }
 }
@@ -506,7 +482,13 @@ let viewFloor = 0;
 // picture and for fitting the house to the window.
 function houseBounds() {
   const bedroom = viewedBedroom();
-  if (bedroom) return bedroomBounds(bedroom);
+  if (bedroom) return fitBounds(bedroom.rect, 1.6);
+  // Other indoor floors: fitted to all their rooms together.
+  if (viewFloor >= 1) {
+    const rects = ROOMS.filter((r) => floorOf(r.rect.y) === viewFloor).map((r) => r.rect);
+    const x = Math.min(...rects.map((r) => r.x)), y = Math.min(...rects.map((r) => r.y));
+    return fitBounds({ x, y, w: Math.max(...rects.map((r) => r.x + r.w)) - x, h: Math.max(...rects.map((r) => r.y + r.h)) - y }, 0.9);
+  }
   const base = viewFloor * UPSTAIRS;
   return {
     left: toScreen(-WALL_THICKNESS, 0).x - 6,
@@ -517,16 +499,18 @@ function houseBounds() {
   };
 }
 
-// In a bedroom, the view zooms in on it: the same shape as the house's
-// view (so the picture on screen stays the same size), just smaller, and
-// centered on the room.
-function bedroomBounds(room) {
+// On an indoor floor, the view zooms in to fit it: the same shape as the
+// ground floor's view (so the picture on screen stays the same size),
+// just smaller, and centered on `rect` (a bedroom, or all of a floor's
+// rooms together). `below` is how much room to leave under it (a
+// bedroom's doorway leads out there).
+function fitBounds(rect, below) {
   const floor = viewFloor;
   viewFloor = 0;
   const house = houseBounds();
   viewFloor = floor;
   const W = house.right - house.left, H = house.bottom - house.top;
-  const a = toScreen(room.rect.x - 1.2, room.rect.y), b = toScreen(room.rect.x + room.rect.w + 1.2, room.rect.y + room.rect.h + 1.6);
+  const a = toScreen(rect.x - 1.2, rect.y), b = toScreen(rect.x + rect.w + 1.2, rect.y + rect.h + below);
   const top = a.y - WALL_HEIGHT - 34;
   const k = Math.max((b.x - a.x) / W, (b.y - top) / H);
   const cx = (a.x + b.x) / 2, cy = (top + b.y) / 2;
@@ -10635,23 +10619,12 @@ function drawStudySign(ctx, text) {
 
 
 
-// The open lawn outside: north of the hallway where no room stands (empty
-// office spots), and the garden south of the hallway's east end, as
-// rectangles in grid units.
+// The open lawn outside, as rectangles in grid units: north of the
+// hallway where no room stands, and the garden south of the hallway's
+// east end. Rain falls there. (Upper floors are indoors: none.)
 function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
-  // Around a bedroom: everything outside its four walls.
-  const bedroom = viewedBedroom();
-  if (bedroom) {
-    const { x, y, w, h } = bedroom.rect;
-    const l = -t - 2, r = HOUSE_WIDTH + t + 2, top = base + houseTopY - 2, bottom = base + 12;
-    return [
-      { x: l, y: top, w: r - l, h: y - t - top },
-      { x: l, y: y + h + t, w: r - l, h: bottom - (y + h + t) },
-      { x: l, y: y - t, w: x - t - l, h: h + 2 * t },
-      { x: x + w + t, y: y - t, w: r - (x + w + t), h: h + 2 * t },
-    ];
-  }
+  if (viewFloor >= 1) return []; // (indoors, rain only shows through windows)
   const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
     .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
     .sort((a, b) => a[0] - b[0]);
@@ -10662,19 +10635,9 @@ function lawnAreas() {
     from = Math.max(from, end);
   }
   if (from < HOUSE_WIDTH + t) areas.push({ x: from, w: HOUSE_WIDTH + t - from });
-  // The corridor the north rooms open onto: the hallway, or the landing
-  // (which sits lower upstairs).
-  const corridor = [0, BUSINESS, LANDING][viewFloor];
-  const north = areas.map((a) => ({ ...a, y: base + houseTopY - 1.5, h: corridor - t - (base + houseTopY - 1.5) }));
-  // Plus the garden below the stairs (downstairs), or the roof south of
-  // the landing (upstairs).
-  const belowStairs = { x: 18, y: corridor + 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 };
-  if (viewFloor === 0) return [...north, belowStairs];
-  // (In the bedroom hall, everything south of the hall is roof.)
-  if (viewFloor === 2) return [...north, belowStairs, { x: -t - 1, y: corridor + 3 + t / 2, w: 19 + t, h: 9 }];
-  // (Upstairs, the Workshop takes the west end of the roof south of the
-  // landing.)
-  return [...north, belowStairs, { x: 8 + t / 2, y: corridor + 3 + t / 2, w: 10, h: 9 }, { x: -t - 1, y: corridor + 8 + t, w: 9 + t / 2, h: 4 }];
+  // The lawn north of the hallway, plus the garden below the elevator lobby.
+  const north = areas.map((a) => ({ ...a, y: base + houseTopY - 1.5, h: -t - (base + houseTopY - 1.5) }));
+  return [...north, { x: 18, y: 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 }];
 }
 
 // --- Decorating helpers ---
