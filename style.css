@@ -3452,6 +3452,18 @@ input[type="range"]::-moz-range-thumb {
   font-size: 0.85em;
 }
 
+/* The house owner's gold crown and golden glow in chat. */
+.owner-crown {
+  width: 1.15em;
+  height: auto;
+  margin-right: 4px;
+  vertical-align: -0.1em;
+}
+
+.chat-name.owner-name {
+  text-shadow: 0 0 6px rgba(240, 190, 60, 0.75);
+}
+
 /* The emote wheel (hold Q): round emote buttons in a ring around your
    character, the one you're pointing at lifted and outlined. */
 #emote-wheel {

@@ -36,6 +36,81 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// --- The creator's crown ---
+// True if `name` is the house owner (CONFIG.ownerName, any capitals).
+// Only used together with a server-checked admin badge, so the crown
+// can't be faked by just typing the owner's name.
+function isHouseOwner(name) {
+  return !!CONFIG.ownerName && String(name).toLowerCase() === CONFIG.ownerName.toLowerCase();
+}
+
+// Draws the owner's little gold crown, `s` pixels per unit (the crown is
+// 12 units wide and 10 tall), with its bottom middle at (cx, bottom).
+// Our own design: three rounded points, each topped with a pearl, a ruby
+// in the middle of the band and two sapphires beside it. Lit from above,
+// like everything else: lighter gold at the top, darker at the band.
+function drawCreatorCrown(ctx, cx, bottom, s = 1) {
+  ctx.save();
+  ctx.translate(cx - 6 * s, bottom - 10 * s);
+  ctx.scale(s, s);
+  // The points and body.
+  const gold = ctx.createLinearGradient(0, 1, 0, 10);
+  gold.addColorStop(0, "#ffe27a");
+  gold.addColorStop(1, "#d99a1e");
+  ctx.beginPath();
+  ctx.moveTo(0.8, 9.5);
+  ctx.lineTo(0.5, 3);
+  ctx.lineTo(3.4, 5.6);
+  ctx.lineTo(6, 1.6);
+  ctx.lineTo(8.6, 5.6);
+  ctx.lineTo(11.5, 3);
+  ctx.lineTo(11.2, 9.5);
+  ctx.closePath();
+  ctx.fillStyle = gold;
+  ctx.fill();
+  ctx.lineWidth = 0.8;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#8a5a0e";
+  ctx.stroke();
+  // The band along the bottom, a shade darker.
+  ctx.fillStyle = "#c9861a";
+  ctx.fillRect(1.2, 7.2, 9.6, 2);
+  // Pearls on the tips.
+  ctx.fillStyle = "#fff8e6";
+  for (const [x, y] of [[0.5, 2.6], [6, 1.2], [11.5, 2.6]]) {
+    ctx.beginPath();
+    ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  // Jewels on the band: a ruby in the middle, sapphires either side.
+  ctx.fillStyle = "#d93a4a";
+  ctx.beginPath();
+  ctx.arc(6, 8.2, 1.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#3a6fd9";
+  for (const x of [3, 9]) {
+    ctx.beginPath();
+    ctx.arc(x, 8.2, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// The same crown as a picture (for the chat), drawn once and reused.
+let creatorCrownPicture = null;
+function creatorCrownURL() {
+  if (!creatorCrownPicture) {
+    const c = document.createElement("canvas");
+    c.width = 48;
+    c.height = 42;
+    drawCreatorCrown(c.getContext("2d"), 24, 41, 3.8);
+    creatorCrownPicture = c.toDataURL();
+  }
+  return creatorCrownPicture;
+}
+
 // Shortens text to at most `max` characters, counting an emoji (even a
 // combined one like 👍🏽, which is really several hidden pieces) as one
 // character so it never gets cut in half. Adds `ending` (like "…") when
@@ -9446,15 +9521,24 @@ function drawPlayerTag(ctx, p) {
   ctx.font = "600 11px 'Quicksand', sans-serif";
   ctx.textAlign = "center";
   // Admins get a little badge before their name (checked with the server's
-  // signature, see checkBadge in account.js).
-  const badgeWidth = p.admin ? 13 : 0;
+  // signature, see checkBadge in account.js). The house owner gets a gold
+  // crown instead, on a warm golden name tag.
+  const owner = p.admin && isHouseOwner(p.name);
+  const badgeWidth = owner ? 15 : p.admin ? 13 : 0;
   const tagWidth = ctx.measureText(p.name).width + 12 + badgeWidth;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.fillStyle = owner ? "rgba(255, 244, 205, 0.92)" : "rgba(255, 255, 255, 0.7)";
   roundRectPath(ctx, cx - tagWidth / 2, headTop - 18, tagWidth, 14, 7);
   ctx.fill();
-  ctx.fillStyle = "#333";
+  if (owner) {
+    ctx.strokeStyle = "#d4a02a";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.fillStyle = owner ? "#6b4a0e" : "#333";
   ctx.fillText(p.name, cx + badgeWidth / 2, headTop - 7.5);
-  if (p.admin) {
+  if (owner) {
+    drawCreatorCrown(ctx, cx - tagWidth / 2 + 11, headTop - 6.5, 1);
+  } else if (p.admin) {
     ctx.font = "9px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
     ctx.fillText(CONFIG.adminBadge, cx - tagWidth / 2 + 10, headTop - 7.5);
   }

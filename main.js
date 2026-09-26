@@ -1425,7 +1425,16 @@ function renderChat({ toBottom = false, newMessage = false } = {}) {
     name.className = "chat-name";
     name.style.color = safeColor(line.color);
     name.textContent = line.name + ": ";
-    if (line.admin) {
+    if (line.admin && isHouseOwner(line.name)) {
+      // The house owner: a gold crown (drawn in render.js) and a golden name.
+      const crown = document.createElement("img");
+      crown.className = "owner-crown";
+      crown.src = creatorCrownURL();
+      crown.alt = "👑";
+      crown.title = "Creator of the Cozy House";
+      name.classList.add("owner-name");
+      name.prepend(crown);
+    } else if (line.admin) {
       const badge = document.createElement("span");
       badge.className = "admin-badge";
       badge.textContent = CONFIG.adminBadge;

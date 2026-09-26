@@ -76,6 +76,12 @@ const CONFIG = {
   // tag. (Who's an admin is decided by the house server, not here.)
   adminBadge: "🛡️",
 
+  // The house owner and creator of the game. When this account is also an
+  // admin (checked by the server, so nobody can fake it by picking the
+  // name), they get a hand-drawn gold crown instead of the shield, and a
+  // golden name tag and chat name.
+  ownerName: "Props",
+
   // Accounts that can wear the Exalted look (a hooded robe, sigil circle,
   // floating candles and rune footsteps), switched on in their wardrobe.
   exaltedNames: ["Props"],
