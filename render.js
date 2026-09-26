@@ -8981,7 +8981,25 @@ function seatLift(seated) {
   return seated === "upTall" ? -12 : seated ? 4 : 0;
 }
 
+// Someone asleep in a bed that's turned to face a side wall lies along
+// it: the whole character is turned on its side around their head, so
+// the head rests on the pillow by the headboard and the blanket runs
+// toward the foot of the bed. Everyone else is drawn standing up.
 function drawPlayerBody(ctx, p) {
+  const facing = p.asleep?.facing;
+  if (facing !== "left" && facing !== "right") return drawUprightBody(ctx, p);
+  const foot = playerFeet(p);
+  const head = { x: foot.x, y: foot.y - PLAYER_RADIUS - 5 };
+  ctx.save();
+  ctx.translate(head.x, head.y);
+  // A bed facing left has its headboard on the right, so the body points left (and the other way round).
+  ctx.rotate(facing === "left" ? Math.PI / 2 : -Math.PI / 2);
+  ctx.translate(-head.x, -head.y);
+  drawUprightBody(ctx, p);
+  ctx.restore();
+}
+
+function drawUprightBody(ctx, p) {
   const foot = playerFeet(p);
   const r = PLAYER_RADIUS;
   const emote = p.emote?.id, et = p.emote?.t ?? 0; // which emote, and seconds since it started

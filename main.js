@@ -1696,7 +1696,7 @@ function sleeperScenePlayer({ door, bed }) {
   const at = tuckedIn(bed);
   const look = door.look ?? {};
   const known = (drawers, id) => (Object.hasOwn(drawers, id) ? id : "none");
-  return { id: "asleep-" + door.owner, pet: known(PET_DRAWERS, look.pet), x: at.x, y: at.y, moving: false, color: door.color, hat: known(HAT_DRAWERS, look.hat), shoes: known(SHOE_DRAWERS, look.shoes), glasses: known(GLASSES_DRAWERS, look.glasses), name: door.owner, badge: "sleeping", bubble: null, emote: sleepingEmote(), typing: false, asleep: { color: bed.color }, aura: null, admin: false, seated: null, speaking: false, whisper: null };
+  return { id: "asleep-" + door.owner, pet: known(PET_DRAWERS, look.pet), x: at.x, y: at.y, moving: false, color: door.color, hat: known(HAT_DRAWERS, look.hat), shoes: known(SHOE_DRAWERS, look.shoes), glasses: known(GLASSES_DRAWERS, look.glasses), name: door.owner, badge: "sleeping", bubble: null, emote: sleepingEmote(), typing: false, asleep: { color: bed.color, facing: bed.facing }, aura: null, admin: false, seated: null, speaking: false, whisper: null };
 }
 
 function updateSleep() {
@@ -2062,13 +2062,13 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
   // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.
