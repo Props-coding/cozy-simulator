@@ -67,7 +67,7 @@ import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.j
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { addRoomTime, roomLevels } from "./reputation.js";
 import { titleText, titleList, checkNewTitles } from "./titles.js";
-import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
+import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance, mountOutfitPicker, renderOutfitPicker, randomOutfit } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
 import { startRooms, refreshRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen, askToEnter, leftRoom, letIn } from "./rooms.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
@@ -93,12 +93,6 @@ function formatLocalTime(tz) {
 const joinScreen = document.getElementById("join-screen");
 const gameScreen = document.getElementById("game-screen");
 const nameInput = document.getElementById("name-input");
-const colorInput = document.getElementById("color-input");
-const hatInput = document.getElementById("hat-input");
-const shoesInput = document.getElementById("shoes-input");
-const petInput = document.getElementById("pet-input");
-const glassesInput = document.getElementById("glasses-input");
-const characterPreview = document.getElementById("character-preview");
 const joinButton = document.getElementById("join-button");
 const roomLabel = document.getElementById("room-label");
 const actionHint = document.getElementById("action-hint");
@@ -182,9 +176,10 @@ let myShoes = "none";
 let myPet = "none";
 let myGlasses = "none";
 let myFace = cleanFace(null); // eyes, mouth, blush and freckles (the wardrobe's Face tab)
-// Scarf, backpack and earrings (Update 3): each an item id, or "none".
-const ACCESSORY_SLOTS = ["scarf", "backpack", "earrings"];
-const myAccessories = { scarf: "none", backpack: "none", earrings: "none" };
+// Scarf, backpack and earrings (Update 3), and any other slot added to
+// CONFIG.outfitSlots later: each an item id, or "none".
+const ACCESSORY_SLOTS = CONFIG.outfitSlots.map((s) => s.slot).filter((slot) => !["hat", "shoes", "glasses", "pet"].includes(slot));
+const myAccessories = Object.fromEntries(ACCESSORY_SLOTS.map((slot) => [slot, "none"]));
 let myTitle = "none"; // the title under your name tag (titles.js), or "none"
 const accessoryChoices = (slot) => [["none", "None"], ...ownedOfType(slot)];
 // Only accessories you own (anything else is taken off).
@@ -196,12 +191,11 @@ const hatChoices = () => [...FREE_HATS, ...ownedHats()];
 const shoeChoices = () => [["none", "Plain feet"], ...ownedShoes()];
 const petChoices = () => [["none", "No pet"], ...ownedPets()];
 const glassesChoices = () => [["none", "No glasses"], ...ownedGlasses()];
-
-function fillSelect(select, choices, chosen) {
-  select.innerHTML = "";
-  for (const [id, name] of choices) select.add(new Option(name, id));
-  select.value = choices.some(([id]) => id === chosen) ? chosen : "none";
-}
+// What you can pick in each outfit slot (CONFIG.outfitSlots), by its tab.
+const outfitChoices = () =>
+  Object.fromEntries(CONFIG.outfitSlots.map(({ tab, slot, none }) => [tab, slot === "hat" ? hatChoices() : [["none", none], ...ownedOfType(slot)]]));
+// An item id if it's one of your choices, otherwise "none".
+const ownedOr = (choices, id) => (choices.some(([owned]) => owned === id) ? id : "none");
 
 // The Join screen remembers your name, color, hat and shoes from last time.
 const PROFILE_STORAGE_KEY = "cozy-house-profile";
@@ -213,12 +207,12 @@ try {
 }
 if (savedProfile) {
   nameInput.value = savedProfile.name || "";
-  if (/^#[0-9a-fA-F]{6}$/.test(savedProfile.color)) colorInput.value = savedProfile.color;
+  if (/^#[0-9a-fA-F]{6}$/.test(savedProfile.color)) myColor = savedProfile.color;
 }
-fillSelect(hatInput, hatChoices(), savedProfile?.hat);
-fillSelect(shoesInput, shoeChoices(), savedProfile?.shoes);
-fillSelect(petInput, petChoices(), savedProfile?.pet);
-fillSelect(glassesInput, glassesChoices(), savedProfile?.glasses);
+myHat = ownedOr(hatChoices(), savedProfile?.hat);
+myShoes = ownedOr(shoeChoices(), savedProfile?.shoes);
+myPet = ownedOr(petChoices(), savedProfile?.pet);
+myGlasses = ownedOr(glassesChoices(), savedProfile?.glasses);
 myFace = cleanFace(savedProfile?.face);
 for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, savedProfile?.[slot]);
 myTitle = typeof savedProfile?.title === "string" ? savedProfile.title : "none";
@@ -231,21 +225,15 @@ function saveProfile() {
   }
 }
 
-const updatePreview = () => drawCharacterPreview(characterPreview, { color: colorInput.value, hat: hatInput.value, shoes: shoesInput.value, glasses: glassesInput.value, face: myFace, ...myAccessories });
-glassesInput.addEventListener("change", () => updatePreview());
-colorInput.addEventListener("input", updatePreview);
-hatInput.addEventListener("change", updatePreview);
-shoesInput.addEventListener("change", updatePreview);
-updatePreview();
-
-// The wardrobe (wardrobe.js) changes your look from your bedroom.
+// The wardrobe (wardrobe.js) changes your look from your bedroom, and
+// its outfit picker is on the Join screen too (see below).
 initWardrobe({
-  name: () => myName,
+  name: () => nameInput.value.trim() || myName, // (on the Join screen, your account's name)
   look: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle }),
   titles: () => titleList(),
-  choices: () => ({ hats: hatChoices(), shoes: shoeChoices(), pets: petChoices(), glasses: glassesChoices(), scarves: accessoryChoices("scarf"), backpacks: accessoryChoices("backpack"), earrings: accessoryChoices("earrings") }),
+  choices: outfitChoices,
   wear: (type, id) => {
-    if (type === "color") myColor = colorInput.value = id;
+    if (type === "color") myColor = id;
     else if (type === "hat") myHat = id;
     else if (type === "shoes") myShoes = id;
     else if (type === "glasses") myGlasses = id;
@@ -254,16 +242,36 @@ initWardrobe({
     else if (type === "title") myTitle = id;
     else myPet = id;
     saveProfile();
-    refreshLook();
-    updatePreview();
   },
 });
+
+// --- The Join screen's outfit ---
+// "Quick join": just you (and your pet) and the Join button. "Edit outfit"
+// opens the same picker as the wardrobe: colors, tabs and tiles.
+const joinPicker = mountOutfitPicker({ preview: "join-preview", colors: "join-colors", tabs: "join-tabs", items: "join-items" });
+const joinOutfit = document.getElementById("join-outfit");
+const editOutfitButton = document.getElementById("join-edit-outfit");
+editOutfitButton.addEventListener("click", () => {
+  const open = joinOutfit.hidden;
+  joinOutfit.hidden = !open;
+  joinScreen.classList.toggle("editing", open);
+  editOutfitButton.textContent = open ? "✓ Done" : "✏️ Edit outfit";
+  renderOutfitPicker(joinPicker);
+  playClickSound();
+});
+document.getElementById("join-random").addEventListener("click", () => randomOutfit(joinPicker));
+renderOutfitPicker(joinPicker);
+// Drawn again whenever the Join screen appears (by then your account's
+// name is known, which decides the Exalted look).
+new MutationObserver(() => {
+  if (!joinScreen.hidden) renderOutfitPicker(joinPicker);
+}).observe(joinScreen, { attributes: true, attributeFilter: ["hidden"] });
 
 // A friend's scarf, backpack and earrings, as they sent them (anything we
 // don't know how to draw is left off).
 function peerAccessories(peer) {
   const drawers = { scarf: SCARF_DRAWERS, backpack: BACKPACK_DRAWERS, earrings: EARRING_DRAWERS };
-  return Object.fromEntries(ACCESSORY_SLOTS.map((slot) => [slot, Object.hasOwn(drawers[slot], peer[slot]) ? peer[slot] : "none"]));
+  return Object.fromEntries(ACCESSORY_SLOTS.map((slot) => [slot, drawers[slot] && Object.hasOwn(drawers[slot], peer[slot]) ? peer[slot] : "none"]));
 }
 
 // The raccoons' shop can read and change what you're wearing.
@@ -287,11 +295,10 @@ joinButton.addEventListener("click", async () => {
   if (!resume) wakeInBed = true; // (an automatic update puts you back where you were instead)
   if (!isHouseReady()) return; // still logging in (account.js)
   myName = nameInput.value.trim() || "Friend";
-  myColor = colorInput.value;
-  myHat = hatChoices().some(([id]) => id === hatInput.value) ? hatInput.value : "none";
-  myShoes = shoeChoices().some(([id]) => id === shoesInput.value) ? shoesInput.value : "none";
-  myPet = petChoices().some(([id]) => id === petInput.value) ? petInput.value : "none";
-  myGlasses = glassesChoices().some(([id]) => id === glassesInput.value) ? glassesInput.value : "none";
+  myHat = ownedOr(hatChoices(), myHat);
+  myShoes = ownedOr(shoeChoices(), myShoes);
+  myPet = ownedOr(petChoices(), myPet);
+  myGlasses = ownedOr(glassesChoices(), myGlasses);
   for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, myAccessories[slot]);
   if (!titleList().some((t) => t.id === myTitle && t.earned)) myTitle = "none"; // (only titles you've earned)
   saveProfile();
@@ -894,12 +901,10 @@ function teleport(roomId) {
   return false;
 }
 
-// After the admin panel unlocks things: refresh the hat, shoe and pet lists.
+// After the admin panel unlocks things (or the raccoons dress you): redraw
+// the Join screen's outfit picker, if it's showing.
 function refreshLook() {
-  fillSelect(hatInput, hatChoices(), myHat);
-  fillSelect(shoesInput, shoeChoices(), myShoes);
-  fillSelect(petInput, petChoices(), myPet);
-  fillSelect(glassesInput, glassesChoices(), myGlasses);
+  if (!joinScreen.hidden) renderOutfitPicker(joinPicker);
 }
 
 // --- Emotes ---

@@ -2,6 +2,10 @@
 // press E at it to change your face, color, hat, shoes and pet without going
 // back to the Join screen. Changes show right away.
 //
+// The Join screen uses this same outfit picker (mountOutfitPicker), so
+// the two always look and work the same. The tabs of things to wear come
+// from CONFIG.outfitSlots.
+//
 // It looks like the shop: a big preview of you (with your pet beside
 // you), color swatches, and tabs of picture tiles. Click a tile to wear
 // it, click it again to take it off.
@@ -12,10 +16,17 @@
 import { playClickSound } from "./audio.js";
 
 const panel = document.getElementById("wardrobe-panel");
-const preview = document.getElementById("wardrobe-preview");
-const colorsRow = document.getElementById("wardrobe-colors");
-const tabsRow = document.getElementById("wardrobe-tabs");
-const itemsGrid = document.getElementById("wardrobe-items");
+
+// An outfit picker: a preview canvas, a row for color swatches, a row for
+// tabs and a grid for tiles (given by their element ids), plus which tab
+// is open. The wardrobe panel has one and the Join screen has one.
+export function mountOutfitPicker(ids) {
+  const el = (id) => document.getElementById(id);
+  return { preview: el(ids.preview), colors: el(ids.colors), tabs: el(ids.tabs), items: el(ids.items), tab: "hats" };
+}
+const wardrobeUI = mountOutfitPicker({ preview: "wardrobe-preview", colors: "wardrobe-colors", tabs: "wardrobe-tabs", items: "wardrobe-items" });
+// The picker being drawn (only one is ever on screen at a time).
+let ui = wardrobeUI;
 
 const AURA_KEY = "cozy-house-aura";
 const AURA_PIECES = [
@@ -122,6 +133,7 @@ const canvas = (w, h) => Object.assign(document.createElement("canvas"), { width
 // The big preview: you, with your pet sitting beside you.
 function drawPreview() {
   const look = hooks.look();
+  const preview = ui.preview;
   const ctx = preview.getContext("2d");
   ctx.clearRect(0, 0, preview.width, preview.height);
   const hasPet = look.pet && look.pet !== "none";
@@ -139,12 +151,12 @@ function drawPreview() {
 // an Exalted piece.
 function tilePicture(tab, id) {
   const look = hooks.look();
-  if (Object.hasOwn(TAB_TYPES, tab) && tab !== "pets") {
+  if (Object.hasOwn(TAB_TYPES, tab) && TAB_TYPES[tab] !== "pet") {
     const c = canvas(96, 136);
     drawCharacterPreview(c, { color: look.color, face: look.face, [TAB_TYPES[tab]]: id });
     return c;
   }
-  if (tab === "pets") {
+  if (TAB_TYPES[tab] === "pet") {
     const c = canvas(88, 92);
     drawPetPreview(c, id);
     return c;
@@ -197,18 +209,19 @@ function drawRuneTrail(ctx) {
 }
 
 // --- The panel ---
-let tab = "hats";
-// Each tab of things to wear, and the slot on your look it fills.
-const TAB_TYPES = { hats: "hat", shoes: "shoes", glasses: "glasses", scarves: "scarf", backpacks: "backpack", earrings: "earrings", pets: "pet" };
+// Each tab of things to wear, and the slot on your look it fills (from
+// CONFIG.outfitSlots).
+const TAB_TYPES = Object.fromEntries(CONFIG.outfitSlots.map((s) => [s.tab, s.slot]));
 
 function tabsFor() {
-  const list = [["face", "🙂 Face"], ["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["scarves", "🧣 Scarves"], ["backpacks", "🎒 Backpacks"], ["earrings", "💎 Earrings"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"], ["titles", "🎀 Titles"]];
+  const list = [["face", "🙂 Face"], ...CONFIG.outfitSlots.map((s) => [s.tab, s.label]), ["dances", "🕺 Dances"], ["titles", "🎀 Titles"]];
   if (myAura()) list.push(["exalted", "✦ Exalted"]);
   return list;
 }
 
 function renderColors() {
   const look = hooks.look();
+  const colorsRow = ui.colors;
   colorsRow.innerHTML = "";
   const colors = CONFIG.wardrobeColors ?? [];
   const same = (a, b) => a.toLowerCase() === b.toLowerCase();
@@ -246,15 +259,16 @@ function renderColors() {
 }
 
 function renderTabs() {
+  const tabsRow = ui.tabs;
   tabsRow.innerHTML = "";
-  if (!tabsFor().some(([id]) => id === tab)) tab = "hats";
+  if (!tabsFor().some(([id]) => id === ui.tab)) ui.tab = "hats";
   for (const [id, label] of tabsFor()) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
-    button.className = (id === tab ? "active" : "") + (id === "exalted" ? " exalted" : "");
+    button.className = (id === ui.tab ? "active" : "") + (id === "exalted" ? " exalted" : "");
     button.addEventListener("click", () => {
-      tab = id;
+      ui.tab = id;
       playClickSound();
       render();
     });
@@ -277,7 +291,7 @@ function tile(picture, name, on, onClick, exalted = false) {
   if (on) {
     const badge = document.createElement("span");
     badge.className = "wardrobe-badge";
-    badge.textContent = exalted ? "On" : tab === "dances" || tab === "face" || tab === "titles" ? "Chosen" : "Wearing";
+    badge.textContent = exalted ? "On" : ["dances", "face", "titles"].includes(ui.tab) ? "Chosen" : "Wearing";
     el.appendChild(badge);
   }
   el.addEventListener("click", onClick);
@@ -299,6 +313,7 @@ function facePicture(change) {
 // The Face tab: a row each for eyes, mouth and cheeks, and freckles on or
 // off. These are free, so everyone has all of them.
 function renderFace() {
+  const itemsGrid = ui.items;
   const face = hooks.look().face;
   const section = (title) => {
     const h = document.createElement("h4");
@@ -330,6 +345,7 @@ function renderFace() {
 // The Titles tab: pick the title under your name tag, or none. Titles you
 // haven't earned yet show greyed out, with what earns them.
 function renderTitles() {
+  const itemsGrid = ui.items;
   const chosen = hooks.look().title ?? "none";
   const titles = hooks.titles();
   const pickTitle = (id) => {
@@ -370,6 +386,7 @@ function renderTitles() {
 }
 
 function renderItems() {
+  const itemsGrid = ui.items, tab = ui.tab;
   itemsGrid.innerHTML = "";
   if (tab === "face") return renderFace();
   if (tab === "titles") return renderTitles();
@@ -436,33 +453,31 @@ function renderItems() {
   }
 }
 
-function render() {
+// Draws a picker (the one given, or the last one drawn) from scratch.
+function render(picker = ui) {
+  ui = picker;
   renderColors();
   renderTabs();
   renderItems();
   drawPreview();
 }
+export { render as renderOutfitPicker };
 
-// A random outfit: any color from the swatches, and any hat, shoes and
-// pet you own (or none).
+// A random outfit: any color from the swatches, any face, and anything
+// you own in each slot (or nothing).
 const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
-document.getElementById("wardrobe-random").addEventListener("click", () => {
-  const { hats, shoes, pets, glasses, scarves, backpacks, earrings } = hooks.choices();
+export function randomOutfit(picker) {
+  const choices = hooks.choices();
   hooks.wear("color", pickFrom(CONFIG.wardrobeColors));
-  hooks.wear("hat", pickFrom(hats)[0]);
-  hooks.wear("shoes", pickFrom(shoes)[0]);
-  hooks.wear("glasses", pickFrom(glasses)[0]);
-  hooks.wear("scarf", pickFrom(scarves)[0]);
-  hooks.wear("backpack", pickFrom(backpacks)[0]);
-  hooks.wear("earrings", pickFrom(earrings)[0]);
-  hooks.wear("pet", pickFrom(pets)[0]);
+  for (const { tab, slot } of CONFIG.outfitSlots) hooks.wear(slot, pickFrom(choices[tab])[0]);
   hooks.wear("face", { eyes: pickFrom(FACE_EYE_STYLES)[0], mouth: pickFrom(FACE_MOUTH_STYLES)[0], blush: pickFrom(FACE_BLUSH_STYLES)[0], freckles: Math.random() < 0.3 });
   playClickSound();
-  render();
-});
+  render(picker);
+}
+document.getElementById("wardrobe-random").addEventListener("click", () => randomOutfit(wardrobeUI));
 
 export function openWardrobe() {
-  render();
+  render(wardrobeUI);
   panel.hidden = false;
   playClickSound();
 }

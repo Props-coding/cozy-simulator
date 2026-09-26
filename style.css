@@ -730,16 +730,6 @@ canvas {
   transform: translateY(-1px);
 }
 
-/* The little character preview on the Join screen: a soft round frame
-   at the bottom of a taller canvas (so tall hats aren't cut off), instead
-   of the house view's heavy border. */
-#character-preview {
-  border: none;
-  border-radius: 0;
-  background: radial-gradient(circle 48px at 50% calc(100% - 48px), #f3e6d0 42px, #e9d9bd 47px, transparent 48px);
-  box-shadow: none;
-}
-
 /* Prompts like "Press E to build your office". Keeps its height when
    empty so the house doesn't jump up and down as prompts come and go. */
 #action-hint {
@@ -769,22 +759,22 @@ canvas {
   box-shadow: 0 6px 20px rgba(122, 92, 62, 0.15);
 }
 
-#join-screen label {
-  font-size: 1em;
-  font-weight: 600;
-  color: var(--wood);
+/* "Edit outfit" widens the card for the outfit picker (the same one as
+   the wardrobe, styled below with the wardrobe), and the tiles scroll. */
+#join-screen.editing {
+  max-width: min(520px, calc(100% - 32px));
 }
 
-#hat-input,
-#shoes-input,
-#pet-input {
-  font-family: inherit;
-  font-size: 0.95em;
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid #d9c3a5;
-  background: white;
-  color: var(--wood);
+#join-outfit:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+#join-items {
+  max-height: 42vh;
 }
 
 #join-button {
@@ -3076,9 +3066,10 @@ input[type="range"]::-moz-range-thumb {
   margin: 0;
 }
 
-/* The preview: a wide soft oval to stand on; hats and pets can reach
-   above it without being cut off. */
-#wardrobe-preview {
+/* The outfit picker (wardrobe.js), in the wardrobe and on the Join
+   screen. The preview: a wide soft oval to stand on; hats and pets can
+   reach above it without being cut off. */
+.outfit-preview {
   flex: none;
   border: none;
   box-shadow: none;
@@ -3086,7 +3077,7 @@ input[type="range"]::-moz-range-thumb {
   background: radial-gradient(ellipse 96px 40px at 50% calc(100% - 26px), #f3e6d0 94%, transparent 100%);
 }
 
-#wardrobe-colors {
+.outfit-colors {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -3127,14 +3118,14 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
-#wardrobe-tabs {
+.outfit-tabs {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
 }
 
-#wardrobe-tabs button {
+.outfit-tabs button {
   font-family: inherit;
   font-weight: 700;
   padding: 5px 14px;
@@ -3145,18 +3136,18 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
-#wardrobe-tabs button.active {
+.outfit-tabs button.active {
   background: #f3e6d0;
   border-color: #c98a3a;
   color: #4a3a2c;
 }
 
-#wardrobe-tabs button.exalted {
+.outfit-tabs button.exalted {
   border-color: #e0c27a;
   color: #9a6a1e;
 }
 
-#wardrobe-items {
+.outfit-items {
   flex: 1 1 auto;
   width: 100%;
   min-height: 0;

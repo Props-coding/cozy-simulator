@@ -268,6 +268,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Step 5, titles: 40 titles (like "the Scholar" at Study Lv. 10) earned from room levels, tiers and a few one-time achievements, with a "New title!" pop-up. Pick one, or none, in the wardrobe's Titles tab (titles still to earn show greyed out with what earns them). It shows under your name tag for everyone and on your profile card. Add titles in `config.js` (`titles`).
   - Server change: `server/server.mjs` now sends faces, scarves, backpacks, earrings, titles, room times and tiers for profile cards and sleeping characters. Needs deploying to the droplet; until then those parts of friends' profile cards (and sleepers' faces and accessories) are simply missing.
   - Honest limit: like crumbs, levels, tiers and titles live in each person's own save, so a tech-savvy friend could edit theirs.
+- Build 0.53: the Join screen uses the wardrobe's outfit picker. It opens in a compact "quick join" view (you and your pet, plus Join the house); "Edit outfit" opens the same colors, tabs and picture tiles as the wardrobe (with a Random outfit button). Both are one shared piece of code, and the outfit tabs come from `outfitSlots` in `config.js`, so a new slot shows on both screens. (A brand new slot still needs its drawing in render.js and items in the raccoons' shop.) The old dropdowns are gone.
 
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).

@@ -11,8 +11,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.52" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.52">
+       build, change every "v=0.53" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.53">
 </head>
 <body>
   <!-- The crumb icon: a happy little cookie crumb with chocolate chips,
@@ -150,30 +150,16 @@
     <p class="account-who">Hi, <strong id="account-who"></strong>! <button id="account-open-settings" type="button" class="link-button">Account</button> · <button type="button" class="link-button account-logout">Log out</button></p>
     <!-- Your name comes from your account (account.js fills this in). -->
     <input id="name-input" type="hidden" maxlength="16">
-    <label>
-      Your color:
-      <input id="color-input" type="color" value="#e05a47">
-    </label>
-    <!-- The hat and shoes lists are filled in by main.js: the free hats,
-         plus anything you've bought from the raccoons (pets too). -->
-    <label>
-      Your hat:
-      <select id="hat-input"></select>
-    </label>
-    <label>
-      Your shoes:
-      <select id="shoes-input"></select>
-    </label>
-    <label>
-      Your glasses:
-      <select id="glasses-input"></select>
-    </label>
-    <label>
-      Your pet:
-      <select id="pet-input"></select>
-    </label>
-    <!-- A little preview of how you'll look, updated as you pick. -->
-    <canvas id="character-preview" width="96" height="136"></canvas>
+    <!-- How you'll look (with your pet). "Edit outfit" opens the same
+         picker as the wardrobe (wardrobe.js), filled in by main.js. -->
+    <canvas id="join-preview" class="outfit-preview" width="220" height="150"></canvas>
+    <div id="join-outfit" hidden>
+      <div id="join-colors" class="outfit-colors" role="group" aria-label="Color"></div>
+      <nav id="join-tabs" class="outfit-tabs"></nav>
+      <div id="join-items" class="outfit-items"></div>
+      <button id="join-random" type="button" class="soft-button">🎲 Random outfit</button>
+    </div>
+    <button id="join-edit-outfit" type="button" class="soft-button">✏️ Edit outfit</button>
     <button id="join-button">Join the house</button>
   </div>
 
@@ -427,10 +413,10 @@
           <!-- The wardrobe (wardrobe.js): change your look from your bedroom. -->
           <div id="wardrobe-panel" hidden>
             <h3>Your wardrobe</h3>
-            <canvas id="wardrobe-preview" width="220" height="150"></canvas>
-            <div id="wardrobe-colors" role="group" aria-label="Color"></div>
-            <nav id="wardrobe-tabs"></nav>
-            <div id="wardrobe-items"></div>
+            <canvas id="wardrobe-preview" class="outfit-preview" width="220" height="150"></canvas>
+            <div id="wardrobe-colors" class="outfit-colors" role="group" aria-label="Color"></div>
+            <nav id="wardrobe-tabs" class="outfit-tabs"></nav>
+            <div id="wardrobe-items" class="outfit-items"></div>
             <div class="wardrobe-bottom">
               <button id="wardrobe-random" type="button" class="soft-button">🎲 Random outfit</button>
               <button id="wardrobe-close" type="button" class="warm-button">Done</button>
@@ -613,41 +599,41 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.52</p>
+  <p id="version-tag">build 0.53</p>
 
-  <script src="config.js?v=0.52"></script>
-  <script src="world.js?v=0.52"></script>
-  <script src="render.js?v=0.52"></script>
+  <script src="config.js?v=0.53"></script>
+  <script src="world.js?v=0.53"></script>
+  <script src="render.js?v=0.53"></script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.52",
-        "./network.js": "./network.js?v=0.52",
-        "./audio.js": "./audio.js?v=0.52",
-        "./theater.js": "./theater.js?v=0.52",
-        "./whiteboard.js": "./whiteboard.js?v=0.52",
-        "./shop.js": "./shop.js?v=0.52",
-        "./emoji.js": "./emoji.js?v=0.52",
-        "./achievements.js": "./achievements.js?v=0.52",
-        "./home.js": "./home.js?v=0.52",
-        "./turntable.js": "./turntable.js?v=0.52",
-        "./wardrobe.js": "./wardrobe.js?v=0.52",
-        "./kanban.js": "./kanban.js?v=0.52",
-        "./rooms.js": "./rooms.js?v=0.52",
-        "./journal.js": "./journal.js?v=0.52",
-        "./phone.js": "./phone.js?v=0.52",
-        "./laptop.js": "./laptop.js?v=0.52",
-        "./news.js": "./news.js?v=0.52",
-        "./account.js": "./account.js?v=0.52",
-        "./profile.js": "./profile.js?v=0.52",
-        "./reputation.js": "./reputation.js?v=0.52",
-        "./titles.js": "./titles.js?v=0.52",
-        "./admin.js": "./admin.js?v=0.52",
-        "./updater.js": "./updater.js?v=0.52"
+        "./main.js": "./main.js?v=0.53",
+        "./network.js": "./network.js?v=0.53",
+        "./audio.js": "./audio.js?v=0.53",
+        "./theater.js": "./theater.js?v=0.53",
+        "./whiteboard.js": "./whiteboard.js?v=0.53",
+        "./shop.js": "./shop.js?v=0.53",
+        "./emoji.js": "./emoji.js?v=0.53",
+        "./achievements.js": "./achievements.js?v=0.53",
+        "./home.js": "./home.js?v=0.53",
+        "./turntable.js": "./turntable.js?v=0.53",
+        "./wardrobe.js": "./wardrobe.js?v=0.53",
+        "./kanban.js": "./kanban.js?v=0.53",
+        "./rooms.js": "./rooms.js?v=0.53",
+        "./journal.js": "./journal.js?v=0.53",
+        "./phone.js": "./phone.js?v=0.53",
+        "./laptop.js": "./laptop.js?v=0.53",
+        "./news.js": "./news.js?v=0.53",
+        "./account.js": "./account.js?v=0.53",
+        "./profile.js": "./profile.js?v=0.53",
+        "./reputation.js": "./reputation.js?v=0.53",
+        "./titles.js": "./titles.js?v=0.53",
+        "./admin.js": "./admin.js?v=0.53",
+        "./updater.js": "./updater.js?v=0.53"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.52"></script>
+  <script type="module" src="main.js?v=0.53"></script>
 </body>
 </html>

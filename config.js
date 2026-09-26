@@ -27,6 +27,22 @@ const CONFIG = {
 
   // The color swatches in the wardrobe (there's also a "custom" one that
   // opens the full color picker).
+  // The things you can wear, in the order their tabs show in the wardrobe
+  // and on the Join screen (both are built from this list, so a slot added
+  // here shows up on both). tab: the tab's id. slot: which part of your
+  // look it fills (and the raccoons' item type). label: the tab's name.
+  // none: what "nothing" is called. (A brand new slot also needs its
+  // drawing in render.js and items in the raccoons' shop.)
+  outfitSlots: [
+    { tab: "hats", slot: "hat", label: "🎩 Hats", none: "No hat" },
+    { tab: "shoes", slot: "shoes", label: "👟 Shoes", none: "Plain feet" },
+    { tab: "glasses", slot: "glasses", label: "👓 Glasses", none: "No glasses" },
+    { tab: "scarves", slot: "scarf", label: "🧣 Scarves", none: "None" },
+    { tab: "backpacks", slot: "backpack", label: "🎒 Backpacks", none: "None" },
+    { tab: "earrings", slot: "earrings", label: "💎 Earrings", none: "None" },
+    { tab: "pets", slot: "pet", label: "🐾 Pets", none: "No pet" },
+  ],
+
   wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],
 
   // The grandfather clock in the hallway chimes softly on every hour (your
