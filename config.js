@@ -14,9 +14,18 @@ const CONFIG = {
     study: "Study",
     dinner: "Dinner",
     elevator: "Elevator",
-    landing: "Upstairs",
+    business: "Business Floor",
+    landing: "Bedroom Hall",
     workshop: "Workshop",
   },
+
+  // The floors the elevator goes to, bottom to top, and what's on each
+  // (shown on the elevator's buttons).
+  floors: [
+    { name: "Ground floor", rooms: "Hallway, Theater, Study, Dinner, Library" },
+    { name: "Business floor", rooms: "Offices, Conference Room, Workshop" },
+    { name: "Bedrooms", rooms: "Everyone's bedroom" },
+  ],
 
   // Faces (the wardrobe's Face tab). How strong each cheek blush is (0 is
   // invisible, 1 is solid pink), and the color of freckles.
@@ -128,6 +137,7 @@ const CONFIG = {
     dinner: "forkKnife",
     elevator: "elevator",
     elevatorUp: "elevator",
+    elevatorTop: "elevator",
     workshop: "hammer",
   },
 
@@ -144,7 +154,9 @@ const CONFIG = {
     office: { style: "planks", color: "#b98a5e" }, // used for every office
     elevator: { style: "checker", color: "#d9cbb4" },
     elevatorUp: { style: "checker", color: "#d9cbb4" },
+    elevatorTop: { style: "checker", color: "#d9cbb4" },
     workshop: { style: "planks", color: "#b88a5a" },
+    business: { style: "planks", color: "#b9a58c" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
   },
@@ -160,7 +172,9 @@ const CONFIG = {
     office: "#8f7fa3", // used for every office
     elevator: "#d8c3a0",
     elevatorUp: "#d8c3a0",
+    elevatorTop: "#d8c3a0",
     workshop: "#c9b28a",
+    business: "#dcd6cc",
     landing: "#e6d6c6",
     bedroom: "#a9b8cf", // used for every bedroom
   },

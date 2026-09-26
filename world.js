@@ -4,17 +4,19 @@
 // position. Keeping that math in one place (render.js) is what keeps
 // every object's positioning in sync; this file never touches pixels.
 //
-// Layout: a hallway runs across the middle of the house. Theater, Study
-// and Dinner hang below it (south), each with a doorway up into the
-// hallway. The Conference Room, the offices and the Library hang above it
-// (north), each with a doorway down into the hallway. South of the
-// hallway's east end is the elevator lobby, with a bit of garden below it.
+// Three floors, joined by an elevator at the east end of each:
 //
-// Upstairs is a landing (the bedroom hallway) with everyone's bedroom
-// door along its north wall and the elevator at its east end; the rest
-// is roof. Each bedroom is its own little map behind its door. The upstairs is
-// kept further down the same grid (UPSTAIRS units lower), so the two
-// floors never overlap and all the walking and room rules work the same
+// 1. Ground floor: a hallway runs across the middle of the house. Theater,
+//    Study and Dinner hang below it (south), each with a doorway up into
+//    the hallway, and the Library above its east end (north). South of the
+//    hallway's east end is the elevator lobby, with a bit of garden below.
+// 2. Business floor: a corridor with the Conference Room and the offices
+//    on its north side, and the Workshop and the elevator lobby on its
+//    south side. The rest is roof.
+// 3. Bedroom hall: everyone's bedroom door along its north wall. Each
+//    bedroom is its own little map behind its door. The upstairs is
+// Each floor is kept further down the same grid (UPSTAIRS units lower
+// than the one before), so floors never overlap and all the walking and room rules work the same
 // on both. Only the floor you're on is drawn.
 //
 // Offices and bedrooms come and go as their owners join and leave, so the
@@ -22,14 +24,16 @@
 
 const WALL_THICKNESS = 0.4;
 const HOUSE_WIDTH = 24; // how far east the house (and hallway) reaches
-const UPSTAIRS = 40; // how much further down the grid the upstairs floor is kept
-// Upstairs, the landing sits lower than the hallway does downstairs, which
-// leaves room for deep bedrooms above it. This is the landing's top edge
-// (the wall with the bedroom doors).
-const LANDING = UPSTAIRS + 3;
+const UPSTAIRS = 40; // how much further down the grid each floor is kept than the one below it
+// The corridors' top edges on the upper floors (the walls with the doors
+// in them). They sit a little lower than the ground floor's hallway does,
+// which leaves room for the rooms north of them.
+const BUSINESS = UPSTAIRS + 3; // the business floor (floor 2)
+const LANDING = 2 * UPSTAIRS + 3; // the bedroom hall (floor 3)
 
-// Which floor a grid y position is on: 0 downstairs, 1 upstairs, and 2
-// and up for the bedrooms (each is its own little map, see bedroomTop).
+// Which floor a grid y position is on: 0 the ground floor, 1 business,
+// 2 the bedroom hall, and 3 and up for the bedrooms (each is its own
+// little map, see bedroomSpot).
 function floorOf(y) {
   return Math.max(0, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
 }
@@ -43,33 +47,31 @@ const BASE_ROOMS = [
   { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3 } },
   { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3 } },
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3 } },
-  // North side: the Conference Room at the west end and the Library at the
-  // east end (same depth as the offices between them).
-  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: -5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: -WALL_THICKNESS / 2 }, north: true },
+  // North side: the Library at the east end.
   { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, y: -WALL_THICKNESS / 2 }, north: true },
   // The elevator lobby, south of the hallway's east end (the same spot on both floors).
   { id: "elevator", name: CONFIG.roomNames.elevator, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, y: 3 } },
-  // Upstairs: the Workshop, south of the landing's west end (a place to
-  // make things together, with the house's project boards on its wall).
-  { id: "workshop", name: CONFIG.roomNames.workshop, rect: { x: 0, y: LANDING + 3, w: 8, h: 5 }, sign: { x: 6.2, y: LANDING + 3 } },
-  // The landing (added in buildHouse) and its elevator lobby.
-  { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
+  // The business floor: the Conference Room north of the corridor's west
+  // end (the offices are beside it), and the Workshop south of it (a place
+  // to make things together, with the house's project boards on its wall).
+  { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: BUSINESS - 5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: BUSINESS - WALL_THICKNESS / 2 }, north: true },
+  { id: "workshop", name: CONFIG.roomNames.workshop, rect: { x: 0, y: BUSINESS + 3, w: 8, h: 5 }, sign: { x: 6.2, y: BUSINESS + 3 } },
+  // The business corridor and the bedroom hall are added in buildHouse;
+  // here are their elevator lobbies.
+  { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: BUSINESS + 3, w: 6, h: 4 }, sign: { x: 20, y: BUSINESS + 3 } },
+  { id: "elevatorTop", name: CONFIG.roomNames.elevator, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
 // dividers between rooms, and the wall segments above each room (with a
 // gap left open for the doorway). Same shape of logic as a plain top-down
 // house, just in grid units instead of pixels.
-// (The hallway's top wall gets a doorway for the Conference Room, the
-// Library and each office, so it's made in buildHouse instead.)
+// (The corridors' top walls have doorways for the rooms north of them,
+// so they're made in buildHouse instead.)
 const BASE_WALLS = [
   // Outer walls
   { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
-  { x: -WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 17.2 }, // left, from the Conference Room down to the bottom
-
-  // Conference Room: its north wall and its right-hand side
-  { x: -WALL_THICKNESS, y: -5.8, w: 6, h: WALL_THICKNESS },
-  { x: 5.6, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
+  { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11.4 + WALL_THICKNESS }, // left, from the hallway down to the bottom
   { x: HOUSE_WIDTH, y: -5.8, w: WALL_THICKNESS, h: 9 }, // right, from the Library down to the hallway's end
 
   // Library: its north wall and its left-hand side
@@ -84,18 +86,32 @@ const BASE_WALLS = [
   { x: HOUSE_WIDTH, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true }, // drawn short so it doesn't hide the lobby
 
-  // Upstairs: the landing's sides and bottom (with a doorway into its
-  // elevator lobby, x 19.2 to 20.8), and the lobby's walls. The landing's
-  // top wall has the bedroom doorways, so it's made in buildHouse.
+  // The business floor: the Conference Room's north wall, left side and
+  // right side, the corridor's sides and bottom (with a doorway into its
+  // elevator lobby, x 19.2 to 20.8), and the lobby's walls. The
+  // corridor's top wall has the doorways, so it's made in buildHouse.
+  { x: -WALL_THICKNESS, y: BUSINESS - 5.8, w: 6, h: WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: BUSINESS - 5.8, w: WALL_THICKNESS, h: 5.4 },
+  { x: 5.6, y: BUSINESS - 5.8, w: WALL_THICKNESS, h: 5.4 },
+  { x: -WALL_THICKNESS, y: BUSINESS - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
+  { x: HOUSE_WIDTH, y: BUSINESS - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
+  // (the landing's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
+  { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.4 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 7.0, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 12.2, h: WALL_THICKNESS },
+  // The Workshop: its left side, its right side, and its bottom (drawn short).
+  { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS * 1.5 },
+  { x: 8 - WALL_THICKNESS / 2, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: BUSINESS + 8, w: 8 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+  { x: 20.8, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: BUSINESS + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+
+  // The bedroom hall: its sides and bottom (with a doorway into its
+  // elevator lobby, x 19.2 to 20.8), and the lobby's walls. The hall's top
+  // wall holds the bedroom doors, so it's made in buildHouse.
   { x: -WALL_THICKNESS, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
-  // (the landing's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
-  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: 5.4 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 7.0, y: LANDING + 3 - WALL_THICKNESS / 2, w: 12.2, h: WALL_THICKNESS },
-  // The Workshop: its left side, its right side, and its bottom (drawn short).
-  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS * 1.5 },
-  { x: 8 - WALL_THICKNESS / 2, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS },
-  { x: -WALL_THICKNESS, y: LANDING + 8, w: 8 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
   { x: 20.8, y: LANDING + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: LANDING + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
@@ -133,9 +149,8 @@ const BASE_FURNITURE = [
   // painting between warm wall lamps, a side table with a lamp and flowers
   // under a mirror, more lamps, and a hills
   // painting in the east corner where the raccoons hang out. A fiddle-leaf fig sits
-  // in the bottom-right corner. They're spaced to leave the doorways
-  // clear: Conference Room (x 2 to 3.6) and the three office spots (7 to
-  // 8.6, 11 to 12.6, 15 to 16.6).
+  // in the bottom-right corner. (The Conference Room and offices used to
+  // open off this wall; they're on the business floor now.)
   { kind: "rug", x: 1.5, y: 0.95, w: 21, h: 0.95, color: "#b5603c", solid: false },
   { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
   { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
@@ -160,20 +175,21 @@ const BASE_FURNITURE = [
   // shoes for crumbs (walk up and press E; see shop.js).
   { kind: "raccoons", x: 23.15, y: 0.12, w: 0.65, h: 0.45 },
 
-  // Conference Room: a rolling whiteboard at the front, a big table with
+  // Conference Room (on the business floor, north of its corridor): a
+  // rolling whiteboard at the front, a big table with
   // seats all round (stand on one to sit), a snake plant, and a coffee cart.
-  { kind: "whiteboard", x: 1.0, y: -5.3, w: 3.6, h: 0.3 },
-  { kind: "conferenceTable", x: 1.0, y: -3.8, w: 3.6, h: 1.4 },
-  { kind: "chair", x: 1.3, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 2.5, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 3.7, y: -4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 1.3, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 2.5, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 3.7, y: -2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 0.3, y: -3.4, w: 0.6, h: 0.6, facing: "right", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "chair", x: 4.7, y: -3.4, w: 0.6, h: 0.6, facing: "left", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
-  { kind: "snakePlant", x: 0.15, y: -5.3, w: 0.6, h: 0.6 },
-  { kind: "teaCart", x: 4.3, y: -1.5, w: 1.2, h: 0.6 },
+  { kind: "whiteboard", x: 1.0, y: BUSINESS - 5.3, w: 3.6, h: 0.3 },
+  { kind: "conferenceTable", x: 1.0, y: BUSINESS - 3.8, w: 3.6, h: 1.4 },
+  { kind: "chair", x: 1.3, y: BUSINESS - 4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 2.5, y: BUSINESS - 4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 3.7, y: BUSINESS - 4.45, w: 0.6, h: 0.6, facing: "down", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 1.3, y: BUSINESS - 2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 2.5, y: BUSINESS - 2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 3.7, y: BUSINESS - 2.35, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 0.3, y: BUSINESS - 3.4, w: 0.6, h: 0.6, facing: "right", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "chair", x: 4.7, y: BUSINESS - 3.4, w: 0.6, h: 0.6, facing: "left", sit: true, solid: false, seat: "#5a6272", back: "#454c5a" },
+  { kind: "snakePlant", x: 0.15, y: BUSINESS - 5.3, w: 0.6, h: 0.6 },
+  { kind: "teaCart", x: 4.3, y: BUSINESS - 1.5, w: 1.2, h: 0.6 },
 
   // Theater: a big screen along the top wall between red velvet curtains
   // with marquee lights, floor cushions up front, two rows of plush cinema
@@ -268,46 +284,61 @@ const BASE_FURNITURE = [
   { kind: "bench", x: 18.3, y: 4.2, w: 1.5, h: 0.5 },
   { kind: "palm", x: 18.3, y: 6.0, w: 0.6, h: 0.6 },
 
-  // Upstairs, the bedroom hallway: a runner down the landing and a cactus
-  // (the bedroom doors and the lamps between them come from buildHouse),
-  // and the elevator lobby.
-  { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
-  // (The bedroom doors and the lamps between them are added in buildHouse.)
-  { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
-  { kind: "elevatorDoor", x: 21.65, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
+  // The business floor's corridor: a slate runner, lamps between the
+  // doorways (Conference Room x 2 to 3.6, offices 7 to 8.6, 11 to 12.6,
+  // 15 to 16.6), a snake plant, and the elevator.
+  { kind: "rug", x: 1.5, y: BUSINESS + 0.95, w: 21, h: 0.95, color: "#5f6b7a", solid: false },
+  { kind: "sconce", x: 5.2, y: BUSINESS, solid: false },
+  { kind: "sconce", x: 9.65, y: BUSINESS, solid: false },
+  { kind: "sconce", x: 13.65, y: BUSINESS, solid: false },
+  { kind: "picture", x: 18.4, y: BUSINESS, w: 1.1, art: "hills", solid: false },
+  { kind: "sconce", x: 20.2, y: BUSINESS, solid: false },
+  { kind: "snakePlant", x: 23.3, y: BUSINESS + 2.05, w: 0.6, h: 0.6 },
+  { kind: "elevatorDoor", x: 21.65, y: BUSINESS + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
 
   // The Workshop: the house's project board (a big corkboard) and a tool
   // pegboard on the back wall, a long workbench with the "done jar" on it
   // and two stools, a rug, a toolbox, a lamp and a plant. Press E at the
   // corkboard to open the boards (kanban.js).
-  { kind: "kanbanBoard", x: 0.3, y: LANDING + 3 + WALL_THICKNESS / 2, w: 3.7, solid: false },
-  { kind: "pegboard", x: 4.1, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.2, solid: false },
-  { kind: "sconce", x: 7.4, y: LANDING + 3 + WALL_THICKNESS / 2, solid: false },
-  { kind: "rug", x: 0.8, y: LANDING + 5.4, w: 3.8, h: 2.2, color: "#8a6a4a", solid: false },
-  { kind: "workbench", x: 1.0, y: LANDING + 5.6, w: 3.0, h: 0.75 },
-  { kind: "stool", x: 1.6, y: LANDING + 6.45, w: 0.6, h: 0.6, color: "#c98a3a", solid: false },
-  { kind: "stool", x: 2.9, y: LANDING + 6.45, w: 0.6, h: 0.6, color: "#6f8a6a", solid: false },
-  { kind: "toolbox", x: 6.6, y: LANDING + 7.2, w: 0.8, h: 0.5 },
-  { kind: "floorLamp", x: 5.4, y: LANDING + 7.3, w: 0.4, h: 0.4 },
-  { kind: "monstera", x: 0.15, y: LANDING + 7.2, w: 0.6, h: 0.6 },
+  { kind: "kanbanBoard", x: 0.3, y: BUSINESS + 3 + WALL_THICKNESS / 2, w: 3.7, solid: false },
+  { kind: "pegboard", x: 4.1, y: BUSINESS + 3 + WALL_THICKNESS / 2, w: 1.2, solid: false },
+  { kind: "sconce", x: 7.4, y: BUSINESS + 3 + WALL_THICKNESS / 2, solid: false },
+  { kind: "rug", x: 0.8, y: BUSINESS + 5.4, w: 3.8, h: 2.2, color: "#8a6a4a", solid: false },
+  { kind: "workbench", x: 1.0, y: BUSINESS + 5.6, w: 3.0, h: 0.75 },
+  { kind: "stool", x: 1.6, y: BUSINESS + 6.45, w: 0.6, h: 0.6, color: "#c98a3a", solid: false },
+  { kind: "stool", x: 2.9, y: BUSINESS + 6.45, w: 0.6, h: 0.6, color: "#6f8a6a", solid: false },
+  { kind: "toolbox", x: 6.6, y: BUSINESS + 7.2, w: 0.8, h: 0.5 },
+  { kind: "floorLamp", x: 5.4, y: BUSINESS + 7.3, w: 0.4, h: 0.4 },
+  { kind: "monstera", x: 0.15, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
+  { kind: "sconce", x: 18.7, y: BUSINESS + 3.2, solid: false },
+  { kind: "rug", x: 20.8, y: BUSINESS + 4.3, w: 2.8, h: 1.9, color: "#4f5f7a", round: true, solid: false },
+  { kind: "bench", x: 18.3, y: BUSINESS + 4.2, w: 1.5, h: 0.5 },
+  { kind: "fern", x: 18.3, y: BUSINESS + 6.0, w: 0.6, h: 0.6 },
+
+  // The bedroom hall: a runner down the middle and a cactus (the bedroom
+  // doors and the lamps between them come from buildHouse), and its
+  // elevator lobby.
+  { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
+  { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
+  { kind: "elevatorDoor", x: 21.65, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 2, solid: false },
   { kind: "sconce", x: 18.7, y: LANDING + 3.2, solid: false },
-  { kind: "rug", x: 20.8, y: LANDING + 4.3, w: 2.8, h: 1.9, color: "#4f5f7a", round: true, solid: false },
+  { kind: "rug", x: 20.8, y: LANDING + 4.3, w: 2.8, h: 1.9, color: "#6f5a8c", round: true, solid: false },
   { kind: "bench", x: 18.3, y: LANDING + 4.2, w: 1.5, h: 0.5 },
-  { kind: "fern", x: 18.3, y: LANDING + 6.0, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 18.3, y: LANDING + 6.0, w: 0.6, h: 0.6 },
 ];
 
 // The elevator: one set of doors on each floor, in the same spot. Stand
-// in front of the doors and press E to ride to the other floor.
+// in front of the doors and press E to pick a floor.
 // ELEVATOR_OPEN is how open each floor's doors are right now (0 shut, 1
 // wide open), set by main.js while you ride and read when drawing.
-const ELEVATOR_OPEN = [0, 0];
+const ELEVATOR_OPEN = [0, 0, 0];
 
 // Where a bedroom's map is: its own "floor" further down the grid (map 0
-// is floor 2, map 1 floor 3...), centered across the view like the house.
+// is floor 3, map 1 floor 4...), centered across the view like the house.
 // x0 and top are its floor's top-left corner, w its width.
 function bedroomSpot(door) {
   const w = bedroomWidth(door.size);
-  return { x0: (HOUSE_WIDTH - w) / 2, top: (door.map + 2) * UPSTAIRS - 1.2, w };
+  return { x0: (HOUSE_WIDTH - w) / 2, top: (door.map + 3) * UPSTAIRS - 1.2, w };
 }
 const BEDROOM_DOOR_X = 1; // the doorway in a bedroom's front wall, from its left edge
 
@@ -339,9 +370,9 @@ function elevatorInReach(player) {
   return cx > door.x - 0.2 && cx < door.x + door.w + 0.2 && cy > door.y && cy < door.y + 1.3 ? door.floor : -1;
 }
 
-// Where you step out on the other floor: just in front of its doors.
-function elevatorArrival(fromFloor) {
-  const door = FURNITURE.find((f) => f.kind === "elevatorDoor" && f.floor !== fromFloor);
+// Where you step out on a floor (0, 1 or 2): just in front of its doors.
+function elevatorArrival(toFloor) {
+  const door = FURNITURE.find((f) => f.kind === "elevatorDoor" && f.floor === toFloor);
   return { x: door.x + door.w / 2 - PLAYER_SIZE / 2, y: door.y + 0.3 };
 }
 
@@ -396,7 +427,7 @@ function seasonalFurniture() {
 function seasonalWallDecor(walls, furniture) {
   const style = currentSeason();
   const decor = [];
-  for (const corridor of [0, LANDING]) {
+  for (const corridor of [0, BUSINESS, LANDING]) {
     const taken = furniture.filter((f) => f.y === corridor).map((f) => [f.x - 0.12, f.x + (f.w ?? 0.3) + 0.12]);
     const stretches = walls.filter((w) => w.y === corridor - WALL_THICKNESS && w.h === WALL_THICKNESS);
     for (const wall of stretches) {
@@ -491,11 +522,10 @@ function seatsOnFloor(floor) {
 //   doorX: where the doorway starts, from the room's left edge. depth: how
 //   far north it reaches from the corridor.
 const WINGS = {
-  office: { slots: 3, width: 4, firstX: 6, floorY: 0, doorX: 1, depth: 5, name: "Office" },
+  office: { slots: 3, width: 4, firstX: 6, floorY: BUSINESS, doorX: 1, depth: 5, name: "Office" },
 };
 const BEDROOM_DEPTH = 8; // every bedroom, from its back wall to its door
 const DOOR_WIDTH = 1.6;
-const OFFICE_TOP = -WALL_THICKNESS - WINGS.office.depth; // the office floor's north edge
 
 // Left edge of spot 1, 2, 3... for a kind of room.
 function wingX(kind, slot) {
@@ -510,7 +540,7 @@ let WALLS = [];
 let FURNITURE = [];
 let SOLIDS = []; // everything you bump into: walls plus solid furniture
 let houseVersion = 0;
-let houseTopY = -5.8; // the house's northern edge on each floor (for the camera)
+const houseTopY = -5.8; // the house's northern edge on each floor, from its corridor's top (for the camera)
 const buildDoors = { office: null }; // left edge of each kind's next free spot, or null if all are taken
 
 // offices: a list of { slot, since, ownerName, color, locked, mine },
@@ -570,9 +600,11 @@ function buildHouse(offices, doors = []) {
     }
   };
 
-  // The hallway's top wall, with a doorway into the Conference Room (x 2 to
-  // 3.6), the Library (x 20.2 to 21.8) and each office.
-  corridorWall(0, [2, 20.2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
+  // The ground floor hallway's top wall, with a doorway into the Library
+  // (x 20.2 to 21.8), and the business corridor's, with a doorway into the
+  // Conference Room (x 2 to 3.6) and each office.
+  corridorWall(0, [20.2]);
+  corridorWall(BUSINESS, [2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
   add("office", offices);
 
   // The bedroom hallway (the upstairs landing): one solid wall with every
@@ -613,9 +645,10 @@ function buildHouse(offices, doors = []) {
     furniture.push(...BEDROOM_FURNITURE(x0, top, { color: door.color, mine: !!door.mine, decor }));
   }
 
-  // The hallway and landing are last, so rooms off them are found first.
-  // They have no sign: the header already says where you are.
+  // The corridors are last, so rooms off them are found first. They have
+  // no sign: the header already says where you are.
   rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 } });
+  rooms.push({ id: "business", name: CONFIG.roomNames.business, rect: { x: 0, y: BUSINESS, w: HOUSE_WIDTH, h: 3 } });
   rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 } });
 
   furniture.push(...seasonalWallDecor(walls, furniture));
@@ -623,7 +656,6 @@ function buildHouse(offices, doors = []) {
   WALLS = walls;
   FURNITURE = furniture;
   SOLIDS = [...walls, ...furniture.filter((f) => f.solid !== false)];
-  houseTopY = OFFICE_TOP - t; // the Conference Room always reaches this far north
   houseVersion++;
 }
 
@@ -1068,7 +1100,7 @@ function roomNameFor(id) {
 // "office" if the player is standing right by the hallway's "+" door, or null.
 function isNearBuildDoor(player) {
   const kind = "office";
-  if (getCurrentRoom(player).id !== "hallway" || buildDoors[kind] === null) return null;
+  if (getCurrentRoom(player).id !== "business" || buildDoors[kind] === null) return null;
   const cx = player.x + PLAYER_SIZE / 2;
   const doorX = buildDoors[kind] + WINGS[kind].doorX;
   return cx >= doorX - 0.2 && cx <= doorX + 1.8 && player.y < WINGS[kind].floorY + 1.2 ? kind : null;
@@ -1079,7 +1111,7 @@ function isNearBuildDoor(player) {
 // "Press K to knock" prompt.
 function lockedDoorInFront(player) {
   const corridor = getCurrentRoom(player).id;
-  if (corridor !== "hallway" && corridor !== "landing") return null;
+  if (corridor !== "business") return null;
   const cx = player.x + PLAYER_SIZE / 2;
   const nearDoor = (r) => cx >= r.door.x && cx <= r.door.x + DOOR_WIDTH && player.y >= r.door.y && player.y < r.door.y + 0.9;
   return ROOMS.find((r) => r.owned?.locked && !r.owned.mine && nearDoor(r)) || null;
@@ -1169,5 +1201,5 @@ function getCurrentRoom(player) {
   const cx = player.x + PLAYER_SIZE / 2;
   const cy = player.y + PLAYER_SIZE / 2;
   const room = ROOMS.find((r) => cx >= r.rect.x && cx <= r.rect.x + r.rect.w && cy >= r.rect.y && cy <= r.rect.y + r.rect.h);
-  return room || ROOMS.find((r) => r.id === (floorOf(cy) ? "landing" : "hallway")); // (a bedroom's doorway counts as the landing)
+  return room || ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "landing")); // (a bedroom's doorway counts as the bedroom hall)
 }

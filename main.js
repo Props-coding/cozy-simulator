@@ -423,9 +423,9 @@ function gatherClaims(kind, peers) {
 }
 
 // Where you pop back to if the room you're in disappears: the middle of
-// the hallway, or of the landing if you're upstairs (or in a bedroom).
+// your floor's corridor (the bedroom hall, if you were in a bedroom).
 function spawnPoint(floor) {
-  return { x: 8.7, y: floor ? LANDING + 1.2 : 1.2 };
+  return { x: 8.7, y: [0, BUSINESS, LANDING][Math.min(floor, 2)] + 1.2 };
 }
 
 // Everyone's bedroom door (and room) as buildHouse wants them: yours
@@ -598,8 +598,8 @@ function roomHintFor(room) {
     return "Press E to build your office.";
   }
   if (ride) return "";
-  if (nearestInteraction(player) === "elevator") return `Press E to take the elevator ${elevatorInReach(player) === 0 ? "up" : "down"}.`;
-  if (room.id === "elevator" || room.id === "elevatorUp") return "Walk up to the elevator doors.";
+  if (nearestInteraction(player) === "elevator") return "Press E to call the elevator.";
+  if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
   if (room.id === "conference") {
     return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
   }
@@ -641,8 +641,7 @@ window.addEventListener("keydown", (e) => {
 
   if (key === "e" && nearestInteraction(player) === "elevator" && !ride) {
     for (const k in keysDown) keysDown[k] = false;
-    ride = { from: elevatorInReach(player), t: 0, arrived: false };
-    playClickSound();
+    openElevatorPanel(elevatorInReach(player));
     return;
   }
 
@@ -779,7 +778,7 @@ window.addEventListener("keydown", (e) => {
     const kind = here.kind;
     askConfirm({
       title: `Remove your ${kind}?`,
-      text: `Anyone inside will be moved back to the ${kind === "office" ? "hallway" : "landing"}. You can always make a new one at the "+" door.`,
+      text: `Anyone inside will be moved back to the corridor. You can always make a new one at the "+" door.`,
       yes: `Remove ${kind}`,
       no: "Keep it",
     }).then((remove) => {
@@ -1278,7 +1277,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the landing), and out again
@@ -1326,7 +1325,7 @@ function leaveBedroom(owner) {
 }
 
 function checkLeftBedroom() {
-  if (floorOf(player.y) < 2 || isInsideARoom(player)) return;
+  if (floorOf(player.y) < 3 || isInsideARoom(player)) return;
   const room = ROOMS.find((r) => r.bedroom && floorOf(r.rect.y) === floorOf(player.y));
   leaveBedroom(room?.owned.ownerName);
 }
@@ -1378,19 +1377,70 @@ function bedroomAudioFor(roomId) {
 }
 setBedroomAudioLookup(bedroomAudioFor);
 
+// The elevator's buttons: press E at its doors and pick a floor (from
+// CONFIG.floors). The floor you're on is marked "You're here".
+const elevatorPanel = document.getElementById("elevator-panel");
+const elevatorFloors = document.getElementById("elevator-floors");
+
+function openElevatorPanel(here) {
+  elevatorFloors.innerHTML = "";
+  CONFIG.floors.forEach((floor, i) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "elevator-floor" + (i === here ? " here" : "");
+    button.disabled = i === here;
+    const number = document.createElement("span");
+    number.className = "elevator-number";
+    number.textContent = i + 1;
+    const text = document.createElement("span");
+    text.className = "elevator-text";
+    const name = document.createElement("strong");
+    name.textContent = floor.name + (i === here ? " · You're here" : "");
+    const rooms = document.createElement("span");
+    rooms.textContent = floor.rooms;
+    text.append(name, rooms);
+    button.append(number, text);
+    button.addEventListener("click", () => {
+      closeElevatorPanel();
+      ride = { from: here, to: i, t: 0, arrived: false };
+      playClickSound();
+    });
+    elevatorFloors.appendChild(button);
+  });
+  elevatorPanel.hidden = false;
+  playClickSound();
+  elevatorFloors.querySelector("button:not(:disabled)")?.focus();
+}
+
+function closeElevatorPanel() {
+  elevatorPanel.hidden = true;
+}
+
+document.getElementById("elevator-close").addEventListener("click", () => {
+  closeElevatorPanel();
+  playClickSound();
+});
+window.addEventListener("keydown", (e) => {
+  if (elevatorPanel.hidden) return;
+  if (e.key === "Escape") closeElevatorPanel();
+  // Number keys pick a floor too.
+  const pick = elevatorFloors.children[Number(e.key) - 1];
+  if (pick && !pick.disabled) pick.click();
+});
+
 // Riding the elevator: the doors slide open, you step in, and they open
-// again on the other floor (with a ding) and close behind you. You can't
-// walk while it's moving.
+// again on the floor you picked (with a ding) and close behind you. You
+// can't walk while it's moving.
 const DOORS_OPEN = 0.45, STEP_IN = 0.6, DOORS_CLOSE = 0.7; // seconds
-let ride = null; // { from: floor, t: seconds so far, arrived }
+let ride = null; // { from: floor, to: floor, t: seconds so far, arrived }
 function updateElevator(dt) {
   if (!ride) return;
   ride.t += dt;
-  const to = 1 - ride.from;
+  const to = ride.to;
   if (!ride.arrived) {
     ELEVATOR_OPEN[ride.from] = Math.min(1, ride.t / DOORS_OPEN);
     if (ride.t >= STEP_IN) {
-      Object.assign(player, elevatorArrival(ride.from));
+      Object.assign(player, elevatorArrival(to));
       ride.arrived = true;
       ride.t = 0;
       ELEVATOR_OPEN[ride.from] = 0;

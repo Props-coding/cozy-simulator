@@ -310,7 +310,7 @@ const OFFICE_THEME_STYLE = {
 
 // The bedroom whose map is being drawn (floors 2 and up), or undefined.
 function viewedBedroom() {
-  return viewFloor >= 2 ? ROOMS.find((r) => r.bedroom && floorOf(r.rect.y) === viewFloor) : undefined;
+  return viewFloor >= 3 ? ROOMS.find((r) => r.bedroom && floorOf(r.rect.y) === viewFloor) : undefined;
 }
 
 // Around a bedroom: what you'd see out of it, by its style.
@@ -347,11 +347,11 @@ function paintOutside(ctx, kind) {
 // Outside the house: a soft lawn with little tufts of grass and a few
 // flowers, so empty office spots look like garden, not a dark gap.
 function paintYard(ctx) {
-  if (viewFloor === 1) {
+  if (viewFloor === 1 || viewFloor === 2) {
     paintRoof(ctx);
     return;
   }
-  if (viewFloor >= 2) {
+  if (viewFloor >= 3) {
     paintOutside(ctx, OFFICE_THEME_STYLE[viewedBedroom()?.theme]?.outside);
     return;
   }
@@ -650,7 +650,7 @@ function drawWall(ctx, wall) {
     ctx.fillRect(left, b.y - height + 3, w, 2);
     if (themeStyle) drawWallPattern(ctx, themeStyle.wallPattern, left, b.y - height, w, height);
     // Hallway and landing walls get wood paneling on the bottom part, with a rail on top.
-    if (part.room?.id === "hallway" || part.room?.id === "landing") {
+    if (part.room?.id === "hallway" || part.room?.id === "business" || part.room?.id === "landing") {
       const panelTop = b.y - 18;
       ctx.fillStyle = "#b08a60";
       ctx.fillRect(left, panelTop, w, 13);
@@ -7052,7 +7052,7 @@ function drawLamp(ctx, x, y) {
 function drawLights(ctx) {
   // Study, Dinner and the Hallway get a soft golden wash, like rooms lit
   // by lamps at night: warm in the middle, a little dimmer at the edges.
-  for (const id of ["study", "dinner", "hallway", "landing", "elevator", "elevatorUp"]) {
+  for (const id of ["study", "dinner", "hallway", "business", "landing", "elevator", "elevatorUp", "elevatorTop"]) {
     const rect = ROOMS.find((r) => r.id === id).rect;
     const s1 = toScreen(rect.x, rect.y - 1), s2 = toScreen(rect.x + rect.w, rect.y + rect.h);
     const cx = (s1.x + s2.x) / 2, cy = (s1.y + s2.y) / 2;
@@ -10664,12 +10664,14 @@ function lawnAreas() {
   if (from < HOUSE_WIDTH + t) areas.push({ x: from, w: HOUSE_WIDTH + t - from });
   // The corridor the north rooms open onto: the hallway, or the landing
   // (which sits lower upstairs).
-  const corridor = viewFloor === 0 ? 0 : LANDING;
+  const corridor = [0, BUSINESS, LANDING][viewFloor];
   const north = areas.map((a) => ({ ...a, y: base + houseTopY - 1.5, h: corridor - t - (base + houseTopY - 1.5) }));
   // Plus the garden below the stairs (downstairs), or the roof south of
   // the landing (upstairs).
   const belowStairs = { x: 18, y: corridor + 7 + t / 2, w: HOUSE_WIDTH + t - 18 + 1, h: 5 };
   if (viewFloor === 0) return [...north, belowStairs];
+  // (In the bedroom hall, everything south of the hall is roof.)
+  if (viewFloor === 2) return [...north, belowStairs, { x: -t - 1, y: corridor + 3 + t / 2, w: 19 + t, h: 9 }];
   // (Upstairs, the Workshop takes the west end of the roof south of the
   // landing.)
   return [...north, belowStairs, { x: 8 + t / 2, y: corridor + 3 + t / 2, w: 10, h: 9 }, { x: -t - 1, y: corridor + 8 + t, w: 9 + t / 2, h: 4 }];

@@ -41,11 +41,11 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Hallway (hub) | Off | Silence | Neutral space between rooms |
 | Theater (was Gaming) | On, with others in the room | Friends' voices, plus a shared YouTube video | Paste a link and it plays in sync for everyone in the room |
 | Library | Off | Soft rain, locally (own volume slider) | Quiet reading room at the east end |
-| Conference Room (north of the hallway) | On, with others in the room | Friends' voices | Big table, shared whiteboard (press B) |
-| Offices (north of the hallway) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
-| Elevator lobbies and Upstairs landing | Off | Silence | An elevator south of the hallway's east end goes to a second floor (press E at its doors) |
-| Workshop (upstairs, south of the landing) | On, with others in the room | Friends' voices | Workbench, done jar, and the house's project boards on the corkboard (press E) |
-| Bedrooms (each its own space behind a door on the upstairs landing, one per member, kept on the server) | Owner picks: voice (only with others in the same bedroom), lo-fi, or silent | Friends' voices or your lo-fi; in bed: soft white noise only | Door: Open, Knock first, Private or Party, enforced with signed room passes. Starts with a laptop desk, a mattress, a journal nightstand (private, encrypted journal) and a wall phone (private calls, or a message for someone away); decorate with Nest & Nook items. Step into bed to sleep: mic off, hear nobody, "sleeping" badge. Away owners sleep in their bed, with a moon on their door |
+| Conference Room (business floor, north of its corridor) | On, with others in the room | Friends' voices | Big table, shared whiteboard (press B) |
+| Offices (business floor, north of its corridor) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
+| Elevator lobbies, the business corridor and the bedroom hall | Off | Silence | Three floors: 1 ground (hallway, Theater, Study, Dinner, Library), 2 business (offices, Conference Room, Workshop), 3 bedrooms. The elevator at each floor's east end has a floor picker (press E at its doors) |
+| Workshop (business floor, south of its corridor) | On, with others in the room | Friends' voices | Workbench, done jar, and the house's project boards on the corkboard (press E) |
+| Bedrooms (each its own space behind a door in the bedroom hall on floor 3, one per member, kept on the server) | Owner picks: voice (only with others in the same bedroom), lo-fi, or silent | Friends' voices or your lo-fi; in bed: soft white noise only | Door: Open, Knock first, Private or Party, enforced with signed room passes. Starts with a laptop desk, a mattress, a journal nightstand (private, encrypted journal) and a wall phone (private calls, or a message for someone away); decorate with Nest & Nook items. Step into bed to sleep: mic off, hear nobody, "sleeping" badge. Away owners sleep in their bed, with a moon on their door |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner | Off | Nothing, all sound muted | Means "I'm away eating". Show a small "eating" badge over the character |
 
