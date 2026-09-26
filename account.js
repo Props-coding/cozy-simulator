@@ -176,6 +176,9 @@ document.getElementById("account-open-settings").addEventListener("click", () =>
   showCard(settingsCard);
 });
 document.getElementById("account-settings-done").addEventListener("click", () => showCard(null));
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !settingsCard.hidden) showCard(null);
+});
 
 renameForm.addEventListener("submit", async (e) => {
   e.preventDefault();

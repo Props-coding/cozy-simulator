@@ -9,7 +9,8 @@
 //
 // Crumbs and what you own are saved in this browser only (there's no
 // server), so they don't follow you to another computer.
-import { playBabble, playCoatWhoosh, playCrumbSound, playClickSound } from "./audio.js";
+import { playCoatWhoosh, playCrumbSound, playClickSound } from "./audio.js";
+import { typeWithBabble } from "./npc.js";
 import { unlock, count } from "./achievements.js";
 import { basketItems, takeFromBasket } from "./basket.js";
 
@@ -289,22 +290,10 @@ export function isShopBusy() {
 // Types `text` into `el` a letter at a time, babbling in `speaker`'s voice.
 function typeOut(el, speaker, text, onDone) {
   typing?.stop();
-  el.textContent = "";
-  let i = 0;
-  const timer = setInterval(() => {
-    const letter = text[i];
-    el.textContent += letter;
-    if (i % 2 === 0 && /[a-z0-9]/i.test(letter)) playBabble(RACCOONS[speaker].pitch, letter);
-    i++;
-    if (i >= text.length) finish();
-  }, 30);
-  const finish = () => {
-    clearInterval(timer);
-    el.textContent = text;
+  typing = typeWithBabble(el, RACCOONS[speaker].pitch, text, () => {
     typing = null;
     onDone?.();
-  };
-  typing = { stop: () => clearInterval(timer), finish };
+  });
 }
 
 // Shows the next line in the queue (or runs what comes after).

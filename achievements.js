@@ -132,9 +132,9 @@ function store() {
 // --- Connecting to main.js ---
 // main.js passes in how to give crumbs and how to tell friends.
 // For tiered ones it also passes `values` (counts kept elsewhere, like
-// { items, pets, roomLevels }), `announceTier` and `rooms` (your room
-// levels, for the Rooms tab).
-let hooks = { reward: () => {}, announce: () => {}, announceTier: () => {}, values: () => ({}), rooms: () => [] };
+// { items, pets, roomLevels }) and `announceTier`. (Your achievements are
+// shown on your profile card: the 🏆 button opens it.)
+let hooks = { reward: () => {}, announce: () => {}, announceTier: () => {}, values: () => ({}) };
 export function initAchievements(options) {
   hooks = { ...hooks, ...options };
 }
@@ -151,7 +151,6 @@ export function unlock(id) {
   showToast({ ...byId[id], label: "Achievement!" });
   hooks.reward(byId[id].crumbs);
   hooks.announce(id);
-  renderPanel();
 }
 
 // Admin panel helpers (for testing): unlock everything quietly (no
@@ -161,13 +160,11 @@ export function unlockAllQuietly() {
   for (const t of tracks()) save.tiers[t.id] = t.goals.length;
   save.caughtUp = true;
   store();
-  renderPanel();
 }
 
 export function resetAchievements() {
   save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false, pinned: [] };
   store();
-  renderPanel();
 }
 
 // --- Pins: the achievements you show off on your profile ---
@@ -265,7 +262,7 @@ export function checkTiers() {
   store();
   if (catchingUp) {
     if (reached.length) {
-      showToast({ kind: "tier", icon: "🏅", label: "Tiered achievements!", name: `You're already at ${reached.length} tier${reached.length === 1 ? "" : "s"}`, desc: "Open the trophy shelf to see them.", crumbs });
+      showToast({ kind: "tier", icon: "🏅", label: "Tiered achievements!", name: `You're already at ${reached.length} tier${reached.length === 1 ? "" : "s"}`, desc: "See them on your profile (the 🏆 button).", crumbs });
       if (crumbs) hooks.reward(crumbs);
     }
   } else {
@@ -275,7 +272,6 @@ export function checkTiers() {
       hooks.announceTier(track.id, have);
     }
   }
-  renderPanel();
 }
 
 // A goal written out, like "Spend 10 hours in the house."
@@ -335,132 +331,3 @@ function showNextToast() {
     showNextToast();
   }, showFor);
 }
-
-// --- The trophy shelf (the panel from the trophy button) ---
-const trophyButton = document.getElementById("trophy-button");
-const trophyPanel = document.getElementById("trophy-panel");
-const trophyList = document.getElementById("trophy-list");
-const trophyCount = document.getElementById("trophy-count");
-
-// The shelf has three tabs: Tiers (with a bar toward each next tier),
-// Rooms (your room levels) and Moments (the one-time ones).
-let shelfTab = "tiers";
-const trophyTabs = document.getElementById("trophy-tabs");
-
-function el(tag, className, text) {
-  const e = document.createElement(tag);
-  if (className) e.className = className;
-  if (text !== undefined) e.textContent = text;
-  return e;
-}
-
-// A progress bar, `into` of `needed` of the way, with a label under it.
-function bar(into, needed, label, color) {
-  const wrap = el("span", "trophy-progress");
-  const track = el("span", "trophy-bar");
-  const fill = el("span");
-  fill.style.width = `${needed ? Math.min(100, Math.round((into / needed) * 100)) : 100}%`;
-  if (color) fill.style.background = color;
-  track.appendChild(fill);
-  wrap.append(track, el("span", "trophy-bar-label", label));
-  return wrap;
-}
-
-const round = (v) => (v < 10 && v % 1 ? Math.floor(v * 10) / 10 : Math.floor(v)).toLocaleString();
-
-function renderTiers() {
-  for (const track of tracks()) {
-    const have = tierOf(track.id);
-    const max = Math.min(track.goals.length, tiers().length);
-    const value = trackValue(track);
-    const current = have ? tiers()[have - 1] : null;
-    const next = have < max ? tiers()[have] : null;
-    const li = el("li", "tiered" + (have ? " got" : ""));
-    const icon = el("span", "trophy-icon", track.icon);
-    const text = el("span", "trophy-text");
-    const name = el("strong", "", track.name);
-    if (current) {
-      const medal = el("span", "trophy-medal", `${current.icon} ${current.name}`);
-      medal.style.color = current.color;
-      name.append(" ", medal);
-    }
-    text.append(name);
-    if (next) {
-      text.append(el("span", "", goalText(track, have)));
-      text.append(bar(value - (have ? track.goals[have - 1] : 0), track.goals[have] - (have ? track.goals[have - 1] : 0), `${round(value)} / ${round(track.goals[have])} for ${next.name}`, next.color));
-    } else {
-      text.append(el("span", "", "Every tier reached. Legendary!"));
-    }
-    // The row of tier medals: the ones you have, and the ones to come.
-    const medals = el("span", "trophy-medals");
-    tiers().slice(0, max).forEach((t, i) => {
-      const m = el("span", i < have ? "on" : "", t.icon);
-      m.title = `${t.name}: ${goalText(track, i)} (+${t.crumbs} crumbs)`;
-      medals.appendChild(m);
-    });
-    text.append(medals);
-    const reward = el("span", "trophy-reward", next ? `+${next.crumbs}` : "✓");
-    li.append(icon, text, reward);
-    trophyList.appendChild(li);
-  }
-}
-
-function renderRooms() {
-  for (const r of hooks.rooms()) {
-    const li = el("li", "tiered" + (r.level ? " got" : ""));
-    const text = el("span", "trophy-text");
-    text.append(el("strong", "", `${r.name} · Lv. ${r.level}`));
-    text.append(r.needed ? bar(r.into, r.needed, `${Math.floor(r.into / 60)} / ${Math.round(r.needed / 60)} minutes to Lv. ${r.level + 1}`, "#6f9a5a") : el("span", "", "Top level reached."));
-    li.append(el("span", "trophy-icon", r.icon), text);
-    trophyList.appendChild(li);
-  }
-}
-
-function renderMoments() {
-  for (const a of ACHIEVEMENTS) {
-    const got = hasAchievement(a.id);
-    const hidden = a.secret && !got;
-    const li = el("li", got ? "got" : "");
-    const text = el("span", "trophy-text");
-    text.append(el("strong", "", hidden ? "Secret" : a.name), el("span", "", hidden ? "Keep exploring to find this one." : a.desc));
-    li.append(el("span", "trophy-icon", hidden ? "❔" : a.icon), text, el("span", "trophy-reward", got ? "✓" : `+${a.crumbs}`));
-    trophyList.appendChild(li);
-  }
-}
-
-function renderPanel() {
-  const moments = ACHIEVEMENTS.filter((a) => hasAchievement(a.id)).length;
-  const tierCount = Object.values(save.tiers).reduce((sum, n) => sum + n, 0);
-  const tierMax = tracks().reduce((sum, t) => sum + Math.min(t.goals.length, tiers().length), 0);
-  const counts = { tiers: `${tierCount} / ${tierMax}`, rooms: "", moments: `${moments} / ${ACHIEVEMENTS.length}` };
-  trophyCount.textContent = counts[shelfTab];
-  for (const b of trophyTabs.querySelectorAll("button")) b.classList.toggle("active", b.dataset.tab === shelfTab);
-  trophyList.innerHTML = "";
-  if (shelfTab === "tiers") renderTiers();
-  else if (shelfTab === "rooms") renderRooms();
-  else renderMoments();
-}
-for (const b of trophyTabs.querySelectorAll("button")) {
-  b.addEventListener("click", () => {
-    shelfTab = b.dataset.tab;
-    renderPanel();
-  });
-}
-renderPanel();
-
-function setPanelOpen(open) {
-  if (open) renderPanel(); // (progress bars move all the time, so fresh each time)
-  trophyPanel.hidden = !open;
-  trophyButton.setAttribute("aria-expanded", String(open));
-}
-
-trophyButton.addEventListener("click", () => {
-  setPanelOpen(trophyPanel.hidden);
-  trophyButton.blur(); // give the keyboard back to walking
-});
-document.addEventListener("click", (e) => {
-  if (!trophyPanel.hidden && !trophyPanel.contains(e.target) && !trophyButton.contains(e.target)) setPanelOpen(false);
-});
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !trophyPanel.hidden) setPanelOpen(false);
-});

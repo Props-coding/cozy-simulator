@@ -278,7 +278,7 @@ function achievementRow(a, mine, redraw) {
     const list = el("ul", "pf-goals");
     a.goals.forEach((g, i) => {
       const li = el("li", g.done ? "done" : "");
-      li.append(iconCanvas("medal:" + i, 14), `${tiersList()[i].name}: ${g.text}`);
+      li.append(iconCanvas("medal:" + i, 14), `${tiersList()[i].name}: ${g.text} (+${tiersList()[i].crumbs} crumbs)`);
       list.appendChild(li);
     });
     details.append(list);

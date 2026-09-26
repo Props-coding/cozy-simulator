@@ -141,7 +141,7 @@
         <p id="password-note" class="account-note">This logs you out on your other computers.</p>
         <button type="submit" class="soft-button">Change password</button>
       </form>
-      <button id="account-settings-done" type="button" class="big-button">Done</button>
+      <button id="account-settings-done" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
     </div>
   </div>
 
@@ -237,17 +237,7 @@
             <ul id="admin-users"></ul>
             <p id="admin-status" class="admin-status"></p>
           </div>
-          <button id="trophy-button" type="button" title="Achievements" aria-label="Achievements" aria-expanded="false">🏆</button>
-          <!-- The trophy shelf: every achievement, and which ones you have. -->
-          <div id="trophy-panel" hidden>
-            <h2>Achievements <span id="trophy-count"></span></h2>
-            <nav id="trophy-tabs">
-              <button type="button" data-tab="tiers" class="active">🏅 Tiers</button>
-              <button type="button" data-tab="rooms">🏠 Rooms</button>
-              <button type="button" data-tab="moments">✨ Moments</button>
-            </nav>
-            <ul id="trophy-list"></ul>
-          </div>
+          <button id="trophy-button" type="button" title="Your achievements" aria-label="Your achievements">🏆</button>
           <button id="settings-button" type="button" title="Sound settings" aria-label="Sound settings" aria-expanded="false">
             <svg class="gear-icon" aria-hidden="true"><use href="#gear-icon"></use></svg>
           </button>
@@ -315,7 +305,7 @@
               <span class="tools-gap"></span>
               <button id="whiteboard-save" type="button" class="soft-button">Save picture</button>
               <button id="whiteboard-clear" type="button" class="soft-button">Clear</button>
-              <button id="whiteboard-close" type="button" class="warm-button">Close</button>
+              <button id="whiteboard-close" type="button" class="panel-close" title="Close (B or Escape)" aria-label="Close">✕</button>
             </div>
           </div>
           <!-- Talking to the raccoons: a speech box along the bottom, with
@@ -343,16 +333,14 @@
               </div>
               <div id="npc-tabs" class="npc-tabs"></div>
               <div id="npc-items"></div>
-              <div class="shop-bottom">
-                <button id="npc-bye" type="button" class="warm-button">Bye!</button>
-              </div>
+              <button id="npc-bye" type="button" class="panel-close" title="Bye! (Escape)" aria-label="Close">✕</button>
             </div>
           </div>
           <!-- Picking a seed to plant in a garden bed (garden.js). -->
           <div id="seed-picker" hidden>
             <h3>Plant a seed</h3>
             <div id="seed-picker-list"></div>
-            <button id="seed-picker-close" type="button" class="soft-button">Not now</button>
+            <button id="seed-picker-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
           </div>
           <!-- Landing a fish: press E while the marker is in the green (fishing.js). -->
           <div id="fishing-bar" hidden>
@@ -366,7 +354,7 @@
           <div id="basket-panel" hidden>
             <h3>🧺 Your basket</h3>
             <div id="basket-items"></div>
-            <button id="basket-close" type="button" class="soft-button">Close</button>
+            <button id="basket-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
           </div>
           <!-- The raccoons' shop: the inside of their coat, swinging open. -->
           <div id="shop-panel" hidden>
@@ -391,9 +379,7 @@
                 <button type="button" data-tab="pet">Pets</button>
               </div>
               <div id="shop-items"></div>
-              <div class="shop-bottom">
-                <button id="shop-bye" type="button" class="warm-button">Bye!</button>
-              </div>
+              <button id="shop-bye" type="button" class="panel-close" title="Bye! (Escape)" aria-label="Close">✕</button>
             </div>
           </div>
           <!-- Your bedroom door's settings (rooms.js). -->
@@ -401,7 +387,7 @@
           <div id="elevator-panel" hidden>
             <h3>Which floor?</h3>
             <div id="elevator-floors"></div>
-            <button id="elevator-close" type="button" class="soft-button">Stay here</button>
+            <button id="elevator-close" type="button" class="panel-close" title="Stay on this floor (Escape)" aria-label="Close">✕</button>
           </div>
           <div id="door-panel" hidden>
             <h3>Your door and room</h3>
@@ -415,13 +401,13 @@
             <div id="door-decos" class="door-row"></div>
             <p class="door-label">Room style</p>
             <div id="door-styles" class="door-row"></div>
-            <button id="door-close" type="button" class="warm-button">Done</button>
+            <button id="door-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
           </div>
           <!-- The bedroom phone (phone.js): who to call, or a message to leave. -->
           <div id="phone-panel" hidden>
             <div class="journal-top">
               <h3>📞 Bedroom phone</h3>
-              <button id="phone-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+              <button id="phone-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
             </div>
             <div id="phone-friends"></div>
             <form id="phone-message" hidden>
@@ -439,7 +425,7 @@
           <div id="journal-panel" hidden>
             <div class="journal-top">
               <h3>📔 My journal</h3>
-              <button id="journal-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+              <button id="journal-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
             </div>
             <div id="journal-lock" hidden>
               <p id="journal-lock-note"></p>
@@ -461,7 +447,7 @@
           <div id="kanban-panel" hidden>
             <div class="kanban-top">
               <h3>🔨 Workshop boards</h3>
-              <button id="kanban-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+              <button id="kanban-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
             </div>
             <nav id="kanban-tabs"></nav>
             <div id="kanban-columns"></div>
@@ -489,7 +475,7 @@
             <div id="wardrobe-items" class="outfit-items"></div>
             <div class="wardrobe-bottom">
               <button id="wardrobe-random" type="button" class="soft-button">🎲 Random outfit</button>
-              <button id="wardrobe-close" type="button" class="warm-button">Done</button>
+              <button id="wardrobe-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
             </div>
           </div>
           <!-- The Study's turntable (turntable.js): a crate of records, one
@@ -499,7 +485,7 @@
             <p id="turntable-now"></p>
             <div id="turntable-records"></div>
             <p class="turntable-hint">Only you hear your pick, so everyone in the Study can listen to their own favorite.</p>
-            <button id="turntable-close" type="button" class="warm-button">Done</button>
+            <button id="turntable-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
           </div>
           <!-- The bedroom laptop (laptop.js): a little web browser with four
                "sites" (a start page, mail, news and the Nest & Nook store). -->
@@ -546,7 +532,7 @@
           <!-- A friend's profile card (profile.js). -->
           <div id="profile-card" hidden>
             <div class="profile-inner">
-              <button id="profile-close" type="button" aria-label="Close">✕</button>
+              <button id="profile-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
               <div id="profile-body"></div>
             </div>
           </div>

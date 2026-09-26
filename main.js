@@ -368,7 +368,7 @@ joinButton.addEventListener("click", async () => {
     },
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
-  initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
+  initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
@@ -1950,6 +1950,12 @@ function sleepingEmote() {
 
 // --- Achievements ---
 // Each one gives crumbs, and friends see a line in the House chat.
+// The 🏆 button: your own profile card, on its Achievements tab.
+document.getElementById("trophy-button").addEventListener("click", (e) => {
+  e.currentTarget.blur();
+  openProfile(myName, "achievements");
+});
+
 initAchievements({
   reward: (crumbs) => addCrumbs(crumbs),
   announce: (id) => {
@@ -1960,7 +1966,6 @@ initAchievements({
   // Tiered achievements: counts kept outside achievements.js, and telling
   // friends when you reach a tier.
   values: () => ({ items: ownedCount(), pets: ownedPets().length, roomLevels: roomLevels(myStats()).reduce((sum, r) => sum + r.level, 0) }),
-  rooms: () => roomLevels(myStats()),
   announceTier: (id, level) => {
     const t = tierInfo(id, level);
     if (!t) return;

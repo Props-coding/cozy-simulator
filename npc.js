@@ -25,19 +25,32 @@ export function isNpcOpen() {
   return !panel.hidden;
 }
 
+// Types a line into `el` letter by letter, babbling at `pitch` (every
+// shopkeeper talks this way, the raccoons too: see shop.js). Returns
+// { stop, finish }: stop halts it, finish shows the whole line at once.
+export function typeWithBabble(el, pitch, text, onDone) {
+  el.textContent = "";
+  let i = 0;
+  const timer = setInterval(() => {
+    const letter = text[i];
+    el.textContent += letter;
+    if (i % 2 === 0 && /[a-z0-9]/i.test(letter)) playBabble(pitch, letter);
+    i++;
+    if (i >= text.length) finish();
+  }, 29);
+  const finish = () => {
+    clearInterval(timer);
+    el.textContent = text;
+    onDone?.();
+  };
+  return { stop: () => clearInterval(timer), finish };
+}
+
 // Types a line out, babbling in the shopkeeper's voice.
 export function npcSay(text) {
   if (!npc) return;
-  clearInterval(typing);
-  talk.textContent = "";
-  let i = 0;
-  typing = setInterval(() => {
-    const letter = text[i];
-    talk.textContent += letter;
-    if (i % 2 === 0 && /[a-z0-9]/i.test(letter)) playBabble(npc.pitch, letter);
-    i++;
-    if (i >= text.length) clearInterval(typing);
-  }, 28);
+  typing?.stop();
+  typing = typeWithBabble(talk, npc.pitch, text);
 }
 
 const pick = (lines) => (Array.isArray(lines) ? lines[Math.floor(Math.random() * lines.length)] : lines);
@@ -71,7 +84,7 @@ export function openNpc(who) {
 
 export function closeNpc() {
   if (!npc) return;
-  clearInterval(typing);
+  typing?.stop();
   panel.hidden = true;
   npc = null;
 }
