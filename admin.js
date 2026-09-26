@@ -14,6 +14,7 @@ import { playClickSound, playCrumbSound } from "./audio.js";
 import { previewWeather } from "./weather.js";
 import { ripenGardenPreview } from "./garden.js";
 import { stockBasket } from "./basket.js";
+import { addFishingXp } from "./fishing.js";
 
 const button = document.getElementById("admin-button");
 const panel = document.getElementById("admin-panel");
@@ -108,6 +109,12 @@ for (const button of panel.querySelectorAll("[data-weather]")) {
 document.getElementById("admin-ripen").addEventListener("click", (e) => {
   ripenGardenPreview();
   say("Every garden bed looks ripe on this computer until the garden next refreshes (about 30 seconds).");
+  playClickSound();
+  e.currentTarget.blur();
+});
+document.getElementById("admin-fishxp").addEventListener("click", (e) => {
+  addFishingXp(200);
+  say("+200 fishing XP (for trying out rods and bait).");
   playClickSound();
   e.currentTarget.blur();
 });

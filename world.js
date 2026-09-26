@@ -503,6 +503,34 @@ const YARD_PATHS = [
 const GARDEN_BEDS = [13.2, 15.4, 19.3, 21.5].flatMap((x) => [-0.75, 1.0, 2.75].map((y) => ({ x, y: YARD + y, w: 1.7, h: 1.0 })))
   .sort((a, b) => a.y - b.y || a.x - b.x);
 
+// Where you'd cast from (a spot at the pond's edge or on the dock), and
+// where the bobber lands: { bx, by } in grid units, or null if you're not
+// at the water.
+function fishingSpot(player) {
+  if (floorOf(player.y) !== YARD_FLOOR) return null;
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  const dx = cx - POND.cx, dy = cy - POND.cy;
+  const onDock = cx >= DOCK.x && cx <= DOCK.x + DOCK.w && cy >= DOCK.y - 0.4 && cy <= DOCK.y + DOCK.h + 0.3;
+  const edge = (dx / (POND.rx + 0.9)) ** 2 + (dy / (POND.ry + 0.9)) ** 2 <= 1;
+  if (!onDock && !edge) return null;
+  // Cast about 1.6 steps out toward the middle of the pond, staying in the water.
+  const d = Math.hypot(dx, dy) || 1;
+  let reach = 1.6;
+  let bx = cx - (dx / d) * reach, by = cy - (dy / d) * reach;
+  while (((bx - POND.cx) / (POND.rx - 0.5)) ** 2 + ((by - POND.cy) / (POND.ry - 0.4)) ** 2 > 1 && reach < d) {
+    reach += 0.2;
+    bx = cx - (dx / d) * reach;
+    by = cy - (dy / d) * reach;
+  }
+  return { bx, by };
+}
+
+// Your own fish tank, if you're standing within a step of it (in your bedroom).
+function myFishTankInReach(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.find((f) => f.kind === "fishTank" && f.mine && floorOf(f.y) === floorOf(player.y) && Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h)) < 0.9) ?? null;
+}
+
 // The garden bed you're standing next to (within a step, on the yard), as
 // its number, or -1.
 function gardenBedInReach(player) {
@@ -576,7 +604,6 @@ const YARD_FURNITURE = [
   { kind: "yardTree", x: 10.2, y: YARD + 8.4, w: 1.0, h: 0.55, n: 3 },
   { kind: "pineTree", x: 0.6, y: YARD + 9.3, w: 0.9, h: 0.5, n: 4 },
   { kind: "pineTree", x: 23.0, y: YARD + 5.9, w: 0.9, h: 0.5, n: 6 },
-  { kind: "bush", x: 10.3, y: YARD + 4.9, w: 0.9, h: 0.55, n: 0 },
   { kind: "bush", x: 12.9, y: YARD + 5.4, w: 0.9, h: 0.55, n: 1 },
   { kind: "bush", x: 7.6, y: YARD - 0.3, w: 0.9, h: 0.55, n: 2 },
   { kind: "bush", x: 20.6, y: YARD + 5.3, w: 0.9, h: 0.55, n: 3 },
@@ -593,6 +620,11 @@ const YARD_FURNITURE = [
   // (walk up and press E to buy seeds or sell your harvest; see garden.js).
   { kind: "seedStand", x: 10.15, y: YARD - 1.35, w: 1.45, h: 0.6 },
   { kind: "hazel", x: 11.8, y: YARD - 1.05, w: 0.55, h: 0.4 },
+
+  // Otis the otter's bait stand by the dock (walk up and press E for rods,
+  // bait, selling fish and your fish log; see fishing.js).
+  { kind: "baitCrate", x: 9.95, y: YARD + 4.25, w: 1.0, h: 0.5 },
+  { kind: "otis", x: 10.25, y: YARD + 5.2, w: 0.55, h: 0.4 },
 
   // Reginald's corner: the raccoons moved out of the hallway to a shady
   // spot by the bins, down past the garden (walk up and press E; see shop.js).
@@ -1219,6 +1251,7 @@ function tidyDecor(size, placed) {
   for (const piece of pieces) {
     const clean = { item: String(piece?.item), x: Number(piece?.x), y: Number(piece?.y) };
     if (piece?.r === 1 || piece?.r === 3) clean.r = piece.r; // turned to face right or left
+    if (Array.isArray(piece?.fish) && piece.fish.length) clean.fish = piece.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12); // (a fish tank's fish)
     if (decorFits(size, kept, clean)) kept.push(clean);
   }
   if (!kept.some((p) => p.item === "starterNightstand")) {
@@ -1286,6 +1319,7 @@ function decorPiece(piece, x0, top, owner, index) {
     solid: wall ? false : look.solid,
     mine: owner.mine, // (the laptop desk opens only for its owner)
     decor: { index, mine: owner.mine }, // so its owner can pick it back up
+    ...(piece.fish ? { fish: piece.fish } : {}), // (the fish in a fish tank)
   };
 }
 
@@ -1390,6 +1424,11 @@ function nearestInteraction(player) {
   const hazelDistance = Math.hypot(cx - (hazel.x + hazel.w / 2), cy - (hazel.y + hazel.h / 2));
   if (hazelDistance < 1.4) options.push(["hazel", hazelDistance]);
   if (gardenBedInReach(player) >= 0) options.push(["gardenBed", 0.5]);
+  const otis = FURNITURE.find((f) => f.kind === "otis");
+  const otisDistance = Math.hypot(cx - (otis.x + otis.w / 2), cy - (otis.y + otis.h / 2));
+  if (otisDistance < 1.3) options.push(["otis", otisDistance]);
+  if (fishingSpot(player)) options.push(["fishing", 1.35]);
+  if (myFishTankInReach(player)) options.push(["fishTank", 0.2]);
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (myPhoneInReach(player)) options.push(["phone", 0.05]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);

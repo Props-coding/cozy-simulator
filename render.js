@@ -1832,7 +1832,11 @@ const FURNITURE_DRAWERS = {
       ctx.quadraticCurveTo(px + Math.sin(t * 1.5 + px) * 3, bottom - 12, px + 1, bottom - 18);
       ctx.stroke();
     }
-    for (const [color, speed, row, phase] of [["#f2a03a", 0.5, 0.4, 0], ["#e37aa0", 0.35, 0.65, 2]]) {
+    // Fish you've caught and put in (Update 4), or two little starter fish.
+    const caught = Array.isArray(f.fish) && f.fish.length
+      ? f.fish.map((id, i) => [CONFIG.fish.find((fish) => fish.id === id)?.color ?? "#f2a03a", 0.3 + ((i * 0.13) % 0.35), 0.25 + ((i * 0.37) % 0.55), i * 1.7])
+      : [["#f2a03a", 0.5, 0.4, 0], ["#e37aa0", 0.35, 0.65, 2]];
+    for (const [color, speed, row, phase] of caught) {
       const swim = (Math.sin(t * speed + phase) + 1) / 2;
       const fx = x + 6 + swim * (w - 14), fy = top + row * h;
       const dir = Math.cos(t * speed + phase) >= 0 ? 1 : -1;
@@ -10834,6 +10838,12 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
     // In the yard when it rains, everyone gets an umbrella (see outdoors.js).
     p.umbrella = floor === YARD_FLOOR && OUTDOORS.raining && !p.asleep;
     if (p.umbrella) sprites.push({ sortY: p.y + PLAYER_SIZE + 0.0001, draw: (ctx) => drawUmbrella(ctx, p) });
+    // Fishing at the pond: the rod and line (in front of you) and the
+    // bobber out on the water (see outdoors.js).
+    if (p.fishing && floor === YARD_FLOOR) {
+      sprites.push({ sortY: p.y + PLAYER_SIZE + 0.0002, draw: (ctx) => drawFishingLine(ctx, p) });
+      sprites.push({ sortY: p.fishing.by - 0.5, draw: (ctx) => drawBobber(ctx, p) });
+    }
   }
   for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
   sprites.sort((a, b) => a.sortY - b.sortY);

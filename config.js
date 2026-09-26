@@ -80,6 +80,84 @@ const CONFIG = {
     { id: "blueberry", name: "Blueberries", icon: "🫐", hours: 48, seed: 30, sell: 10, yield: [9, 13], look: "berry", color: "#4a5ab8" },
   ],
 
+  // --- Fishing at the pond (Update 4) ---
+  // Stand at the pond's edge (or on the dock) and press E to cast. Wait for
+  // a bite (biteSeconds, [shortest, longest]; better rods get bites
+  // sooner), press E within hookSeconds when the "!" pops up, then press E
+  // again while the moving marker is in the green zone to land it.
+  // junkChance: how often you reel in junk instead (0.08 is 8%).
+  // Every catch gives fishing XP; `levels` is the total XP for each level
+  // (level 1 starts at 0). Your level decides which rods Otis will sell you.
+  fishing: {
+    biteSeconds: [5, 14],
+    hookSeconds: 1.3,
+    junkChance: 0.08,
+    xp: [5, 10, 20, 40, 80], // XP for a catch of each rarity (junk gives 1)
+    levels: [0, 30, 80, 150, 250, 400, 600, 850, 1150, 1500, 2000, 2600, 3300, 4100, 5000],
+    tankSize: 6, // how many fish fit in a bedroom fish tank
+  },
+
+  // Rods, from Otis the otter by the dock. level: the fishing level you need
+  // before he'll sell it. zone: how wide the green "catch" zone is (0 to 1).
+  // bite: how long bites take (0.6 is 40% quicker). luck: how often you
+  // catch the rarer of the fish your bait can find (0 is never extra).
+  rods: [
+    { id: "twig", name: "Twig Rod", icon: "🎣", level: 1, price: 0, zone: 0.2, bite: 1, luck: 0 },
+    { id: "bamboo", name: "Bamboo Rod", icon: "🎋", level: 3, price: 150, zone: 0.25, bite: 0.9, luck: 0.1 },
+    { id: "fiberglass", name: "Fiberglass Rod", icon: "🎣", level: 6, price: 500, zone: 0.3, bite: 0.8, luck: 0.2 },
+    { id: "carbon", name: "Carbon Rod", icon: "🎣", level: 10, price: 1500, zone: 0.35, bite: 0.7, luck: 0.3 },
+    { id: "golden", name: "Golden Rod", icon: "✨", level: 14, price: 4000, zone: 0.4, bite: 0.6, luck: 0.4 },
+  ],
+
+  // Bait decides which fish you can catch: `catches` lists the rarities
+  // (1 common, 2 uncommon, 3 rare, 4 epic, 5 legendary). Pricier bait
+  // finds pricier fish. price: crumbs for one. level: fishing level needed.
+  bait: [
+    { id: "none", name: "No bait", icon: "🪝", price: 0, level: 1, catches: [1] },
+    { id: "worm", name: "Worms", icon: "🪱", price: 3, level: 1, catches: [1, 2] },
+    { id: "cricket", name: "Crickets", icon: "🦗", price: 10, level: 2, catches: [2, 3] },
+    { id: "minnow", name: "Minnows", icon: "🐟", price: 25, level: 5, catches: [3, 4] },
+    { id: "lure", name: "Golden Lure", icon: "🌟", price: 60, level: 9, catches: [4, 5] },
+  ],
+
+  // The fish. rarity: 1 (common) to 5 (legendary). sell: crumbs from Otis.
+  // size: [smallest, biggest] in cm. Optional `when`: night (true: only at
+  // night, false: only by day), rain (only while it rains), season (only in
+  // these seasons). color: for fish tanks.
+  fish: [
+    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 5, size: [8, 20], color: "#6a8ab8" },
+    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 6, size: [10, 25], color: "#c8b050" },
+    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 7, size: [8, 18], color: "#f0a040", when: { night: false } },
+    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 7, size: [6, 14], color: "#c8d0e0", when: { night: true } },
+    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 12, size: [25, 60], color: "#a08050" },
+    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 13, size: [7, 15], color: "#d05a3a" },
+    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 15, size: [20, 50], color: "#e08aa0", when: { season: ["spring", "autumn"] } },
+    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 16, size: [30, 80], color: "#6a6058", when: { night: true } },
+    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 24, size: [25, 60], color: "#5a8a4a" },
+    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 28, size: [40, 100], color: "#7a9a5a" },
+    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 35, size: [30, 70], color: "#f07a3a", when: { night: false } },
+    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 32, size: [40, 110], color: "#4a4a3a", when: { rain: true } },
+    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 60, size: [80, 180], color: "#7a7a80" },
+    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 70, size: [25, 45], color: "#5a6a3a", when: { season: ["summer"] } },
+    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 75, size: [30, 60], color: "#f2c230", when: { season: ["spring", "summer"] } },
+    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 80, size: [20, 40], color: "#d8d0f0", when: { night: true } },
+    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 150, size: [40, 80], color: "#f4f4f8" },
+    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 180, size: [40, 80], color: "#c86bb0", when: { rain: true } },
+    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 180, size: [60, 120], color: "#a8d8f0", when: { season: ["winter"] } },
+    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 250, size: [120, 200], color: "#4a4a44", when: { night: true, rain: true } },
+  ],
+
+  // Junk you might reel in instead. The raccoons buy it for `junkPrice`
+  // crumbs a piece (talk to them by the bins).
+  junkPrice: 3,
+  junk: [
+    { id: "boot", name: "Old Boot", icon: "👢" },
+    { id: "can", name: "Tin Can", icon: "🥫" },
+    { id: "weeds", name: "Pond Weeds", icon: "🌿" },
+    { id: "letter", name: "Soggy Letter", icon: "✉️" },
+    { id: "duck", name: "Rubber Duck", icon: "🦆" },
+  ],
+
   // The floors the elevator goes to, bottom to top, and what's on each
   // (shown on the elevator's buttons).
   floors: [
@@ -377,6 +455,7 @@ const CONFIG = {
     { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hour{s} in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
     // Outdoors (Update 4)
     { id: "harvester", icon: "🥕", name: "Green Thumb", stat: "harvests", desc: "Harvest {n} crop{s} from the garden.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "angler", icon: "🎣", name: "Angler", stat: "fishCaught", desc: "Catch {n} fish at the pond.", goals: [1, 10, 40, 120, 300, 750] },
     { id: "goodNeighbor", icon: "💧", name: "Good Neighbor", stat: "friendsWatered", desc: "Water a friend's garden bed {n} time{s}.", goals: [1, 10, 30, 80, 200, 500] },
   ],
 
@@ -440,6 +519,10 @@ const CONFIG = {
     { id: "goodNeighbor", text: "the Good Neighbor", tier: "goodNeighbor", level: 3 },
     { id: "rainmaker", text: "the Rainmaker", tier: "goodNeighbor", level: 6 },
     { id: "pumpkinChampion", text: "the Pumpkin Champion", achievement: "greatPumpkin" },
+    { id: "angler", text: "the Angler", tier: "angler", level: 3 },
+    { id: "masterAngler", text: "the Master Angler", tier: "angler", level: 6 },
+    { id: "fishWhisperer", text: "the Fish Whisperer", achievement: "legendCatch" },
+    { id: "treasureHunter", text: "the Treasure Hunter", achievement: "junkDealer" },
     { id: "nightOwl", text: "the Night Owl", achievement: "nightOwl" },
     { id: "earlyBird", text: "the Early Bird", achievement: "earlyBird" },
   ],

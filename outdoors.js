@@ -1454,3 +1454,230 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillRect(b.x - 9, b.y - 19, 18, 2);
   },
 });
+
+// --- Fishing (Update 4, step 4) ---
+// Where the rod tip is for someone fishing: up and out from their hands,
+// leaning toward the bobber.
+function rodTip(p) {
+  const hand = toScreen(p.x + PLAYER_SIZE / 2, p.y + PLAYER_SIZE);
+  const bob = toScreen(p.fishing.bx, p.fishing.by);
+  const d = Math.hypot(bob.x - hand.x, bob.y - hand.y) || 1;
+  const hx = hand.x + ((bob.x - hand.x) / d) * 6, hy = hand.y - 20;
+  return { hx, hy, tx: hx + ((bob.x - hand.x) / d) * 20, ty: hy - 16 + ((bob.y - hand.y) / d) * 6 };
+}
+
+// The rod in your hands, and the line down to the bobber (sagging a little).
+function drawFishingLine(ctx, p) {
+  const { hx, hy, tx, ty } = rodTip(p);
+  const bob = toScreen(p.fishing.bx, p.fishing.by);
+  ctx.strokeStyle = "#7a5436";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(tx, ty);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(250, 250, 250, 0.75)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(tx, ty);
+  ctx.quadraticCurveTo((tx + bob.x) / 2, Math.max(ty, bob.y) + (p.fishing.bite ? -4 : 8), bob.x, bob.y - 3);
+  ctx.stroke();
+}
+
+// The red and white bobber, bobbing gently with rings on the water, or
+// dipping and splashing when a fish bites (with a "!" over you).
+function drawBobber(ctx, p) {
+  const t = performance.now() / 1000;
+  const bob = toScreen(p.fishing.bx, p.fishing.by);
+  const bite = p.fishing.bite;
+  const dip = bite ? Math.abs(Math.sin(t * 14)) * 3 : Math.sin(t * 2) * 1;
+  const ring = (t * (bite ? 1.6 : 0.6)) % 1;
+  ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 * (1 - ring)})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(bob.x, bob.y, 5 + ring * 12, 2 + ring * 5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#f4f4f0";
+  ctx.beginPath();
+  ctx.arc(bob.x, bob.y - 2 + dip, 3.6, 0, Math.PI);
+  ctx.fill();
+  ctx.fillStyle = "#d8404a";
+  ctx.beginPath();
+  ctx.arc(bob.x, bob.y - 2 + dip, 3.6, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = "#2b2b30";
+  ctx.fillRect(bob.x - 0.5, bob.y - 8 + dip, 1, 3);
+  if (bite) {
+    const head = toScreen(p.x + PLAYER_SIZE / 2, p.y);
+    const pop = 1 + Math.abs(Math.sin(t * 8)) * 0.15;
+    ctx.save();
+    ctx.translate(head.x, head.y - 42);
+    ctx.scale(pop, pop);
+    ctx.fillStyle = "#fff7e6";
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c0554a";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#c0554a";
+    ctx.font = "800 15px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("!", 0, 5.5);
+    ctx.restore();
+    ctx.textAlign = "left";
+  }
+}
+
+Object.assign(FURNITURE_DRAWERS, {
+  // Otis's bait stand: a wooden crate with a cooler on top, a bucket of
+  // worms and a hand-painted "BAIT" sign.
+  baitCrate(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 16, "#9a7250");
+    ctx.fillStyle = "rgba(60, 35, 15, 0.35)";
+    for (let i = 1; i < 3; i++) ctx.fillRect(box.face.x, box.face.y + (box.face.h * i) / 3, box.face.w, 1);
+    // The cooler.
+    const cx = box.top.x + 6, cy = box.top.y - 10;
+    ctx.fillStyle = "#4a8ab8";
+    roundRectPath(ctx, cx, cy, 22, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f4f4f0";
+    ctx.fillRect(cx, cy, 22, 4);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(cx + 2, cy + 6, 3, 6);
+    // A bucket of worms.
+    const bx = box.top.x + box.top.w - 12, by = box.top.y + 6;
+    ctx.fillStyle = "#8a9298";
+    ctx.beginPath();
+    ctx.moveTo(bx - 7, by - 12);
+    ctx.lineTo(bx + 7, by - 12);
+    ctx.lineTo(bx + 5, by);
+    ctx.lineTo(bx - 5, by);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#e08a8a";
+    ctx.lineWidth = 1.6;
+    const t = performance.now() / 1000;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(bx - 4 + i * 4, by - 12);
+      ctx.quadraticCurveTo(bx - 3 + i * 4 + Math.sin(t * 3 + i) * 2, by - 17, bx - 2 + i * 4, by - 14);
+      ctx.stroke();
+    }
+    // The sign.
+    ctx.fillStyle = "#f4ead4";
+    roundRectPath(ctx, box.face.x + box.face.w / 2 - 14, box.face.y + 3, 28, 10, 2);
+    ctx.fill();
+    ctx.fillStyle = "#3f6f9f";
+    ctx.font = "800 8px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("BAIT", box.face.x + box.face.w / 2, box.face.y + 11);
+    ctx.textAlign = "left";
+  },
+
+  // Otis the otter: sleek and brown with a cream face, a yellow rain hat
+  // and a little fish in his paws.
+  otis(ctx, f) {
+    const t = performance.now() / 1000;
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const bx = b.x, by = b.y;
+    // Tail, swishing.
+    ctx.strokeStyle = "#6a4a30";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(bx + 6, by - 5);
+    ctx.quadraticCurveTo(bx + 16, by - 4, bx + 18 + Math.sin(t * 2.2) * 3, by - 12);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+    // Feet.
+    ctx.fillStyle = "#4a3222";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(bx + side * 4.5, by - 2, 4, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(Math.sin(t * 1.4) * 0.03);
+    // Long body, lit from above.
+    const body = ctx.createLinearGradient(0, -44, 0, -4);
+    body.addColorStop(0, "#8a6444");
+    body.addColorStop(1, "#6a4a30");
+    ctx.fillStyle = body;
+    roundRectPath(ctx, -10, -40, 20, 38, 10);
+    ctx.fill();
+    // Cream belly and face.
+    ctx.fillStyle = "#e8d4b4";
+    ctx.beginPath();
+    ctx.ellipse(0, -18, 6.5, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#7a5638";
+    ctx.beginPath();
+    ctx.arc(0, -42, 10, 0, Math.PI * 2);
+    ctx.fill();
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(side * 8, -49, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e8d4b4";
+    ctx.beginPath();
+    ctx.ellipse(0, -38.5, 6.5, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const blink = t % 4.5 < 0.12;
+    ctx.fillStyle = "#1e1a18";
+    if (blink) {
+      ctx.fillRect(-5, -44, 3, 1);
+      ctx.fillRect(2, -44, 3, 1);
+    } else {
+      ctx.beginPath();
+      ctx.arc(-3.5, -43.5, 1.5, 0, Math.PI * 2);
+      ctx.arc(3.5, -43.5, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, -39.5, 2, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Whiskers.
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.lineWidth = 0.7;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * 3, -38.5);
+      ctx.lineTo(side * 11, -40);
+      ctx.moveTo(side * 3, -37.5);
+      ctx.lineTo(side * 11, -36.5);
+      ctx.stroke();
+    }
+    // Yellow rain hat.
+    ctx.fillStyle = "#f2c94c";
+    ctx.beginPath();
+    ctx.ellipse(0, -50, 14, 3.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    roundRectPath(ctx, -8, -58, 16, 9, 5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(-6, -57, 5, 1.5);
+    // A fish in his paws.
+    ctx.fillStyle = "#8ab0d0";
+    ctx.beginPath();
+    ctx.ellipse(0, -26, 7, 3, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(6, -26);
+    ctx.lineTo(11, -29);
+    ctx.lineTo(11, -23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#7a5638";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(side * 5, -25, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  },
+});

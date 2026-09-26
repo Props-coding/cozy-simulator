@@ -221,9 +221,10 @@
               <button type="button" class="soft-button" data-weather="night">Night</button>
             </div>
             <div class="admin-group">
-              <span>Garden</span>
+              <span>Outdoors</span>
               <button id="admin-ripen" type="button" class="soft-button">Ripen all (preview)</button>
               <button id="admin-basket" type="button" class="soft-button">Fill my basket</button>
+              <button id="admin-fishxp" type="button" class="soft-button">+200 fishing XP</button>
             </div>
             <div class="admin-group">
               <span>Jump to</span>
@@ -350,6 +351,14 @@
             <h3>Plant a seed</h3>
             <div id="seed-picker-list"></div>
             <button id="seed-picker-close" type="button" class="soft-button">Not now</button>
+          </div>
+          <!-- Landing a fish: press E while the marker is in the green (fishing.js). -->
+          <div id="fishing-bar" hidden>
+            <p>Press E (or Space) when the marker is in the green!</p>
+            <div class="fishing-track">
+              <div id="fishing-zone"></div>
+              <div id="fishing-marker"></div>
+            </div>
           </div>
           <!-- Your basket: what you've grown, caught and bought (basket.js). -->
           <div id="basket-panel" hidden>
@@ -695,7 +704,8 @@
         "./weather.js": "./weather.js?v=0.55",
         "./basket.js": "./basket.js?v=0.55",
         "./npc.js": "./npc.js?v=0.55",
-        "./garden.js": "./garden.js?v=0.55"
+        "./garden.js": "./garden.js?v=0.55",
+        "./fishing.js": "./fishing.js?v=0.55"
       }
     }
   </script>

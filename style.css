@@ -4629,3 +4629,55 @@ canvas.house-icon {
   font-weight: 700;
   color: #9a6a1e;
 }
+
+/* Landing a fish: a bar along the bottom of the house, with a green zone
+   and a marker sliding back and forth. */
+#fishing-bar:not([hidden]) {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 40px));
+  box-sizing: border-box;
+  padding: 10px 16px 14px;
+  background: #fff7e6;
+  border: 4px solid #c8a878;
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(60, 40, 20, 0.35);
+  cursor: pointer;
+  animation: pop-in 0.15s ease-out;
+  z-index: 5;
+}
+
+#fishing-bar p {
+  margin: 0 0 8px;
+  font-weight: 700;
+  color: #4a3a2c;
+}
+
+.fishing-track {
+  position: relative;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7ab0d0, #5a8ab0);
+  overflow: hidden;
+}
+
+#fishing-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #8fd07a;
+  box-shadow: inset 0 0 0 2px #5fa04a;
+}
+
+#fishing-marker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 6px;
+  margin-left: -3px;
+  border-radius: 3px;
+  background: #c0554a;
+  box-shadow: 0 0 0 2px #fff7e6;
+}

@@ -99,7 +99,7 @@ export function refreshNpc() {
     row.querySelector("b").textContent = item.name;
     row.querySelector("small").textContent = item.note ?? "";
     row.querySelector(".shop-price span").textContent = item.price ?? "";
-    if (item.price === undefined) row.querySelector(".shop-price").hidden = true;
+    if (item.price === undefined) row.querySelector(".shop-price").remove();
     for (const action of item.actions ?? []) {
       const button = document.createElement("button");
       button.type = "button";

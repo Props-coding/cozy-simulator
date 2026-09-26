@@ -422,6 +422,11 @@ function cleanPiece(p) {
   if (!p || typeof p.item !== "string" || p.item.length > 40 || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
   const piece = { item: p.item, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000 };
   if (p.r === 1 || p.r === 3) piece.r = p.r;
+  // The fish swimming in a fish tank (Update 4): a few fish names.
+  if (Array.isArray(p.fish)) {
+    const fish = p.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12);
+    if (fish.length) piece.fish = fish;
+  }
   return piece;
 }
 
