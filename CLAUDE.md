@@ -45,7 +45,7 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Offices (north of the hallway) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
 | Elevator lobbies and Upstairs landing | Off | Silence | An elevator south of the hallway's east end goes to a second floor (press E at its doors) |
 | Workshop (upstairs, south of the landing) | On, with others in the room | Friends' voices | Workbench, done jar, and the house's project boards on the corkboard (press E) |
-| Bedrooms (upstairs, north of the landing) | On, only with others in the same bedroom | Friends' voices; in bed: soft white noise only | Personal like offices. Start small with a laptop desk and a mattress; decorate with Nest & Nook items (laptop). Step into bed to sleep: mic off, hear nobody, "sleeping" badge |
+| Bedrooms (each its own space behind a door on the upstairs landing, one per member, kept on the server) | Owner picks: voice (only with others in the same bedroom), lo-fi, or silent | Friends' voices or your lo-fi; in bed: soft white noise only | Door: Open, Knock first, Private or Party, enforced with signed room passes. Starts with a laptop desk, a mattress, a journal nightstand (private, encrypted journal) and a wall phone (private calls, or a message for someone away); decorate with Nest & Nook items. Step into bed to sleep: mic off, hear nobody, "sleeping" badge. Away owners sleep in their bed, with a moon on their door |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner | Off | Nothing, all sound muted | Means "I'm away eating". Show a small "eating" badge over the character |
 

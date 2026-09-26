@@ -1448,6 +1448,40 @@ const FURNITURE_DRAWERS = {
   },
 
   // Hung on a wall face: a framed poster ("stars", "mountains" or "cat").
+  // The bedroom phone: a retro wall phone with a coiled cord.
+  wallPhone(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x + w / 2 - 7, y = a.y - WALL_HEIGHT + 10;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.22)";
+    ctx.fillRect(x + 2, y + 3, 14, 20);
+    ctx.fillStyle = "#d9534f"; // the body
+    roundRectPath(ctx, x, y, 14, 20, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f6e7d0"; // the dial
+    ctx.beginPath();
+    ctx.arc(x + 7, y + 12, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b8403c";
+    ctx.beginPath();
+    ctx.arc(x + 7, y + 12, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#c2433f"; // the handset on top
+    roundRectPath(ctx, x - 2, y - 3, 18, 4, 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8f2f2c"; // the curly cord
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) ctx.lineTo(x - 2 + Math.sin(i * 1.7) * 1.5, y + 1 + i * 2.2);
+    ctx.stroke();
+    // A little glow and wiggle while it's ringing (globalThis.phoneRinging).
+    if (f.mine && globalThis.phoneRinging) {
+      ctx.fillStyle = "rgba(255, 220, 120, 0.35)";
+      ctx.beginPath();
+      ctx.arc(x + 7, y + 8, 13 + Math.sin(performance.now() / 60) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
   poster(ctx, f) {
     const a = toScreen(f.x, f.y);
     const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 3, h = 30;

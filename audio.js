@@ -100,6 +100,18 @@ export function playKnockSound() {
   playTone(150, 180, { gain: 0.3, duration: 0.08, type: "triangle" });
 }
 
+// A friendly old-phone trill (played every few seconds while it rings).
+export function playPhoneRing() {
+  for (let i = 0; i < 6; i++) playTone(i % 2 ? 1320 : 1100, i * 70, { gain: 0.06, duration: 0.06, type: "square" });
+  for (let i = 0; i < 6; i++) playTone(i % 2 ? 1320 : 1100, 600 + i * 70, { gain: 0.06, duration: 0.06, type: "square" });
+}
+
+// The click of a phone being hung up.
+export function playHangUp() {
+  playTone(300, 0, { gain: 0.15, duration: 0.05, type: "triangle" });
+  playTone(220, 60, { gain: 0.12, duration: 0.08, type: "triangle" });
+}
+
 // Three gentle rising notes: the Study focus timer moving on to a break,
 // or the break ending.
 export function playTimerChime() {

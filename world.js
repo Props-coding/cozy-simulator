@@ -879,6 +879,8 @@ const DECOR = {
   starterMattress: { name: "Plain Mattress", tab: null, price: 0, kind: "mattress", w: 1.4, h: 2.1, sleep: true, solid: false, ownerColor: true , turn: true },
   // The nightstand with your journal on it (press E there). It stays in your room.
   starterNightstand: { name: "Journal Nightstand", tab: null, price: 0, kind: "nightstand", w: 0.55, h: 0.45, keep: true, journal: true },
+  // The bedroom phone, on the back wall (press E there to call a friend). It stays in your room.
+  starterPhone: { name: "Bedroom Phone", tab: null, price: 0, kind: "wallPhone", w: 0.45, wall: true, keep: true },
 };
 
 // Where the starter pieces go in a brand new bedroom (from its top-left
@@ -940,7 +942,22 @@ function tidyDecor(size, placed) {
     const spot = nightstandSpot(size, kept);
     if (spot) kept.push(spot);
   }
+  if (!kept.some((p) => p.item === "starterPhone")) {
+    const spot = phoneSpot(size, kept);
+    if (spot) kept.push(spot);
+  }
   return kept;
+}
+
+// Rooms from before the phone get it on the back wall: the first free
+// spot from the right-hand end (the bed and desk tend to be on the left).
+function phoneSpot(size, placed) {
+  const { w } = DECOR.starterPhone;
+  for (let x = bedroomWidth(size) - w - 0.3; x >= 0.1; x -= 0.25) {
+    const piece = { item: "starterPhone", x: Math.round(x * 100) / 100, y: 0 };
+    if (decorFits(size, placed, piece)) return piece;
+  }
+  return null;
 }
 
 // Rooms from before the journal get its nightstand in a free spot: by the
@@ -1014,6 +1031,12 @@ function isNearMyNightstand(player) {
   return FURNITURE.some((f) => f.kind === "nightstand" && f.mine && floorOf(f.y) === floorOf(player.y) && Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h)) < 0.7);
 }
 
+// The phone on your own bedroom's wall, if you're standing right below it.
+function myPhoneInReach(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.find((f) => f.kind === "wallPhone" && f.mine && floorOf(f.y) === floorOf(player.y) && cx > f.x - 0.35 && cx < f.x + f.w + 0.35 && cy > f.y && cy < f.y + 1.1) ?? null;
+}
+
 // True if the player is standing at their own bedroom's laptop desk.
 function isNearMyLaptop(player) {
   const desk = FURNITURE.find((f) => (f.kind === "laptopDesk" || f.kind === "laptopDeskSide") && f.mine);
@@ -1080,6 +1103,7 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
+  if (myPhoneInReach(player)) options.push(["phone", 0.05]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
   if (bedroomDoorInReach(player)) options.push(["bedroomDoor", 0]);
   // The Workshop's corkboard: stand below it.

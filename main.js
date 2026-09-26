@@ -70,6 +70,7 @@ import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js
 import { startRooms, refreshRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen, askToEnter, leftRoom, letIn } from "./rooms.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openJournal, isJournalOpen } from "./journal.js";
+import { initPhone, openPhonePanel, closePhonePanel, isPhonePanelOpen, hangUp, inCall, phoneBusy, checkCall } from "./phone.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass } from "./account.js";
@@ -541,6 +542,7 @@ function roomHintFor(room) {
   }
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
+  if (nearestInteraction(player) === "phone") return inCall() ? "Press E to hang up." : "Press E to use your phone: call a friend, or leave a message.";
   if (nearestInteraction(player) === "journal") return "Press E to open your journal. Only you can read it.";
   if (mySeat) return "Sitting. Move (or press E) to get up.";
   if (!nearestInteraction(player) && nearestFreeSeat()) return "Press E to sit.";
@@ -576,6 +578,18 @@ function roomHintFor(room) {
 window.addEventListener("keydown", (e) => {
   if (gameScreen.hidden || e.repeat || dialogOpen || uiBusy() || isTyping(e)) return;
   const key = e.key.toLowerCase();
+
+  if (key === "e" && nearestInteraction(player) === "phone") {
+    for (const k in keysDown) keysDown[k] = false;
+    openPhonePanel(); // (or hangs up, if you're on a call)
+    return;
+  }
+
+  // On the phone (someone called you): E hangs up.
+  if (key === "e" && phoneBusy() && !nearestInteraction(player)) {
+    hangUp();
+    return;
+  }
 
   if (key === "e" && nearestInteraction(player) === "journal") {
     for (const k in keysDown) keysDown[k] = false;
@@ -996,7 +1010,7 @@ function nearestFriendFor(range) {
 }
 
 function startWhisper() {
-  if (whisperTarget()) return;
+  if (whisperTarget() || phoneBusy()) return;
   const friend = nearestFriendFor(CONFIG.whisper.range);
   if (!friend) {
     showNotice("Stand right next to someone to whisper to them.");
@@ -1010,7 +1024,7 @@ function startWhisper() {
 }
 
 function stopWhisper(why) {
-  if (!whisperTarget()) return;
+  if (!whisperTarget() || inCall()) return;
   setWhisperTarget(null);
   if (why) showNotice(why);
 }
@@ -1018,7 +1032,7 @@ function stopWhisper(why) {
 // Ends the whisper if the two of you drifted apart (or they left).
 function checkWhisper() {
   const to = whisperTarget();
-  if (!to) return;
+  if (!to || inCall()) return;
   const friend = getPeers().find((p) => p.id === to);
   if (!friend || floorOf(friend.y) !== floorOf(player.y) || Math.hypot(friend.x - player.x, friend.y - player.y) > CONFIG.whisper.endRange) {
     stopWhisper("The whisper ended: you moved apart.");
@@ -1229,7 +1243,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !!ride;
 }
 
 // Going into a bedroom (E at its door on the landing), and out again
@@ -1611,6 +1625,20 @@ initLaptop({
 let amAsleep = false;
 let lastBedtimeNote = -Infinity;
 
+// --- The bedroom phone (phone.js) ---
+initPhone({
+  peers: () => visiblePeers,
+  doors: () => bedroomDoors().map((d) => ({ ...d, mine: isMe(d.owner) })),
+  isAway: () => amAsleep || getCurrentRoom(player).id === "dinner",
+  startLine: (peerId) => setWhisperTarget(peerId),
+  stopLine: () => setWhisperTarget(null),
+  color: () => myColor,
+  notice: (text, ms) => showNotice(text, ms),
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && isPhonePanelOpen()) closePhonePanel();
+});
+
 // --- Offline sleeping ---
 // While you're away, you sleep in your own bed: friends who can see into
 // your room see you tucked in with a "zzz", and your door shows a moon.
@@ -1966,6 +1994,7 @@ function tick(now) {
   visiblePeers = getPeers().filter(peerAllowed);
   showDanceCooldown();
   checkWhisper();
+  checkCall(!!myPhoneInReach(player));
   mySpeaking = isSpeaking();
   updateIdle();
   checkWakeUp();
@@ -2009,7 +2038,7 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const pass = currentRoom.bedroom && myPass?.owner === currentRoom.owned.ownerName.toLowerCase() ? myPass.pass : null;
-    broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: whisperTarget() });
+    broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: inCall() ? null : whisperTarget(), phone: inCall() });
   }
 
   const scenePlayers = visiblePeers.map((peer) => {
@@ -2021,13 +2050,13 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
   // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.

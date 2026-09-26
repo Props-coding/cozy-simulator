@@ -353,6 +353,24 @@
             <div id="door-styles" class="door-row"></div>
             <button id="door-close" type="button" class="warm-button">Done</button>
           </div>
+          <!-- The bedroom phone (phone.js): who to call, or a message to leave. -->
+          <div id="phone-panel" hidden>
+            <div class="journal-top">
+              <h3>📞 Bedroom phone</h3>
+              <button id="phone-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+            </div>
+            <div id="phone-friends"></div>
+            <form id="phone-message" hidden>
+              <p>A message for <strong id="phone-message-to"></strong> (they'll see it when they come in):</p>
+              <textarea id="phone-message-text" rows="3" maxlength="500" placeholder="Hey! Call me back when you're up."></textarea>
+              <button type="submit" class="warm-button">Leave message</button>
+            </form>
+          </div>
+          <!-- A call ringing, or going on (phone.js). -->
+          <div id="phone-popup" hidden>
+            <p id="phone-popup-text"></p>
+            <div id="phone-popup-buttons"></div>
+          </div>
           <!-- The bedroom journal on your nightstand (journal.js). -->
           <div id="journal-panel" hidden>
             <div class="journal-top">

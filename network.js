@@ -68,6 +68,16 @@ export function onKnock(callback) {
   externalOnKnock = callback;
 }
 
+// Bedroom phone calls: ringing, answering, hanging up (see phone.js).
+let phoneAction = null;
+let externalOnPhone = null;
+export function onPhone(callback) {
+  externalOnPhone = callback;
+}
+export function sendPhone(peerId, message) {
+  phoneAction?.send(message, { target: peerId });
+}
+
 // The Study focus timer was started, moved on, or stopped by a friend.
 // callback gets the message: { phase, remainingMs }.
 export function onFocus(callback) {
@@ -199,6 +209,9 @@ export function connectToRoom(myName, myColor) {
   };
 
   // A knock says which door: "office" or "bedroom".
+  phoneAction = room.makeAction("phone");
+  phoneAction.onMessage = (message, { peerId }) => externalOnPhone?.(message, peerId);
+
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (kind, { peerId }) => externalOnKnock?.(peerId, kind);
 
