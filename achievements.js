@@ -56,6 +56,12 @@ export const ACHIEVEMENTS = [
   { id: "pettingZoo", icon: "💞", name: "Petting Zoo", desc: "Pet a friend's pet.", crumbs: 10 },
   { id: "hoarder", icon: "🍪", name: "Crumb Hoarder", desc: "Have 500 crumbs at once.", crumbs: 25 },
 
+  // Outdoors (Update 4)
+  { id: "firstSeed", icon: "🌱", name: "Seed of an Idea", desc: "Plant your first seed in the garden.", crumbs: 5 },
+  { id: "rainCheck", icon: "🌧️", name: "Rain Check", desc: "Let the rain water the garden.", crumbs: 10 },
+  { id: "farmStand", icon: "🧺", name: "Farm Stand", desc: "Sell your harvest to Hazel.", crumbs: 10 },
+  { id: "greatPumpkin", icon: "🎃", name: "The Great Pumpkin", desc: "Harvest a pumpkin.", crumbs: 25 },
+
   // Secrets
   { id: "whoAreYou", icon: "🧥", name: "Three Raccoons?", desc: "Ask the raccoons who they really are.", crumbs: 10, secret: true },
   { id: "foodComa", icon: "😴", name: "Food Coma", desc: "Get sleepy in the Dinner room.", crumbs: 10, secret: true },
@@ -71,6 +77,7 @@ export const MOMENT_GROUPS = [
   ["Friends", ["hello", "roommates", "fullHouse", "expressive", "jigParty"]],
   ["Time of day", ["nightOwl", "earlyBird"]],
   ["Raccoons and pets", ["raccoons", "firstBuy", "allHats", "allShoes", "patPat", "pettingZoo", "hoarder"]],
+  ["Outdoors", ["firstSeed", "rainCheck", "farmStand", "greatPumpkin"]],
   ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
 ];
 
@@ -209,6 +216,8 @@ export function trackValueFrom(track, s = {}, values = {}) {
     emotesUsed: n(s.emotesUsed),
     dances: n(s.dances),
     daysVisited: n(s.daysVisited),
+    harvests: n(s.harvests),
+    friendsWatered: n(s.friendsWatered),
   };
   const v = Object.hasOwn(built, track.stat) ? built[track.stat] : values[track.stat];
   return n(v);

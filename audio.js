@@ -220,6 +220,23 @@ export function playAchievementSound() {
   playTone(1046.5, 330, { gain: 0.09, duration: 0.6, type: "triangle" });
 }
 
+// Garden sounds (Update 4): a trickle of water (quick falling blips), a
+// soft "pop" for planting, and a bright "pluck" for harvesting.
+export function playWaterSound() {
+  for (let i = 0; i < 6; i++) playTone(1400 - i * 90 + Math.random() * 120, i * 45, { gain: 0.035, duration: 0.06, type: "sine" });
+}
+
+export function playPlantSound() {
+  playTone(220, 0, { gain: 0.09, duration: 0.12, type: "triangle" });
+  playTone(330, 60, { gain: 0.05, duration: 0.1, type: "sine" });
+}
+
+export function playHarvestSound() {
+  playTone(587.33, 0, { gain: 0.07, duration: 0.1, type: "triangle" });
+  playTone(880, 70, { gain: 0.07, duration: 0.1, type: "triangle" });
+  playTone(1174.66, 140, { gain: 0.06, duration: 0.25, type: "triangle" });
+}
+
 // A soft, happy chirp for petting a pet.
 export function playPetSound() {
   playTone(1046.5, 0, { gain: 0.05, duration: 0.08, type: "sine" });

@@ -79,6 +79,9 @@ import { initAdmin } from "./admin.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
+import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
+import { isNpcOpen } from "./npc.js";
+import { isBasketOpen } from "./basket.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -327,6 +330,8 @@ joinButton.addEventListener("click", async () => {
   });
   startMail();
   startWeather(); // the hometown's real sky, outside and through the windows
+  // The shared garden in the yard (beds kept on the house server).
+  startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
   initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
   joinScreen.hidden = true;
@@ -571,6 +576,8 @@ function roomHintFor(room) {
   if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
+  if (nearestInteraction(player) === "hazel") return "Press E to talk to Hazel: seeds for sale, and she buys your harvest.";
+  if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
   if (nearestInteraction(player) === "bedroomDoor") {
@@ -678,6 +685,18 @@ window.addEventListener("keydown", (e) => {
   if (key === "e" && nearestInteraction(player) === "turntable") {
     for (const k in keysDown) keysDown[k] = false;
     openTurntable();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "hazel") {
+    for (const k in keysDown) keysDown[k] = false;
+    talkToHazel();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "gardenBed") {
+    for (const k in keysDown) keysDown[k] = false;
+    useGardenBed(gardenBedInReach(player));
     return;
   }
 
@@ -1283,7 +1302,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
+  return isShopBusy() || isNpcOpen() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the landing), and out again

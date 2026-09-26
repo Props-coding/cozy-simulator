@@ -12,7 +12,7 @@ const SERVER = CONFIG.serverUrl;
 const ACCOUNT_KEY = "cozy-house-account"; // { token, name }
 const SYNCED_KEY = "cozy-house-synced-at"; // when the cloud save we have was made
 // Everything that's saved in the browser and should follow your account.
-const SAVE_KEYS = ["cozy-house-profile", "cozy-house-crumbs", "cozy-house-achievements", "cozy-house-home", "cozy-house-mail", "cozy-house-office", "cozy-house-bedroom", "cozy-house-lofi", "cozy-house-aura", "cozy-house-dance"];
+const SAVE_KEYS = ["cozy-house-profile", "cozy-house-crumbs", "cozy-house-achievements", "cozy-house-home", "cozy-house-mail", "cozy-house-office", "cozy-house-bedroom", "cozy-house-lofi", "cozy-house-aura", "cozy-house-dance", "cozy-house-basket"];
 
 const storage = {
   get(key) {

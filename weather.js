@@ -125,3 +125,9 @@ export function previewWeather(pick) {
   else preview.sky = pick;
   apply();
 }
+
+// True if it's really raining in the hometown right now (not just an admin
+// preview), for things like the garden, which the rain waters.
+export function isReallyRaining() {
+  return !!real && real.rain > 0;
+}

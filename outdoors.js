@@ -972,3 +972,485 @@ FURNITURE_DRAWERS.weatherWindow = (ctx, f) => {
   ctx.fillStyle = "#8a6040"; // sill
   ctx.fillRect(a.x + 1, top + h + 2, w - 2, 3);
 };
+
+// --- The garden (Update 4, step 3) ---
+// Raised beds with whatever's growing in them (garden.js keeps
+// globalThis.gardenView up to date: for each bed, null or { crop, look,
+// color, stage 0 to 4 (4 is ripe), dry, owner, ownerColor }).
+
+// One plant, standing at (x, y) (screen pixels, its base), at a stage.
+function drawCropPlant(ctx, x, y, look, color, stage, sway, n) {
+  const green = "#5f9a48", dark = "#3f7434", light = "#8cc46a";
+  if (stage === 0) {
+    // A little mound of soil with a seed on top.
+    ctx.fillStyle = "#6e4a30";
+    ctx.beginPath();
+    ctx.ellipse(x, y - 1, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#d8c08a";
+    ctx.beginPath();
+    ctx.arc(x, y - 3, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  const leaf = (lx, ly, len, angle, c) => {
+    ctx.fillStyle = c;
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(angle + sway);
+    ctx.beginPath();
+    ctx.ellipse(0, -len / 2, len / 3.2, len / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  };
+  const stem = (h) => {
+    ctx.strokeStyle = dark;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x, y - h / 2, x + sway * 10, y - h);
+    ctx.stroke();
+  };
+  if (stage === 1) {
+    // A sprout: two tiny leaves.
+    stem(5);
+    leaf(x, y - 4, 6, -0.9, light);
+    leaf(x, y - 4, 6, 0.9, light);
+    return;
+  }
+  const tall = { stalk: 30, flower: 34, vine: 22, pumpkin: 10, berry: 12, leafy: 10, root: 12 }[look] ?? 14;
+  const h = stage === 2 ? tall * 0.55 : tall;
+  if (look === "leafy") {
+    // Lettuce: a round head of ruffled leaves.
+    const r = stage === 2 ? 5 : stage === 3 ? 7 : 9;
+    for (const [dx, dy, c] of [[-r * 0.6, -r * 0.7, dark], [r * 0.6, -r * 0.7, dark], [0, -r * 1.1, green], [0, -r * 0.7, stage === 4 ? color : light]]) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(x + dx, y + dy, r * 0.75, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return;
+  }
+  if (look === "root") {
+    // Carrots and radishes: a tuft of leaves, and the top of the root
+    // showing once it's ripe.
+    for (let i = -2; i <= 2; i++) leaf(x + i, y - 1, h * (1 - Math.abs(i) * 0.12), i * 0.35, i % 2 ? dark : green);
+    if (stage >= 3) {
+      ctx.fillStyle = stage === 4 ? color : shadeColor(color, -40);
+      ctx.beginPath();
+      ctx.ellipse(x, y, stage === 4 ? 4.5 : 3, stage === 4 ? 3 : 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return;
+  }
+  if (look === "pumpkin") {
+    // A sprawling vine, with a pumpkin that swells up as it ripens.
+    leaf(x - 6, y, 9, -1.2, dark);
+    leaf(x + 6, y, 9, 1.2, dark);
+    leaf(x, y - 2, 8, 0, green);
+    if (stage >= 3) {
+      const r = stage === 4 ? 9 : 5;
+      ctx.fillStyle = stage === 4 ? color : "#c8b85a";
+      for (const dx of [-r * 0.5, r * 0.5, 0]) {
+        ctx.beginPath();
+        ctx.ellipse(x + dx, y - r * 0.7, r * 0.62, r * 0.72, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.beginPath();
+      ctx.ellipse(x - r * 0.3, y - r * 1.05, r * 0.25, r * 0.18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#5c4a2a";
+      ctx.fillRect(x - 1, y - r * 1.5, 2, 3);
+    }
+    return;
+  }
+  // Everything else stands up on a stem, with leaves along it.
+  stem(h);
+  for (let i = 1; i <= (stage === 2 ? 1 : 2); i++) {
+    leaf(x, y - (h * i) / 3, h / 3, -1.0, i % 2 ? green : dark);
+    leaf(x, y - (h * i) / 3 - 2, h / 3, 1.0, i % 2 ? dark : green);
+  }
+  const top = { x: x + sway * 10, y: y - h };
+  if (stage < 3) return;
+  if (look === "flower") {
+    // A sunflower: a bud, then a big yellow face.
+    const r = stage === 4 ? 7 : 3.5;
+    ctx.fillStyle = color;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(top.x + Math.cos(a) * r, top.y + Math.sin(a) * r, 3, 1.8, a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#6a4a2a";
+    ctx.beginPath();
+    ctx.arc(top.x, top.y, r * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (look === "stalk") {
+    // Corn: cobs on the stalk, with a tassel on top.
+    ctx.fillStyle = stage === 4 ? color : "#b8c86a";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(x + side * 3.5, y - h * 0.55, 2.5, 5.5, side * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#d8b860";
+    ctx.lineWidth = 1;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(top.x, top.y);
+      ctx.lineTo(top.x + i * 2, top.y - 5);
+      ctx.stroke();
+    }
+  } else {
+    // Berries and tomatoes: white flowers first, then fruit.
+    const spots = [[-4, 0.35], [4, 0.5], [-2, 0.7], [3, 0.85], [0, 1]];
+    for (const [dx, f] of spots) {
+      const bx = x + dx + sway * 8 * f, by = y - h * f + 2;
+      ctx.fillStyle = stage === 4 ? color : "#f4f0e4";
+      ctx.beginPath();
+      ctx.arc(bx, by, stage === 4 ? (look === "vine" ? 3 : 2.2) : 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      if (stage === 4) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.fillRect(bx - 1, by - 1.5, 1, 1);
+      }
+    }
+  }
+}
+
+Object.assign(FURNITURE_DRAWERS, {
+  // A raised wooden garden bed, with dark soil (darker still when
+  // watered), its crop, and a little stake in the owner's color.
+  gardenPlot(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 7, "#8a6040");
+    const plot = globalThis.gardenView?.beds?.[f.bed] ?? null;
+    ctx.fillStyle = plot && !plot.dry ? "#4a3020" : "#6b4a32";
+    ctx.fillRect(box.top.x + 3, box.top.y + 3, box.top.w - 6, box.top.h - 5);
+    // Furrows.
+    ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
+    for (let i = 1; i < 3; i++) ctx.fillRect(box.top.x + 5, box.top.y + 3 + ((box.top.h - 5) * i) / 3, box.top.w - 10, 1.5);
+    if (plot && !plot.dry) {
+      ctx.fillStyle = "rgba(120, 170, 220, 0.16)";
+      ctx.fillRect(box.top.x + 3, box.top.y + 3, box.top.w - 6, box.top.h - 5);
+    }
+    if (yardSeason() === "winter" && !plot) {
+      ctx.fillStyle = "rgba(244, 248, 251, 0.85)";
+      roundRectPath(ctx, box.top.x + 2, box.top.y + 1, box.top.w - 4, box.top.h - 2, 4);
+      ctx.fill();
+    }
+    if (!plot) return;
+    const t = performance.now() / 1000;
+    // Two rows of plants (big crops like pumpkins get fewer, wider apart).
+    const perRow = plot.look === "pumpkin" || plot.look === "flower" ? 2 : 3;
+    for (let row = 0; row < 2; row++) {
+      for (let i = 0; i < perRow; i++) {
+        const x = box.top.x + ((i + 0.5 + (row ? 0.25 : -0.1)) * box.top.w) / perRow;
+        const y = box.top.y + box.top.h * (row ? 0.88 : 0.45);
+        drawCropPlant(ctx, x, y, plot.look, plot.color, plot.stage, Math.sin(t * 1.3 + f.bed + i + row) * 0.05, i);
+      }
+    }
+    // The owner's stake at the bed's back corner, with a sparkle when ripe.
+    const sx = box.top.x + box.top.w - 6, sy = box.top.y + 4;
+    ctx.fillStyle = "#c8a878";
+    ctx.fillRect(sx - 1, sy - 12, 2, 12);
+    ctx.fillStyle = plot.ownerColor;
+    roundRectPath(ctx, sx - 5, sy - 17, 10, 7, 2);
+    ctx.fill();
+    if (plot.stage === 4) {
+      const s = 2 + Math.sin(t * 4 + f.bed) * 1.2;
+      ctx.fillStyle = "rgba(255, 245, 190, 0.95)";
+      const px = box.top.x + 8, py = box.top.y - 6;
+      ctx.beginPath();
+      ctx.moveTo(px, py - s * 2);
+      ctx.lineTo(px + s * 0.6, py - s * 0.6);
+      ctx.lineTo(px + s * 2, py);
+      ctx.lineTo(px + s * 0.6, py + s * 0.6);
+      ctx.lineTo(px, py + s * 2);
+      ctx.lineTo(px - s * 0.6, py + s * 0.6);
+      ctx.lineTo(px - s * 2, py);
+      ctx.lineTo(px - s * 0.6, py - s * 0.6);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // A droplet when it's dry and could use water.
+    if (plot.dry && plot.stage < 4) {
+      const bob = Math.sin(t * 2.5 + f.bed) * 1.5;
+      ctx.fillStyle = "rgba(90, 150, 220, 0.9)";
+      const dx = box.top.x + box.top.w / 2, dy = box.top.y - 14 + bob;
+      ctx.beginPath();
+      ctx.moveTo(dx, dy - 5);
+      ctx.quadraticCurveTo(dx + 4, dy, dx, dy + 3);
+      ctx.quadraticCurveTo(dx - 4, dy, dx, dy - 5);
+      ctx.fill();
+    }
+  },
+
+  // Hazel's seed stand: a little wooden market stall with a striped
+  // awning, seed packets on the counter and a chalkboard price sign.
+  seedStand(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#a0764c");
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE;
+    // Posts up to the awning.
+    ctx.fillStyle = "#7a5436";
+    ctx.fillRect(a.x + 2, box.top.y - 34, 4, 34);
+    ctx.fillRect(a.x + w - 6, box.top.y - 34, 4, 34);
+    // Seed packets and a few pots on the counter.
+    const colors = CONFIG.crops.map((c) => c.color);
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = "#f4ead4";
+      ctx.fillRect(box.top.x + 6 + i * 10, box.top.y + 2, 8, 10);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath();
+      ctx.arc(box.top.x + 10 + i * 10, box.top.y + 7, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // The awning: cream and green stripes, with a scalloped edge.
+    const ay = box.top.y - 40;
+    for (let i = 0; i < 7; i++) {
+      ctx.fillStyle = i % 2 ? "#f4efe4" : "#6a9a5a";
+      ctx.fillRect(a.x - 4 + (i * (w + 8)) / 7, ay, (w + 8) / 7 + 0.5, 10);
+      ctx.beginPath();
+      ctx.arc(a.x - 4 + ((i + 0.5) * (w + 8)) / 7, ay + 10, (w + 8) / 14, 0, Math.PI);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(a.x - 4, ay, w + 8, 2);
+    // A little sign: "SEEDS".
+    ctx.fillStyle = "#3a3a36";
+    roundRectPath(ctx, a.x + w / 2 - 16, box.face.y + 4, 32, 11, 2);
+    ctx.fill();
+    ctx.fillStyle = "#f4efe4";
+    ctx.font = "700 8px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SEEDS", a.x + w / 2, box.face.y + 12.5);
+    ctx.textAlign = "left";
+  },
+
+  // Hazel the hedgehog, the gardener: spiky and round, in a straw hat and
+  // a green apron, holding a little watering can.
+  hazel(ctx, f) {
+    const t = performance.now() / 1000;
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const bx = b.x, by = b.y - Math.abs(Math.sin(t * 1.5)) * 1.2;
+    // Feet.
+    ctx.fillStyle = "#5c4030";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(bx + side * 5, b.y - 2, 4, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Spiky back (behind the body).
+    ctx.fillStyle = "#6a4a36";
+    for (let i = 0; i < 11; i++) {
+      const a = Math.PI * (0.95 + (i / 10) * 1.1);
+      ctx.beginPath();
+      ctx.moveTo(bx + Math.cos(a) * 11, by - 18 + Math.sin(a) * 13);
+      ctx.lineTo(bx + Math.cos(a) * 19, by - 18 + Math.sin(a) * 20);
+      ctx.lineTo(bx + Math.cos(a + 0.2) * 11, by - 18 + Math.sin(a + 0.2) * 13);
+      ctx.fill();
+    }
+    // Round body, lit from above.
+    const body = ctx.createLinearGradient(0, by - 34, 0, by - 4);
+    body.addColorStop(0, "#9a7456");
+    body.addColorStop(1, "#7a5840");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 18, 13, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Apron.
+    ctx.fillStyle = "#6a9a5a";
+    roundRectPath(ctx, bx - 8, by - 20, 16, 15, 4);
+    ctx.fill();
+    ctx.fillStyle = "#58844a";
+    ctx.fillRect(bx - 5, by - 14, 10, 5);
+    // Cream face.
+    ctx.fillStyle = "#ecd8bc";
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 25, 8, 6.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const blink = t % 5 < 0.12;
+    ctx.fillStyle = "#2a1e18";
+    if (blink) {
+      ctx.fillRect(bx - 4.5, by - 26.5, 3, 1);
+      ctx.fillRect(bx + 1.5, by - 26.5, 3, 1);
+    } else {
+      ctx.beginPath();
+      ctx.arc(bx - 3, by - 26.5, 1.4, 0, Math.PI * 2);
+      ctx.arc(bx + 3, by - 26.5, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(bx, by - 23, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(230, 120, 120, 0.45)";
+    ctx.beginPath();
+    ctx.arc(bx - 5.5, by - 23.5, 1.8, 0, Math.PI * 2);
+    ctx.arc(bx + 5.5, by - 23.5, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    // Straw hat with a red band.
+    ctx.fillStyle = "#e0c070";
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 31, 15, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    roundRectPath(ctx, bx - 7, by - 39, 14, 9, 4);
+    ctx.fill();
+    ctx.fillStyle = "#c0554a";
+    ctx.fillRect(bx - 7, by - 33.5, 14, 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(bx - 6, by - 38, 5, 1.5);
+    // A little watering can in one paw.
+    ctx.fillStyle = "#7aa0b8";
+    roundRectPath(ctx, bx + 10, by - 16, 8, 7, 2);
+    ctx.fill();
+    ctx.fillRect(bx + 17, by - 15, 5, 1.8);
+    ctx.fillStyle = "#ecd8bc";
+    ctx.beginPath();
+    ctx.arc(bx + 10, by - 13, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // --- Reginald's corner: the raccoons' new spot by the bins ---
+
+  // Two metal trash cans with lids (one lid slightly askew).
+  trashCans(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x, f.y + f.h);
+    for (const [dx, tilt] of [[9, 0], [27, -0.18]]) {
+      const x = b.x + dx, y = b.y - 2;
+      const can = ctx.createLinearGradient(x - 8, 0, x + 8, 0);
+      can.addColorStop(0, "#8a9298");
+      can.addColorStop(0.5, "#b4bcc2");
+      can.addColorStop(1, "#7a8288");
+      ctx.fillStyle = can;
+      ctx.fillRect(x - 8, y - 22, 16, 22);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+      for (const ry of [y - 16, y - 8]) ctx.fillRect(x - 8, ry, 16, 1.5);
+      ctx.save();
+      ctx.translate(x, y - 23);
+      ctx.rotate(tilt);
+      ctx.fillStyle = "#9aa2a8";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 10, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#6a7278";
+      ctx.fillRect(-3, -4, 6, 2);
+      ctx.restore();
+    }
+    // A banana peel flopped by the cans.
+    ctx.fillStyle = "#e8c84a";
+    ctx.beginPath();
+    ctx.ellipse(b.x + 18, b.y + 1, 4, 1.8, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // A big green dumpster with its lid propped open (someone's been in it).
+  dumpster(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#3f6a4a");
+    // The lid, propped open at the back.
+    ctx.fillStyle = "#355a3e";
+    ctx.beginPath();
+    ctx.moveTo(box.top.x - 2, box.top.y + 2);
+    ctx.lineTo(box.top.x + box.top.w + 2, box.top.y + 2);
+    ctx.lineTo(box.top.x + box.top.w - 2, box.top.y - 14);
+    ctx.lineTo(box.top.x + 2, box.top.y - 14);
+    ctx.closePath();
+    ctx.fill();
+    // Rubbish peeking over the rim.
+    ctx.fillStyle = "#2a2a2e";
+    ctx.fillRect(box.top.x + 3, box.top.y + 3, box.top.w - 6, box.top.h - 4);
+    for (const [dx, c] of [[10, "#e8e0cc"], [24, "#6a8ab0"], [38, "#c8a060"], [52, "#e05a5a"]]) {
+      ctx.fillStyle = c;
+      ctx.fillRect(box.top.x + dx, box.top.y + 2, 8, 5);
+    }
+    // Rust streaks, a stencilled label and little wheels.
+    ctx.fillStyle = "rgba(150, 90, 50, 0.4)";
+    ctx.fillRect(box.face.x + 8, box.face.y + 4, 2, 12);
+    ctx.fillRect(box.face.x + box.face.w - 14, box.face.y + 6, 2, 9);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.font = "700 7px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("NOT A SHOP", box.face.x + box.face.w / 2, box.face.y + 13);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#2a2a2e";
+    for (const x of [box.face.x + 6, box.face.x + box.face.w - 10]) ctx.fillRect(x, box.face.y + box.face.h - 1, 4, 3);
+  },
+
+  // A heap of tied-up trash bags, and a fish skeleton.
+  trashBags(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    for (const [dx, dy, r, c] of [[-8, -7, 8, "#3a3a40"], [7, -6, 7, "#46464e"], [0, -13, 7, "#303036"]]) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.ellipse(b.x + dx, b.y + dy, r, r * 0.85, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.beginPath();
+      ctx.ellipse(b.x + dx - r * 0.35, b.y + dy - r * 0.4, r * 0.3, r * 0.2, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#e8e0cc";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(b.x + 10, b.y + 2);
+    ctx.lineTo(b.x + 20, b.y + 2);
+    for (let i = 0; i < 3; i++) {
+      ctx.moveTo(b.x + 12 + i * 3, b.y);
+      ctx.lineTo(b.x + 12 + i * 3, b.y + 4);
+    }
+    ctx.stroke();
+  },
+
+  // A wonky cardboard sign on a stick: "totally normal trash".
+  shadySign(ctx, f) {
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#8a6444";
+    ctx.fillRect(b.x - 1.5, b.y - 22, 3, 22);
+    ctx.save();
+    ctx.translate(b.x, b.y - 26);
+    ctx.rotate(-0.12);
+    ctx.fillStyle = "#c8a870";
+    ctx.fillRect(-24, -8, 48, 15);
+    ctx.fillStyle = "#4a3222";
+    ctx.font = "700 6.5px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("totally normal", 0, -1.5);
+    ctx.fillText("trash", 0, 5);
+    ctx.restore();
+    ctx.textAlign = "left";
+  },
+
+  // An umbrella stand by the hallway's east corner (inside the house).
+  umbrellaStand(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    for (const [dx, h, c] of [[-4, 34, "#c0554a"], [3, 38, "#3f6f9f"], [0, 30, "#e0b84c"]]) {
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(b.x + dx, b.y - 8);
+      ctx.lineTo(b.x + dx * 1.6, b.y - h);
+      ctx.stroke();
+      ctx.strokeStyle = "#4a3a2c";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(b.x + dx * 1.6 + 2.5, b.y - h, 2.5, Math.PI, 0);
+      ctx.stroke();
+    }
+    const stand = ctx.createLinearGradient(b.x - 8, 0, b.x + 8, 0);
+    stand.addColorStop(0, "#6a4a30");
+    stand.addColorStop(0.5, "#9a7050");
+    stand.addColorStop(1, "#6a4a30");
+    ctx.fillStyle = stand;
+    ctx.fillRect(b.x - 8, b.y - 18, 16, 17);
+    ctx.fillStyle = "#4a3222";
+    ctx.fillRect(b.x - 9, b.y - 19, 18, 2);
+  },
+});

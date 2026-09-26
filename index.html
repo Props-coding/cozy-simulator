@@ -171,10 +171,11 @@
       <header id="game-header">
         <h1>Cozy House</h1>
         <div class="header-right">
-          <span id="crumb-pill" title="Crumbs: you earn them by hanging out, and spend them at the raccoons' shop in the hallway">
+          <span id="crumb-pill" title="Crumbs: you earn them by hanging out, and spend them at the raccoons' shop out in the yard (by the bins)">
             <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
             <span id="crumb-count">0</span>
           </span>
+          <button id="basket-button" type="button" title="Your basket: seeds, harvest and more" aria-label="Your basket">🧺</button>
           <span id="weather-chip" hidden><span class="weather-icon">☀️</span><span class="weather-temp"></span></span>
           <span id="room-label">📍 Hallway</span>
           <button id="admin-button" type="button" title="Admin tools" aria-label="Admin tools" aria-expanded="false" hidden>🛠️</button>
@@ -218,6 +219,11 @@
               <button type="button" class="soft-button" data-weather="snow">Snow</button>
               <button type="button" class="soft-button" data-weather="day">Day</button>
               <button type="button" class="soft-button" data-weather="night">Night</button>
+            </div>
+            <div class="admin-group">
+              <span>Garden</span>
+              <button id="admin-ripen" type="button" class="soft-button">Ripen all (preview)</button>
+              <button id="admin-basket" type="button" class="soft-button">Fill my basket</button>
             </div>
             <div class="admin-group">
               <span>Jump to</span>
@@ -316,6 +322,40 @@
             <p id="talk-text"></p>
             <div id="talk-choices"></div>
             <span id="talk-next" hidden>▼</span>
+          </div>
+          <!-- Outdoor shopkeepers (Hazel, and later Otis): their face and
+               words at the top, then tabs and a list. npc.js runs it. -->
+          <div id="npc-panel" hidden>
+            <div class="npc-inner">
+              <div class="npc-top">
+                <span id="npc-face"></span>
+                <div class="npc-talk">
+                  <span id="npc-name"></span>
+                  <p id="npc-text"></p>
+                </div>
+                <span class="shop-balance">
+                  <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
+                  <span id="npc-crumbs">0</span>
+                </span>
+              </div>
+              <div id="npc-tabs" class="npc-tabs"></div>
+              <div id="npc-items"></div>
+              <div class="shop-bottom">
+                <button id="npc-bye" type="button" class="warm-button">Bye!</button>
+              </div>
+            </div>
+          </div>
+          <!-- Picking a seed to plant in a garden bed (garden.js). -->
+          <div id="seed-picker" hidden>
+            <h3>Plant a seed</h3>
+            <div id="seed-picker-list"></div>
+            <button id="seed-picker-close" type="button" class="soft-button">Not now</button>
+          </div>
+          <!-- Your basket: what you've grown, caught and bought (basket.js). -->
+          <div id="basket-panel" hidden>
+            <h3>🧺 Your basket</h3>
+            <div id="basket-items"></div>
+            <button id="basket-close" type="button" class="soft-button">Close</button>
           </div>
           <!-- The raccoons' shop: the inside of their coat, swinging open. -->
           <div id="shop-panel" hidden>
@@ -652,7 +692,10 @@
         "./titles.js": "./titles.js?v=0.55",
         "./admin.js": "./admin.js?v=0.55",
         "./updater.js": "./updater.js?v=0.55",
-        "./weather.js": "./weather.js?v=0.55"
+        "./weather.js": "./weather.js?v=0.55",
+        "./basket.js": "./basket.js?v=0.55",
+        "./npc.js": "./npc.js?v=0.55",
+        "./garden.js": "./garden.js?v=0.55"
       }
     }
   </script>

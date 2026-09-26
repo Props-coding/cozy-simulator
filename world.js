@@ -163,7 +163,8 @@ const BASE_FURNITURE = [
   // coat hooks with boots underneath, a cushioned bench under a flower
   // painting between warm wall lamps, a side table with a lamp and flowers
   // under a mirror, more lamps, and a hills
-  // painting in the east corner where the raccoons hang out. A fiddle-leaf fig sits
+  // painting in the east corner, over an umbrella stand (the raccoons used
+  // to lurk there; they moved out to the yard in Update 4). A fiddle-leaf fig sits
   // in the bottom-right corner. (The Conference Room and offices used to
   // open off this wall; they're on the business floor now.)
   { kind: "rug", x: 1.5, y: 0.95, w: 21, h: 0.95, color: "#b5603c", solid: false },
@@ -187,10 +188,7 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 22.3, y: 0, solid: false },
   { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", solid: false },
   { kind: "fiddleFig", x: 23.3, y: 2.05, w: 0.6, h: 0.6 },
-  // Three raccoons in a trenchcoat, lurking in the hallway's east corner
-  // under the hills painting, clear of every door. They sell hats and
-  // shoes for crumbs (walk up and press E; see shop.js).
-  { kind: "raccoons", x: 23.15, y: 0.12, w: 0.65, h: 0.45 },
+  { kind: "umbrellaStand", x: 23.2, y: 0.12, w: 0.5, h: 0.4 },
 
   // Conference Room (on the business floor, north of its corridor): a
   // rolling whiteboard at the front, a big table with
@@ -501,6 +499,23 @@ const YARD_PATHS = [
   { x: 9.2, y: 6.6, w: 14.2, h: 0.9 }, // along the bottom, from the pond to the bus stop
 ];
 
+// The garden beds (yard spots): [x, local y], each 1.7 wide and 1.0 deep.
+const GARDEN_BEDS = [13.2, 15.4, 19.3, 21.5].flatMap((x) => [-0.75, 1.0, 2.75].map((y) => ({ x, y: YARD + y, w: 1.7, h: 1.0 })))
+  .sort((a, b) => a.y - b.y || a.x - b.x);
+
+// The garden bed you're standing next to (within a step, on the yard), as
+// its number, or -1.
+function gardenBedInReach(player) {
+  if (floorOf(player.y) !== YARD_FLOOR) return -1;
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  let best = -1, bestD = 0.75;
+  GARDEN_BEDS.forEach((b, n) => {
+    const d = Math.hypot(Math.max(b.x - cx, 0, cx - b.x - b.w), Math.max(b.y - cy, 0, cy - b.y - b.h));
+    if (d < bestD) (best = n), (bestD = d);
+  });
+  return best;
+}
+
 const YARD_FURNITURE = [
   // The house's back wall: the two doors (walk up into one to go in),
   // windows glowing warm from inside, and a lantern by each door.
@@ -557,10 +572,9 @@ const YARD_FURNITURE = [
   // Trees (big and leafy, or pines), bushes and a few flowers.
   { kind: "yardTree", x: 9.3, y: YARD - 3.75, w: 1.0, h: 0.55, n: 0 },
   { kind: "yardTree", x: 0.4, y: YARD + 0.55, w: 1.0, h: 0.55, n: 1 },
-  { kind: "pineTree", x: 11.0, y: YARD + 1.2, w: 0.9, h: 0.5, n: 2 },
-  { kind: "yardTree", x: 11.3, y: YARD + 8.4, w: 1.0, h: 0.55, n: 3 },
+  { kind: "pineTree", x: 11.2, y: YARD + 2.6, w: 0.9, h: 0.5, n: 2 },
+  { kind: "yardTree", x: 10.2, y: YARD + 8.4, w: 1.0, h: 0.55, n: 3 },
   { kind: "pineTree", x: 0.6, y: YARD + 9.3, w: 0.9, h: 0.5, n: 4 },
-  { kind: "yardTree", x: 14.4, y: YARD + 8.3, w: 1.0, h: 0.55, n: 5 },
   { kind: "pineTree", x: 23.0, y: YARD + 5.9, w: 0.9, h: 0.5, n: 6 },
   { kind: "bush", x: 10.3, y: YARD + 4.9, w: 0.9, h: 0.55, n: 0 },
   { kind: "bush", x: 12.9, y: YARD + 5.4, w: 0.9, h: 0.55, n: 1 },
@@ -569,6 +583,24 @@ const YARD_FURNITURE = [
   { kind: "wildflowers", x: 3.1, y: YARD + 9.0, w: 1.1, h: 0.3, solid: false },
   { kind: "wildflowers", x: 12.2, y: YARD + 3.6, w: 0.5, h: 0.3, solid: false },
   { kind: "wildflowers", x: 21.3, y: YARD + 6.0, w: 1.0, h: 0.3, solid: false },
+
+  // The garden's twelve raised beds (numbered 0 to 11, see garden.js):
+  // two columns each side of the middle path, three rows, with room to
+  // walk between the rows.
+  ...GARDEN_BEDS.map((b, n) => ({ kind: "gardenPlot", ...b, bed: n })),
+
+  // Hazel the hedgehog's seed stand, just outside the garden's west fence
+  // (walk up and press E to buy seeds or sell your harvest; see garden.js).
+  { kind: "seedStand", x: 10.15, y: YARD - 1.35, w: 1.45, h: 0.6 },
+  { kind: "hazel", x: 11.8, y: YARD - 1.05, w: 0.55, h: 0.4 },
+
+  // Reginald's corner: the raccoons moved out of the hallway to a shady
+  // spot by the bins, down past the garden (walk up and press E; see shop.js).
+  { kind: "trashCans", x: 11.85, y: YARD + 8.15, w: 0.8, h: 0.45 },
+  { kind: "dumpster", x: 12.8, y: YARD + 7.95, w: 1.5, h: 0.7 },
+  { kind: "trashBags", x: 14.3, y: YARD + 8.65, w: 0.6, h: 0.35, solid: false },
+  { kind: "raccoons", x: 15.0, y: YARD + 8.15, w: 0.65, h: 0.45 },
+  { kind: "shadySign", x: 11.3, y: YARD + 8.95, w: 0.3, h: 0.15 },
 
   // Signposts, so you know where you are.
   { kind: "signpost", x: 8.3, y: YARD - 1.4, w: 0.3, h: 0.2, text: "Campfire", point: "left" },
@@ -1353,6 +1385,11 @@ function nearestInteraction(player) {
     options.push(["raccoons", Math.hypot(cx - (r.x + r.w / 2), cy - (r.y + r.h / 2))]);
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
+  // Outdoors (Update 4): Hazel's seed stand, and the garden beds.
+  const hazel = FURNITURE.find((f) => f.kind === "hazel");
+  const hazelDistance = Math.hypot(cx - (hazel.x + hazel.w / 2), cy - (hazel.y + hazel.h / 2));
+  if (hazelDistance < 1.4) options.push(["hazel", hazelDistance]);
+  if (gardenBedInReach(player) >= 0) options.push(["gardenBed", 0.5]);
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (myPhoneInReach(player)) options.push(["phone", 0.05]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);

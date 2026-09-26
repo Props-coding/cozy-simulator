@@ -48,6 +48,38 @@ const CONFIG = {
     refreshMinutes: 15,
   },
 
+  // --- The shared garden (Update 4) ---
+  // Twelve raised beds inside the garden's fence. Anyone can plant in an
+  // empty bed (up to `maxPlotsPerPlayer` at once) with seeds from Hazel,
+  // the gardener by the garden gate. Crops grow in real time, even while
+  // nobody's in the house. Watering keeps a crop growing at full speed for
+  // `waterHours`; dry, it grows at `dryGrowth` of full speed (0.4 is 40%).
+  // Anyone can water anyone's bed, and rain waters every bed (while
+  // someone is in the house to see it rain). Nothing ever wilts or dies.
+  garden: {
+    maxPlotsPerPlayer: 3,
+    waterHours: 6,
+    dryGrowth: 0.4,
+  },
+
+  // The crops. hours: how long it takes to grow when kept watered (it
+  // shows four stages on the way: seed, sprout, growing, flowering, then
+  // ripe). seed: what Hazel charges for a seed. sell: crumbs Hazel pays for
+  // each one you harvest. yield: how many you harvest, [fewest, most].
+  // look: how it's drawn ("root", "leafy", "berry", "vine", "flower",
+  // "stalk" or "pumpkin"). color: the crop's own color.
+  crops: [
+    { id: "radish", name: "Radish", icon: "🌱", hours: 1, seed: 4, sell: 6, yield: [2, 3], look: "root", color: "#d9485a" },
+    { id: "lettuce", name: "Lettuce", icon: "🥬", hours: 2, seed: 5, sell: 5, yield: [3, 4], look: "leafy", color: "#8fc06a" },
+    { id: "carrot", name: "Carrot", icon: "🥕", hours: 3, seed: 6, sell: 8, yield: [2, 4], look: "root", color: "#e8883a" },
+    { id: "strawberry", name: "Strawberry", icon: "🍓", hours: 6, seed: 12, sell: 6, yield: [4, 7], look: "berry", color: "#e0404a" },
+    { id: "tomato", name: "Tomato", icon: "🍅", hours: 10, seed: 15, sell: 8, yield: [4, 7], look: "vine", color: "#e0503a" },
+    { id: "sunflower", name: "Sunflower", icon: "🌻", hours: 12, seed: 10, sell: 30, yield: [1, 1], look: "flower", color: "#f2c230" },
+    { id: "corn", name: "Corn", icon: "🌽", hours: 16, seed: 14, sell: 12, yield: [3, 5], look: "stalk", color: "#f0d25a" },
+    { id: "pumpkin", name: "Pumpkin", icon: "🎃", hours: 24, seed: 25, sell: 90, yield: [1, 1], look: "pumpkin", color: "#e8883a" },
+    { id: "blueberry", name: "Blueberries", icon: "🫐", hours: 48, seed: 30, sell: 10, yield: [9, 13], look: "berry", color: "#4a5ab8" },
+  ],
+
   // The floors the elevator goes to, bottom to top, and what's on each
   // (shown on the elevator's buttons).
   floors: [
@@ -343,6 +375,9 @@ const CONFIG = {
     { id: "dancer", icon: "🕺", name: "Dance Machine", stat: "dances", desc: "Dance {n} time{s}.", goals: [1, 25, 100, 300, 1000, 3000], was: ["jig"] },
     { id: "focus", icon: "⏳", name: "Deep Focus", stat: "focusSessions", desc: "Finish {n} Study focus session{s}.", goals: [1, 5, 15, 40, 100, 250], was: ["focus", "scholar"] },
     { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hour{s} in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
+    // Outdoors (Update 4)
+    { id: "harvester", icon: "🥕", name: "Green Thumb", stat: "harvests", desc: "Harvest {n} crop{s} from the garden.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "goodNeighbor", icon: "💧", name: "Good Neighbor", stat: "friendsWatered", desc: "Water a friend's garden bed {n} time{s}.", goals: [1, 10, 30, 80, 200, 500] },
   ],
 
   // --- Titles (Update 3) ---
@@ -400,6 +435,11 @@ const CONFIG = {
     { id: "sleepyhead", text: "the Sleepyhead", tier: "rested", level: 3 },
     { id: "snoozer", text: "the Snoozer Supreme", tier: "rested", level: 6 },
     { id: "raccoonFriend", text: "Friend of Raccoons", achievement: "whoAreYou" },
+    { id: "gardener", text: "the Gardener", tier: "harvester", level: 3 },
+    { id: "harvestMoon", text: "the Harvest Moon", tier: "harvester", level: 6 },
+    { id: "goodNeighbor", text: "the Good Neighbor", tier: "goodNeighbor", level: 3 },
+    { id: "rainmaker", text: "the Rainmaker", tier: "goodNeighbor", level: 6 },
+    { id: "pumpkinChampion", text: "the Pumpkin Champion", achievement: "greatPumpkin" },
     { id: "nightOwl", text: "the Night Owl", achievement: "nightOwl" },
     { id: "earlyBird", text: "the Early Bird", achievement: "earlyBird" },
   ],
