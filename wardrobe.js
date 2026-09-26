@@ -139,9 +139,9 @@ function drawPreview() {
 // an Exalted piece.
 function tilePicture(tab, id) {
   const look = hooks.look();
-  if (tab === "hats" || tab === "shoes" || tab === "glasses") {
+  if (Object.hasOwn(TAB_TYPES, tab) && tab !== "pets") {
     const c = canvas(96, 136);
-    drawCharacterPreview(c, { color: look.color, face: look.face, hat: tab === "hats" ? id : "none", shoes: tab === "shoes" ? id : "none", glasses: tab === "glasses" ? id : "none" });
+    drawCharacterPreview(c, { color: look.color, face: look.face, [TAB_TYPES[tab]]: id });
     return c;
   }
   if (tab === "pets") {
@@ -198,9 +198,11 @@ function drawRuneTrail(ctx) {
 
 // --- The panel ---
 let tab = "hats";
+// Each tab of things to wear, and the slot on your look it fills.
+const TAB_TYPES = { hats: "hat", shoes: "shoes", glasses: "glasses", scarves: "scarf", backpacks: "backpack", earrings: "earrings", pets: "pet" };
 
 function tabsFor() {
-  const list = [["face", "🙂 Face"], ["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
+  const list = [["face", "🙂 Face"], ["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["scarves", "🧣 Scarves"], ["backpacks", "🎒 Backpacks"], ["earrings", "💎 Earrings"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
   if (myAura()) list.push(["exalted", "✦ Exalted"]);
   return list;
 }
@@ -371,7 +373,7 @@ function renderItems() {
     return;
   }
   const look = hooks.look();
-  const type = { hats: "hat", shoes: "shoes", pets: "pet", glasses: "glasses" }[tab];
+  const type = TAB_TYPES[tab];
   const owned = hooks.choices()[tab].filter(([id]) => id !== "none");
   if (!owned.length) {
     const empty = document.createElement("p");
@@ -402,11 +404,14 @@ function render() {
 // pet you own (or none).
 const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
 document.getElementById("wardrobe-random").addEventListener("click", () => {
-  const { hats, shoes, pets, glasses } = hooks.choices();
+  const { hats, shoes, pets, glasses, scarves, backpacks, earrings } = hooks.choices();
   hooks.wear("color", pickFrom(CONFIG.wardrobeColors));
   hooks.wear("hat", pickFrom(hats)[0]);
   hooks.wear("shoes", pickFrom(shoes)[0]);
   hooks.wear("glasses", pickFrom(glasses)[0]);
+  hooks.wear("scarf", pickFrom(scarves)[0]);
+  hooks.wear("backpack", pickFrom(backpacks)[0]);
+  hooks.wear("earrings", pickFrom(earrings)[0]);
   hooks.wear("pet", pickFrom(pets)[0]);
   hooks.wear("face", { eyes: pickFrom(FACE_EYE_STYLES)[0], mouth: pickFrom(FACE_MOUTH_STYLES)[0], blush: pickFrom(FACE_BLUSH_STYLES)[0], freckles: Math.random() < 0.3 });
   playClickSound();

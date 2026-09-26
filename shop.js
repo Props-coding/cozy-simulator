@@ -1,7 +1,7 @@
 // Crumbs (the house money) and the raccoons' shop.
 //
 // You earn crumbs just for being in the house (see config.js), and spend
-// them on hats, shoes and pets sold by three raccoons in a trenchcoat who lurk
+// them on hats, shoes, glasses, scarves, backpacks, earrings and pets sold by three raccoons in a trenchcoat who lurk
 // in the hallway. Talking to them opens a chatty speech box: their words
 // type out letter by letter with a babbling voice. Then the coat swings
 // open to show the wares.
@@ -79,6 +79,28 @@ const CATALOG = [
   { id: "starGlasses", type: "glasses", name: "Star Glasses", price: 50, line: "you're a star. the glasses say so." },
   { id: "goggles", type: "glasses", name: "Goggles", price: 60, line: "for the workshop. safety first. second: style." },
   { id: "monocle", type: "glasses", name: "Monocle", price: 90, line: "one eye fancy. the other eye regular. balance." },
+  { id: "squareFrames", type: "glasses", name: "Square Frames", price: 30, line: "for reading. or for looking like you read." },
+  { id: "roseGlasses", type: "glasses", name: "Rose-Tinted Glasses", price: 45, line: "everything's fine now. forever. probably." },
+  { id: "aviators", type: "glasses", name: "Aviators", price: 55, line: "we can't fly. but you'll look like you can." },
+  // Scarves wrap around you, under your face (Update 3).
+  { id: "bandana", type: "scarf", name: "Bandana", price: 15, line: "very cowboy. very mysterious. very washable." },
+  { id: "knitScarf", type: "scarf", name: "Red Knit Scarf", price: 25, line: "hand knitted. by paws. don't look too close." },
+  { id: "stripedScarf", type: "scarf", name: "Striped Scarf", price: 30, line: "stripes are faster. that's science." },
+  { id: "plaidScarf", type: "scarf", name: "Plaid Scarf", price: 35, line: "smells faintly of pine. we don't know why." },
+  { id: "chunkyScarf", type: "scarf", name: "Chunky Scarf", price: 45, line: "like a hug. but it never wants to talk about it." },
+  { id: "featherBoa", type: "scarf", name: "Feather Boa", price: 70, line: "fabulous. a few feathers are ours. don't ask." },
+  // Backpacks ride on your back (Update 3).
+  { id: "schoolBag", type: "backpack", name: "School Backpack", price: 30, line: "comes with a free half-eaten sandwich. kidding. mostly." },
+  { id: "hikingPack", type: "backpack", name: "Hiking Pack", price: 50, line: "for long walks. like to the fridge." },
+  { id: "bunnyBag", type: "backpack", name: "Bunny Backpack", price: 60, line: "it's not a real bunny. we asked it." },
+  { id: "guitarCase", type: "backpack", name: "Guitar Case", price: 80, line: "there's no guitar in it. just vibes." },
+  { id: "jetpack", type: "backpack", name: "Jetpack", price: 150, line: "doesn't fly. does make flames. indoors. careful." },
+  // Earrings hang by your face (Update 3).
+  { id: "pearlStuds", type: "earrings", name: "Pearl Studs", price: 25, line: "real pearls. from a real... shell. somewhere." },
+  { id: "goldHoops", type: "earrings", name: "Gold Hoops", price: 30, line: "shiny. we almost kept them." },
+  { id: "cherryEarrings", type: "earrings", name: "Cherry Earrings", price: 35, line: "not for eating. bean tried." },
+  { id: "starDangles", type: "earrings", name: "Star Dangles", price: 45, line: "caught two stars. hung them on hooks. easy." },
+  { id: "featherEarrings", type: "earrings", name: "Feather Earrings", price: 40, line: "matches the boa. we planned that. we did not."  },
   // Pets follow you around the house (one at a time).
   { id: "duck", type: "pet", name: "Duckling", price: 50, line: "it imprinted on us first. awkward. it's yours now." },
   { id: "frog", type: "pet", name: "Frog", price: 50, line: "ribbit. same pitch as the hat. we're consistent." },
@@ -147,6 +169,12 @@ export function itemName(id) {
 
 export function ownedGlasses() {
   return CATALOG.filter((item) => item.type === "glasses" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+}
+
+// What you own of any one kind ("scarf", "backpack", "earrings", ...), as
+// [id, name] pairs.
+export function ownedOfType(type) {
+  return CATALOG.filter((item) => item.type === type && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 export function ownedPets() {

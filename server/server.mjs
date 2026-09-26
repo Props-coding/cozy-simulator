@@ -460,7 +460,7 @@ function doorInfo(key, user, viewerKey = key) {
     audio: room.audio,
     placed: maySee(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
     // How they look, so they can be shown asleep in bed while they're away.
-    look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30), face: faceOf(look) },
+    look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30), face: faceOf(look), scarf: shortText(look.scarf, 30), backpack: shortText(look.backpack, 30), earrings: shortText(look.earrings, 30) },
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
   };
 }
@@ -841,6 +841,9 @@ const routes = {
       pet: text(look.pet, 30),
       glasses: text(look.glasses, 30),
       face: faceOf(look),
+      scarf: text(look.scarf, 30),
+      backpack: text(look.backpack, 30),
+      earrings: text(look.earrings, 30),
       lofi: text(saved("cozy-house-lofi"), 30), // their Study station (turntable.js)
       achievements: Object.keys(progress.unlocked ?? {}).slice(0, 200),
       seconds: Number.isFinite(progress.stats?.seconds) ? progress.stats.seconds : 0,

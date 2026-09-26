@@ -67,7 +67,7 @@ export async function openProfile(name) {
   const character = el("canvas", "profile-character");
   character.width = 96;
   character.height = 136; // room above the circle for tall hats
-  drawCharacterPreview(character, { color: p.color, hat: p.hat ?? "none", shoes: p.shoes ?? "none", glasses: p.glasses ?? "none", face: p.face });
+  drawCharacterPreview(character, { color: p.color, hat: p.hat ?? "none", shoes: p.shoes ?? "none", glasses: p.glasses ?? "none", face: p.face, scarf: p.scarf ?? "none", backpack: p.backpack ?? "none", earrings: p.earrings ?? "none" });
   look.appendChild(character);
   if (p.pet && Object.hasOwn(PET_DRAWERS, p.pet)) {
     const pet = el("canvas", "profile-pet");

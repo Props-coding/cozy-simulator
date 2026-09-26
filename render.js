@@ -8314,6 +8314,57 @@ Object.assign(HAT_DRAWERS, {
 const GLASSES_DRAWERS = {
   none: null,
 
+  // Thick black square frames.
+  squareFrames(ctx, cx, cy) {
+    ctx.strokeStyle = "#22201e";
+    ctx.lineWidth = 1.6;
+    for (const ex of [cx - 4.4, cx + 4.4]) {
+      roundRectPath(ctx, ex - 3.3, cy - 4.8, 6.6, 5.4, 1);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx - 1.1, cy - 2.6);
+    ctx.lineTo(cx + 1.1, cy - 2.6);
+    ctx.stroke();
+  },
+
+  // Aviators: gold wire and dark teardrop lenses.
+  aviators(ctx, cx, cy) {
+    ctx.fillStyle = "rgba(40, 50, 60, 0.85)";
+    ctx.strokeStyle = "#c9a24a";
+    ctx.lineWidth = 0.9;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(cx + side * 1.2, cy - 4.5);
+      ctx.lineTo(cx + side * 7.8, cy - 4.5);
+      ctx.quadraticCurveTo(cx + side * 8, cy + 1.5, cx + side * 4.5, cy + 1.2);
+      ctx.quadraticCurveTo(cx + side * 1.2, cy + 1, cx + side * 1.2, cy - 4.5);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx - 1.2, cy - 4.5);
+    ctx.lineTo(cx + 1.2, cy - 4.5);
+    ctx.stroke();
+  },
+
+  // Round, rose-tinted lenses: everything looks cozier.
+  roseGlasses(ctx, cx, cy) {
+    ctx.fillStyle = "rgba(240, 140, 170, 0.45)";
+    ctx.strokeStyle = "#d87a9a";
+    ctx.lineWidth = 1;
+    for (const ex of [cx - 4.2, cx + 4.2]) {
+      ctx.beginPath();
+      ctx.arc(ex, cy - 2, 3.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx - 1, cy - 2.5);
+    ctx.lineTo(cx + 1, cy - 2.5);
+    ctx.stroke();
+  },
+
   roundGlasses(ctx, cx, cy) {
     ctx.strokeStyle = "#c9a24a";
     ctx.lineWidth = 1.2;
@@ -8981,6 +9032,320 @@ function seatLift(seated) {
   return seated === "upTall" ? -12 : seated ? 4 : 0;
 }
 
+// --- Accessories (Update 3): scarves, backpacks and earrings ---
+// All drawn around the body at (cx, cy), radius r (see drawPlayerBody).
+// Scarves wrap the lower part of the body, under the mouth; backpacks sit
+// behind the body (peeking out at the sides), with little straps in
+// front; earrings hang at the sides of the head, below headphones if
+// you wear them. None of them reach above your head, so hats always fit.
+
+// A soft band around the lower body, in `color`, with an optional pattern
+// drawn inside it, and a tail hanging down one side.
+function scarfBand(ctx, cx, cy, r, color, pattern = null, tail = true) {
+  const band = () => {
+    ctx.beginPath();
+    ctx.moveTo(cx - r + 0.5, cy + 5.5);
+    ctx.quadraticCurveTo(cx, cy + 11.5, cx + r - 0.5, cy + 5.5);
+    ctx.lineTo(cx + r - 2, cy + 10.5);
+    ctx.quadraticCurveTo(cx, cy + 16.5, cx - r + 2, cy + 10.5);
+    ctx.closePath();
+  };
+  if (tail) {
+    ctx.fillStyle = shadeColor(color, -12);
+    roundRectPath(ctx, cx + 3.5, cy + 10, 5.5, 10, 1.5);
+    ctx.fill();
+  }
+  ctx.save();
+  band();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.clip();
+  if (pattern) pattern();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // lit from above
+  ctx.fillRect(cx - r, cy + 5, r * 2, 2.5);
+  ctx.restore();
+  band();
+  ctx.strokeStyle = shadeColor(color, -40);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+const SCARF_DRAWERS = {
+  none: null,
+  // A red knit scarf with ribbed lines and a fringed tail.
+  knitScarf(ctx, cx, cy, r) {
+    scarfBand(ctx, cx, cy, r, "#c8423a", () => {
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
+      ctx.lineWidth = 1;
+      for (let x = cx - r; x < cx + r; x += 3) {
+        ctx.beginPath();
+        ctx.moveTo(x, cy + 4);
+        ctx.lineTo(x + 1, cy + 17);
+        ctx.stroke();
+      }
+    });
+    ctx.fillStyle = "#e07a6a";
+    for (let k = 0; k < 4; k++) ctx.fillRect(cx + 3.8 + k * 1.4, cy + 20, 0.9, 2.2);
+  },
+  // Cream and teal stripes.
+  stripedScarf(ctx, cx, cy, r) {
+    scarfBand(ctx, cx, cy, r, "#f2ead8", () => {
+      ctx.fillStyle = "#4f9a8a";
+      for (let x = cx - r - 4; x < cx + r; x += 6) ctx.fillRect(x, cy + 3, 3, 16);
+    });
+    ctx.fillStyle = "#4f9a8a";
+    ctx.fillRect(cx + 3.5, cy + 13, 5.5, 2);
+    ctx.fillRect(cx + 3.5, cy + 17, 5.5, 2);
+  },
+  // Green tartan.
+  plaidScarf(ctx, cx, cy, r) {
+    scarfBand(ctx, cx, cy, r, "#3f7a4a", () => {
+      ctx.fillStyle = "rgba(200, 60, 50, 0.55)";
+      for (let x = cx - r; x < cx + r; x += 5) ctx.fillRect(x, cy + 3, 1.4, 16);
+      ctx.fillRect(cx - r, cy + 9, r * 2, 1.4);
+      ctx.fillStyle = "rgba(240, 210, 110, 0.5)";
+      ctx.fillRect(cx - r, cy + 12, r * 2, 0.8);
+    });
+  },
+  // A thick, chunky cream scarf, no tail, snug around the neck.
+  chunkyScarf(ctx, cx, cy, r) {
+    scarfBand(ctx, cx, cy, r, "#efe2c8", () => {
+      ctx.fillStyle = "rgba(160, 130, 90, 0.25)";
+      for (let x = cx - r; x < cx + r; x += 4.5) {
+        ctx.beginPath();
+        ctx.ellipse(x, cy + 10, 1.6, 4, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }, false);
+  },
+  // A blue bandana, tied with the point hanging down in front.
+  bandana(ctx, cx, cy, r) {
+    ctx.fillStyle = "#3f6fae";
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy + 7.5);
+    ctx.quadraticCurveTo(cx, cy + 10.5, cx + 8, cy + 7.5);
+    ctx.lineTo(cx, cy + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#2c4f80";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    for (const [dx, dy] of [[-4, 9.5], [0, 11], [4, 9.5], [-1.5, 13.5], [1.5, 13.5]]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+  // A fluffy pink feather boa: a chain of soft puffs.
+  featherBoa(ctx, cx, cy, r) {
+    for (let k = 0; k <= 8; k++) {
+      const t = k / 8;
+      const x = cx - r + 1 + t * (r * 2 - 2);
+      const y = cy + 8 + Math.sin(t * Math.PI) * 4.5;
+      ctx.fillStyle = k % 2 ? "#f29ac4" : "#e878b0";
+      ctx.beginPath();
+      ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let k = 0; k < 3; k++) {
+      ctx.fillStyle = k % 2 ? "#e878b0" : "#f29ac4";
+      ctx.beginPath();
+      ctx.arc(cx + 7 + k * 0.6, cy + 14 + k * 3, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+};
+
+// Backpacks: `back` is drawn behind the body, `straps` in front of it.
+// Someone sitting with their back to you shows the whole pack instead.
+function packBox(ctx, x, y, w, h, color) {
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, shadeColor(color, 20));
+  g.addColorStop(1, shadeColor(color, -25));
+  ctx.fillStyle = g;
+  roundRectPath(ctx, x, y, w, h, 4);
+  ctx.fill();
+  ctx.strokeStyle = shadeColor(color, -50);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function packStraps(ctx, cx, cy, color) {
+  ctx.strokeStyle = shadeColor(color, -20);
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = "round";
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + side * 12.2, cy - 2);
+    ctx.quadraticCurveTo(cx + side * 10.6, cy + 6, cx + side * 11.6, cy + 11);
+    ctx.stroke();
+  }
+  ctx.lineCap = "butt";
+}
+
+const BACKPACK_DRAWERS = {
+  none: null,
+  // A classic school backpack with a front pocket.
+  schoolBag: {
+    back(ctx, cx, cy) {
+      packBox(ctx, cx - 16, cy - 8, 32, 21, "#d9825b");
+      packBox(ctx, cx - 17.5, cy + 2, 6, 9, "#c46e48"); // side pockets
+      packBox(ctx, cx + 11.5, cy + 2, 6, 9, "#c46e48");
+    },
+    straps: (ctx, cx, cy) => packStraps(ctx, cx, cy, "#b8603e"),
+  },
+  // A tall hiking pack with a rolled-up sleeping mat on top.
+  hikingPack: {
+    back(ctx, cx, cy) {
+      packBox(ctx, cx - 15, cy - 5, 30, 18, "#4f7a5a");
+      ctx.fillStyle = "#c9a45a"; // the rolled mat, poking out both sides
+      roundRectPath(ctx, cx - 19, cy - 7, 38, 5.5, 2.75);
+      ctx.fill();
+      ctx.strokeStyle = "#8a6a34";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    },
+    straps: (ctx, cx, cy) => packStraps(ctx, cx, cy, "#3a5a42"),
+  },
+  // A fluffy bunny backpack: long ears poke up over your shoulders.
+  bunnyBag: {
+    back(ctx, cx, cy) {
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = "#f4eee6";
+        ctx.beginPath();
+        ctx.ellipse(cx + side * 9, cy - 14, 3.2, 8, side * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f2b8c6";
+        ctx.beginPath();
+        ctx.ellipse(cx + side * 9, cy - 14, 1.5, 5.5, side * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      packBox(ctx, cx - 15.5, cy - 6, 31, 19, "#f4eee6");
+    },
+    straps: (ctx, cx, cy) => packStraps(ctx, cx, cy, "#f2b8c6"),
+  },
+  // A shiny jetpack with two tanks. Little flames puff out while walking.
+  jetpack: {
+    back(ctx, cx, cy, moving) {
+      for (const side of [-1, 1]) {
+        const x = cx + side * 13 - 4;
+        packBox(ctx, x, cy - 8, 8, 20, "#b8c0c8");
+        ctx.fillStyle = "#d8403a";
+        ctx.fillRect(x, cy - 5, 8, 2);
+        if (moving) {
+          const flick = 3 + Math.sin(performance.now() / 50 + side) * 1.5;
+          ctx.fillStyle = "#f2b84a";
+          ctx.beginPath();
+          ctx.moveTo(x + 1.5, cy + 12);
+          ctx.lineTo(x + 6.5, cy + 12);
+          ctx.lineTo(x + 4, cy + 12 + flick * 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    },
+    straps: (ctx, cx, cy) => packStraps(ctx, cx, cy, "#6a727a"),
+  },
+  // A guitar in its case, slung across your back.
+  guitarCase: {
+    back(ctx, cx, cy) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-0.6);
+      ctx.fillStyle = "#3a2c28";
+      roundRectPath(ctx, -2.5, -30, 5, 24, 2); // the neck, over your shoulder
+      ctx.fill();
+      ctx.beginPath(); // the body
+      ctx.ellipse(0, 6, 10, 12, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -6, 7.5, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#c9a24a";
+      ctx.fillRect(-3, -33, 6, 4); // tuning pegs
+      ctx.restore();
+    },
+    straps(ctx, cx, cy) {
+      ctx.strokeStyle = "#6b4a2e";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); // one strap, across the chest
+      ctx.moveTo(cx - 12.5, cy + 2);
+      ctx.quadraticCurveTo(cx - 4, cy + 12, cx + 10.5, cy + 10);
+      ctx.stroke();
+    },
+  },
+};
+
+// Earrings hang at the sides of the head. `y` is where they hook on.
+const EARRING_DRAWERS = {
+  none: null,
+  goldHoops(ctx, x, y) {
+    ctx.strokeStyle = "#e0b040";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.arc(x, y + 3, 2.8, 0, Math.PI * 2);
+    ctx.stroke();
+  },
+  pearlStuds(ctx, x, y) {
+    ctx.fillStyle = "#fbf6ee";
+    ctx.beginPath();
+    ctx.arc(x, y + 1, 1.9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(120, 100, 80, 0.5)";
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x - 0.9, y, 0.8, 0.8);
+  },
+  starDangles(ctx, x, y) {
+    ctx.strokeStyle = "#c9a24a";
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + 3);
+    ctx.stroke();
+    ctx.fillStyle = "#f2c84a";
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+      const rr = k % 2 === 0 ? 2.6 : 1.1;
+      ctx.lineTo(x + Math.cos(a) * rr, y + 5 + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ctx.fill();
+  },
+  cherryEarrings(ctx, x, y) {
+    ctx.strokeStyle = "#4f7a3a";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 1.5, y + 4);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 1.5, y + 4);
+    ctx.stroke();
+    ctx.fillStyle = "#d8303a";
+    for (const dx of [-1.6, 1.6]) {
+      ctx.beginPath();
+      ctx.arc(x + dx, y + 5, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+  featherEarrings(ctx, x, y) {
+    ctx.fillStyle = "#5aa0a8";
+    ctx.beginPath();
+    ctx.ellipse(x, y + 5, 1.5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2f5f66";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + 9);
+    ctx.stroke();
+  },
+};
+
+// Hats that cover the ears: earrings hang just below them instead.
+const EAR_COVERING_HATS = new Set(["headphones"]);
+
 // --- Faces (the wardrobe's Face tab) ---
 // Everyone picks eyes, a mouth, cheeks and freckles. Each style draws on
 // a face centered at (cx, cy): eyes sit at cx ± 4, cy - 2, the mouth
@@ -9324,6 +9689,11 @@ function drawPlayerBody(ctx, p) {
     ctx.translate(-foot.x, -foot.y);
   }
 
+  // A backpack sits behind the body (unless they're tucked into bed, or
+  // under the Exalted robe). Facing away, it's drawn in front instead.
+  const pack = !p.asleep && !aura?.robe && Object.hasOwn(BACKPACK_DRAWERS, p.backpack) ? BACKPACK_DRAWERS[p.backpack] : null;
+  if (pack && !facingAway) pack.back(ctx, cx, cy, p.moving);
+
   const body = ctx.createLinearGradient(0, cy - r, 0, cy + r);
   body.addColorStop(0, shadeColor(p.color, 35));
   body.addColorStop(1, shadeColor(p.color, -30));
@@ -9344,6 +9714,9 @@ function drawPlayerBody(ctx, p) {
     ctx.arc(cx, cy + 2, r - 3, 0, Math.PI);
     ctx.fill();
   }
+  // Backpack straps, then the scarf wrapped over them (the robe hides both).
+  if (pack) (facingAway ? pack.back(ctx, cx, cy + 3, p.moving) : pack.straps(ctx, cx, cy));
+  if (!aura?.robe && Object.hasOwn(SCARF_DRAWERS, p.scarf) && SCARF_DRAWERS[p.scarf]) SCARF_DRAWERS[p.scarf](ctx, cx, cy, r);
   ctx.save();
   ctx.translate(faceShift, 0);
   if (facingAway) ctx.globalAlpha = 0; // (the face is on the other side)
@@ -9427,6 +9800,12 @@ function drawPlayerBody(ctx, p) {
   // A robe's hood takes the place of a hat.
   if (aura?.robe) drawRobe(ctx, cx, cy, r);
   else (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+  // Earrings, at the sides of the head (after the hat, so a hat never
+  // hides them; under headphones they hang just below the ear cups).
+  if (!aura?.robe && Object.hasOwn(EARRING_DRAWERS, p.earrings) && EARRING_DRAWERS[p.earrings]) {
+    const hookY = cy + (EAR_COVERING_HATS.has(p.hat) ? 6 : 2);
+    for (const side of [-1, 1]) EARRING_DRAWERS[p.earrings](ctx, cx + side * (r - 0.5) + faceShift * 0.3, hookY);
+  }
   for (const c of candles) if (!c.behind) drawFloatingCandle(ctx, c.x, c.y);
 
   if (p.asleep) {
