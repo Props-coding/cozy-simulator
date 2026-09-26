@@ -8,6 +8,7 @@
 import { serverApi, accountName } from "./account.js";
 import { ACHIEVEMENTS, myStats, myTiers } from "./achievements.js";
 import { roomLevels } from "./reputation.js";
+import { titleText } from "./titles.js";
 import { itemName } from "./shop.js";
 import { playClickSound } from "./audio.js";
 import { lofiStation } from "./turntable.js";
@@ -84,8 +85,18 @@ export async function openProfile(name) {
   nameTag.style.color = p.color;
   const hours = Math.floor(p.seconds / 3600), minutes = Math.floor((p.seconds % 3600) / 60);
   const since = new Date(p.since).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" });
+  // (Your own title comes from this browser, so a new pick shows right away.)
+  let title = titleText(p.title);
+  if (mine) {
+    try {
+      title = titleText(JSON.parse(localStorage.getItem("cozy-house-profile"))?.title);
+    } catch {
+      // Keep the one from the server.
+    }
+  }
   head.append(
     nameTag,
+    ...(title ? [el("p", "profile-title", title)] : []),
     el("p", "profile-meta", `In the house since ${since}`),
     el("p", "profile-meta", hours ? `${hours} hour${hours === 1 ? "" : "s"} in the house` : `${minutes} minute${minutes === 1 ? "" : "s"} in the house`),
     el("p", "profile-meta", `🎧 Favorite lo-fi: ${lofiStation(p.lofi).name}`)

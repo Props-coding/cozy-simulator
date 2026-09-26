@@ -66,6 +66,7 @@ import { ACHIEVEMENTS, initAchievements, unlock, count, collect, setStat, myStat
 import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { addRoomTime, roomLevels } from "./reputation.js";
+import { titleText, titleList, checkNewTitles } from "./titles.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
 import { startRooms, refreshRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen, askToEnter, leftRoom, letIn } from "./rooms.js";
@@ -184,6 +185,7 @@ let myFace = cleanFace(null); // eyes, mouth, blush and freckles (the wardrobe's
 // Scarf, backpack and earrings (Update 3): each an item id, or "none".
 const ACCESSORY_SLOTS = ["scarf", "backpack", "earrings"];
 const myAccessories = { scarf: "none", backpack: "none", earrings: "none" };
+let myTitle = "none"; // the title under your name tag (titles.js), or "none"
 const accessoryChoices = (slot) => [["none", "None"], ...ownedOfType(slot)];
 // Only accessories you own (anything else is taken off).
 const ownedAccessory = (slot, id) => (accessoryChoices(slot).some(([owned]) => owned === id) ? id : "none");
@@ -219,10 +221,11 @@ fillSelect(petInput, petChoices(), savedProfile?.pet);
 fillSelect(glassesInput, glassesChoices(), savedProfile?.glasses);
 myFace = cleanFace(savedProfile?.face);
 for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, savedProfile?.[slot]);
+myTitle = typeof savedProfile?.title === "string" ? savedProfile.title : "none";
 
 function saveProfile() {
   try {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories }));
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle }));
   } catch {
     // Storage blocked (e.g. private window): just won't be remembered.
   }
@@ -238,7 +241,8 @@ updatePreview();
 // The wardrobe (wardrobe.js) changes your look from your bedroom.
 initWardrobe({
   name: () => myName,
-  look: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories }),
+  look: () => ({ color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle }),
+  titles: () => titleList(),
   choices: () => ({ hats: hatChoices(), shoes: shoeChoices(), pets: petChoices(), glasses: glassesChoices(), scarves: accessoryChoices("scarf"), backpacks: accessoryChoices("backpack"), earrings: accessoryChoices("earrings") }),
   wear: (type, id) => {
     if (type === "color") myColor = colorInput.value = id;
@@ -247,6 +251,7 @@ initWardrobe({
     else if (type === "glasses") myGlasses = id;
     else if (type === "face") myFace = cleanFace(id); // (here `id` is the whole face)
     else if (ACCESSORY_SLOTS.includes(type)) myAccessories[type] = id;
+    else if (type === "title") myTitle = id;
     else myPet = id;
     saveProfile();
     refreshLook();
@@ -288,6 +293,7 @@ joinButton.addEventListener("click", async () => {
   myPet = petChoices().some(([id]) => id === petInput.value) ? petInput.value : "none";
   myGlasses = glassesChoices().some(([id]) => id === glassesInput.value) ? glassesInput.value : "none";
   for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, myAccessories[slot]);
+  if (!titleList().some((t) => t.id === myTitle && t.earned)) myTitle = "none"; // (only titles you've earned)
   saveProfile();
   // Crumbs earned so far, for the Crumb Collector tiers. From before it was
   // counted, the best guess is what you have plus what you've bought.
@@ -1725,7 +1731,7 @@ function sleeperScenePlayer({ door, bed }) {
   const at = tuckedIn(bed);
   const look = door.look ?? {};
   const known = (drawers, id) => (Object.hasOwn(drawers, id) ? id : "none");
-  return { id: "asleep-" + door.owner, pet: known(PET_DRAWERS, look.pet), x: at.x, y: at.y, moving: false, color: door.color, hat: known(HAT_DRAWERS, look.hat), shoes: known(SHOE_DRAWERS, look.shoes), glasses: known(GLASSES_DRAWERS, look.glasses), face: cleanFace(look.face), scarf: known(SCARF_DRAWERS, look.scarf), backpack: known(BACKPACK_DRAWERS, look.backpack), earrings: known(EARRING_DRAWERS, look.earrings), name: door.owner, badge: "sleeping", bubble: null, emote: sleepingEmote(), typing: false, asleep: { color: bed.color }, aura: null, admin: false, seated: null, speaking: false, whisper: null };
+  return { id: "asleep-" + door.owner, pet: known(PET_DRAWERS, look.pet), x: at.x, y: at.y, moving: false, color: door.color, hat: known(HAT_DRAWERS, look.hat), shoes: known(SHOE_DRAWERS, look.shoes), glasses: known(GLASSES_DRAWERS, look.glasses), face: cleanFace(look.face), scarf: known(SCARF_DRAWERS, look.scarf), backpack: known(BACKPACK_DRAWERS, look.backpack), earrings: known(EARRING_DRAWERS, look.earrings), title: titleText(look.title), name: door.owner, badge: "sleeping", bubble: null, emote: sleepingEmote(), typing: false, asleep: { color: bed.color }, aura: null, admin: false, seated: null, speaking: false, whisper: null };
 }
 
 function updateSleep() {
@@ -1825,6 +1831,7 @@ function checkTimeAchievements() {
   if (room.startsWith("bedroom-") && peers.some((p) => p.room === room)) unlock("sleepover");
   addRoomTime(getCurrentRoom(player), 5); // room reputation (reputation.js)
   checkTiers();
+  checkNewTitles();
 }
 
 // --- Pets ---
@@ -2102,7 +2109,7 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const pass = currentRoom.bedroom && myPass?.owner === currentRoom.owned.ownerName.toLowerCase() ? myPass.pass : null;
-    broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: inCall() ? null : whisperTarget(), phone: inCall() });
+    broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: inCall() ? null : whisperTarget(), phone: inCall() });
   }
 
   const scenePlayers = visiblePeers.map((peer) => {
@@ -2114,13 +2121,13 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
     const at = bed ? tuckedIn(bed) : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
   // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.

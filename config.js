@@ -279,6 +279,57 @@ const CONFIG = {
     { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hours in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
   ],
 
+  // --- Titles (Update 3) ---
+  // A title shows under your name tag, like "the Scholar". You earn them
+  // from room levels, tiers and a few one-time achievements, and pick one
+  // (or none) in your wardrobe's Titles tab. To add one, copy a line: give
+  // it a new `id`, the `text` to show, and what earns it, one of:
+  //   room: "study", level: 10          (a room level, see roomLevels)
+  //   tier: "homebody", level: 3        (a tier, 1 Bronze ... 6 Legend)
+  //   achievement: "whoAreYou"          (a one-time achievement)
+  titles: [
+    { id: "studious", text: "the Studious", room: "study", level: 5 },
+    { id: "scholar", text: "the Scholar", room: "study", level: 10 },
+    { id: "bookworm", text: "the Bookworm", room: "library", level: 5 },
+    { id: "librarian", text: "the Librarian", room: "library", level: 10 },
+    { id: "filmBuff", text: "the Film Buff", room: "theater", level: 5 },
+    { id: "critic", text: "the Critic", room: "theater", level: 10 },
+    { id: "doodler", text: "the Doodler", room: "conference", level: 5 },
+    { id: "chair", text: "the Chairperson", room: "conference", level: 10 },
+    { id: "foodie", text: "the Foodie", room: "dinner", level: 5 },
+    { id: "gourmet", text: "the Gourmet", room: "dinner", level: 10 },
+    { id: "tinkerer", text: "the Tinkerer", room: "workshop", level: 5 },
+    { id: "builder", text: "the Builder", room: "workshop", level: 10 },
+    { id: "hardWorker", text: "the Hard Worker", room: "office", level: 5 },
+    { id: "workaholic", text: "the Workaholic", room: "office", level: 10 },
+    { id: "napper", text: "the Napper", room: "bedroom", level: 5 },
+    { id: "dreamer", text: "the Dreamer", room: "bedroom", level: 10 },
+    { id: "homebody", text: "the Homebody", tier: "homebody", level: 3 },
+    { id: "resident", text: "the Resident", tier: "homebody", level: 5 },
+    { id: "hearthKeeper", text: "the Hearth Keeper", tier: "homebody", level: 6 },
+    { id: "regular", text: "the Regular", tier: "visitor", level: 3 },
+    { id: "faithful", text: "the Faithful", tier: "visitor", level: 6 },
+    { id: "wellTraveled", text: "the Well-Traveled", tier: "wellRounded", level: 4 },
+    { id: "houseMaster", text: "Master of the House", tier: "wellRounded", level: 6 },
+    { id: "crumbBaron", text: "the Crumb Baron", tier: "crumbs", level: 4 },
+    { id: "crumbTycoon", text: "the Crumb Tycoon", tier: "crumbs", level: 6 },
+    { id: "fashionista", text: "the Fashionista", tier: "collector", level: 4 },
+    { id: "petWhisperer", text: "the Pet Whisperer", tier: "menagerie", level: 3 },
+    { id: "zookeeper", text: "the Zookeeper", tier: "menagerie", level: 6 },
+    { id: "chatterbox", text: "the Chatterbox", tier: "chatterbox", level: 3 },
+    { id: "storyteller", text: "the Storyteller", tier: "chatterbox", level: 5 },
+    { id: "expressive", text: "the Expressive", tier: "emotes", level: 4 },
+    { id: "dancer", text: "the Dancer", tier: "dancer", level: 3 },
+    { id: "danceLegend", text: "the Dance Legend", tier: "dancer", level: 6 },
+    { id: "focused", text: "the Focused", tier: "focus", level: 3 },
+    { id: "zenMaster", text: "the Zen Master", tier: "focus", level: 6 },
+    { id: "sleepyhead", text: "the Sleepyhead", tier: "rested", level: 3 },
+    { id: "snoozer", text: "the Snoozer Supreme", tier: "rested", level: 6 },
+    { id: "raccoonFriend", text: "Friend of Raccoons", achievement: "whoAreYou" },
+    { id: "nightOwl", text: "the Night Owl", achievement: "nightOwl" },
+    { id: "earlyBird", text: "the Early Bird", achievement: "earlyBird" },
+  ],
+
   // --- Crumbs (the house money) ---
   // You earn crumbs just for hanging out, and spend them at the raccoons'
   // shop in the hallway on hats and shoes.

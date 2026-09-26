@@ -10134,10 +10134,26 @@ function drawPlayerTag(ctx, p) {
   tagLifts[p.id] = lift + (target - lift) * step;
   // The top of their head plus room for their hat. The name, badge, speech
   // bubbles and emotes all sit above this, so none of them cover the hat.
-  const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
+  let headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
 
-  if (p.emote) drawEmoteFloaters(ctx, p, cx, headTop);
-  if (p.whisper) drawWhisperSwirl(ctx, cx, headTop, p.whisper.dir);
+  // A title (like "the Scholar") sits just under the name tag, so the tag,
+  // and everything above it, moves up to make room.
+  if (p.title) {
+    ctx.font = "italic 700 9px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    const w = ctx.measureText(p.title).width + 10;
+    ctx.fillStyle = "rgba(255, 250, 238, 0.75)";
+    roundRectPath(ctx, cx - w / 2, headTop - 13, w, 11, 5.5);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a1e";
+    ctx.fillText(p.title, cx, headTop - 4.5);
+    headTop -= 11;
+  }
+
+  // (Emotes and whispers are placed around the head, so they don't move.)
+  const bodyTop = headTop + (p.title ? 11 : 0);
+  if (p.emote) drawEmoteFloaters(ctx, p, cx, bodyTop);
+  if (p.whisper) drawWhisperSwirl(ctx, cx, bodyTop, p.whisper.dir);
 
   ctx.font = "600 11px 'Quicksand', sans-serif";
   ctx.textAlign = "center";

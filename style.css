@@ -2766,6 +2766,13 @@ input[type="range"]::-moz-range-thumb {
   font-size: 1.4em;
 }
 
+.profile-title {
+  margin: -2px 0 4px;
+  font-style: italic;
+  font-weight: 700;
+  color: #9a6a1e;
+}
+
 .profile-meta {
   margin: 0;
   font-size: 0.85em;
@@ -3265,6 +3272,54 @@ input[type="range"]::-moz-range-thumb {
 
 .wardrobe-section:first-child {
   margin-top: 0;
+}
+
+/* Titles tab: each tile shows your name tag with the title under it. */
+.wardrobe-title-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.wardrobe-title-name {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 0.8em;
+  color: #333;
+  box-shadow: 0 1px 3px rgba(90, 65, 40, 0.15);
+}
+
+.wardrobe-title-text {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fbefd9;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 0.72em;
+  color: #8a5a1e;
+  text-align: center;
+}
+
+.wardrobe-title-tile .wardrobe-name {
+  font-weight: 600;
+  font-size: 0.7em;
+  color: #9c8770;
+  text-align: center;
+}
+
+.wardrobe-title-tile.locked {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  cursor: default;
+}
+
+.wardrobe-title-tile.locked:hover {
+  transform: none;
 }
 
 .wardrobe-empty {
@@ -3975,4 +4030,8 @@ input[type="range"]::-moz-range-thumb {
 #phone-popup-buttons {
   display: flex;
   gap: 6px;
+}
+
+.wardrobe-title-tile .wardrobe-art {
+  background: none;
 }

@@ -26,7 +26,7 @@ const AURA_PIECES = [
 ];
 
 // main.js tells us how to read and change your look, and what you own.
-let hooks = { look: () => ({}), wear: () => {}, choices: () => ({ hats: [], shoes: [], pets: [] }), name: () => "" };
+let hooks = { look: () => ({}), wear: () => {}, choices: () => ({ hats: [], shoes: [], pets: [] }), name: () => "", titles: () => [] };
 export function initWardrobe(options) {
   hooks = options;
 }
@@ -202,7 +202,7 @@ let tab = "hats";
 const TAB_TYPES = { hats: "hat", shoes: "shoes", glasses: "glasses", scarves: "scarf", backpacks: "backpack", earrings: "earrings", pets: "pet" };
 
 function tabsFor() {
-  const list = [["face", "🙂 Face"], ["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["scarves", "🧣 Scarves"], ["backpacks", "🎒 Backpacks"], ["earrings", "💎 Earrings"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
+  const list = [["face", "🙂 Face"], ["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["scarves", "🧣 Scarves"], ["backpacks", "🎒 Backpacks"], ["earrings", "💎 Earrings"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"], ["titles", "🎀 Titles"]];
   if (myAura()) list.push(["exalted", "✦ Exalted"]);
   return list;
 }
@@ -277,7 +277,7 @@ function tile(picture, name, on, onClick, exalted = false) {
   if (on) {
     const badge = document.createElement("span");
     badge.className = "wardrobe-badge";
-    badge.textContent = exalted ? "On" : tab === "dances" || tab === "face" ? "Chosen" : "Wearing";
+    badge.textContent = exalted ? "On" : tab === "dances" || tab === "face" || tab === "titles" ? "Chosen" : "Wearing";
     el.appendChild(badge);
   }
   el.addEventListener("click", onClick);
@@ -327,9 +327,52 @@ function renderFace() {
   itemsGrid.appendChild(tile(facePicture({ freckles: true }), "Freckles", face.freckles, () => choose({ freckles: true })));
 }
 
+// The Titles tab: pick the title under your name tag, or none. Titles you
+// haven't earned yet show greyed out, with what earns them.
+function renderTitles() {
+  const chosen = hooks.look().title ?? "none";
+  const titles = hooks.titles();
+  const pickTitle = (id) => {
+    hooks.wear("title", id);
+    playClickSound();
+    render();
+  };
+  const tag = (text) => {
+    const t = document.createElement("span");
+    t.className = "wardrobe-title-tag";
+    const name = document.createElement("span");
+    name.className = "wardrobe-title-name";
+    name.textContent = hooks.name();
+    const line = document.createElement("span");
+    line.className = "wardrobe-title-text";
+    line.textContent = text || "(no title)";
+    t.append(name, line);
+    return t;
+  };
+  itemsGrid.appendChild(tile(tag(""), "No title", chosen === "none" || !titles.some((t) => t.id === chosen && t.earned), () => pickTitle("none")));
+  const earned = titles.filter((t) => t.earned);
+  const locked = titles.filter((t) => !t.earned);
+  for (const t of earned) {
+    const card = tile(tag(t.text), t.source, t.id === chosen, () => pickTitle(t.id));
+    card.classList.add("wardrobe-title-tile");
+    itemsGrid.appendChild(card);
+  }
+  const h = document.createElement("h4");
+  h.className = "wardrobe-section";
+  h.textContent = `Still to earn (${locked.length})`;
+  if (locked.length) itemsGrid.appendChild(h);
+  for (const t of locked) {
+    const card = tile(tag(t.text), t.source, false, () => playClickSound());
+    card.classList.add("wardrobe-title-tile", "locked");
+    card.title = `Earned from ${t.source}`;
+    itemsGrid.appendChild(card);
+  }
+}
+
 function renderItems() {
   itemsGrid.innerHTML = "";
   if (tab === "face") return renderFace();
+  if (tab === "titles") return renderTitles();
   if (tab === "dances") {
     const chosen = savedDance();
     for (const [id, icon, name, blurb] of DANCES) {
