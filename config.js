@@ -15,7 +15,8 @@ const CONFIG = {
     dinner: "Dinner",
     elevator: "Elevator",
     business: "Business Floor",
-    landing: "Bedroom Hall",
+    lounge: "Lounge",
+    landing: "Suite Floor",
     workshop: "Workshop",
     // Outside (Update 4)
     yard: "Yard",
@@ -172,8 +173,8 @@ const CONFIG = {
   // (shown on the elevator's buttons).
   floors: [
     { name: "Ground floor", rooms: "Hallway, Theater, Study, Dinner, Library" },
-    { name: "Business floor", rooms: "Offices, Conference Room, Workshop" },
-    { name: "Bedrooms", rooms: "Everyone's bedroom" },
+    { name: "Business floor", rooms: "Offices, Conference Room, Workshop, Lounge" },
+    { name: "Suite floor", rooms: "Everyone's bedroom" },
   ],
 
   // Faces (the wardrobe's Face tab). How strong each cheek blush is (0 is
@@ -240,9 +241,10 @@ const CONFIG = {
 
   // Bedrooms: everyone's door is on the upstairs landing (the bedroom
   // hallway). Doors are checked with the house server every `pollSeconds`
-  // (and right away when a friend changes theirs). Doors are `doorSpacing`
-  // tiles apart, starting `firstDoorX` tiles from the west wall.
-  bedrooms: { pollSeconds: 20, doorSpacing: 2.8, firstDoorX: 1 },
+  // (and right away when a friend changes theirs). The suite floor's wall
+  // is split evenly into `doorSpots` spots, each with a door (or a window,
+  // until someone new moves in), with a lamp between each pair.
+  bedrooms: { pollSeconds: 20, doorSpots: 8 },
 
   // Sitting: press E within this many tiles of a free seat to sit down.
   sit: { reach: 1.0 },
@@ -288,6 +290,7 @@ const CONFIG = {
     elevatorUp: "elevator",
     elevatorTop: "elevator",
     workshop: "hammer",
+    lounge: "gamepad",
   },
 
   // Each room's floor: a style ("planks" for wood boards, "carpet",
@@ -306,6 +309,7 @@ const CONFIG = {
     elevatorTop: { style: "checker", color: "#d9cbb4" },
     workshop: { style: "planks", color: "#b88a5a" },
     business: { style: "planks", color: "#b9a58c" },
+    lounge: { style: "carpet", color: "#a8876a" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
     porch: { style: "planks", color: "#a88258" }, // (the rest of the yard is grass)
@@ -325,6 +329,7 @@ const CONFIG = {
     elevatorTop: "#d8c3a0",
     workshop: "#c9b28a",
     business: "#dcd6cc",
+    lounge: "#c7b49a",
     landing: "#e6d6c6",
     bedroom: "#a9b8cf", // used for every bedroom
   },

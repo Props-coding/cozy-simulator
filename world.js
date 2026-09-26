@@ -11,9 +11,9 @@
 //    the hallway, and the Library above its east end (north). South of the
 //    hallway's east end is the elevator lobby, with a bit of garden below.
 // 2. Business floor: a corridor with the Conference Room and the offices
-//    on its north side, and the Workshop and the elevator lobby on its
-//    south side. The rest is roof.
-// 3. Bedroom hall: everyone's bedroom door along its north wall. Each
+//    on its north side, and the Workshop, the Lounge and the elevator
+//    lobby on its south side.
+// 3. Suite floor: everyone's bedroom door along its north wall. Each
 //    bedroom is its own little map behind its door. The upstairs is
 // Each floor is kept further down the same grid (UPSTAIRS units lower
 // than the one before), so floors never overlap and all the walking and room rules work the same
@@ -65,6 +65,8 @@ const BASE_ROOMS = [
   // to make things together, with the house's project boards on its wall).
   { id: "conference", name: CONFIG.roomNames.conference, rect: { x: 0, y: BUSINESS - 5.4, w: 5.6, h: 5 }, sign: { x: 2.8, y: BUSINESS - WALL_THICKNESS / 2 }, north: true },
   { id: "workshop", name: CONFIG.roomNames.workshop, rect: { x: 0, y: BUSINESS + 3, w: 8, h: 5 }, sign: { x: 6.2, y: BUSINESS + 3 } },
+  // Between the Workshop and the elevator: the Lounge, for a break and a chat.
+  { id: "lounge", name: CONFIG.roomNames.lounge, rect: { x: 8, y: BUSINESS + 3, w: 10, h: 5 }, sign: { x: 13, y: BUSINESS + 3 } },
   // The business corridor and the bedroom hall are added in buildHouse;
   // here are their elevator lobbies.
   { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: BUSINESS + 3, w: 6, h: 4 }, sign: { x: 20, y: BUSINESS + 3 } },
@@ -112,7 +114,12 @@ const BASE_WALLS = [
   { x: HOUSE_WIDTH, y: BUSINESS - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
   // (the landing's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
   { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.4 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 7.0, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 12.2, h: WALL_THICKNESS },
+  // (and the Lounge's, x 12.2 to 13.8)
+  { x: 7.0, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.2, h: WALL_THICKNESS },
+  { x: 13.8, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.4, h: WALL_THICKNESS },
+  // The Lounge's right side (below the lobby's) and its bottom (drawn short).
+  { x: 18 - WALL_THICKNESS / 2, y: BUSINESS + 7, w: WALL_THICKNESS, h: 1 + WALL_THICKNESS },
+  { x: 8, y: BUSINESS + 8, w: 10 + WALL_THICKNESS / 2, h: WALL_THICKNESS, low: true },
   // The Workshop: its left side, its right side, and its bottom (drawn short).
   { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS * 1.5 },
   { x: 8 - WALL_THICKNESS / 2, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 5 + WALL_THICKNESS },
@@ -306,10 +313,28 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 5.2, y: BUSINESS, solid: false },
   { kind: "sconce", x: 9.65, y: BUSINESS, solid: false },
   { kind: "sconce", x: 13.65, y: BUSINESS, solid: false },
-  { kind: "picture", x: 18.4, y: BUSINESS, w: 1.1, art: "hills", solid: false },
-  { kind: "sconce", x: 20.2, y: BUSINESS, solid: false },
+  // Rain windows on the outside wall east of the offices (indoors, the
+  // weather only shows through windows).
+  { kind: "rainWindow", x: 18.35, y: BUSINESS, w: 1.3, solid: false },
+  { kind: "sconce", x: 20.05, y: BUSINESS, solid: false },
+  { kind: "rainWindow", x: 20.75, y: BUSINESS, w: 1.3, solid: false },
   { kind: "snakePlant", x: 23.3, y: BUSINESS + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: BUSINESS + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
+
+  // The Lounge: a sage loveseat and an armchair round a coffee table on a
+  // rug, a fridge and a tea cart for snacks, an arcade cabinet, a beanbag,
+  // a lava lamp and plants. Voice is on, like the Conference Room.
+  { kind: "rug", x: 8.7, y: BUSINESS + 4.5, w: 3.2, h: 2.3, color: "#6f8a6a", solid: false },
+  { kind: "loveseat", x: 8.6, y: BUSINESS + 3.35, w: 1.6, h: 0.8, color: "#7a9e8c" },
+  { kind: "armchair", x: 10.6, y: BUSINESS + 3.35, w: 1.1, h: 0.8 },
+  { kind: "coffeeTable", x: 9.4, y: BUSINESS + 5.2, w: 1.2, h: 0.6 },
+  { kind: "beanbag", x: 11.1, y: BUSINESS + 6.2, w: 0.9, h: 0.8 },
+  { kind: "fridge", x: 14.3, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
+  { kind: "teaCart", x: 15.3, y: BUSINESS + 3.35, w: 1.2, h: 0.6 },
+  { kind: "arcade", x: 16.9, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
+  { kind: "lavaLamp", x: 14.4, y: BUSINESS + 7.3, w: 0.4, h: 0.4 },
+  { kind: "monstera", x: 8.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 17.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
 
   // The Workshop: the house's project board (a big corkboard) and a tool
   // pegboard on the back wall, a long workbench with the "done jar" on it
@@ -740,70 +765,93 @@ function seasonalWallDecor(walls, furniture) {
 }
 
 // --- Seats ---
-// Where you can sit on each kind of furniture: a list of seat spots, each
-// { x, y } as a fraction of the piece's footprint (0 to 1 across, 0 to 1
-// down; y can go a little past 1 so you're drawn in front of a sofa's
-// back) and which way you face. "front" means "the way the piece faces"
-// (down, or right/left for a turned piece). Press E near a free spot to
-// sit; moving gets you up. See CONFIG.sit for the reach.
+// Where you can sit on each kind of furniture. Each seat spot is:
+//   x, y  the exact spot your feet rest, as a fraction of the piece's
+//         footprint (0 to 1 across, 0 to 1 down)
+//   face  which way you face: "down", "up" (away from us), "left",
+//         "right", or "front" (the way the piece faces: down, or right
+//         or left for a turned piece). A chair's "own" is the way it faces.
+//   lift  how far up you're drawn, in pixels, so you sit on the seat's
+//         surface instead of the floor.
+// Seats whose back faces us (a chair facing away, cinema seats) are drawn
+// over you, so their back hides your lower back; every other seat is
+// drawn behind you. Press E near a free spot to sit; moving gets you up.
+// See CONFIG.sit for the reach.
 const SEATS = {
-  chair: [{ x: 0.5, y: 0.5, face: "own" }], // faces the way the chair does
-  stool: [{ x: 0.5, y: 0.5, face: "up" }],
-  theaterSeat: [{ x: 0.5, y: 0.5, face: "up" }],
-  cinemaSofa: [{ x: 0.2, y: 0.55, face: "up" }, { x: 0.5, y: 0.55, face: "up" }, { x: 0.8, y: 0.55, face: "up" }],
-  bench: [{ x: 0.28, y: 0.9, face: "front" }, { x: 0.72, y: 0.9, face: "front" }],
-  loveseat: [{ x: 0.3, y: 0.95, face: "front" }, { x: 0.7, y: 0.95, face: "front" }],
-  cloudSofa: [{ x: 0.22, y: 0.95, face: "front" }, { x: 0.5, y: 0.95, face: "front" }, { x: 0.78, y: 0.95, face: "front" }],
-  armchair: [{ x: 0.5, y: 0.95, face: "front" }],
-  cottageChair: [{ x: 0.5, y: 0.95, face: "front" }],
-  papasanChair: [{ x: 0.5, y: 0.9, face: "front" }],
-  eggChair: [{ x: 0.5, y: 0.9, face: "front" }],
-  rockingChair: [{ x: 0.5, y: 0.9, face: "front" }],
-  beanbag: [{ x: 0.5, y: 0.8, face: "front" }],
-  pouf: [{ x: 0.5, y: 0.8, face: "front" }],
-  mushroomStool: [{ x: 0.5, y: 0.8, face: "front" }],
-  busShelter: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],
-  porchSwing: [{ x: 0.28, y: 0.9, face: "front" }, { x: 0.72, y: 0.9, face: "front" }],
-  logSeat: [{ x: 0.28, y: 0.5, face: "own" }, { x: 0.72, y: 0.5, face: "own" }], // the campfire's logs (facing the fire)
-  floorCushions: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],
+  // Chairs: on the seat, whichever way they face. Facing down (behind a
+  // table, say), you sit up on the seat, so the table only hides your
+  // lower half; facing away, the chair's back hides your lower back.
+  chair: {
+    down: [{ x: 0.5, y: 0.95, face: "down", lift: 9 }],
+    up: [{ x: 0.5, y: 0.6, face: "upTall", lift: 19 }],
+    left: [{ x: 0.42, y: 0.92, face: "left", lift: 9 }],
+    right: [{ x: 0.58, y: 0.92, face: "right", lift: 9 }],
+  },
+  stool: [{ x: 0.5, y: 0.75, face: "up", lift: 6 }],
+  theaterSeat: [{ x: 0.5, y: 0.6, face: "upTall", lift: 12 }],
+  cinemaSofa: [{ x: 0.2, y: 0.65, face: "upTall", lift: 12 }, { x: 0.5, y: 0.65, face: "upTall", lift: 12 }, { x: 0.8, y: 0.65, face: "upTall", lift: 12 }],
+  bench: [{ x: 0.28, y: 0.95, face: "front", lift: 5 }, { x: 0.72, y: 0.95, face: "front", lift: 5 }],
+  loveseat: [{ x: 0.3, y: 0.92, face: "front", lift: 6 }, { x: 0.7, y: 0.92, face: "front", lift: 6 }],
+  cloudSofa: [{ x: 0.22, y: 0.92, face: "front", lift: 6 }, { x: 0.5, y: 0.92, face: "front", lift: 6 }, { x: 0.78, y: 0.92, face: "front", lift: 6 }],
+  armchair: [{ x: 0.5, y: 0.92, face: "front", lift: 6 }],
+  cottageChair: [{ x: 0.5, y: 0.92, face: "front", lift: 6 }],
+  papasanChair: [{ x: 0.5, y: 0.85, face: "front", lift: 6 }],
+  eggChair: [{ x: 0.5, y: 0.9, face: "front", lift: 6 }],
+  rockingChair: [{ x: 0.5, y: 0.92, face: "front", lift: 6 }],
+  beanbag: [{ x: 0.5, y: 0.85, face: "front", lift: 3 }],
+  pouf: [{ x: 0.5, y: 0.85, face: "front", lift: 5 }],
+  mushroomStool: [{ x: 0.5, y: 0.85, face: "front", lift: 5 }],
+  floorCushions: [{ x: 0.3, y: 0.85, face: "front", lift: 1 }, { x: 0.7, y: 0.85, face: "front", lift: 1 }],
+  // Outdoors (Update 4): the bus shelter's bench, the porch swing, and the
+  // campfire's logs ("own": facing the way the log does, toward the fire).
+  busShelter: [{ x: 0.3, y: 0.95, face: "front", lift: 5 }, { x: 0.7, y: 0.95, face: "front", lift: 5 }],
+  porchSwing: [{ x: 0.28, y: 0.95, face: "front", lift: 6 }, { x: 0.72, y: 0.95, face: "front", lift: 6 }],
+  logSeat: [{ x: 0.28, y: 0.8, face: "own", lift: 4 }, { x: 0.72, y: 0.8, face: "own", lift: 4 }],
   // Beds: sit on the edge, at the foot.
-  bed: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
-  canopyBed: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
-  mattress: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
+  bed: [{ x: 0.3, y: 0.98, face: "down", lift: 6 }, { x: 0.7, y: 0.98, face: "down", lift: 6 }],
+  canopyBed: [{ x: 0.3, y: 0.98, face: "down", lift: 6 }, { x: 0.7, y: 0.98, face: "down", lift: 6 }],
+  mattress: [{ x: 0.3, y: 0.98, face: "down", lift: 3 }, { x: 0.7, y: 0.98, face: "down", lift: 3 }],
 };
 
-// The seat spots on one piece of furniture, in grid units: { key, x, y,
-// face }, where x, y is where you sit (your middle). A turned piece
-// ("loveseatSide", facing right or left) gets its spots turned too.
+// True for seats whose back faces us: they're drawn over whoever sits in
+// them, so you see their head above the back.
+function seatCoversSitter(f) {
+  return f.kind === "theaterSeat" || f.kind === "cinemaSofa" || (f.kind === "chair" && f.facing === "up");
+}
+
+// The seat spots on one piece of furniture: { key, x, y, face, lift,
+// sortY }, where x, y is where your feet rest (in grid units) and sortY
+// is where you're sorted for drawing: just in front of the piece, or
+// just behind it if its back faces us. A turned piece ("loveseatSide",
+// facing right or left) gets its spots turned too.
 function seatSpots(f) {
   const turned = f.kind.endsWith("Side");
   const kind = turned ? f.kind.slice(0, -4) : f.kind;
-  const spots = SEATS[kind];
+  const spots = kind === "chair" ? SEATS.chair[f.facing || "down"] : SEATS[kind];
   if (!spots || f.h === undefined) return [];
+  const covered = seatCoversSitter(f);
   return spots.map((s, i) => {
     let fx = s.x, fy = s.y, face = s.face;
     if (face === "own") face = f.facing || "down";
     if (turned) {
       // Turned 90 degrees: along the piece's length is now down the page,
-      // and "front" is toward the room (right or left).
+      // and "front" is toward the room (right or left): you sit on the
+      // seat, between its back and its front edge.
       const right = f.facing === "right";
-      fy = s.x;
-      fx = right ? Math.min(1, s.y) : 1 - Math.min(1, s.y);
+      fy = 0.15 + s.x * 0.8;
+      fx = right ? 0.6 : 0.4;
       if (face === "front" || face === "down") face = right ? "right" : "left";
       if (kind === "bed" || kind === "canopyBed" || kind === "mattress") {
         // A turned bed: still sit on its front edge, away from the headboard.
         fx = right ? 0.4 + s.x * 0.5 : 0.6 - s.x * 0.5;
-        fy = 0.95;
+        fy = 0.98;
         face = "down";
       }
     } else if (face === "front") {
       face = "down";
     }
-    // Facing away on a seat with a tall back: you sit up so your head shows
-    // over it ("upTall").
-    if (face === "up" && (kind === "theaterSeat" || kind === "cinemaSofa" || kind === "chair")) face = "upTall";
     const x = f.x + f.w * fx, y = f.y + f.h * fy;
-    return { key: `${floorOf(y)}:${Math.round(x * 20)}:${Math.round(y * 20)}`, x, y, face, n: i };
+    return { key: `${floorOf(y)}:${Math.round(x * 20)}:${Math.round(y * 20)}`, x, y, face, lift: s.lift, sortY: f.y + f.h + (covered ? -0.02 : 0.02), n: i };
   });
 }
 
@@ -827,6 +875,7 @@ const WINGS = {
 };
 const BEDROOM_DEPTH = 8; // every bedroom, from its back wall to its door
 const DOOR_WIDTH = 1.6;
+const SUITE_DOOR = 0.9; // a bedroom door on the suite floor (narrower: it's a door, not a doorway)
 
 // Left edge of spot 1, 2, 3... for a kind of room.
 function wingX(kind, slot) {
@@ -911,12 +960,17 @@ function buildHouse(offices, doors = []) {
   // The bedroom hallway (the upstairs landing): one solid wall with every
   // member's bedroom door on it, and a warm lamp between each pair.
   corridorWall(LANDING, []);
-  const { doorSpacing, firstDoorX } = CONFIG.bedrooms;
-  const doorCount = Math.min(doors.length, Math.floor((HOUSE_WIDTH - firstDoorX) / doorSpacing));
-  for (let i = 0; i < doorCount; i++) {
-    const x = firstDoorX + i * doorSpacing;
-    furniture.push({ kind: "bedroomDoor", x, y: LANDING, w: DOOR_WIDTH, door: doors[i], solid: false });
-    if (i < doorCount - 1 || x + doorSpacing < HOUSE_WIDTH) furniture.push({ kind: "sconce", x: x + DOOR_WIDTH + (doorSpacing - DOOR_WIDTH) / 2 - 0.15, y: LANDING, solid: false });
+  // The wall is split evenly into spots, each with a door in the middle
+  // (a door is about one and a half people wide). Spots with no door yet get a rain
+  // window instead (the only place the weather shows, indoors). A lamp
+  // hangs between each pair of spots.
+  const spots = CONFIG.bedrooms.doorSpots;
+  const spot = HOUSE_WIDTH / spots;
+  for (let i = 0; i < spots; i++) {
+    const middle = (i + 0.5) * spot;
+    if (i < doors.length) furniture.push({ kind: "bedroomDoor", x: middle - SUITE_DOOR / 2, y: LANDING, w: SUITE_DOOR, door: doors[i], solid: false });
+    else furniture.push({ kind: "rainWindow", x: middle - 0.65, y: LANDING, w: 1.3, solid: false });
+    if (i < spots - 1) furniture.push({ kind: "sconce", x: (i + 1) * spot - 0.15, y: LANDING, solid: false });
   }
 
   // Each bedroom, on its own map: four walls with a doorway in the bottom
