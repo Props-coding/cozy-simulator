@@ -5441,6 +5441,18 @@ const FURNITURE_DRAWERS = {
       ctx.arc(x + w / 2, top - 4, 1.8, 0, Math.PI * 2);
       ctx.fill();
     }
+    // A little moon on the door while its owner is away, asleep in bed.
+    if (!door.online) {
+      const mx = x + w - 6, my = top + 17;
+      ctx.fillStyle = "#f4e3a1";
+      ctx.beginPath();
+      ctx.arc(mx, my, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = shadeColor(door.color, 10); // the door shows through, making a crescent
+      ctx.beginPath();
+      ctx.arc(mx + 1.7, my - 1.2, 2.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
   },
 
   // --- The Workshop ---
@@ -9721,7 +9733,7 @@ function drawDoorTags(ctx, me) {
     signFade[id] = fade;
     if (fade === 0) continue;
     const status = { open: "Open", knock: "Knock first", private: "Private", party: "Party!" }[f.door.privacy] ?? "Open";
-    const lines = [`${f.door.owner}'s room · ${status}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
+    const lines = [`${f.door.owner}'s room · ${status}${f.door.online ? "" : " · 🌙 asleep"}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
     const c = toScreen(f.x + f.w / 2, f.y);
     const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14, h = 6 + lines.length * 13;
     const x = c.x - w / 2, y = c.y + 4;

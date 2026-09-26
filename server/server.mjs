@@ -425,6 +425,9 @@ function roomPass(ownerKey, visitorKey, peerId) {
   return { payload, sig: sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64") };
 }
 
+// A short piece of text from a save, or null.
+const shortText = (v, max) => (typeof v === "string" ? v.slice(0, max) : null);
+
 // What everyone sees of a room from the hallway: the door (and, if
 // they're allowed in, what's inside).
 function doorInfo(key, user, viewerKey = key) {
@@ -441,6 +444,8 @@ function doorInfo(key, user, viewerKey = key) {
     size: room.size,
     audio: room.audio,
     placed: maySee(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
+    // How they look, so they can be shown asleep in bed while they're away.
+    look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30) },
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
   };
 }

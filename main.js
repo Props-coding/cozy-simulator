@@ -257,6 +257,7 @@ initShop({
 const player = { x: 8.7, y: 1.2 };
 
 joinButton.addEventListener("click", async () => {
+  if (!resume) wakeInBed = true; // (an automatic update puts you back where you were instead)
   if (!isHouseReady()) return; // still logging in (account.js)
   myName = nameInput.value.trim() || "Friend";
   myColor = colorInput.value;
@@ -1602,6 +1603,54 @@ initLaptop({
 let amAsleep = false;
 let lastBedtimeNote = -Infinity;
 
+// --- Offline sleeping ---
+// While you're away, you sleep in your own bed: friends who can see into
+// your room see you tucked in with a "zzz", and your door shows a moon.
+// When you come back, you wake up right there.
+let wakeInBed = false;
+
+// Your bed (the first thing you can sleep in, in your own room), or null.
+function bedIn(room) {
+  if (!room) return null;
+  const r = room.rect;
+  return FURNITURE.find((f) => f.sleep && f.x >= r.x - 0.01 && f.y >= r.y - 0.01 && f.x + f.w <= r.x + r.w + 0.01 && f.y + f.h <= r.y + r.h + 0.01) ?? null;
+}
+
+function checkWakeUp() {
+  if (!wakeInBed) return;
+  const room = ROOMS.find((r) => r.bedroom && r.owned.mine);
+  if (!room) return; // (the doors haven't arrived yet)
+  wakeInBed = false;
+  const bed = bedIn(room);
+  if (!bed) return;
+  Object.assign(player, tuckedIn(bed));
+  // Already asleep, so no "goodnight": you're waking up.
+  amAsleep = true;
+  enterSleep();
+  lastBedtimeNote = performance.now();
+  showNotice(`Good morning, ${myName}! Walk out of bed to get up.`, 8000);
+}
+
+// Friends who are away, asleep in their beds: only in rooms you can see
+// into (the server doesn't send a private room's furniture), and never
+// someone who's actually in the house.
+function sleepers() {
+  const list = [];
+  for (const door of bedroomDoors()) {
+    if (door.online || isMe(door.owner) || getPeers().some((p) => isSameName(p.name, door.owner))) continue;
+    const bed = bedIn(ROOMS.find((r) => r.bedroom && r.owned.ownerName === door.owner));
+    if (bed) list.push({ door, bed });
+  }
+  return list;
+}
+
+function sleeperScenePlayer({ door, bed }) {
+  const at = tuckedIn(bed);
+  const look = door.look ?? {};
+  const known = (drawers, id) => (Object.hasOwn(drawers, id) ? id : "none");
+  return { id: "asleep-" + door.owner, pet: known(PET_DRAWERS, look.pet), x: at.x, y: at.y, moving: false, color: door.color, hat: known(HAT_DRAWERS, look.hat), shoes: known(SHOE_DRAWERS, look.shoes), glasses: known(GLASSES_DRAWERS, look.glasses), name: door.owner, badge: "sleeping", bubble: null, emote: sleepingEmote(), typing: false, asleep: { color: bed.color }, aura: null, admin: false, seated: null, speaking: false, whisper: null };
+}
+
 function updateSleep() {
   const asleepNow = !mySeat && !!bedAt(player); // (sitting on the edge of a bed isn't bedtime)
   if (asleepNow === amAsleep) return;
@@ -1883,6 +1932,7 @@ function updateSidebar(myRoomName) {
     const roomName = (bedAt(peer) ? "💤 " : "") + roomNameFor(peer.room);
     rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD, peer.name);
   }
+  for (const { door } of sleepers()) rows += peerRow(door.color, `${door.owner} · 💤 asleep in their room`, false, door.owner);
   peerList.innerHTML = rows;
 }
 
@@ -1910,6 +1960,7 @@ function tick(now) {
   checkWhisper();
   mySpeaking = isSpeaking();
   updateIdle();
+  checkWakeUp();
   updateSleep();
 
   const currentRoom = getCurrentRoom(player);
@@ -1964,6 +2015,7 @@ function tick(now) {
     const at = bed ? tuckedIn(bed) : shown;
     return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, name: peer.name, badge: statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
   });
+  scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : player;
