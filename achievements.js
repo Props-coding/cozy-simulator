@@ -265,7 +265,7 @@ export function checkTiers() {
 // A goal written out, like "Spend 10 hours in the house."
 export function goalText(track, index) {
   const goal = track.goals[index];
-  return track.desc.replace("{n}", goal < 1 ? String(goal) : goal.toLocaleString());
+  return track.desc.replace("{n}", goal < 1 ? String(goal) : goal.toLocaleString()).replaceAll("{s}", goal === 1 ? "" : "s");
 }
 
 // Adds something to a list (if it isn't there yet), and returns the list.

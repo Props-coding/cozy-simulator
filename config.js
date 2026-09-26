@@ -272,7 +272,8 @@ const CONFIG = {
 
   // Each tiered achievement: `goals` is what you need for each tier, in
   // order (one number per tier above), and `desc` describes a goal, with
-  // {n} standing in for the number. `stat` is what's counted:
+  // {n} standing in for the number and {s} for an "s" that's left off
+  // when the number is 1 ("1 hour", "10 hours"). `stat` is what's counted:
   //   hours        hours in the house       crumbsEarned  crumbs ever earned
   //   chats        chat messages sent       focusSessions Study focus sessions finished
   //   items        things owned from the raccoons    pets  pets adopted
@@ -282,17 +283,17 @@ const CONFIG = {
   // (`was` lists older one-time achievements that turned into a tier, so
   // nobody is paid twice for the same thing. Leave it alone.)
   tieredAchievements: [
-    { id: "homebody", icon: "🛋️", name: "Homebody", stat: "hours", desc: "Spend {n} hours in the house.", goals: [1, 10, 25, 50, 100, 250], was: ["hour", "homebody", null, "resident"] },
-    { id: "visitor", icon: "📅", name: "Frequent Visitor", stat: "daysVisited", desc: "Visit the house on {n} different days.", goals: [3, 7, 30, 100, 200, 365] },
-    { id: "wellRounded", icon: "🏘️", name: "Well-Rounded", stat: "roomLevels", desc: "Reach {n} room levels in total.", goals: [5, 15, 30, 50, 65, 80] },
-    { id: "crumbs", icon: "🍪", name: "Crumb Collector", stat: "crumbsEarned", desc: "Earn {n} crumbs.", goals: [100, 500, 1500, 5000, 15000, 50000] },
-    { id: "collector", icon: "🛍️", name: "Collector", stat: "items", desc: "Own {n} things from the raccoons.", goals: [3, 10, 20, 35, 55, 80] },
-    { id: "menagerie", icon: "🐾", name: "Menagerie", stat: "pets", desc: "Adopt {n} pets.", goals: [1, 3, 5, 10, 15, 19], was: ["firstPet", null, "menagerie"] },
-    { id: "chatterbox", icon: "💬", name: "Chatterbox", stat: "chats", desc: "Send {n} chat messages.", goals: [10, 100, 500, 1500, 5000, 15000], was: [null, "chatterbox"] },
-    { id: "emotes", icon: "🎭", name: "Emote-ional", stat: "emotesUsed", desc: "Use emotes {n} times.", goals: [10, 50, 200, 500, 1500, 5000] },
-    { id: "dancer", icon: "🕺", name: "Dance Machine", stat: "dances", desc: "Dance {n} times.", goals: [1, 25, 100, 300, 1000, 3000], was: ["jig"] },
-    { id: "focus", icon: "⏳", name: "Deep Focus", stat: "focusSessions", desc: "Finish {n} Study focus sessions.", goals: [1, 5, 15, 40, 100, 250], was: ["focus", "scholar"] },
-    { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hours in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
+    { id: "homebody", icon: "🛋️", name: "Homebody", stat: "hours", desc: "Spend {n} hour{s} in the house.", goals: [1, 10, 25, 50, 100, 250], was: ["hour", "homebody", null, "resident"] },
+    { id: "visitor", icon: "📅", name: "Frequent Visitor", stat: "daysVisited", desc: "Visit the house on {n} different day{s}.", goals: [3, 7, 30, 100, 200, 365] },
+    { id: "wellRounded", icon: "🏘️", name: "Well-Rounded", stat: "roomLevels", desc: "Reach {n} room level{s} in total.", goals: [5, 15, 30, 50, 65, 80] },
+    { id: "crumbs", icon: "🍪", name: "Crumb Collector", stat: "crumbsEarned", desc: "Earn {n} crumb{s}.", goals: [100, 500, 1500, 5000, 15000, 50000] },
+    { id: "collector", icon: "🛍️", name: "Collector", stat: "items", desc: "Own {n} thing{s} from the raccoons.", goals: [3, 10, 20, 35, 55, 80] },
+    { id: "menagerie", icon: "🐾", name: "Menagerie", stat: "pets", desc: "Adopt {n} pet{s}.", goals: [1, 3, 5, 10, 15, 19], was: ["firstPet", null, "menagerie"] },
+    { id: "chatterbox", icon: "💬", name: "Chatterbox", stat: "chats", desc: "Send {n} chat message{s}.", goals: [10, 100, 500, 1500, 5000, 15000], was: [null, "chatterbox"] },
+    { id: "emotes", icon: "🎭", name: "Emote-ional", stat: "emotesUsed", desc: "Use emotes {n} time{s}.", goals: [10, 50, 200, 500, 1500, 5000] },
+    { id: "dancer", icon: "🕺", name: "Dance Machine", stat: "dances", desc: "Dance {n} time{s}.", goals: [1, 25, 100, 300, 1000, 3000], was: ["jig"] },
+    { id: "focus", icon: "⏳", name: "Deep Focus", stat: "focusSessions", desc: "Finish {n} Study focus session{s}.", goals: [1, 5, 15, 40, 100, 250], was: ["focus", "scholar"] },
+    { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hour{s} in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
   ],
 
   // --- Titles (Update 3) ---
