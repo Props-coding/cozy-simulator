@@ -8,7 +8,8 @@
 //
 // 1. Ground floor: a hallway runs across the middle of the house. Theater,
 //    Study and Dinner hang below it (south), each with a doorway up into
-//    the hallway, and the Library above its east end (north). South of the
+//    the hallway, and the Library above its west end (north), across from
+//    the Theater. South of the
 //    hallway's east end is the elevator lobby, with a bit of garden below.
 // 2. Business floor: a corridor with the Conference Room and the offices
 //    on its north side, and the Workshop, the Lounge and the elevator
@@ -47,8 +48,8 @@ const BASE_ROOMS = [
   { id: "theater", name: CONFIG.roomNames.theater, rect: { x: 0, y: 3, w: 6, h: 8 }, sign: { x: 5, y: 3 } },
   { id: "study", name: CONFIG.roomNames.study, rect: { x: 6, y: 3, w: 6, h: 8 }, sign: { x: 9, y: 3 } },
   { id: "dinner", name: CONFIG.roomNames.dinner, rect: { x: 12, y: 3, w: 6, h: 8 }, sign: { x: 15, y: 3 } },
-  // North side: the Library at the east end.
-  { id: "library", name: CONFIG.roomNames.library, rect: { x: 18, y: -5.4, w: 6, h: 5 }, sign: { x: 21, y: -WALL_THICKNESS / 2 }, north: true },
+  // North side: the Library at the west end, across from the Theater.
+  { id: "library", name: CONFIG.roomNames.library, rect: { x: 0, y: -5.4, w: 6, h: 5 }, sign: { x: 2.8, y: -WALL_THICKNESS / 2 }, north: true },
   // The elevator lobby, south of the hallway's east end (the same spot on both floors).
   { id: "elevator", name: CONFIG.roomNames.elevator, rect: { x: 18, y: 3, w: 6, h: 4 }, sign: { x: 20, y: 3 } },
   // The business floor: the Conference Room north of the corridor's west
@@ -73,12 +74,12 @@ const BASE_ROOMS = [
 const BASE_WALLS = [
   // Outer walls
   { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
-  { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11.4 + WALL_THICKNESS }, // left, from the hallway down to the bottom
-  { x: HOUSE_WIDTH, y: -5.8, w: WALL_THICKNESS, h: 9 }, // right, from the Library down to the hallway's end
+  { x: -WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 17.2 }, // left, from the Library down to the bottom
+  { x: HOUSE_WIDTH, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 3.2 + WALL_THICKNESS }, // right, the hallway's end
 
-  // Library: its north wall and its left-hand side
-  { x: 18 - WALL_THICKNESS, y: -5.8, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
+  // Library: its north wall and its right-hand side
+  { x: -WALL_THICKNESS, y: -5.8, w: 6 + WALL_THICKNESS * 2, h: WALL_THICKNESS },
+  { x: 6, y: -5.8, w: WALL_THICKNESS, h: 5.4 },
 
   // The elevator lobby south of the hallway's east end (doorway x 19.2 to
   // 20.8), with the garden below it.
@@ -156,8 +157,9 @@ const BASE_FURNITURE = [
   // painting between warm wall lamps, a side table with a lamp and flowers
   // under a mirror, more lamps, and a hills
   // painting in the east corner where the raccoons hang out. A fiddle-leaf fig sits
-  // in the bottom-right corner. (The Conference Room and offices used to
-  // open off this wall; they're on the business floor now.)
+  // in the bottom-right corner. The Library's door (x 2 to 3.6) is between
+  // the first two lamps. (The Conference Room and offices used to open off
+  // this wall; they're on the business floor now.)
   { kind: "rug", x: 1.5, y: 0.95, w: 21, h: 0.95, color: "#b5603c", solid: false },
   { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
   { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
@@ -261,27 +263,28 @@ const BASE_FURNITURE = [
   { kind: "chair", x: 14.7, y: 7.9, w: 0.6, h: 0.6, facing: "up" },
   { kind: "pendant", x: 15, y: 7, solid: false },
 
-  // Library: north of the hallway's east end, with its door (x 20.2 to
-  // 21.8) at the bottom. Along its outside north wall, three windows with
-  // rain running down them and a clock, with a reading nook under them (an
+  // Library: north of the hallway's west end, across from the Theater,
+  // with its door (x 2 to 3.6) at the bottom. Along its outside north
+  // wall, three windows with rain running down them and a clock, with a
+  // reading nook under them (an
   // armchair turned to the window, a beanbag, each with a floor lamp).
   // Below: a bookshelf on each side of the aisle up from the door, and a
   // reading table with green banker's lamps on a deep green rug, with a
   // seat. Quiet, no voice.
-  { kind: "rainWindow", x: 18.35, y: -5.4, w: 1.3, solid: false },
-  { kind: "clock", x: 20.0, y: -5.4, solid: false },
-  { kind: "rainWindow", x: 20.35, y: -5.4, w: 1.3, solid: false },
-  { kind: "rainWindow", x: 22.35, y: -5.4, w: 1.3, solid: false },
-  { kind: "armchair", x: 18.5, y: -5.0, w: 1.1, h: 0.8 },
-  { kind: "floorLamp", x: 19.7, y: -5.05, w: 0.4, h: 0.4 },
-  { kind: "floorLamp", x: 22.1, y: -5.05, w: 0.4, h: 0.4 },
-  { kind: "beanbag", x: 22.6, y: -4.95, w: 0.9, h: 0.8 },
-  { kind: "libraryShelf", x: 18.5, y: -3.4, w: 1.5, h: 0.45 },
-  { kind: "libraryShelf", x: 22.1, y: -3.4, w: 1.5, h: 0.45 },
-  { kind: "rug", x: 18.3, y: -2.4, w: 1.9, h: 1.55, color: "#4f6b52", solid: false },
-  { kind: "readingTable", x: 18.45, y: -2.2, w: 1.6, h: 0.6 },
-  { kind: "chair", x: 18.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
-  { kind: "fern", x: 23.2, y: -1.8, w: 0.6, h: 0.6 },
+  { kind: "rainWindow", x: 0.35, y: -5.4, w: 1.3, solid: false },
+  { kind: "clock", x: 2, y: -5.4, solid: false },
+  { kind: "rainWindow", x: 2.35, y: -5.4, w: 1.3, solid: false },
+  { kind: "rainWindow", x: 4.35, y: -5.4, w: 1.3, solid: false },
+  { kind: "armchair", x: 0.5, y: -5.0, w: 1.1, h: 0.8 },
+  { kind: "floorLamp", x: 1.7, y: -5.05, w: 0.4, h: 0.4 },
+  { kind: "floorLamp", x: 4.1, y: -5.05, w: 0.4, h: 0.4 },
+  { kind: "beanbag", x: 4.6, y: -4.95, w: 0.9, h: 0.8 },
+  { kind: "libraryShelf", x: 0.5, y: -3.4, w: 1.5, h: 0.45 },
+  { kind: "libraryShelf", x: 4.1, y: -3.4, w: 1.5, h: 0.45 },
+  { kind: "rug", x: 0.3, y: -2.4, w: 1.9, h: 1.55, color: "#4f6b52", solid: false },
+  { kind: "readingTable", x: 0.45, y: -2.2, w: 1.6, h: 0.6 },
+  { kind: "chair", x: 0.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
+  { kind: "fern", x: 5.2, y: -1.8, w: 0.6, h: 0.6 },
 
   // Elevator lobby (downstairs): brass elevator doors on the back wall
   // (walk up and press E), a lamp, a round rug, a bench and a palm.
@@ -421,8 +424,8 @@ const SEASONAL = {
     { size: "big", x: 16.9, y: 8.9 }, // Dinner, by the lemon tree
     { size: "small", x: 5.3, y: 9.2 }, // Theater, by the popcorn
     { size: "big", x: 1.0, y: 10.0 }, // Theater, back corner
-    { size: "small", x: 20.8, y: -5.0 }, // Library, under the windows
-    { size: "big", x: 22.9, y: -2.6 }, // Library, by the fern
+    { size: "small", x: 2.8, y: -5.0 }, // Library, under the windows
+    { size: "big", x: 4.9, y: -2.6 }, // Library, by the fern
   ],
 };
 let seasonPreview = null; // set from the admin panel to try out a season
@@ -647,9 +650,9 @@ function buildHouse(offices, doors = []) {
   };
 
   // The ground floor hallway's top wall, with a doorway into the Library
-  // (x 20.2 to 21.8), and the business corridor's, with a doorway into the
+  // (x 2 to 3.6), and the business corridor's, with a doorway into the
   // Conference Room (x 2 to 3.6) and each office.
-  corridorWall(0, [20.2]);
+  corridorWall(0, [2]);
   corridorWall(BUSINESS, [2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
   add("office", offices);
 
