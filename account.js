@@ -315,13 +315,32 @@ const badgeChecks = new Map(); // "payload|sig" -> true, false, or "checking"
 // True if `badge` is a real, unexpired admin pass for `name`. Checking
 // takes a moment the first time, so it says false until it knows.
 export function checkBadge(badge, name) {
-  if (!badge || typeof badge.payload !== "string" || typeof badge.sig !== "string" || !name) return false;
-  const [who, expires] = badge.payload.split("|");
+  if (!badge || typeof badge.payload !== "string" || !name) return false;
+  const parts = badge.payload.split("|");
+  if (parts.length !== 2) return false; // (so a room pass can't pass for a badge)
+  const [who, expires] = parts;
   if (who.toLowerCase() !== String(name).toLowerCase() || !(Number(expires) > Date.now())) return false;
+  return checkSigned(badge);
+}
+
+// True if `pass` is a real, unexpired room pass (see POST /api/room/enter
+// on the server) letting this friend (their name and peer id) be in
+// `ownerKey`'s bedroom.
+export function checkRoomPass(pass, ownerKey, name, peerId) {
+  if (!pass || typeof pass.payload !== "string") return false;
+  const [kind, owner, visitor, peer, expires, extra] = pass.payload.split("|");
+  if (kind !== "room" || extra !== undefined || owner !== ownerKey || visitor !== String(name).toLowerCase() || peer !== peerId || !(Number(expires) > Date.now())) return false;
+  return checkSigned(pass);
+}
+
+// True once the server's signature on a pass has been checked and is real.
+function checkSigned(badge) {
+  if (typeof badge.sig !== "string") return false;
   const key = badge.payload + "|" + badge.sig;
   const known = badgeChecks.get(key);
   if (known === true || known === false) return known;
-  if (!known && badgeChecks.size < 50) {
+  if (!known) {
+    if (badgeChecks.size > 300) badgeChecks.clear(); // (old passes pile up over a long visit)
     badgeChecks.set(key, "checking");
     badgeKey().then(async (publicKey) => {
       if (!publicKey) return badgeChecks.delete(key);

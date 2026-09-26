@@ -396,8 +396,30 @@ function ensureRoom(key, user) {
 }
 let roomsChanged = false;
 
-// What everyone sees of a room from the hallway: the door.
-function doorInfo(key, user) {
+// Whether `viewerKey` may be in `key`'s room right now: the owner always;
+// anyone while it's open (or a party); with "knock first", only people the
+// owner let in (for a little while after); a private room, nobody else at
+// all (admins included).
+const LET_IN_MS = 10 * 60_000; // how long a let-in lasts to walk in
+function mayEnter(room, key, viewerKey) {
+  if (viewerKey === key) return true;
+  if (room.privacy === "open" || room.privacy === "party") return true;
+  if (room.privacy === "knock") return (room.allowed?.[viewerKey] ?? 0) > Date.now();
+  return false;
+}
+
+// A room pass: the server's signature on "room|owner|visitor|peer id|expires",
+// which everyone's browser checks before they show (or talk to) someone
+// inside a bedroom. Signed with the badge key, so nobody can make their own.
+const PASS_HOURS = 12;
+function roomPass(ownerKey, visitorKey, peerId) {
+  const payload = `room|${ownerKey}|${visitorKey}|${peerId}|${Date.now() + PASS_HOURS * 3600_000}`;
+  return { payload, sig: sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64") };
+}
+
+// What everyone sees of a room from the hallway: the door (and, if
+// they're allowed in, what's inside).
+function doorInfo(key, user, viewerKey = key) {
   const room = ensureRoom(key, user);
   const look = savedData(user, "cozy-house-profile") ?? {};
   return {
@@ -409,7 +431,8 @@ function doorInfo(key, user) {
     deco: room.deco,
     style: room.style,
     size: room.size,
-    placed: room.placed, // what's inside (friends see it when they visit)
+    audio: room.audio,
+    placed: mayEnter(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
   };
 }
@@ -611,11 +634,11 @@ const routes = {
 
   // --- Bedrooms: everyone's door (for the bedroom hallway) ---
   "GET /api/rooms": async (req) => {
-    const { user: me } = currentUser(req);
+    const { user: me, key: myKey } = currentUser(req);
     if (!me.member) throw new Oops(403, "Enter the house phrase first.");
     const doors = Object.entries(db.users)
       .filter(([, u]) => u.member)
-      .map(([key, u]) => doorInfo(key, u))
+      .map(([key, u]) => doorInfo(key, u, myKey))
       .sort((a, b) => a.owner.toLowerCase().localeCompare(b.owner.toLowerCase()));
     if (roomsChanged) {
       roomsChanged = false;
@@ -639,6 +662,10 @@ const routes = {
       if (!DOOR_DECOS.includes(body.deco)) throw new Oops(400, "That's not a door decoration.");
       room.deco = body.deco;
     }
+    if (body.audio !== undefined) {
+      if (!ROOM_AUDIO.includes(body.audio)) throw new Oops(400, "That's not a room sound.");
+      room.audio = body.audio;
+    }
     if (body.style !== undefined) {
       if (!ROOM_STYLES.includes(body.style)) throw new Oops(400, "That's not a room style.");
       if (THEME_OWNERS[body.style] && THEME_OWNERS[body.style] !== key) throw new Oops(403, "That style belongs to someone else.");
@@ -646,6 +673,37 @@ const routes = {
     }
     await saveDb();
     return { door: doorInfo(key, user) };
+  },
+
+  // Going into someone's bedroom (or your own): a pass if you may.
+  "POST /api/room/enter": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const ownerKey = String(body.owner ?? "").trim().toLowerCase();
+    const peerId = String(body.peerId ?? "");
+    const room = db.rooms?.[ownerKey];
+    if (!room || !db.users[ownerKey]?.member) throw new Oops(404, "There's no room like that.");
+    if (!/^[\w-]{1,64}$/.test(peerId)) throw new Oops(400, "That doesn't look right.");
+    if (!mayEnter(room, ownerKey, key)) {
+      if (room.privacy === "knock") throw new Oops(403, "knock");
+      throw new Oops(403, "private");
+    }
+    if (room.allowed) delete room.allowed[key]; // (a let-in is used up once you're in)
+    return { pass: roomPass(ownerKey, key, peerId) };
+  },
+
+  // The owner lets someone who knocked come in.
+  "POST /api/room/let-in": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const visitorKey = String(body.name ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    if (!db.users[visitorKey]?.member) throw new Oops(404, "There's nobody by that name.");
+    const room = ensureRoom(key, user);
+    room.allowed = Object.fromEntries(Object.entries(room.allowed ?? {}).filter(([, until]) => until > Date.now()));
+    room.allowed[visitorKey] = Date.now() + LET_IN_MS;
+    return { ok: true };
   },
 
   // What's in your own room (from your decorating), and its size.
@@ -664,7 +722,7 @@ const routes = {
   // --- Profiles: what friends see when they click on you. Your look,
   // achievements and hours come from your cloud save; the bio you write.
   "GET /api/profile": async (req) => {
-    const { user: me } = currentUser(req);
+    const { user: me, key: myKey } = currentUser(req);
     if (!me.member) throw new Oops(403, "Enter the house phrase first.");
     const name = new URL(req.url, "http://x").searchParams.get("name") ?? "";
     const user = db.users[name.trim().replace(/\s+/g, " ").toLowerCase()];
@@ -711,7 +769,7 @@ const routes = {
     };
   },
   "POST /api/admin/reset": async (req) => {
-    const { user: me } = currentUser(req);
+    const { user: me, key: myKey } = currentUser(req);
     if (!me.admin) throw new Oops(403, "Admins only.");
     const body = await readJson(req, 2_000);
     const user = db.users[String(body.name ?? "").trim().toLowerCase()];

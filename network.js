@@ -7,16 +7,18 @@
 // small packages that only resolve correctly when served through a CDN
 // like esm.sh. Pinning the version means it won't silently change on us.
 import { joinRoom, selfId } from "https://esm.sh/trystero@0.25.4/nostr";
-import { makeWhisperStream } from "./audio.js";
+import { makeWhisperStream, makeVoiceStream } from "./audio.js";
 
 // This browser's id in the room (the same one friends see us as).
 export const myPeerId = selfId;
 
-// Sends a friend their own private whisper line (see audio.js), only to
-// them, labelled so they can tell it from normal voice.
-function sendWhisperLine(peerId) {
-  const stream = makeWhisperStream(peerId);
-  if (stream) room.addStream(stream, { target: peerId, metadata: { whisper: true } });
+// Sends a friend their own voice line and private whisper line (see
+// audio.js), only to them, labelled so they can tell the two apart.
+function sendMicLines(peerId) {
+  const voice = makeVoiceStream(peerId);
+  if (voice) room.addStream(voice, { target: peerId, metadata: { voice: true } });
+  const whisper = makeWhisperStream(peerId);
+  if (whisper) room.addStream(whisper, { target: peerId, metadata: { whisper: true } });
 }
 
 let room = null;
@@ -158,13 +160,12 @@ export function sendKnock(peerId, kind) {
   knockAction?.send(kind, { target: peerId });
 }
 
-// Sends your mic audio to everyone in the room. Call once, after both
-// connectToRoom and mic permission have gone through.
+// Sends each friend their own lines from your mic. Call once, after
+// both connectToRoom and mic permission have gone through.
 export function addLocalStream(stream) {
   localStream = stream;
   if (room) {
-    room.addStream(stream);
-    for (const peerId of Object.keys(peers)) sendWhisperLine(peerId);
+    for (const peerId of Object.keys(peers)) sendMicLines(peerId);
   }
 }
 
@@ -233,11 +234,8 @@ export function connectToRoom(myName, myColor) {
     // their first real position message arrives a moment later.
     peers[peerId] = { name: "...", color: "#999", x: 8.7, y: 1.2, room: "hallway" };
     // addLocalStream only reaches friends who were already here, so
-    // anyone arriving later needs our mic sent to them directly.
-    if (localStream) {
-      room.addStream(localStream, { target: peerId });
-      sendWhisperLine(peerId);
-    }
+    // anyone arriving later needs their lines sent to them directly.
+    if (localStream) sendMicLines(peerId);
     // Tell the new friend who we are right away, don't wait for the next tick.
     positionAction(lastKnownPosition);
     externalOnPeerJoin?.(peerId);
