@@ -9,7 +9,7 @@
 // Crumbs and what you own are saved in this browser only (there's no
 // server), so they don't follow you to another computer.
 import { playBabble, playCoatWhoosh, playCrumbSound, playClickSound } from "./audio.js";
-import { unlock } from "./achievements.js";
+import { unlock, count } from "./achievements.js";
 
 // --- The raccoons ---
 // Three voices: `pitch` is how high their babble sounds.
@@ -177,6 +177,15 @@ export function ownedOfType(type) {
   return CATALOG.filter((item) => item.type === type && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
+// How many things you own from the raccoons, and what they cost in all.
+export function ownedCount() {
+  return save.owned.length;
+}
+
+export function ownedValue() {
+  return CATALOG.filter((item) => save.owned.includes(item.id)).reduce((sum, item) => sum + item.price, 0);
+}
+
 export function ownedPets() {
   return CATALOG.filter((item) => item.type === "pet" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
@@ -198,6 +207,7 @@ showCrumbs();
 export function addCrumbs(amount) {
   save.crumbs += amount;
   store();
+  count("crumbsEarned", amount); // (for the Crumb Collector tiers)
   showCrumbs();
   if (save.crumbs >= 500) unlock("hoarder");
   crumbPill.classList.remove("bump");
@@ -493,8 +503,6 @@ function buy(item) {
 export function checkShopAchievements() {
   const ownsAll = (type) => CATALOG.filter((i) => i.type === type).every((i) => save.owned.includes(i.id));
   if (save.owned.length > 0) unlock("firstBuy");
-  if (ownedPets().length >= 1) unlock("firstPet");
-  if (ownedPets().length >= 5) unlock("menagerie");
   if (ownsAll("hat")) unlock("allHats");
   if (ownsAll("shoes")) unlock("allShoes");
   if (save.met) unlock("raccoons");

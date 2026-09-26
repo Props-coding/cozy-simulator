@@ -61,11 +61,11 @@ import {
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
-import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
-import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
+import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType, ownedCount, ownedValue, crumbBalance, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
+import { ACHIEVEMENTS, initAchievements, unlock, count, collect, setStat, myStats, checkTiers } from "./achievements.js";
 import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
-import { addRoomTime } from "./reputation.js";
+import { addRoomTime, roomLevels } from "./reputation.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
 import { startRooms, refreshRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen, askToEnter, leftRoom, letIn } from "./rooms.js";
@@ -289,6 +289,9 @@ joinButton.addEventListener("click", async () => {
   myGlasses = glassesChoices().some(([id]) => id === glassesInput.value) ? glassesInput.value : "none";
   for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, myAccessories[slot]);
   saveProfile();
+  // Crumbs earned so far, for the Crumb Collector tiers. From before it was
+  // counted, the best guess is what you have plus what you've bought.
+  if (!Number.isFinite(myStats().crumbsEarned)) setStat("crumbsEarned", crumbBalance() + ownedValue());
   startEarningCrumbs();
   applyMyLofi(); // your Study station (it may have come with your cloud save)
   loadSavedBoard(); // the Conference Room whiteboard, as it was left
@@ -321,6 +324,7 @@ joinButton.addEventListener("click", async () => {
   requestAnimationFrame(tick);
   unlock("welcome");
   checkShopAchievements();
+  checkTiers(); // (the first time, this hands out tiers you'd already earned)
   setInterval(checkTimeAchievements, 5000);
 
   try {
@@ -515,9 +519,7 @@ function updateFocusTimer(roomId) {
     if (roomId === "study") {
       addCrumbs(CONFIG.focusBonusCrumbs);
       showNotice(`Focus session done! +${CONFIG.focusBonusCrumbs} crumbs. Time for a break.`);
-      const sessions = count("focusSessions");
-      unlock("focus");
-      if (sessions >= 5) unlock("scholar");
+      count("focusSessions"); // (for the Deep Focus tiers)
     }
   } else {
     focusTimer = null;
@@ -952,9 +954,10 @@ function startEmote(id) {
   // Achievements for emotes (any dance counts as one).
   const room = getCurrentRoom(player).id;
   if (collect("emotes", isDance(id) ? "dance" : id).length >= Object.keys(EMOTE_KEYS).length) unlock("expressive");
+  count("emotesUsed"); // (for the Emote-ional tiers)
   if (id === "sleepy" && room === "dinner") unlock("foodComa");
   if (isDance(id)) {
-    unlock("jig");
+    count("dances"); // (for the Dance Machine tiers)
     if (room === "theater") unlock("danceFloor");
     if (Object.values(peerEmotes).some((e) => isDance(emoteNow(e)?.id))) unlock("jigParty");
   }
@@ -1532,9 +1535,8 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
   if (!text || performance.now() - lastChatSent < 400) return;
   lastChatSent = performance.now();
   chatInput.value = "";
-  const sent = count("chats");
+  count("chats"); // (for the Chatterbox tiers)
   unlock("hello");
-  if (sent >= 100) unlock("chatterbox");
 
   if (chatTab === "office" && lastOfficeRoomId) {
     const inThisOffice = getPeers().filter((p) => p.room === lastOfficeRoomId).map((p) => p.id);
@@ -1597,6 +1599,12 @@ onChat((message, peerId) => {
   const earned = ACHIEVEMENTS.find((a) => a.id === message?.achievement);
   if (earned) {
     addChatLine({ channel: "house", system: true, text: `🏆 ${peerName} earned "${earned.name}"` });
+    return;
+  }
+  // A friend reached a new tier.
+  const reached = message?.tier !== undefined && tierInfo(message.tier, message.level);
+  if (reached) {
+    addChatLine({ channel: "house", system: true, text: `${reached.tier.icon} ${peerName} reached ${reached.tier.name} in "${reached.track.name}"` });
     return;
   }
   // A friend added or finished a card on the Workshop boards.
@@ -1771,7 +1779,24 @@ initAchievements({
     sendChat({ achievement: id });
     addChatLine({ channel: "house", system: true, text: `🏆 You earned "${a.name}" (+${a.crumbs} crumbs)` });
   },
+  // Tiered achievements: counts kept outside achievements.js, and telling
+  // friends when you reach a tier.
+  values: () => ({ items: ownedCount(), pets: ownedPets().length, roomLevels: roomLevels(myStats()).reduce((sum, r) => sum + r.level, 0) }),
+  rooms: () => roomLevels(myStats()),
+  announceTier: (id, level) => {
+    const t = tierInfo(id, level);
+    if (!t) return;
+    sendChat({ tier: id, level });
+    addChatLine({ channel: "house", system: true, text: `${t.tier.icon} You reached ${t.tier.name} in "${t.track.name}" (+${t.tier.crumbs} crumbs)` });
+  },
 });
+
+// A tiered achievement and one of its tiers, or null if either is unknown.
+function tierInfo(id, level) {
+  const track = (CONFIG.tieredAchievements ?? []).find((t) => t.id === id);
+  const tier = Number.isInteger(level) ? CONFIG.achievementTiers?.[level - 1] : null;
+  return track && tier && level <= track.goals.length ? { track, tier } : null;
+}
 
 // Every room counts for the Grand Tour (any office will do).
 const TOUR_ROOMS = ["hallway", "theater", "study", "dinner", "conference", "library", "office"];
@@ -1781,10 +1806,14 @@ const TOUR_ROOMS = ["hallway", "theater", "study", "dinner", "conference", "libr
 function checkTimeAchievements() {
   const room = getCurrentRoom(player).id;
   const peers = getPeers();
-  const seconds = count("seconds", 5);
-  if (seconds >= 60 * 60) unlock("hour");
-  if (seconds >= 10 * 60 * 60) unlock("homebody");
-  if (seconds >= 50 * 60 * 60) unlock("resident");
+  count("seconds", 5); // (for the Homebody tiers)
+  // A new day in the house (your own calendar), for the Frequent Visitor tiers.
+  const now = new Date();
+  const today = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  if (myStats().lastDay !== today) {
+    setStat("lastDay", today);
+    count("daysVisited");
+  }
   if (room === "library" && count("librarySeconds", 5) >= 15 * 60) unlock("bookworm");
   if (room === "dinner" && count("dinnerSeconds", 5) >= 10 * 60) unlock("snack");
   const hour = new Date().getHours();
@@ -1792,9 +1821,10 @@ function checkTimeAchievements() {
   if (hour >= 5 && hour < 7) unlock("earlyBird");
   if (peers.length >= 3) unlock("fullHouse");
   if (peers.some((p) => p.room === room)) unlock("roommates");
-  if (amAsleep && count("sleepSeconds", 5) >= 30 * 60) unlock("wellRested");
+  if (amAsleep) count("sleepSeconds", 5); // (for the Well Rested tiers)
   if (room.startsWith("bedroom-") && peers.some((p) => p.room === room)) unlock("sleepover");
   addRoomTime(getCurrentRoom(player), 5); // room reputation (reputation.js)
+  checkTiers();
 }
 
 // --- Pets ---

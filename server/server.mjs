@@ -848,6 +848,8 @@ const routes = {
       achievements: Object.keys(progress.unlocked ?? {}).slice(0, 200),
       seconds: Number.isFinite(progress.stats?.seconds) ? progress.stats.seconds : 0,
       // Seconds spent in each room, for room levels ("room_study": 5400).
+      // Tiered achievements: how many tiers of each ("homebody": 3).
+      tiers: Object.fromEntries(Object.entries(progress.tiers ?? {}).filter(([k, v]) => /^[a-zA-Z]{1,30}$/.test(k) && Number.isInteger(v) && v > 0 && v <= 20).slice(0, 50)),
       rooms: Object.fromEntries(Object.entries(progress.stats ?? {}).filter(([k, v]) => /^room_[a-z]{1,20}$/.test(k) && Number.isFinite(v)).slice(0, 30)),
     };
   },

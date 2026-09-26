@@ -2,11 +2,17 @@
 // crumb reward. Unlocking one pops up a card over the house, and tells
 // friends in the House chat.
 //
+// There are two kinds. "Moments" are one-time things (knock on a door,
+// talk to the raccoons). "Tiered" achievements keep going: Bronze, Silver,
+// Gold and up, with crumbs for every tier (they're listed in config.js,
+// CONFIG.tieredAchievements, so it's easy to add more or change goals).
+//
 // Like crumbs, achievements are saved in this browser only (there's no
 // server), so they don't follow you to another computer.
 import { playAchievementSound } from "./audio.js";
 
-// Every achievement. `secret` ones show as "???" until you find them.
+// Every moment (one-time achievement). `secret` ones show as "???" until
+// you find them.
 // To add one: give it an id here, then call unlock("thatId") from the
 // place in the code where it happens.
 export const ACHIEVEMENTS = [
@@ -22,7 +28,6 @@ export const ACHIEVEMENTS = [
   { id: "snack", icon: "🍝", name: "Snack Break", desc: "Spend 10 minutes in the Dinner room.", crumbs: 10 },
   { id: "bedroomMade", icon: "🛏️", name: "A Room of One's Own", desc: "Step into your own bedroom.", crumbs: 10 },
   { id: "goodnight", icon: "🌙", name: "Goodnight", desc: "Get into bed.", crumbs: 5 },
-  { id: "wellRested", icon: "😴", name: "Well Rested", desc: "Sleep for 30 minutes in total.", crumbs: 25 },
   { id: "sleepover", icon: "🧸", name: "Sleepover", desc: "Hang out in a bedroom with a friend.", crumbs: 15 },
   { id: "decorator", icon: "🪴", name: "Making It Home", desc: "Place something in your bedroom.", crumbs: 10 },
   { id: "designer", icon: "🛋️", name: "Interior Designer", desc: "Have 10 pieces placed in your bedroom.", crumbs: 40 },
@@ -30,22 +35,15 @@ export const ACHIEVEMENTS = [
   { id: "penPal", icon: "✉️", name: "Pen Pal", desc: "Write a letter on your laptop.", crumbs: 10 },
   { id: "gotMail", icon: "📬", name: "You've Got Mail", desc: "Receive a letter.", crumbs: 10 },
   { id: "newsReader", icon: "📰", name: "Well Informed", desc: "Read the news on your laptop.", crumbs: 5 },
-  { id: "focus", icon: "⏳", name: "Deep Focus", desc: "Finish a focus session in the Study.", crumbs: 10 },
-  { id: "scholar", icon: "🎓", name: "Scholar", desc: "Finish 5 focus sessions.", crumbs: 40 },
 
   // Friends
   { id: "hello", icon: "💬", name: "Hello There", desc: "Send your first chat message.", crumbs: 5 },
-  { id: "chatterbox", icon: "🗣️", name: "Chatterbox", desc: "Send 100 chat messages.", crumbs: 30 },
   { id: "roommates", icon: "🤝", name: "Roommates", desc: "Be in the same room as a friend.", crumbs: 5 },
   { id: "fullHouse", icon: "🎉", name: "Full House", desc: "Hang out with 3 friends at once.", crumbs: 25 },
   { id: "expressive", icon: "🎭", name: "Expressive", desc: "Use all five emotes.", crumbs: 10 },
-  { id: "jig", icon: "🕺", name: "Hit the Jig", desc: "Dance (any style).", crumbs: 5 },
   { id: "jigParty", icon: "🪩", name: "Dance Party", desc: "Dance at the same time as a friend.", crumbs: 20 },
 
   // Time in the house
-  { id: "hour", icon: "☕", name: "Regular", desc: "Spend 1 hour in the house.", crumbs: 15 },
-  { id: "homebody", icon: "🛋️", name: "Homebody", desc: "Spend 10 hours in the house.", crumbs: 50 },
-  { id: "resident", icon: "🔑", name: "Resident", desc: "Spend 50 hours in the house.", crumbs: 150 },
   { id: "nightOwl", icon: "🦉", name: "Night Owl", desc: "Be in the house between 1 and 4 in the morning.", crumbs: 15 },
   { id: "earlyBird", icon: "🐦", name: "Early Bird", desc: "Be in the house between 5 and 7 in the morning.", crumbs: 15 },
 
@@ -54,8 +52,6 @@ export const ACHIEVEMENTS = [
   { id: "firstBuy", icon: "🛍️", name: "Retail Therapy", desc: "Buy something from the raccoons.", crumbs: 10 },
   { id: "allHats", icon: "🎩", name: "Mad Hatter", desc: "Own every hat the raccoons sell.", crumbs: 100 },
   { id: "allShoes", icon: "👢", name: "Well Heeled", desc: "Own every pair of shoes.", crumbs: 60 },
-  { id: "firstPet", icon: "🐾", name: "Best Friend", desc: "Adopt a pet.", crumbs: 15 },
-  { id: "menagerie", icon: "🦆", name: "Menagerie", desc: "Adopt 5 pets.", crumbs: 60 },
   { id: "patPat", icon: "🤲", name: "Pat Pat", desc: "Pet a pet (walk up to one and press E).", crumbs: 5 },
   { id: "pettingZoo", icon: "💞", name: "Petting Zoo", desc: "Pet a friend's pet.", crumbs: 10 },
   { id: "hoarder", icon: "🍪", name: "Crumb Hoarder", desc: "Have 500 crumbs at once.", crumbs: 25 },
@@ -68,14 +64,29 @@ export const ACHIEVEMENTS = [
 
 const byId = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
+// One-time achievements that became tiers (see `was` in config.js). They
+// stay in your save, so the tiers know you were already paid for them.
+const RETIRED = new Set(tracks().flatMap((t) => t.was ?? []).filter(Boolean));
+
+function tracks() {
+  return CONFIG.tieredAchievements ?? [];
+}
+function tiers() {
+  return CONFIG.achievementTiers ?? [];
+}
+
 // --- Saved progress ---
 // unlocked: id -> when. stats: counters for the "do X times" ones.
+// tiers: tiered achievement id -> how many tiers reached (1 is Bronze).
+// caughtUp: true once tiers existing progress earned have been given out.
 const STORAGE_KEY = "cozy-house-achievements";
-let save = { unlocked: {}, stats: {} };
+let save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false };
 try {
   const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if (loaded && typeof loaded === "object") {
-    for (const id of Object.keys(loaded.unlocked ?? {})) if (byId[id]) save.unlocked[id] = loaded.unlocked[id];
+    for (const id of Object.keys(loaded.unlocked ?? {})) if (byId[id] || RETIRED.has(id)) save.unlocked[id] = loaded.unlocked[id];
+    for (const [id, n] of Object.entries(loaded.tiers ?? {})) if (tracks().some((t) => t.id === id) && Number.isInteger(n) && n > 0) save.tiers[id] = n;
+    save.caughtUp = loaded.caughtUp === true;
     for (const [key, value] of Object.entries(loaded.stats ?? {})) {
       if (Number.isFinite(value) || Array.isArray(value)) save.stats[key] = value;
     }
@@ -94,9 +105,12 @@ function store() {
 
 // --- Connecting to main.js ---
 // main.js passes in how to give crumbs and how to tell friends.
-let hooks = { reward: () => {}, announce: () => {} };
+// For tiered ones it also passes `values` (counts kept elsewhere, like
+// { items, pets, roomLevels }), `announceTier` and `rooms` (your room
+// levels, for the Rooms tab).
+let hooks = { reward: () => {}, announce: () => {}, announceTier: () => {}, values: () => ({}), rooms: () => [] };
 export function initAchievements(options) {
-  hooks = options;
+  hooks = { ...hooks, ...options };
 }
 
 export function hasAchievement(id) {
@@ -118,12 +132,14 @@ export function unlock(id) {
 // pop-ups, crumbs or chat lines), or start over from nothing.
 export function unlockAllQuietly() {
   for (const a of ACHIEVEMENTS) save.unlocked[a.id] ??= Date.now();
+  for (const t of tracks()) save.tiers[t.id] = t.goals.length;
+  save.caughtUp = true;
   store();
   renderPanel();
 }
 
 export function resetAchievements() {
-  save = { unlocked: {}, stats: {} };
+  save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false };
   store();
   renderPanel();
 }
@@ -138,6 +154,85 @@ export function count(stat, amount = 1) {
   save.stats[stat] = (Number.isFinite(save.stats[stat]) ? save.stats[stat] : 0) + amount;
   store();
   return save.stats[stat];
+}
+
+// Sets a counter to a value (for things like "the last day you visited").
+export function setStat(stat, value) {
+  save.stats[stat] = value;
+  store();
+}
+
+// --- Tiered achievements ---
+// How far along you are on one: the number its goals are counted in.
+function trackValue(track) {
+  const s = save.stats;
+  const n = (v) => (Number.isFinite(v) ? v : 0);
+  const built = {
+    hours: n(s.seconds) / 3600,
+    sleepHours: n(s.sleepSeconds) / 3600,
+    chats: n(s.chats),
+    focusSessions: n(s.focusSessions),
+    crumbsEarned: n(s.crumbsEarned),
+    emotesUsed: n(s.emotesUsed),
+    dances: n(s.dances),
+    daysVisited: n(s.daysVisited),
+  };
+  const v = Object.hasOwn(built, track.stat) ? built[track.stat] : hooks.values()[track.stat];
+  return n(v);
+}
+
+// How many tiers you've reached on a tiered achievement (0 for none yet).
+export function tierOf(id) {
+  return save.tiers[id] ?? 0;
+}
+
+// All your tiers, as { id: count } (for titles and your profile).
+export function myTiers() {
+  return save.tiers;
+}
+
+// Checks every tiered achievement for new tiers (main.js calls this every
+// few seconds, and right after you join). The very first time, tiers your
+// progress already earned are given all at once, with one pop-up.
+export function checkTiers() {
+  const reached = [];
+  let crumbs = 0;
+  for (const track of tracks()) {
+    const value = trackValue(track);
+    let have = tierOf(track.id);
+    while (have < track.goals.length && have < tiers().length && value >= track.goals[have]) {
+      const tier = tiers()[have];
+      const paidBefore = track.was?.[have] && hasAchievement(track.was[have]); // an old one-time achievement already paid for this
+      const reward = paidBefore ? 0 : tier.crumbs;
+      have++;
+      save.tiers[track.id] = have;
+      reached.push({ track, have, tier, reward });
+      crumbs += reward;
+    }
+  }
+  if (!reached.length && save.caughtUp) return;
+  const catchingUp = !save.caughtUp;
+  save.caughtUp = true;
+  store();
+  if (catchingUp) {
+    if (reached.length) {
+      showToast({ kind: "tier", icon: "🏅", label: "Tiered achievements!", name: `You're already at ${reached.length} tier${reached.length === 1 ? "" : "s"}`, desc: "Open the trophy shelf to see them.", crumbs });
+      if (crumbs) hooks.reward(crumbs);
+    }
+  } else {
+    for (const { track, have, tier, reward } of reached) {
+      showToast({ kind: "tier", icon: track.icon, label: `${tier.name} tier!`, name: `${track.name} ${tier.icon}`, desc: goalText(track, have - 1), crumbs: reward });
+      if (reward) hooks.reward(reward);
+      hooks.announceTier(track.id, have);
+    }
+  }
+  renderPanel();
+}
+
+// A goal written out, like "Spend 10 hours in the house."
+function goalText(track, index) {
+  const goal = track.goals[index];
+  return track.desc.replace("{n}", goal < 1 ? String(goal) : goal.toLocaleString());
 }
 
 // Adds something to a list (if it isn't there yet), and returns the list.
@@ -198,35 +293,114 @@ const trophyPanel = document.getElementById("trophy-panel");
 const trophyList = document.getElementById("trophy-list");
 const trophyCount = document.getElementById("trophy-count");
 
-function renderPanel() {
-  const have = ACHIEVEMENTS.filter((a) => hasAchievement(a.id)).length;
-  trophyCount.textContent = `${have} / ${ACHIEVEMENTS.length}`;
-  trophyList.innerHTML = "";
-  for (const a of ACHIEVEMENTS) {
-    const got = hasAchievement(a.id);
-    const hidden = a.secret && !got;
-    const li = document.createElement("li");
-    li.className = got ? "got" : "";
-    const icon = document.createElement("span");
-    icon.className = "trophy-icon";
-    icon.textContent = hidden ? "❔" : a.icon;
-    const text = document.createElement("span");
-    text.className = "trophy-text";
-    const name = document.createElement("strong");
-    name.textContent = hidden ? "Secret" : a.name;
-    const desc = document.createElement("span");
-    desc.textContent = hidden ? "Keep exploring to find this one." : a.desc;
-    text.append(name, desc);
-    const reward = document.createElement("span");
-    reward.className = "trophy-reward";
-    reward.textContent = got ? "✓" : `+${a.crumbs}`;
+// The shelf has three tabs: Tiers (with a bar toward each next tier),
+// Rooms (your room levels) and Moments (the one-time ones).
+let shelfTab = "tiers";
+const trophyTabs = document.getElementById("trophy-tabs");
+
+function el(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+// A progress bar, `into` of `needed` of the way, with a label under it.
+function bar(into, needed, label, color) {
+  const wrap = el("span", "trophy-progress");
+  const track = el("span", "trophy-bar");
+  const fill = el("span");
+  fill.style.width = `${needed ? Math.min(100, Math.round((into / needed) * 100)) : 100}%`;
+  if (color) fill.style.background = color;
+  track.appendChild(fill);
+  wrap.append(track, el("span", "trophy-bar-label", label));
+  return wrap;
+}
+
+const round = (v) => (v < 10 && v % 1 ? Math.floor(v * 10) / 10 : Math.floor(v)).toLocaleString();
+
+function renderTiers() {
+  for (const track of tracks()) {
+    const have = tierOf(track.id);
+    const max = Math.min(track.goals.length, tiers().length);
+    const value = trackValue(track);
+    const current = have ? tiers()[have - 1] : null;
+    const next = have < max ? tiers()[have] : null;
+    const li = el("li", "tiered" + (have ? " got" : ""));
+    const icon = el("span", "trophy-icon", track.icon);
+    const text = el("span", "trophy-text");
+    const name = el("strong", "", track.name);
+    if (current) {
+      const medal = el("span", "trophy-medal", `${current.icon} ${current.name}`);
+      medal.style.color = current.color;
+      name.append(" ", medal);
+    }
+    text.append(name);
+    if (next) {
+      text.append(el("span", "", goalText(track, have)));
+      text.append(bar(value - (have ? track.goals[have - 1] : 0), track.goals[have] - (have ? track.goals[have - 1] : 0), `${round(value)} / ${round(track.goals[have])} for ${next.name}`, next.color));
+    } else {
+      text.append(el("span", "", "Every tier reached. Legendary!"));
+    }
+    // The row of tier medals: the ones you have, and the ones to come.
+    const medals = el("span", "trophy-medals");
+    tiers().slice(0, max).forEach((t, i) => {
+      const m = el("span", i < have ? "on" : "", t.icon);
+      m.title = `${t.name}: ${goalText(track, i)} (+${t.crumbs} crumbs)`;
+      medals.appendChild(m);
+    });
+    text.append(medals);
+    const reward = el("span", "trophy-reward", next ? `+${next.crumbs}` : "✓");
     li.append(icon, text, reward);
     trophyList.appendChild(li);
   }
 }
+
+function renderRooms() {
+  for (const r of hooks.rooms()) {
+    const li = el("li", "tiered" + (r.level ? " got" : ""));
+    const text = el("span", "trophy-text");
+    text.append(el("strong", "", `${r.name} · Lv. ${r.level}`));
+    text.append(r.needed ? bar(r.into, r.needed, `${Math.floor(r.into / 60)} / ${Math.round(r.needed / 60)} minutes to Lv. ${r.level + 1}`, "#6f9a5a") : el("span", "", "Top level reached."));
+    li.append(el("span", "trophy-icon", r.icon), text);
+    trophyList.appendChild(li);
+  }
+}
+
+function renderMoments() {
+  for (const a of ACHIEVEMENTS) {
+    const got = hasAchievement(a.id);
+    const hidden = a.secret && !got;
+    const li = el("li", got ? "got" : "");
+    const text = el("span", "trophy-text");
+    text.append(el("strong", "", hidden ? "Secret" : a.name), el("span", "", hidden ? "Keep exploring to find this one." : a.desc));
+    li.append(el("span", "trophy-icon", hidden ? "❔" : a.icon), text, el("span", "trophy-reward", got ? "✓" : `+${a.crumbs}`));
+    trophyList.appendChild(li);
+  }
+}
+
+function renderPanel() {
+  const moments = ACHIEVEMENTS.filter((a) => hasAchievement(a.id)).length;
+  const tierCount = Object.values(save.tiers).reduce((sum, n) => sum + n, 0);
+  const tierMax = tracks().reduce((sum, t) => sum + Math.min(t.goals.length, tiers().length), 0);
+  const counts = { tiers: `${tierCount} / ${tierMax}`, rooms: "", moments: `${moments} / ${ACHIEVEMENTS.length}` };
+  trophyCount.textContent = counts[shelfTab];
+  for (const b of trophyTabs.querySelectorAll("button")) b.classList.toggle("active", b.dataset.tab === shelfTab);
+  trophyList.innerHTML = "";
+  if (shelfTab === "tiers") renderTiers();
+  else if (shelfTab === "rooms") renderRooms();
+  else renderMoments();
+}
+for (const b of trophyTabs.querySelectorAll("button")) {
+  b.addEventListener("click", () => {
+    shelfTab = b.dataset.tab;
+    renderPanel();
+  });
+}
 renderPanel();
 
 function setPanelOpen(open) {
+  if (open) renderPanel(); // (progress bars move all the time, so fresh each time)
   trophyPanel.hidden = !open;
   trophyButton.setAttribute("aria-expanded", String(open));
 }

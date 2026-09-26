@@ -6,7 +6,7 @@
 // The card comes from the house server, which reads each friend's look,
 // achievements and hours from their cloud save.
 import { serverApi, accountName } from "./account.js";
-import { ACHIEVEMENTS, myStats } from "./achievements.js";
+import { ACHIEVEMENTS, myStats, myTiers } from "./achievements.js";
 import { roomLevels } from "./reputation.js";
 import { itemName } from "./shop.js";
 import { playClickSound } from "./audio.js";
@@ -124,10 +124,26 @@ export async function openProfile(name) {
     bioBox.appendChild(edit);
   }
 
-  // Achievements: the ones they've earned, as a row of icons.
+  // Achievements: tiers reached (each with its medal), then the one-time
+  // moments they've earned, as a row of icons.
   const earned = ACHIEVEMENTS.filter((a) => p.achievements.includes(a.id));
+  const tierCounts = mine ? myTiers() : p.tiers ?? {};
+  const tiered = (CONFIG.tieredAchievements ?? []).filter((t) => tierCounts[t.id] > 0);
   const trophies = el("div", "profile-trophies");
-  trophies.appendChild(el("h3", "", `Achievements · ${earned.length} of ${ACHIEVEMENTS.length}`));
+  const tierTotal = tiered.reduce((sum, t) => sum + tierCounts[t.id], 0);
+  trophies.appendChild(el("h3", "", `Achievements · ${tierTotal} tier${tierTotal === 1 ? "" : "s"}, ${earned.length} of ${ACHIEVEMENTS.length} moments`));
+  if (tiered.length) {
+    const tierRow = el("div", "profile-trophy-row");
+    for (const t of tiered) {
+      const tier = CONFIG.achievementTiers[Math.min(tierCounts[t.id], CONFIG.achievementTiers.length) - 1];
+      const icon = el("span", "profile-trophy tiered", t.icon);
+      icon.appendChild(el("span", "profile-tier-medal", tier.icon));
+      icon.style.boxShadow = `inset 0 0 0 2px ${tier.color}`;
+      icon.title = `${t.name}: ${tier.name}`;
+      tierRow.appendChild(icon);
+    }
+    trophies.appendChild(tierRow);
+  }
   const row = el("div", "profile-trophy-row");
   for (const a of earned) {
     const icon = el("span", "profile-trophy", a.icon);

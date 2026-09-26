@@ -1287,7 +1287,7 @@ input[type="range"]::-moz-range-thumb {
   top: calc(100% + 10px);
   right: 0;
   z-index: 20;
-  width: 330px;
+  width: 400px;
   box-sizing: border-box;
   padding: 14px 10px 10px 16px;
   text-align: left;
@@ -1335,6 +1335,98 @@ input[type="range"]::-moz-range-thumb {
   opacity: 1;
   filter: none;
   background: #fbefd9;
+}
+
+/* The shelf's tabs: Tiers, Rooms, Moments. */
+#trophy-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+#trophy-tabs button {
+  flex: 1;
+  padding: 5px 8px;
+  border: 2px solid #ead8bb;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #7a6450;
+  font: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#trophy-tabs button.active {
+  border-color: var(--accent);
+  background: #fbefd9;
+  color: #4a3a2c;
+}
+
+/* Tiered rows stay in color even before Bronze, so the bars read well. */
+#trophy-list li.tiered {
+  opacity: 1;
+  filter: none;
+  background: #fdf6ea;
+}
+
+#trophy-list li.tiered.got {
+  background: #fbefd9;
+}
+
+.trophy-medal {
+  font-size: 0.85em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.trophy-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.trophy-bar {
+  display: block;
+  height: 7px;
+  background: #ead8bb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.trophy-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+.trophy-bar-label {
+  font-size: 0.78em;
+  color: #9c8770;
+}
+
+.trophy-medals {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.trophy-medals span {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+
+.trophy-medals span.on {
+  filter: none;
+  opacity: 1;
+}
+
+/* A tier reached: a gold-bordered card. */
+#achievement-toast[data-kind="tier"] {
+  border-color: #d9a441;
 }
 
 #trophy-list li + li {
@@ -2792,6 +2884,22 @@ input[type="range"]::-moz-range-thumb {
   display: block;
   height: 100%;
   background: #6f9a5a;
+}
+
+/* A tier on a profile card: its icon, with the tier's medal in the corner. */
+.profile-trophy.tiered {
+  position: relative;
+}
+
+.profile-tier-medal {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  font-size: 12px;
+}
+
+.profile-trophy-row + .profile-trophy-row {
+  margin-top: 6px;
 }
 
 /* Names in "Who's here" can be clicked to see a profile. */
