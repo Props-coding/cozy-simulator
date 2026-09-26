@@ -97,6 +97,54 @@ async function backup() {
   }
 }
 
+// --- Keeping saves believable ---
+// Progress lives in each person's browser and is copied here, so someone
+// could edit their browser to hand themselves crumbs, items or
+// achievements. These checks catch the obvious cases by comparing a new
+// save with the last one: crumbs can only go up so fast (plenty for
+// selling a big catch), and only a few new items, achievements or tier
+// steps can appear at once. Anything past that is trimmed back in the
+// account's save (what friends see, and what comes back on the next
+// login). Admins are left alone (the admin panel hands things out for
+// testing). It's not airtight: someone patient could still creep their
+// numbers up slowly.
+const SAVE_LIMITS = { crumbsBurst: 4000, crumbsPerMinute: 100, newItems: 10, newAchievements: 10, tierSteps: 3 };
+
+function parseSaved(data, key) {
+  try {
+    return JSON.parse(data?.[key] ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+function keepSaveBelievable(old, data) {
+  const minutes = Math.max(0, (Date.now() - old.updatedAt) / 60_000);
+  const before = parseSaved(old.data, "cozy-house-crumbs"), after = parseSaved(data, "cozy-house-crumbs");
+  if (before && after && typeof after === "object") {
+    const room = SAVE_LIMITS.crumbsBurst + SAVE_LIMITS.crumbsPerMinute * minutes;
+    if (Number.isFinite(after.crumbs) && Number.isFinite(before.crumbs) && after.crumbs > before.crumbs + room) after.crumbs = Math.floor(before.crumbs + room);
+    if (Array.isArray(after.owned) && Array.isArray(before.owned)) {
+      const added = after.owned.filter((id) => !before.owned.includes(id));
+      if (added.length > SAVE_LIMITS.newItems) after.owned = [...before.owned, ...added.slice(0, SAVE_LIMITS.newItems)];
+    }
+    data["cozy-house-crumbs"] = JSON.stringify(after);
+  }
+  const was = parseSaved(old.data, "cozy-house-achievements"), now = parseSaved(data, "cozy-house-achievements");
+  if (was && now && typeof now === "object") {
+    const oldUnlocked = was.unlocked ?? {}, newUnlocked = now.unlocked ?? {};
+    const added = Object.keys(newUnlocked).filter((id) => !(id in oldUnlocked));
+    if (added.length > SAVE_LIMITS.newAchievements) {
+      for (const id of added.slice(SAVE_LIMITS.newAchievements)) delete newUnlocked[id];
+    }
+    for (const [id, n] of Object.entries(now.tiers ?? {})) {
+      const had = Number.isInteger(was.tiers?.[id]) ? was.tiers[id] : 0;
+      if (!Number.isInteger(n) || n > had + SAVE_LIMITS.tierSteps) now.tiers[id] = had + SAVE_LIMITS.tierSteps;
+    }
+    data["cozy-house-achievements"] = JSON.stringify(now);
+  }
+}
+
 // --- Passwords, tokens and codes ---
 async function hashPassword(password, salt) {
   return (await scrypt(password, salt, 64)).toString("hex");
@@ -1000,13 +1048,15 @@ const routes = {
   },
 
   "PUT /api/save": async (req) => {
-    const { user } = currentUser(req);
+    const { user, key } = currentUser(req);
+    if (!allowed("save:" + key, 200)) throw new Oops(429, "Saving a lot! Please wait a few minutes.");
     const body = await readJson(req, MAX_SAVE_BYTES);
     if (!body.data || typeof body.data !== "object" || Array.isArray(body.data)) throw new Oops(400, "That save doesn't look right.");
     // `base` is the save this one was built on (its updatedAt). If a newer
     // save has come in since (from another computer), this one would undo
     // it, so it's refused and the page stops saving and says why.
     if (Number.isFinite(body.base) && user.save && user.save.updatedAt > body.base) throw new Oops(409, "Your account saved newer progress somewhere else.");
+    if (!user.admin && user.save) keepSaveBelievable(user.save, body.data);
     user.save = { data: body.data, updatedAt: Date.now() };
     await saveDb();
     return { updatedAt: user.save.updatedAt };
