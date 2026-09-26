@@ -853,7 +853,7 @@ function drawUmbrella(ctx, p) {
   const foot = playerFeet(p);
   const r = PLAYER_RADIUS;
   const walk = p.moving ? Math.sin((performance.now() / 1000) * 12) : 0;
-  const lift = seatLift(p.seated);
+  const lift = -(p.seatLift ?? 0); // (sitting, you're up on the seat: see SEATS in world.js)
   const hand = { x: foot.x + r * 0.75, y: foot.y - r - 6 + lift };
   const top = { x: foot.x + walk * 1.5, y: foot.y - r * 2 - 22 + lift - Math.abs(walk) * 1.5 };
   const color = /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : "#5aa0d8";

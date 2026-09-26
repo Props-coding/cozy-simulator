@@ -619,8 +619,6 @@ const YARD_FURNITURE = [
   { kind: "reeds", x: 2.6, y: YARD + 7.3, w: 0.6, h: 0.4, solid: false },
   { kind: "reeds", x: 5.9, y: YARD + 7.4, w: 0.6, h: 0.4, solid: false },
   { kind: "pondStones", x: 2.6, y: YARD + 3.3, w: 0.8, h: 0.4 },
-  // A log bench on the bank by the dock, looking out over the water.
-  { kind: "logSeat", x: 7.1, y: YARD + 3.95, w: 1.6, h: 0.45, facing: "down" },
 
   // The yard's west and south edges: a rustic fence, with a gate in the
   // bottom one where the path goes out to the sidewalk and the bus stop.
