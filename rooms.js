@@ -38,6 +38,28 @@ export function bedroomDoors() {
   return doors;
 }
 
+// --- Going in and out ---
+// The house server decides who may go in. Asking for a pass returns
+// { pass } if you may, or { refused: "knock" or "private" } if not. The
+// pass goes out with your position, so friends' browsers can check it.
+export async function askToEnter(owner, peerId) {
+  try {
+    return await serverApi("POST", "/api/room/enter", { owner, peerId });
+  } catch (err) {
+    if (err.message === "knock" || err.message === "private") return { refused: err.message };
+    return { refused: "error", message: err.message };
+  }
+}
+
+export function leftRoom(owner) {
+  serverApi("POST", "/api/room/leave", { owner }).catch(() => {});
+}
+
+// You (the owner) let a friend who knocked come in, for a few minutes.
+export async function letIn(name) {
+  await serverApi("POST", "/api/room/let-in", { name });
+}
+
 const isMine = (door) => door.owner.toLowerCase() === String(accountName() ?? "").toLowerCase();
 
 // --- Your door's settings ---
@@ -48,6 +70,12 @@ const PRIVACY = [
   ["knock", "🟠", "Knock first", "Friends knock, you let them in."],
   ["private", "🔴", "Private", "Only you."],
   ["party", "🎈", "Party!", "Open, with a balloon on the door."],
+];
+// What you hear inside (the same rules as the house's rooms).
+const AUDIO = [
+  ["voice", "🎙️", "Voice", "Talk with whoever is in here."],
+  ["lofi", "🎧", "Lo-fi", "Your own lo-fi pick, no voice (like the Study)."],
+  ["silent", "🤫", "Silent", "No voice, no music."],
 ];
 const DECOS = [
   ["none", "✖️", "None"],
@@ -77,6 +105,7 @@ export const DOOR_STATUS = Object.fromEntries(PRIVACY.map(([id, , label]) => [id
 const panel = document.getElementById("door-panel");
 const privacyRow = document.getElementById("door-privacy");
 const decoRow = document.getElementById("door-decos");
+const audioRow = document.getElementById("door-audio");
 const styleRow = document.getElementById("door-styles");
 const noteInput = document.getElementById("door-note");
 
@@ -111,6 +140,10 @@ function renderPanel() {
   if (!door) return;
   choiceButtons(privacyRow, PRIVACY, door.privacy, async (id) => {
     await save({ privacy: id });
+    renderPanel();
+  });
+  choiceButtons(audioRow, AUDIO, door.audio ?? "voice", async (id) => {
+    await save({ audio: id });
     renderPanel();
   });
   choiceButtons(decoRow, DECOS, door.deco, async (id) => {

@@ -408,6 +408,14 @@ function mayEnter(room, key, viewerKey) {
   return false;
 }
 
+// Whether `viewerKey` may see inside right now: anyone who may walk in,
+// plus people already let in to a "knock first" room who haven't left
+// yet (room.inside, cleared when they walk out or their pass runs out).
+function maySee(room, key, viewerKey) {
+  if (mayEnter(room, key, viewerKey)) return true;
+  return room.privacy === "knock" && (room.inside?.[viewerKey] ?? 0) > Date.now();
+}
+
 // A room pass: the server's signature on "room|owner|visitor|peer id|expires",
 // which everyone's browser checks before they show (or talk to) someone
 // inside a bedroom. Signed with the badge key, so nobody can make their own.
@@ -432,7 +440,7 @@ function doorInfo(key, user, viewerKey = key) {
     style: room.style,
     size: room.size,
     audio: room.audio,
-    placed: mayEnter(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
+    placed: maySee(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
   };
 }
@@ -656,6 +664,8 @@ const routes = {
     if (body.privacy !== undefined) {
       if (!ROOM_PRIVACY.includes(body.privacy)) throw new Oops(400, "That's not a door setting.");
       room.privacy = body.privacy;
+      // Going private sends everyone else out (their browsers see it).
+      if (room.privacy === "private") room.allowed = room.inside = {};
     }
     if (body.note !== undefined) room.note = String(body.note).replace(/\s+/g, " ").trim().slice(0, 40);
     if (body.deco !== undefined) {
@@ -685,12 +695,33 @@ const routes = {
     const room = db.rooms?.[ownerKey];
     if (!room || !db.users[ownerKey]?.member) throw new Oops(404, "There's no room like that.");
     if (!/^[\w-]{1,64}$/.test(peerId)) throw new Oops(400, "That doesn't look right.");
-    if (!mayEnter(room, ownerKey, key)) {
+    if (!maySee(room, ownerKey, key)) {
       if (room.privacy === "knock") throw new Oops(403, "knock");
       throw new Oops(403, "private");
     }
-    if (room.allowed) delete room.allowed[key]; // (a let-in is used up once you're in)
-    return { pass: roomPass(ownerKey, key, peerId) };
+    const pass = roomPass(ownerKey, key, peerId);
+    if (key !== ownerKey && room.privacy === "knock") {
+      // A let-in is used up once you're in; you stay welcome until you leave.
+      if (room.allowed) delete room.allowed[key];
+      room.inside ??= {};
+      room.inside[key] = Date.now() + PASS_HOURS * 3600_000;
+      await saveDb();
+    }
+    return { pass };
+  },
+
+  // Walking back out of someone's bedroom (so a "knock first" room needs
+  // a new knock next time).
+  "POST /api/room/leave": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const room = db.rooms?.[String(body.owner ?? "").trim().toLowerCase()];
+    if (room?.inside?.[key]) {
+      delete room.inside[key];
+      await saveDb();
+    }
+    return { ok: true };
   },
 
   // The owner lets someone who knocked come in.
@@ -703,6 +734,7 @@ const routes = {
     const room = ensureRoom(key, user);
     room.allowed = Object.fromEntries(Object.entries(room.allowed ?? {}).filter(([, until]) => until > Date.now()));
     room.allowed[visitorKey] = Date.now() + LET_IN_MS;
+    await saveDb();
     return { ok: true };
   },
 

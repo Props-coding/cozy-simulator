@@ -900,8 +900,9 @@ export function updateVoiceRouting(myRoomId, peers, allowed = () => true) {
     audioEl.muted = masterMuted || !sameVoiceRoom;
     audioEl.volume = masterVolume;
   }
-  for (const el of Object.values(whisperAudioElements)) {
-    el.muted = masterMuted || isSilentSpot();
+  for (const [id, el] of Object.entries(whisperAudioElements)) {
+    const peer = peers.find((p) => p.id === id);
+    el.muted = masterMuted || isSilentSpot() || (peer ? !allowed(peer) : false);
     el.volume = masterVolume;
   }
 }
