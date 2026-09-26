@@ -9552,7 +9552,7 @@ function layoutPlayerTags(ctx, players) {
     const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
     // How wide and tall their labels are, measured the same way they're drawn.
     ctx.font = "600 11px 'Quicksand', sans-serif";
-    let width = ctx.measureText(p.name).width + 12 + (p.admin ? 13 : 0);
+    let width = ctx.measureText(p.name).width + 12 + (p.admin ? (isHouseOwner(p.name) ? 15 : 13) : 0); // (as in drawPlayerTag)
     let height = 18; // just the name tag
     if (p.badge) {
       ctx.font = "13px sans-serif";
