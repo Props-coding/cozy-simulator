@@ -467,67 +467,87 @@ function seasonalWallDecor(walls, furniture) {
 }
 
 // --- Seats ---
-// Where you can sit on each kind of furniture: a list of seat spots, each
-// { x, y } as a fraction of the piece's footprint (0 to 1 across, 0 to 1
-// down; y can go a little past 1 so you're drawn in front of a sofa's
-// back) and which way you face. "front" means "the way the piece faces"
-// (down, or right/left for a turned piece). Press E near a free spot to
-// sit; moving gets you up. See CONFIG.sit for the reach.
+// Where you can sit on each kind of furniture. Each seat spot is:
+//   x, y  the exact spot your feet rest, as a fraction of the piece's
+//         footprint (0 to 1 across, 0 to 1 down)
+//   face  which way you face: "down", "up" (away from us), "left",
+//         "right", or "front" (the way the piece faces: down, or right
+//         or left for a turned piece). A chair's "own" is the way it faces.
+//   lift  how far up you're drawn, in pixels, so you sit on the seat's
+//         surface instead of the floor.
+// Seats whose back faces us (a chair facing away, cinema seats) are drawn
+// over you, so their back hides your lower back; every other seat is
+// drawn behind you. Press E near a free spot to sit; moving gets you up.
+// See CONFIG.sit for the reach.
 const SEATS = {
-  chair: [{ x: 0.5, y: 0.5, face: "own" }], // faces the way the chair does
-  stool: [{ x: 0.5, y: 0.5, face: "up" }],
-  theaterSeat: [{ x: 0.5, y: 0.5, face: "up" }],
-  cinemaSofa: [{ x: 0.2, y: 0.55, face: "up" }, { x: 0.5, y: 0.55, face: "up" }, { x: 0.8, y: 0.55, face: "up" }],
-  bench: [{ x: 0.28, y: 0.9, face: "front" }, { x: 0.72, y: 0.9, face: "front" }],
-  loveseat: [{ x: 0.3, y: 0.95, face: "front" }, { x: 0.7, y: 0.95, face: "front" }],
-  cloudSofa: [{ x: 0.22, y: 0.95, face: "front" }, { x: 0.5, y: 0.95, face: "front" }, { x: 0.78, y: 0.95, face: "front" }],
-  armchair: [{ x: 0.5, y: 0.95, face: "front" }],
-  cottageChair: [{ x: 0.5, y: 0.95, face: "front" }],
-  papasanChair: [{ x: 0.5, y: 0.9, face: "front" }],
-  eggChair: [{ x: 0.5, y: 0.9, face: "front" }],
-  rockingChair: [{ x: 0.5, y: 0.9, face: "front" }],
-  beanbag: [{ x: 0.5, y: 0.8, face: "front" }],
-  pouf: [{ x: 0.5, y: 0.8, face: "front" }],
-  mushroomStool: [{ x: 0.5, y: 0.8, face: "front" }],
-  floorCushions: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],
+  // Chairs: on the seat, whichever way they face. Facing down (behind a
+  // table, say), you sit up on the seat, so the table only hides your
+  // lower half; facing away, the chair's back hides your lower back.
+  chair: {
+    down: [{ x: 0.5, y: 0.95, face: "down", lift: 9 }],
+    up: [{ x: 0.5, y: 0.6, face: "upTall", lift: 19 }],
+    left: [{ x: 0.42, y: 0.92, face: "left", lift: 9 }],
+    right: [{ x: 0.58, y: 0.92, face: "right", lift: 9 }],
+  },
+  stool: [{ x: 0.5, y: 0.75, face: "up", lift: 6 }],
+  theaterSeat: [{ x: 0.5, y: 0.6, face: "upTall", lift: 12 }],
+  cinemaSofa: [{ x: 0.2, y: 0.65, face: "upTall", lift: 12 }, { x: 0.5, y: 0.65, face: "upTall", lift: 12 }, { x: 0.8, y: 0.65, face: "upTall", lift: 12 }],
+  bench: [{ x: 0.28, y: 0.95, face: "front", lift: 5 }, { x: 0.72, y: 0.95, face: "front", lift: 5 }],
+  loveseat: [{ x: 0.3, y: 0.92, face: "front", lift: 6 }, { x: 0.7, y: 0.92, face: "front", lift: 6 }],
+  cloudSofa: [{ x: 0.22, y: 0.92, face: "front", lift: 6 }, { x: 0.5, y: 0.92, face: "front", lift: 6 }, { x: 0.78, y: 0.92, face: "front", lift: 6 }],
+  armchair: [{ x: 0.5, y: 0.92, face: "front", lift: 6 }],
+  cottageChair: [{ x: 0.5, y: 0.92, face: "front", lift: 6 }],
+  papasanChair: [{ x: 0.5, y: 0.85, face: "front", lift: 6 }],
+  eggChair: [{ x: 0.5, y: 0.9, face: "front", lift: 6 }],
+  rockingChair: [{ x: 0.5, y: 0.92, face: "front", lift: 6 }],
+  beanbag: [{ x: 0.5, y: 0.85, face: "front", lift: 3 }],
+  pouf: [{ x: 0.5, y: 0.85, face: "front", lift: 5 }],
+  mushroomStool: [{ x: 0.5, y: 0.85, face: "front", lift: 5 }],
+  floorCushions: [{ x: 0.3, y: 0.85, face: "front", lift: 1 }, { x: 0.7, y: 0.85, face: "front", lift: 1 }],
   // Beds: sit on the edge, at the foot.
-  bed: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
-  canopyBed: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
-  mattress: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
+  bed: [{ x: 0.3, y: 0.98, face: "down", lift: 6 }, { x: 0.7, y: 0.98, face: "down", lift: 6 }],
+  canopyBed: [{ x: 0.3, y: 0.98, face: "down", lift: 6 }, { x: 0.7, y: 0.98, face: "down", lift: 6 }],
+  mattress: [{ x: 0.3, y: 0.98, face: "down", lift: 3 }, { x: 0.7, y: 0.98, face: "down", lift: 3 }],
 };
 
-// The seat spots on one piece of furniture, in grid units: { key, x, y,
-// face }, where x, y is where you sit (your middle). A turned piece
-// ("loveseatSide", facing right or left) gets its spots turned too.
+// True for seats whose back faces us: they're drawn over whoever sits in
+// them, so you see their head above the back.
+function seatCoversSitter(f) {
+  return f.kind === "theaterSeat" || f.kind === "cinemaSofa" || (f.kind === "chair" && f.facing === "up");
+}
+
+// The seat spots on one piece of furniture: { key, x, y, face, lift,
+// sortY }, where x, y is where your feet rest (in grid units) and sortY
+// is where you're sorted for drawing: just in front of the piece, or
+// just behind it if its back faces us. A turned piece ("loveseatSide",
+// facing right or left) gets its spots turned too.
 function seatSpots(f) {
   const turned = f.kind.endsWith("Side");
   const kind = turned ? f.kind.slice(0, -4) : f.kind;
-  const spots = SEATS[kind];
+  const spots = kind === "chair" ? SEATS.chair[f.facing || "down"] : SEATS[kind];
   if (!spots || f.h === undefined) return [];
+  const covered = seatCoversSitter(f);
   return spots.map((s, i) => {
     let fx = s.x, fy = s.y, face = s.face;
-    if (face === "own") face = f.facing || "down";
     if (turned) {
       // Turned 90 degrees: along the piece's length is now down the page,
-      // and "front" is toward the room (right or left).
+      // and "front" is toward the room (right or left): you sit on the
+      // seat, between its back and its front edge.
       const right = f.facing === "right";
-      fy = s.x;
-      fx = right ? Math.min(1, s.y) : 1 - Math.min(1, s.y);
+      fy = 0.15 + s.x * 0.8;
+      fx = right ? 0.6 : 0.4;
       if (face === "front" || face === "down") face = right ? "right" : "left";
       if (kind === "bed" || kind === "canopyBed" || kind === "mattress") {
         // A turned bed: still sit on its front edge, away from the headboard.
         fx = right ? 0.4 + s.x * 0.5 : 0.6 - s.x * 0.5;
-        fy = 0.95;
+        fy = 0.98;
         face = "down";
       }
     } else if (face === "front") {
       face = "down";
     }
-    // Facing away on a seat with a tall back: you sit up so your head shows
-    // over it ("upTall").
-    if (face === "up" && (kind === "theaterSeat" || kind === "cinemaSofa" || kind === "chair")) face = "upTall";
     const x = f.x + f.w * fx, y = f.y + f.h * fy;
-    return { key: `${floorOf(y)}:${Math.round(x * 20)}:${Math.round(y * 20)}`, x, y, face, n: i };
+    return { key: `${floorOf(y)}:${Math.round(x * 20)}:${Math.round(y * 20)}`, x, y, face, lift: s.lift, sortY: f.y + f.h + (covered ? -0.02 : 0.02), n: i };
   });
 }
 

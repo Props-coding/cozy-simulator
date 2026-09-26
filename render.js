@@ -7219,7 +7219,7 @@ function drawLights(ctx) {
 // Seats whose back is toward you (cinema seats, and chairs you can sit in
 // that face away) draw over whoever sits in them.
 function coversSitter(f) {
-  return f.kind === "theaterSeat" || f.kind === "cinemaSofa" || (f.kind === "chair" && f.sit && f.facing === "up");
+  return seatCoversSitter(f); // (see SEATS in world.js)
 }
 
 let staticSprites = [];
@@ -9031,11 +9031,6 @@ function drawRuneMarks(ctx) {
 // shadow, two little feet, and a round body lit from above (lighter on
 // top, darker underneath) like everything else, with their hat on top.
 // While walking (p.moving), the body bobs and the feet take turns lifting.
-// How far sitting moves someone up or down, in pixels: down a little on
-// most seats, up on a tall-backed seat they're facing away from.
-function seatLift(seated) {
-  return seated === "upTall" ? -12 : seated ? 4 : 0;
-}
 
 // --- Accessories (Update 3): scarves, backpacks and earrings ---
 // All drawn around the body at (cx, cy), radius r (see drawPlayerBody).
@@ -9653,7 +9648,7 @@ function drawUprightBody(ctx, p) {
   const seated = p.seated;
   const speaking = p.speaking && !p.whisper && !p.asleep;
   const speechBob = speaking ? Math.abs(Math.sin((performance.now() / 1000) * 9)) * 2 : 0; // bouncing gently while talking
-  const cy = foot.y - r - 5 - bob - speechBob + seatLift(seated); // (facing away on a tall seat, you sit up so your head shows over its back)
+  const cy = foot.y - r - 5 - bob - speechBob - (p.seatLift ?? 0); // (sitting, you're up on the seat's surface: see SEATS in world.js)
 
   // Talking (p.speaking, while their mic hears them): a soft glow behind
   // them and a gentle bounce. (Not while whispering: that has its own look.)
@@ -10168,7 +10163,7 @@ function layoutPlayerTags(ctx, players) {
     tagLifts[p.id] = lift + (target - lift) * step;
     // The top of their head plus room for their hat. The name, badge, speech
     // bubbles and emotes all sit above this, so none of them cover the hat.
-    const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
+    const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] - (p.seatLift ?? 0);
     // How wide and tall their labels are, measured the same way they're drawn.
     ctx.font = "600 11px 'Quicksand', sans-serif";
     let width = ctx.measureText(p.name).width + 12 + (p.admin ? (isHouseOwner(p.name) ? 15 : 13) : 0); // (as in drawPlayerTag)
@@ -10813,7 +10808,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   // Walls, furniture and players, sorted so lower on screen draws in front.
   const sprites = [...getStaticSprites()];
   for (const p of players) {
-    sprites.push({ sortY: p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) });
+    sprites.push({ sortY: p.sortY ?? p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) }); // (sitting: sorted with the seat)
   }
   for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
   sprites.sort((a, b) => a.sortY - b.sortY);
