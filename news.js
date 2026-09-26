@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.52",
+    title: "Style & Progression: faces, accessories, room levels, tiers and titles",
+    text: "Your wardrobe has a new Face tab: pick your eyes, mouth, cheeks and freckles. The raccoons restocked with scarves, backpacks (yes, a jetpack) and earrings, plus three new glasses. Rooms now level up the more time you spend in them (Study Lv. 1 to 10 and so on), shown on your profile card. Many achievements now have tiers, from Bronze to Legend, with crumbs for every tier and progress bars on the trophy shelf. And you can earn titles like \"the Scholar\" and wear one under your name tag, picked in your wardrobe's Titles tab.",
+  },
+  {
     build: "0.50",
     title: "Feel & polish: sit, whisper, and an emote wheel",
     text: "Lots of little things to make the house feel alive. Press E near a chair, sofa, bench or bed to sit (move to get up). Hold V right next to a friend to whisper to only them, even in a voice room. Hold Q for an emote wheel. Your character bounces gently while you talk, and does little stretches and yawns if you're away from the keyboard. Dances have a short cooldown now, and their music fades with distance. A grandfather clock in the hallway chimes on the hour (turn it off in Settings), and admins have a little shield by their name.",
