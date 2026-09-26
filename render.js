@@ -4000,51 +4000,6 @@ const FURNITURE_DRAWERS = {
     ctx.lineCap = "butt";
   },
 
-  // Hung on a wall face: a window on a rainy evening, with raindrops
-  // running down the glass, green curtains and a little sill.
-  rainWindow(ctx, f) {
-    const a = toScreen(f.x, f.y);
-    const x = a.x, y = a.y - WALL_HEIGHT + 4, w = f.w * TILE, h = 28;
-    ctx.fillStyle = "rgba(40, 25, 10, 0.22)";
-    ctx.fillRect(x + 2, y + 3, w, h);
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(x, y, w, h);
-    const ix = x + 3, iy = y + 3, iw = w - 6, ih = h - 6;
-    const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
-    sky.addColorStop(0, "#4f6478");
-    sky.addColorStop(1, "#7f97aa");
-    ctx.fillStyle = sky;
-    ctx.fillRect(ix, iy, iw, ih);
-    // Raindrops sliding down the glass, each at its own speed.
-    const t = performance.now() / 1000;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(ix, iy, iw, ih);
-    ctx.clip();
-    ctx.strokeStyle = "rgba(220, 235, 245, 0.6)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < Math.round(iw / 4); i++) {
-      const dx = ix + ((i * 7.3) % iw);
-      const fall = (t * (0.5 + noise(i + f.x) * 0.9) + noise(i * 3.1 + f.x)) % 1;
-      const dy = iy - 4 + fall * (ih + 8);
-      ctx.beginPath();
-      ctx.moveTo(dx, dy);
-      ctx.lineTo(dx - 0.8, dy + 4);
-      ctx.stroke();
-    }
-    ctx.fillStyle = "rgba(220, 235, 245, 0.45)"; // drops resting on the glass
-    for (let i = 0; i < 6; i++) ctx.fillRect(ix + noise(i + 40 + f.x) * iw, iy + noise(i + 50 + f.x) * ih, 1.5, 1.5);
-    ctx.restore();
-    ctx.fillStyle = WOOD_DARK; // window bars
-    ctx.fillRect(x + w / 2 - 1, y, 2, h);
-    ctx.fillRect(x, y + h / 2 - 1, w, 2);
-    ctx.fillStyle = "#8b6b4a"; // sill
-    ctx.fillRect(x - 3, y + h, w + 6, 3);
-    ctx.fillStyle = "#4f6b52"; // curtains
-    ctx.fillRect(x - 4, y - 2, 7, h + 3);
-    ctx.fillRect(x + w - 3, y - 2, 7, h + 3);
-  },
-
   // A tall freestanding bookcase, packed with three rows of books, with a
   // couple of books lying on top.
   libraryShelf(ctx, f) {
@@ -4687,11 +4642,13 @@ const FURNITURE_DRAWERS = {
   picture(ctx, f) {
     const a = toScreen(f.x, f.y);
     const x = a.x, y = a.y - WALL_HEIGHT + 5, w = f.w * TILE, h = 22;
-    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
-    ctx.fillRect(x + 2, y + 3, w, h);
+    // Flat on the wall with a thin gold frame (windows have deep frames,
+    // sills and curtains, so the two never look alike).
+    ctx.fillStyle = "rgba(40, 25, 10, 0.15)";
+    ctx.fillRect(x + 1, y + 1.5, w, h);
     ctx.fillStyle = "#c9a24a";
     ctx.fillRect(x, y, w, h);
-    const ix = x + 3, iy = y + 3, iw = w - 6, ih = h - 6;
+    const ix = x + 1.5, iy = y + 1.5, iw = w - 3, ih = h - 3;
     ctx.save();
     ctx.beginPath();
     ctx.rect(ix, iy, iw, ih);
@@ -4752,37 +4709,6 @@ const FURNITURE_DRAWERS = {
       ctx.quadraticCurveTo(ox + dx, oy - 5 - hgt - lick, ox + dx + 5, oy - 5);
       ctx.fill();
     }
-  },
-
-  // Hung on a wall face: a window onto the lake, with pines on the far shore.
-  lakeWindow(ctx, f) {
-    const a = toScreen(f.x, f.y);
-    const x = a.x, y = a.y - WALL_HEIGHT + 5, w = f.w * TILE, h = 25;
-    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
-    ctx.fillRect(x + 2, y + 3, w, h);
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(x, y, w, h);
-    const ix = x + 3, iy = y + 3, iw = w - 6, ih = h - 6;
-    const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
-    sky.addColorStop(0, "#f2c49a");
-    sky.addColorStop(1, "#bfdcea");
-    ctx.fillStyle = sky;
-    ctx.fillRect(ix, iy, iw, ih);
-    ctx.fillStyle = "#3f5a3a"; // pines
-    for (let px = ix; px < ix + iw; px += 6) {
-      ctx.beginPath();
-      ctx.moveTo(px, iy + ih * 0.55);
-      ctx.lineTo(px + 3, iy + ih * 0.2 + ((px * 7) % 4));
-      ctx.lineTo(px + 6, iy + ih * 0.55);
-      ctx.fill();
-    }
-    ctx.fillStyle = "#4a7f9e"; // the lake
-    ctx.fillRect(ix, iy + ih * 0.55, iw, ih * 0.45);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
-    ctx.fillRect(ix + 4, iy + ih * 0.7, 8, 1);
-    ctx.fillRect(ix + iw - 14, iy + ih * 0.85, 9, 1);
-    ctx.fillStyle = WOOD_DARK; // window bars
-    ctx.fillRect(x + w / 2 - 1, y, 2, h);
   },
 
   // Hung on a wall face: a canoe paddle and a fishing rod, crossed.
@@ -4992,49 +4918,6 @@ const FURNITURE_DRAWERS = {
 
   // --- Secret office: scholar's study ---
 
-  // Hung on a wall face: a round "moon" window with a lattice and a plum branch.
-  moonWindow(ctx, f) {
-    const a = toScreen(f.x, f.y);
-    const r = 15, cx = a.x + (f.w * TILE) / 2, cy = a.y - WALL_HEIGHT + 20;
-    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
-    ctx.beginPath();
-    ctx.arc(cx + 2, cy + 3, r + 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#5a2a1e";
-    ctx.beginPath();
-    ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = "#f3e9d2";
-    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-    ctx.strokeStyle = "#3a2a20"; // plum branch with blossoms
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx - r, cy + 6);
-    ctx.quadraticCurveTo(cx - 2, cy + 2, cx + 6, cy - 8);
-    ctx.stroke();
-    ctx.fillStyle = "#e37aa0";
-    for (const [bx, by] of [[-6, 3], [1, -2], [5, -7], [-10, 6]]) {
-      ctx.beginPath();
-      ctx.arc(cx + bx, cy + by, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.strokeStyle = "rgba(90, 42, 30, 0.55)"; // lattice
-    ctx.lineWidth = 1;
-    for (let i = -r; i <= r; i += 7) {
-      ctx.beginPath();
-      ctx.moveTo(cx + i, cy - r);
-      ctx.lineTo(cx + i, cy + r);
-      ctx.moveTo(cx - r, cy + i);
-      ctx.lineTo(cx + r, cy + i);
-      ctx.stroke();
-    }
-    ctx.restore();
-  },
-
   // Hung on a wall face: a hanging calligraphy scroll with a red seal.
   scroll(ctx, f) {
     const a = toScreen(f.x, f.y);
@@ -5169,61 +5052,6 @@ const FURNITURE_DRAWERS = {
   },
 
   // --- Secret office: dark cottage (fall, ivy, and a lot of cats) ---
-
-  // Hung on a wall face: an arched window onto an autumn evening, with a
-  // tree losing its leaves and a few drifting past the glass.
-  leafWindow(ctx, f) {
-    const a = toScreen(f.x, f.y);
-    const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 3, h = 31;
-    const t = performance.now() / 1000;
-    ctx.fillStyle = "rgba(20, 12, 5, 0.25)";
-    archPath(ctx, x + 2, y + 3, w, h);
-    ctx.fill();
-    ctx.fillStyle = "#2e1f16"; // frame
-    archPath(ctx, x, y, w, h);
-    ctx.fill();
-    const ix = x + 3, iy = y + 3, iw = w - 6, ih = h - 6;
-    ctx.save();
-    archPath(ctx, ix, iy, iw, ih);
-    ctx.clip();
-    const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
-    sky.addColorStop(0, "#5a3f63");
-    sky.addColorStop(0.6, "#d9804a");
-    sky.addColorStop(1, "#f2b366");
-    ctx.fillStyle = sky;
-    ctx.fillRect(ix, iy, iw, ih);
-    ctx.fillStyle = "#3a2a2e"; // far hills
-    ctx.beginPath();
-    ctx.moveTo(ix, iy + ih);
-    ctx.quadraticCurveTo(ix + iw * 0.3, iy + ih * 0.62, ix + iw * 0.6, iy + ih * 0.8);
-    ctx.quadraticCurveTo(ix + iw * 0.85, iy + ih * 0.7, ix + iw, iy + ih * 0.78);
-    ctx.lineTo(ix + iw, iy + ih);
-    ctx.fill();
-    ctx.fillStyle = "#2a1c16"; // the tree
-    ctx.fillRect(ix + iw * 0.3, iy + ih * 0.45, 3, ih * 0.55);
-    for (const [dx, dy, r, color] of [[-4, 8, 7, "#b8472a"], [6, 6, 6, "#d9803a"], [1, 2, 6, "#c95d2e"], [9, 12, 4, "#e0a040"]]) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(ix + iw * 0.3 + dx, iy + dy, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    const leafColors = ["#d9803a", "#b8472a", "#e0a040"];
-    for (let i = 0; i < 4; i++) {
-      const fall = (t * 0.25 + i / 4) % 1;
-      ctx.fillStyle = leafColors[i % 3];
-      ctx.beginPath();
-      ctx.ellipse(ix + ((i * 13 + 5) % iw) + Math.sin(t * 2 + i) * 3, iy + fall * ih, 1.6, 1, t * 3 + i, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-    ctx.fillStyle = "#2e1f16"; // window bars
-    ctx.fillRect(x + w / 2 - 1, y + 2, 2, h - 2);
-    ctx.fillRect(x + 2, y + h * 0.6, w - 4, 2);
-    ctx.fillStyle = "#4a3022"; // sill
-    ctx.fillRect(x - 3, y + h - 1, w + 6, 3);
-    drawIvySprig(ctx, x + 1, y + 8, 12, 1);
-    drawIvySprig(ctx, x + w - 1, y + 12, 9, -1);
-  },
 
   // Hung on a wall face: bundles of dried lavender, sage and wildflowers
   // hanging upside down from a little wooden rod.
@@ -6504,25 +6332,6 @@ const FURNITURE_DRAWERS = {
     }
   },
 
-  // Hung on a wall face: a window with curtains.
-  // (A "short" window sits higher up, so it clears a kitchen counter.)
-  window(ctx, f) {
-    const a = toScreen(f.x, f.y);
-    const top = a.y - WALL_HEIGHT + (f.short ? 3 : 6), w = f.w * TILE, h = f.short ? 15 : 24;
-    ctx.fillStyle = "rgba(40, 25, 10, 0.18)"; // small shadow just below it
-    ctx.fillRect(a.x + 2, top + 3, w, h);
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x, top, w, h);
-    const sky = ctx.createLinearGradient(0, top, 0, top + h);
-    sky.addColorStop(0, "#9fd0ee");
-    sky.addColorStop(1, "#d8eef8");
-    ctx.fillStyle = sky;
-    ctx.fillRect(a.x + 3, top + 3, w - 6, h - 6);
-    ctx.fillStyle = "#c0554a";
-    ctx.fillRect(a.x - 3, top - 2, 9, h + 4);
-    ctx.fillRect(a.x + w - 6, top - 2, 9, h + 4);
-  },
-
   // The door at the west end of the hallway that you use to build an
   // office: a paneled wood door in a lighter frame, with a brass knob, a
   // little brass "Office" sign, and a welcome mat on the floor in front.
@@ -7066,6 +6875,7 @@ function drawLamp(ctx, x, y) {
 // Warm light effects, drawn over everything in a final pass so glows
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
+  drawSunPatches(ctx); // sunlight on the floor in front of windows, on sunny days (outdoors.js)
   if (viewFloor === YARD_FLOOR) {
     drawOutdoorLight(ctx); // daylight, dusk and night in the yard (outdoors.js)
     return;

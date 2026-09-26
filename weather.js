@@ -57,8 +57,8 @@ const NIGHT_ICONS = { clear: "🌙", partly: "☁️" };
 
 // Try-outs from the admin panel ("rain", "snow", "night" and so on). They
 // only change this computer, until you pick "Real weather" or reload.
-let preview = { sky: null, night: null };
-let real = null; // the last real reading: { sky, rain, snow, clouds, temp, night, words }
+let preview = { sky: null, night: null, dusk: false };
+let real = null; // the last real reading: { sky, rain, snow, clouds, temp, night, words, sunrise, sunset }
 
 const chip = document.getElementById("weather-chip");
 
@@ -70,6 +70,7 @@ function apply() {
     now = { ...now, sky, rain, snow, clouds, words: words + " (preview)" };
   }
   if (preview.night !== null) now.night = preview.night;
+  now.duskPreview = preview.dusk; // (see duskLevel in outdoors.js)
   const before = JSON.stringify([OUTDOORS.sky, OUTDOORS.rain, OUTDOORS.snow, OUTDOORS.night]);
   Object.assign(OUTDOORS, now, { raining: now.rain > 0, updated: Date.now() });
   if (JSON.stringify([OUTDOORS.sky, OUTDOORS.rain, OUTDOORS.snow, OUTDOORS.night]) !== before) window.dispatchEvent(new CustomEvent("weather", { detail: { ...OUTDOORS } }));
@@ -95,14 +96,19 @@ function showChip() {
 
 async function fetchWeather() {
   const { latitude, longitude } = CONFIG.weather.hometown;
-  const url = `${API}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,cloud_cover,is_day&timezone=auto&forecast_days=1`;
+  const url = `${API}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,cloud_cover,is_day&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const c = data.current;
     const [sky, rain, snow, clouds, words] = CODES[c.weather_code] ?? CODES[Number.isFinite(c.cloud_cover) && c.cloud_cover > 60 ? 3 : 0];
-    real = { sky, rain, snow, clouds: Number.isFinite(c.cloud_cover) ? Math.max(clouds, c.cloud_cover / 100) : clouds, temp: c.temperature_2m, night: c.is_day === 0, words };
+    // Today's sunrise and sunset, as times (they come in the hometown's
+    // local time, like "2026-09-26T19:04", so they're turned into moments
+    // using its offset from UTC). Used for the dusk glow in windows.
+    const offset = (data.utc_offset_seconds ?? 0) * 1000;
+    const moment = (text) => (typeof text === "string" ? Date.parse(text + "Z") - offset : null);
+    real = { sky, rain, snow, clouds: Number.isFinite(c.cloud_cover) ? Math.max(clouds, c.cloud_cover / 100) : clouds, temp: c.temperature_2m, night: c.is_day === 0, words, sunrise: moment(data.daily?.sunrise?.[0]), sunset: moment(data.daily?.sunset?.[0]) };
     apply();
   } catch (err) {
     // No weather (offline, or the service is down): keep whatever we had.
@@ -117,11 +123,12 @@ export function startWeather() {
   setInterval(fetchWeather, Math.max(5, CONFIG.weather.refreshMinutes) * 60_000);
 }
 
-// The admin panel's weather try-outs: a sky ("rain", "snow"...), "day" or
-// "night", or null for the real weather again.
+// The admin panel's weather try-outs: a sky ("rain", "snow"...), "day",
+// "dusk" or "night", or null for the real weather again.
 export function previewWeather(pick) {
-  if (pick === null) preview = { sky: null, night: null };
-  else if (pick === "day" || pick === "night") preview.night = pick === "night";
+  if (pick === null) preview = { sky: null, night: null, dusk: false };
+  else if (pick === "day" || pick === "night") preview = { ...preview, night: pick === "night", dusk: false };
+  else if (pick === "dusk") preview = { ...preview, night: false, dusk: true };
   else preview.sky = pick;
   apply();
 }

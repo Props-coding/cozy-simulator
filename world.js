@@ -180,6 +180,7 @@ const BASE_FURNITURE = [
   { kind: "picture", x: 4.55, y: 0, w: 0.9, art: "flowers", solid: false },
   { kind: "bench", x: 4.25, y: 0.1, w: 1.5, h: 0.5 },
   { kind: "sconce", x: 6.4, y: 0, solid: false },
+  { kind: "picture", x: 7.2, y: 0, w: 1.1, art: "sea", solid: false },
   { kind: "mirror", x: 9.45, y: 0, w: 0.7, short: true, solid: false },
   { kind: "console", x: 8.9, y: 0.1, w: 1.8, h: 0.45 },
   { kind: "sconce", x: 12.85, y: 0, solid: false },
@@ -188,7 +189,6 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 14.6, y: 0, solid: false },
   { kind: "weatherWindow", x: 15.3, y: 0, w: 1.2, solid: false },
   { kind: "sconce", x: 17.1, y: 0, solid: false },
-  { kind: "picture", x: 18.6, y: 0, w: 1.1, art: "sea", solid: false },
   { kind: "weatherWindow", x: 20.5, y: 0, w: 1.2, solid: false }, // (shows the real weather outside, see weather.js)
   { kind: "sconce", x: 22.3, y: 0, solid: false },
   { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", solid: false },
@@ -276,16 +276,15 @@ const BASE_FURNITURE = [
 
   // Library: north of the hallway's west end, across from the Theater,
   // with its door (x 2 to 3.6) at the bottom. Along its outside north
-  // wall, three windows with rain running down them and a clock, with a
+  // wall, two windows onto the real weather and a clock, with a
   // reading nook under them (an
   // armchair turned to the window, a beanbag, each with a floor lamp).
   // Below: a bookshelf on each side of the aisle up from the door, and a
   // reading table with green banker's lamps on a deep green rug, with a
   // seat. Quiet, no voice.
-  { kind: "rainWindow", x: 0.35, y: -5.4, w: 1.3, solid: false },
-  { kind: "clock", x: 2, y: -5.4, solid: false },
-  { kind: "rainWindow", x: 2.35, y: -5.4, w: 1.3, solid: false },
-  { kind: "rainWindow", x: 4.35, y: -5.4, w: 1.3, solid: false },
+  { kind: "rainWindow", x: 0.35, y: -5.4, w: 1.15, solid: false },
+  { kind: "clock", x: 3.0, y: -5.4, solid: false },
+  { kind: "rainWindow", x: 4.45, y: -5.4, w: 1.15, solid: false },
   { kind: "armchair", x: 0.5, y: -5.0, w: 1.1, h: 0.8 },
   { kind: "floorLamp", x: 1.7, y: -5.05, w: 0.4, h: 0.4 },
   { kind: "floorLamp", x: 4.1, y: -5.05, w: 0.4, h: 0.4 },
@@ -725,7 +724,7 @@ const SEASONAL = {
   // Where they go (grid units), kept clear of doorways and furniture.
   spots: [
     { size: "small", x: 5.85, y: 0.12 }, // hallway, by the bench
-    { size: "big", x: 18.9, y: 0.1 }, // hallway, under the sea painting
+    { size: "big", x: 18.9, y: 0.1 }, // hallway, between the lamp and the east window
     { size: "small", x: 7.4, y: 9.8 }, // Study, by the beanbag
     { size: "big", x: 10.9, y: 8.7 }, // Study, beside the rug
     { size: "small", x: 13.65, y: 10.15 }, // Dinner, by the tea cart
@@ -1255,9 +1254,9 @@ const DECOR = {
   bookStacks: { name: "Book Stacks", tab: "decor", price: 12, kind: "bookStacks", w: 0.7, h: 0.4 },
   floorCushions: { name: "Floor Cushions", tab: "decor", price: 20, kind: "floorCushions", w: 1.0, h: 0.6, solid: false },
   pumpkins: { name: "Pumpkins & Candle", tab: "decor", price: 15, kind: "pumpkins", w: 0.6, h: 0.5 },
-  rainWindow: { name: "Rainy Window", tab: "decor", price: 40, kind: "rainWindow", w: 1.2, wall: true },
+  rainWindow: { name: "Garden Window", tab: "decor", price: 40, kind: "rainWindow", w: 1.2, wall: true },
   lakeWindow: { name: "Lake Window", tab: "decor", price: 45, kind: "lakeWindow", w: 1.0, wall: true },
-  moonWindow: { name: "Moon Window", tab: "decor", price: 50, kind: "moonWindow", w: 0.8, wall: true },
+  moonWindow: { name: "Round Window", tab: "decor", price: 50, kind: "moonWindow", w: 0.8, wall: true },
   leafWindow: { name: "Autumn Window", tab: "decor", price: 50, kind: "leafWindow", w: 0.9, wall: true },
   stringLights: { name: "String Lights", tab: "decor", price: 20, kind: "lights", w: 2.0, wall: true },
   fairyCurtain: { name: "Fairy Light Curtain", tab: "decor", price: 30, kind: "fairyCurtain", w: 1.4, wall: true },

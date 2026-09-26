@@ -898,77 +898,145 @@ function drawUmbrella(ctx, p) {
   ctx.restore();
 }
 
-// --- Windows onto the real weather ---
-// A window in the hallway's back wall that shows the sky outside: blue by
-// day with the sun or passing clouds, deep blue with the moon and stars at
-// night, grey when it's raining (drops on the glass) or snowing.
-function drawWeatherPane(ctx, x, y, w, h) {
-  const night = isNightOutside();
-  const { sky, rain, snow, clouds } = OUTDOORS;
-  const t = performance.now() / 1000;
-  const grey = Math.max(clouds, rain, snow > 0 ? 0.7 : 0);
-  const pane = ctx.createLinearGradient(0, y, 0, y + h);
-  if (night) {
-    pane.addColorStop(0, grey > 0.6 ? "#2a3244" : "#1c2750");
-    pane.addColorStop(1, grey > 0.6 ? "#3a4254" : "#34407a");
-  } else {
-    pane.addColorStop(0, grey > 0.6 ? "#9aa6b2" : "#7fb6de");
-    pane.addColorStop(1, grey > 0.6 ? "#c2c8cf" : "#cfe6f2");
+// --- Windows (every window in the house) ---
+// Every window shows what's outside that wall: tree tops against a pale
+// strip of sky, grass, and a bit of fence (or water, for the lake house).
+// Never the sun or the moon: on sunny days the sunlight shows as a soft
+// patch of light on the floor in front of the window instead (see
+// drawSunPatches). The view follows the live weather (rain streaks,
+// snow, overcast, fog, storms) and the time of day (a dusk glow, dark at
+// night).
+//
+// Windows look clearly different from paintings: a deep frame (you see
+// its inner edge in shadow), a sill that sticks out, a shine on the
+// glass, and curtains on a rod. Paintings are flat with a thin frame.
+
+// How much dusk (or dawn) glow the light has right now, from 0 to 1: the
+// hour before sunset, and the half hour after sunrise. The times come
+// with the weather (weather.js); until they do, from this computer's
+// clock (CONFIG.outdoors.nightFrom and nightTo).
+function duskLevel() {
+  if (OUTDOORS.duskPreview) return 1;
+  if (isNightOutside()) return 0;
+  const now = Date.now(), hour = 3600_000;
+  let { sunrise, sunset } = OUTDOORS;
+  if (!sunset || !sunrise) {
+    const today = new Date();
+    today.setMinutes(0, 0, 0);
+    sunset = new Date(today).setHours(CONFIG.outdoors.nightFrom);
+    sunrise = new Date(today).setHours(CONFIG.outdoors.nightTo);
   }
-  ctx.fillStyle = pane;
-  ctx.fillRect(x, y, w, h);
+  const untilSunset = (sunset - now) / hour, sinceSunrise = (now - sunrise) / hour;
+  if (untilSunset >= 0 && untilSunset < 1) return 1 - untilSunset;
+  if (sinceSunrise >= 0 && sinceSunrise < 0.5) return 1 - sinceSunrise * 2;
+  return 0;
+}
+
+// Is the sun out right now (day, not dusk, and not grey, wet or foggy)?
+function sunnyNow() {
+  const { rain, snow, clouds, sky } = OUTDOORS;
+  return !isNightOutside() && duskLevel() < 0.6 && rain === 0 && snow === 0 && clouds < 0.5 && sky !== "fog";
+}
+
+// The view out of a window, painted into (x, y, w, h). `view` is "yard"
+// (grass and a fence), "lake" (water) or "leaves" (close to an autumn tree).
+function drawWindowView(ctx, x, y, w, h, view = "yard", seed = 0) {
+  const t = performance.now() / 1000;
+  const { rain, snow, clouds, sky } = OUTDOORS;
+  const grey = Math.max(clouds, rain, snow > 0 ? 0.7 : 0);
+  const season = yardSeason();
+  const leaves = view === "leaves" ? leafColors(0) : leafColors(seed);
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
-  if (grey < 0.6) {
-    if (night) {
-      ctx.fillStyle = "#f7f1d8"; // moon
+  // A pale strip of sky at the top (just a strip: tree tops fill the rest).
+  const skyFill = ctx.createLinearGradient(0, y, 0, y + h * 0.5);
+  skyFill.addColorStop(0, grey > 0.5 ? "#c3c9cf" : "#bcd9ea");
+  skyFill.addColorStop(1, grey > 0.5 ? "#d6dade" : "#e3f0f6");
+  ctx.fillStyle = skyFill;
+  ctx.fillRect(x, y, w, h);
+  // Tree tops: a row of soft round crowns across the middle (closer and
+  // bigger for a window right by a tree).
+  const big = view === "leaves";
+  const crowns = big ? 3 : Math.max(3, Math.round(w / 9));
+  for (let i = 0; i < crowns; i++) {
+    const cx = x + (i + 0.5) * (w / crowns) + (noise(seed * 7 + i * 3.1) - 0.5) * 5;
+    const cy = y + h * (big ? 0.28 : 0.42) + noise(seed * 3 + i * 1.7) * 4;
+    const r = (big ? h * 0.42 : h * 0.24) + noise(i * 5.3 + seed) * 3;
+    ctx.fillStyle = leaves[0];
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = leaves[1]; // lighter on top (light from above)
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.2, cy - r * 0.2, r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    if (season === "winter" || snow > 0) {
+      ctx.fillStyle = "rgba(250, 252, 255, 0.9)"; // snow on the tree tops
       ctx.beginPath();
-      ctx.arc(x + w * 0.72, y + h * 0.3, 4.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#1c2750";
-      ctx.beginPath();
-      ctx.arc(x + w * 0.72 + 2, y + h * 0.3 - 1.5, 3.8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255, 250, 225, 0.85)";
-      for (let i = 0; i < 6; i++) ctx.fillRect(x + noise(i * 3.3) * w, y + noise(i * 5.1) * h * 0.7, 1.2, 1.2);
-    } else {
-      drawGlow(ctx, x + w * 0.72, y + h * 0.3, 10, "rgba(255, 230, 140, 0.7)");
-      ctx.fillStyle = "#ffe07a";
-      ctx.beginPath();
-      ctx.arc(x + w * 0.72, y + h * 0.3, 4.5, 0, Math.PI * 2);
+      ctx.ellipse(cx - r * 0.1, cy - r * 0.55, r * 0.6, r * 0.28, 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
-  // Clouds drifting past.
-  if (clouds > 0.1 && sky !== "fog") {
-    ctx.fillStyle = night ? "rgba(120, 130, 150, 0.8)" : grey > 0.6 ? "rgba(235, 238, 242, 0.85)" : "rgba(255, 255, 255, 0.9)";
-    for (let i = 0; i < 2 + Math.round(clouds * 2); i++) {
-      const cx = x - 14 + ((t * 4 + i * 23) % (w + 28)), cy = y + 5 + i * 4;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 8, 3.5, 0, 0, Math.PI * 2);
-      ctx.ellipse(cx + 5, cy - 2, 5, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
+  // The ground: grass (or the lake).
+  const groundTop = y + h * (big ? 0.72 : 0.6);
+  if (view === "lake") {
+    const water = ctx.createLinearGradient(0, groundTop, 0, y + h);
+    water.addColorStop(0, "#5f95b0");
+    water.addColorStop(1, "#4a7f9e");
+    ctx.fillStyle = water;
+    ctx.fillRect(x, groundTop, w, y + h - groundTop);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    for (let i = 0; i < 3; i++) ctx.fillRect(x + ((t * 3 + i * 11 + seed * 5) % w), groundTop + 3 + i * 3, 5, 1);
+  } else {
+    const grass = (GRASS[season] ?? GRASS.summer).ground;
+    ctx.fillStyle = snow > 0 || season === "winter" ? "#eef2f4" : grass;
+    ctx.fillRect(x, groundTop, w, y + h - groundTop);
+    if (view === "yard") {
+      // A bit of the yard's fence: two rails and a few posts.
+      ctx.fillStyle = "#b08a60";
+      ctx.fillRect(x, groundTop + 3, w, 1.5);
+      ctx.fillRect(x, groundTop + 6.5, w, 1.5);
+      for (let px = x + 3 + (seed % 3) * 2; px < x + w; px += 9) ctx.fillRect(px, groundTop + 1.5, 1.8, 8);
     }
+  }
+  // Weather.
+  if (grey > 0.2) {
+    ctx.fillStyle = `rgba(150, 160, 172, ${Math.min(0.35, grey * 0.35)})`; // overcast: everything a little grey
+    ctx.fillRect(x, y, w, h);
   }
   if (sky === "fog") {
-    ctx.fillStyle = "rgba(240, 242, 244, 0.6)";
+    ctx.fillStyle = "rgba(238, 240, 242, 0.65)";
     ctx.fillRect(x, y, w, h);
   }
   if (rain > 0) {
     drawRainIn(ctx, x, y, w, h, rain, Math.round(x), false);
-    // Drops running down the glass.
-    ctx.fillStyle = "rgba(230, 240, 250, 0.7)";
-    for (let i = 0; i < 5; i++) {
-      const fall = (t * (0.15 + noise(i * 1.9) * 0.1) + noise(i * 4.3)) % 1;
+    ctx.fillStyle = "rgba(230, 240, 250, 0.7)"; // drops running down the glass
+    for (let i = 0; i < 4; i++) {
+      const fall = (t * (0.15 + noise(i * 1.9) * 0.1) + noise(i * 4.3 + seed)) % 1;
       ctx.fillRect(x + 2 + noise(i * 2.7 + x) * (w - 4), y + fall * h, 1.2, 3);
     }
   }
-  if (snow > 0) {
-    drawSnowIn(ctx, x, y, w, h, snow, Math.round(x));
-    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-    ctx.fillRect(x, y + h - 3, w, 3); // snow piled on the sill
+  if (snow > 0) drawSnowIn(ctx, x, y, w, h, snow, Math.round(x));
+  if (view === "leaves" && season === "autumn") {
+    // A few leaves drifting past.
+    for (let i = 0; i < 3; i++) {
+      const fall = (t * 0.12 + noise(i * 3.7 + seed)) % 1;
+      ctx.fillStyle = leaves[i % 3];
+      ctx.fillRect(x + ((noise(i * 5.1) * w + t * 6) % w), y + fall * h, 2.5, 1.8);
+    }
+  }
+  // The time of day: a warm glow at dusk, dark blue at night.
+  const dusk = duskLevel();
+  if (dusk > 0) {
+    ctx.fillStyle = `rgba(255, 140, 90, ${0.3 * dusk})`;
+    ctx.fillRect(x, y, w, h);
+  }
+  const night = outdoorNightLevel();
+  if (night > 0) {
+    ctx.fillStyle = `rgba(14, 20, 44, ${0.72 * night})`;
+    ctx.fillRect(x, y, w, h);
   }
   const flash = lightningFlash();
   if (flash) {
@@ -978,29 +1046,149 @@ function drawWeatherPane(ctx, x, y, w, h) {
   ctx.restore();
 }
 
-FURNITURE_DRAWERS.weatherWindow = (ctx, f) => {
-  const a = toScreen(f.x, f.y);
-  const w = f.w * TILE, top = a.y - WALL_HEIGHT + 5, h = 25;
-  ctx.fillStyle = "#f4efe4"; // frame
-  ctx.fillRect(a.x + 3, top - 2, w - 6, h + 4);
-  drawWeatherPane(ctx, a.x + 5, top, w - 10, h);
-  ctx.fillStyle = "#f4efe4"; // cross bars
-  ctx.fillRect(a.x + w / 2 - 1, top, 2, h);
-  ctx.fillRect(a.x + 5, top + h / 2 - 1, w - 10, 2);
-  ctx.fillStyle = "#c98a8a"; // little curtains tied back
-  ctx.beginPath();
-  ctx.moveTo(a.x + 2, top - 3);
-  ctx.quadraticCurveTo(a.x + 9, top + h / 2, a.x + 4, top + h + 2);
-  ctx.lineTo(a.x + 2, top + h + 2);
-  ctx.closePath();
-  ctx.moveTo(a.x + w - 2, top - 3);
-  ctx.quadraticCurveTo(a.x + w - 9, top + h / 2, a.x + w - 4, top + h + 2);
-  ctx.lineTo(a.x + w - 2, top + h + 2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#8a6040"; // sill
-  ctx.fillRect(a.x + 1, top + h + 2, w - 2, 3);
+// Each kind of window: its view, frame color, curtain color, and shape.
+// (Nest & Nook sells some of these for bedrooms; the rest hang in the
+// house and the themed offices.)
+const WINDOW_LOOKS = {
+  window: { view: "yard", frame: "#f1e9d8", curtain: "#c0554a" },
+  weatherWindow: { view: "yard", frame: "#f1e9d8", curtain: "#c98a8a" },
+  rainWindow: { view: "yard", frame: "#e9e1cf", curtain: "#5f7f5a" },
+  lakeWindow: { view: "lake", frame: "#8a5c3c", curtain: "#b86a4a" },
+  moonWindow: { view: "yard", frame: "#6b3f2a", curtain: null, round: true },
+  leafWindow: { view: "leaves", frame: "#4a3325", curtain: "#7a3f4a" },
 };
+const WINDOW_KINDS = new Set(Object.keys(WINDOW_LOOKS));
+
+// A window hung on a wall (f.x, f.w along the wall; f.y the wall's bottom edge).
+function drawWindow(ctx, f) {
+  const look = WINDOW_LOOKS[f.kind] ?? WINDOW_LOOKS.window;
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, x = a.x, top = a.y - WALL_HEIGHT + 6, h = 22;
+  const seed = Math.round(f.x * 10);
+  if (look.round) {
+    // A round window: a deep round frame, the view inside, and a small sill.
+    const r = Math.min(w / 2 - 3, h / 2 + 2), cx = x + w / 2, cy = top + h / 2 + 1;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
+    ctx.beginPath();
+    ctx.arc(cx + 1.5, cy + 2, r + 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = look.frame;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    drawWindowView(ctx, cx - r, cy - r, r * 2, r * 2, look.view, seed);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)"; // the frame's depth, in shadow at the top
+    ctx.fillRect(cx - r, cy - r, r * 2, 3);
+    drawGlassShine(ctx, cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+    ctx.strokeStyle = shadeColor(look.frame, 25); // a lattice
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy);
+    ctx.lineTo(cx + r, cy);
+    ctx.moveTo(cx, cy - r);
+    ctx.lineTo(cx, cy + r);
+    ctx.stroke();
+    drawSill(ctx, cx - r - 2, cy + r + 3, r * 2 + 4, look.frame);
+    return;
+  }
+  const inset = 4; // the frame's width
+  ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
+  ctx.fillRect(x + 4, top + 1, w - 4, h + 5);
+  ctx.fillStyle = look.frame; // the frame
+  ctx.fillRect(x + 2, top - 2, w - 4, h + 4);
+  const gx = x + 2 + inset, gy = top - 2 + inset, gw = w - 4 - inset * 2, gh = h + 4 - inset * 2;
+  drawWindowView(ctx, gx, gy, gw, gh, look.view, seed);
+  // The frame's depth: its inner top and left edges in shadow.
+  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+  ctx.fillRect(gx, gy, gw, 2.5);
+  ctx.fillRect(gx, gy, 2, gh);
+  // Glazing bars (a cross on wide windows, one bar on narrow ones).
+  ctx.fillStyle = look.frame;
+  ctx.fillRect(gx + gw / 2 - 1, gy, 2, gh);
+  if (gw > 30) ctx.fillRect(gx, gy + gh / 2 - 1, gw, 2);
+  drawGlassShine(ctx, gx, gy, gw, gh);
+  drawSill(ctx, x, top + h + 2, w, look.frame);
+  if (look.curtain) {
+    // A curtain rod over the window, and a curtain tied back on each side.
+    ctx.fillStyle = "#5c4530";
+    ctx.fillRect(x - 1, top - 5, w + 2, 2);
+    ctx.fillStyle = look.curtain;
+    for (const side of [0, 1]) {
+      const ex = side ? x + w + 1 : x - 1, dir = side ? -1 : 1;
+      ctx.beginPath();
+      ctx.moveTo(ex, top - 4);
+      ctx.lineTo(ex + dir * 9, top - 4);
+      ctx.quadraticCurveTo(ex + dir * 3, top + h * 0.45, ex + dir * 6, top + h + 1);
+      ctx.lineTo(ex, top + h + 1);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; // folds
+    for (const [ex, dir] of [[x - 1, 1], [x + w + 1, -1]]) ctx.fillRect(ex + dir * 3, top - 3, 1, h + 2);
+  }
+}
+
+// A soft shine across the glass: two thin diagonal streaks.
+function drawGlassShine(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+  for (const [off, width] of [[0.18, 5], [0.34, 2.5]]) {
+    const sx = x + w * off;
+    ctx.beginPath();
+    ctx.moveTo(sx, y + h);
+    ctx.lineTo(sx + width, y + h);
+    ctx.lineTo(sx + width + h * 0.6, y);
+    ctx.lineTo(sx + h * 0.6, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// A sill under a window: a ledge that sticks out, with a shadow under it.
+function drawSill(ctx, x, y, w, color) {
+  ctx.fillStyle = "rgba(40, 25, 10, 0.3)";
+  ctx.fillRect(x - 1, y + 3, w + 2, 2.5);
+  ctx.fillStyle = shadeColor(color, -18);
+  ctx.fillRect(x - 3, y, w + 6, 3.5);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.fillRect(x - 3, y, w + 6, 1);
+}
+
+for (const kind of WINDOW_KINDS) FURNITURE_DRAWERS[kind] = drawWindow;
+
+// Sunlight through the windows: on sunny days, a soft patch of light on
+// the floor in front of each window on the floor being drawn (none at
+// night, at dusk, or when it's grey or wet outside). Drawn over
+// everything, in the light pass (see drawLights in render.js).
+function drawSunPatches(ctx) {
+  if (!sunnyNow() || viewFloor === YARD_FLOOR) return;
+  const strength = 1 - outdoorNightLevel();
+  for (const f of FURNITURE) {
+    if (!WINDOW_KINDS.has(f.kind) || floorOf(f.y) !== viewFloor) continue;
+    const a = toScreen(f.x, f.y), w = f.w * TILE, depth = 1.5 * TILE;
+    // Slanting down and a little to the right, fading away from the wall.
+    const glow = ctx.createLinearGradient(0, a.y, 0, a.y + depth);
+    glow.addColorStop(0, `rgba(255, 238, 185, ${0.22 * strength})`);
+    glow.addColorStop(1, "rgba(255, 238, 185, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(a.x + 4, a.y + 2);
+    ctx.lineTo(a.x + w - 4, a.y + 2);
+    ctx.lineTo(a.x + w + 10, a.y + depth);
+    ctx.lineTo(a.x + 12, a.y + depth);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
 
 // --- The garden (Update 4, step 3) ---
 // Raised beds with whatever's growing in them (garden.js keeps
