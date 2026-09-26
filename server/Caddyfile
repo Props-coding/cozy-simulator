@@ -2,6 +2,8 @@
 # Caddy gets and renews the HTTPS certificate by itself. Addresses under
 # /api/ go to the server program; anything else gets a small hello.
 api.thecozy.world {
+	# Browsers remember to only ever use HTTPS for this address (a year).
+	header Strict-Transport-Security "max-age=31536000"
 	handle /api/* {
 		reverse_proxy 127.0.0.1:3000
 	}
