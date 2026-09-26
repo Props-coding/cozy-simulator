@@ -210,7 +210,8 @@ function yardGlows() {
     if (f.kind === "houseWindow") glows.push([f.x + f.w / 2, f.y - 0.35, 50, 0.7]);
     if (f.kind === "porchLantern") glows.push([f.x, f.y - 0.4, 70, 0.9]);
     if (f.kind === "yardDoor") glows.push([f.x + f.w / 2, f.y + 0.1, 60, 0.8]);
-    if (f.glow) glows.push(f.glow(f));
+    const glow = f.glow?.(f); // (like the campfire, when it's lit)
+    if (glow) glows.push(glow);
   }
   return glows;
 }
@@ -1679,5 +1680,149 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.fill();
     }
     ctx.restore();
+  },
+});
+
+// --- The campfire (Update 4, step 5) ---
+// Is the campfire burning? It lights itself at night.
+function campfireLit() {
+  return isNightOutside();
+}
+
+Object.assign(FURNITURE_DRAWERS, {
+  // A ring of stones with logs inside. At night: dancing flames, sparks
+  // drifting up and a warm glow (the glow itself is in drawOutdoorLight).
+  // By day: cold logs and a thin curl of smoke.
+  firePit(ctx, f) {
+    const t = performance.now() / 1000;
+    const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    const rx = (f.w / 2) * TILE, ry = (f.h / 2) * TILE;
+    // Ash bed.
+    ctx.fillStyle = "#5a4a40";
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, rx * 0.8, ry * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Stones round the edge (back half first, the front ones after the fire).
+    const stone = (i) => {
+      const a = (i / 12) * Math.PI * 2;
+      const x = c.x + Math.cos(a) * rx * 0.92, y = c.y + Math.sin(a) * ry * 0.9;
+      ctx.fillStyle = ["#8a847a", "#a09a8e", "#77716a"][i % 3];
+      ctx.beginPath();
+      ctx.ellipse(x, y - 3, 6.5, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.beginPath();
+      ctx.ellipse(x - 1.5, y - 5.5, 3, 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    for (let i = 6; i < 12; i++) stone(i);
+    // Crossed logs.
+    ctx.lineCap = "round";
+    for (const [dx, tilt] of [[-4, 0.5], [4, -0.5], [0, 0]]) {
+      ctx.strokeStyle = "#6a4428";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(c.x + dx - Math.cos(tilt) * 13, c.y - 2 + Math.sin(tilt) * 5);
+      ctx.lineTo(c.x + dx + Math.cos(tilt) * 13, c.y - 2 - Math.sin(tilt) * 5);
+      ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+    if (campfireLit()) {
+      // Flames: layered teardrops that flicker.
+      for (const [color, scale, speed] of [["#e0503a", 1, 7], ["#f29a3a", 0.75, 9], ["#ffd970", 0.45, 11]]) {
+        ctx.fillStyle = color;
+        for (let i = -1; i <= 1; i++) {
+          const h = (30 + Math.sin(t * speed + i * 2.3) * 6 + noise(i + 5) * 6) * scale * (i === 0 ? 1.2 : 0.8);
+          const w = 9 * scale;
+          const x = c.x + i * 7 * scale + Math.sin(t * speed * 0.7 + i) * 1.5;
+          const y = c.y - 2;
+          ctx.beginPath();
+          ctx.moveTo(x - w, y);
+          ctx.quadraticCurveTo(x - w, y - h * 0.5, x + Math.sin(t * 5 + i) * 3, y - h);
+          ctx.quadraticCurveTo(x + w, y - h * 0.5, x + w, y);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      // Sparks drifting up.
+      for (let i = 0; i < 7; i++) {
+        const life = (t * 0.6 + noise(i * 3.1)) % 1;
+        const x = c.x + (noise(i * 7.7) - 0.5) * 22 + Math.sin(t * 3 + i) * 4 * life;
+        const y = c.y - 20 - life * 55;
+        ctx.fillStyle = `rgba(255, ${190 + Math.round(60 * (1 - life))}, 110, ${1 - life})`;
+        ctx.fillRect(x, y, 2, 2);
+      }
+      drawGlow(ctx, c.x, c.y - 14, 34, "rgba(255, 170, 80, 0.35)");
+    } else {
+      // A few glowing embers and a curl of smoke.
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = `rgba(230, 110, 50, ${0.4 + 0.3 * Math.sin(t * 2 + i)})`;
+        ctx.fillRect(c.x - 8 + i * 5, c.y - 3 + (i % 2) * 2, 2.5, 2);
+      }
+      for (let i = 0; i < 5; i++) {
+        const life = (t * 0.25 + i / 5) % 1;
+        ctx.fillStyle = `rgba(220, 220, 225, ${0.35 * (1 - life)})`;
+        ctx.beginPath();
+        ctx.arc(c.x + Math.sin(life * 6 + i) * 5 * life, c.y - 8 - life * 50, 3 + life * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    for (let i = 0; i < 6; i++) stone(i);
+  },
+
+  // A log lying along the page, to sit on: bark, a cut end, knots.
+  logSeat(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+    const h = b.y - a.y + 8, y = b.y - h;
+    const bark = ctx.createLinearGradient(0, y, 0, b.y);
+    bark.addColorStop(0, "#9a7050");
+    bark.addColorStop(1, "#6a4830");
+    ctx.fillStyle = bark;
+    roundRectPath(ctx, a.x + 3, y, b.x - a.x - 6, h, h / 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(60, 35, 20, 0.35)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const x = a.x + 12 + noise(f.x * 3 + i) * (b.x - a.x - 30);
+      ctx.beginPath();
+      ctx.moveTo(x, y + 4);
+      ctx.lineTo(x + 10, y + 4);
+      ctx.stroke();
+    }
+    // Cut ends showing their rings.
+    for (const x of [a.x + 3 + h / 4, b.x - 3 - h / 4]) {
+      ctx.fillStyle = "#d8b888";
+      ctx.beginPath();
+      ctx.ellipse(x, y + h / 2, h / 4, h / 2 - 1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#a88458";
+      ctx.beginPath();
+      ctx.ellipse(x, y + h / 2, h / 8, h / 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255, 240, 210, 0.2)";
+    ctx.fillRect(a.x + h / 2, y + 2, b.x - a.x - h, 2);
+  },
+
+  // A log running down the page (seen end on at the bottom).
+  logSeatSide(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+    const w = b.x - a.x;
+    ctx.fillStyle = "#7a5638";
+    roundRectPath(ctx, a.x, a.y - 8, w, b.y - a.y, w / 2);
+    ctx.fill();
+    ctx.fillStyle = "#9a7050";
+    ctx.fillRect(a.x + 4, a.y - 6, w - 8, b.y - a.y - 10);
+    ctx.fillStyle = "#d8b888";
+    ctx.beginPath();
+    ctx.ellipse(a.x + w / 2, b.y - 8, w / 2 - 1, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#a88458";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(a.x + w / 2, b.y - 8, w / 4, 3.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
   },
 });

@@ -49,6 +49,8 @@ import {
   enterLibrary,
   leaveLibrary,
   setOutsideRain,
+  setCampfireSound,
+  updateCampfireSound,
   setRainVolume,
   updateRain,
   enterSleep,
@@ -625,6 +627,7 @@ function roomHintFor(room) {
   const yardDoor = yardDoorNear(player);
   if (yardDoor) return floorOf(player.y) === YARD_FLOOR ? `Walk through the ${yardDoor.name.toLowerCase()} to go back inside.` : "Walk through the door to go out to the yard.";
   if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
+  if (room.id === "campfire") return campfireLit() ? "The campfire's crackling. Voice is on around the fire. Press E by a log to sit." : "The campfire lights itself at night. Voice is on around it.";
   if (room.id === "conference") {
     return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
   }
@@ -2239,6 +2242,9 @@ function tick(now) {
   updateTheater();
   setOutsideRain(currentRoom.outdoor && OUTDOORS.raining ? 0.4 + 0.6 * OUTDOORS.rain : 0);
   updateRain(dt);
+  // The campfire crackles at night: loud at the fire, faint elsewhere outside.
+  setCampfireSound(floorOf(player.y) === YARD_FLOOR && campfireLit() ? (currentRoom.id === "campfire" ? 1 : 0.2) : 0);
+  updateCampfireSound(dt);
   updateWhiteNoise(dt);
   updateFocusTimer(currentRoom.id);
 

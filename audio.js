@@ -7,7 +7,7 @@
 // room; a bedroom's owner can also pick lo-fi or silence instead). main.js
 // passes "asleep" as the room while you're in bed, which isn't a voice
 // room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference", "workshop"];
+const VOICE_ROOMS = ["theater", "conference", "workshop", "campfire"];
 
 function isVoiceRoom(roomId) {
   if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
@@ -682,6 +682,88 @@ export function leaveLibrary() {
 // Out in the yard while it rains (Update 4): the same soft rain, as loud as
 // the rain is heavy (0 for none, up to 1), with the same volume slider.
 let outsideRain = 0;
+// --- The campfire's crackle (Update 4) ---
+// Made in code: a soft, warm hiss of noise (the flames) with little random
+// pops and snaps on top. `amount` is how loud (0 to 1): full at the
+// campfire, faint elsewhere in the yard, off by day or indoors.
+let fire = null;
+let fireTarget = 0;
+let fireLevel = 0;
+
+export function setCampfireSound(amount) {
+  fireTarget = amount;
+  if (amount > 0 && !fire && toneContext) startFire();
+}
+
+function noiseBuffer(seconds) {
+  const buffer = toneContext.createBuffer(1, toneContext.sampleRate * seconds, toneContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+function startFire() {
+  const out = toneContext.createGain();
+  out.gain.value = 0;
+  out.connect(toneContext.destination);
+  // The flames' hiss: noise, softened to a warm rumble.
+  const bed = toneContext.createBufferSource();
+  bed.buffer = noiseBuffer(2);
+  bed.loop = true;
+  const warm = toneContext.createBiquadFilter();
+  warm.type = "lowpass";
+  warm.frequency.value = 500;
+  const bedGain = toneContext.createGain();
+  bedGain.gain.value = 0.18;
+  bed.connect(warm);
+  warm.connect(bedGain);
+  bedGain.connect(out);
+  bed.start();
+  // Pops and snaps: tiny bursts of bright noise at random moments.
+  const snap = noiseBuffer(0.05);
+  const timer = setInterval(() => {
+    if (Math.random() > 0.35) return;
+    const pop = toneContext.createBufferSource();
+    pop.buffer = snap;
+    const bright = toneContext.createBiquadFilter();
+    bright.type = "bandpass";
+    bright.frequency.value = 1200 + Math.random() * 2500;
+    const g = toneContext.createGain();
+    const now = toneContext.currentTime;
+    g.gain.setValueAtTime(0.25 + Math.random() * 0.5, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.03 + Math.random() * 0.05);
+    pop.connect(bright);
+    bright.connect(g);
+    g.connect(out);
+    pop.start(now);
+  }, 70);
+  fire = {
+    out,
+    stop: () => {
+      clearInterval(timer);
+      try {
+        bed.stop();
+      } catch {
+        // Already stopped.
+      }
+      out.disconnect();
+    },
+  };
+}
+
+// Called every frame (from main.js): fades the crackle in and out.
+export function updateCampfireSound(dt) {
+  if (!fire) return;
+  const target = masterMuted ? 0 : fireTarget * masterVolume * 0.5;
+  fireLevel += (target - fireLevel) * (1 - Math.pow(0.05, dt));
+  fire.out.gain.value = fireLevel;
+  if (fireTarget === 0 && fireLevel < 0.002) {
+    fire.stop();
+    fire = null;
+    fireLevel = 0;
+  }
+}
+
 export function setOutsideRain(amount) {
   outsideRain = amount;
   if (amount > 0) startRain();

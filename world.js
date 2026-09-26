@@ -493,7 +493,7 @@ function fenceRun(x1, y1, x2, y2, style = "picket") {
 // in yard spots), the road and sidewalk, and the pond (see outdoors.js).
 const YARD_PATHS = [
   { x: 17.2, y: -2.9, w: 1.6, h: 1.5 }, // porch steps down to the garden gate
-  { x: 1.2, y: -2.8, w: 16.2, h: 0.9 }, // along the front of the porch, west to the campfire
+  { x: 7.0, y: -2.8, w: 10.4, h: 0.9 }, // along the front of the porch, west to the campfire
   { x: 8.9, y: -2.4, w: 0.9, h: 8.2 }, // down to the pond's dock
   { x: 17.4, y: 4.6, w: 1.2, h: 2.6 }, // out of the garden's bottom gate
   { x: 9.2, y: 6.6, w: 14.2, h: 0.9 }, // along the bottom, from the pond to the bus stop
@@ -621,6 +621,14 @@ const YARD_FURNITURE = [
   { kind: "seedStand", x: 10.15, y: YARD - 1.35, w: 1.45, h: 0.6 },
   { kind: "hazel", x: 11.8, y: YARD - 1.05, w: 0.55, h: 0.4 },
 
+  // The campfire: a stone fire pit that lights itself at night (see
+  // outdoors.js), with four logs around it to sit on (press E by one).
+  { kind: "firePit", x: 3.85, y: YARD - 2.55, w: 1.1, h: 0.7, glow: (f) => (isNightOutside() ? [f.x + f.w / 2, f.y + f.h / 2 - 0.3, 150, 0.85] : [0, 0, 0, 0]) },
+  { kind: "logSeat", x: 3.3, y: YARD - 3.75, w: 2.2, h: 0.45, facing: "down" },
+  { kind: "logSeat", x: 3.3, y: YARD - 1.0, w: 2.2, h: 0.45, facing: "up" },
+  { kind: "logSeatSide", x: 2.1, y: YARD - 2.9, w: 0.45, h: 1.4, facing: "right" },
+  { kind: "logSeatSide", x: 6.25, y: YARD - 2.9, w: 0.45, h: 1.4, facing: "left" },
+
   // Otis the otter's bait stand by the dock (walk up and press E for rods,
   // bait, selling fish and your fish log; see fishing.js).
   { kind: "baitCrate", x: 9.95, y: YARD + 4.25, w: 1.0, h: 0.5 },
@@ -744,6 +752,7 @@ const SEATS = {
   beanbag: [{ x: 0.5, y: 0.8, face: "front" }],
   pouf: [{ x: 0.5, y: 0.8, face: "front" }],
   mushroomStool: [{ x: 0.5, y: 0.8, face: "front" }],
+  logSeat: [{ x: 0.28, y: 0.5, face: "own" }, { x: 0.72, y: 0.5, face: "own" }], // the campfire's logs (facing the fire)
   floorCushions: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],
   // Beds: sit on the edge, at the foot.
   bed: [{ x: 0.3, y: 0.95, face: "down" }, { x: 0.7, y: 0.95, face: "down" }],
