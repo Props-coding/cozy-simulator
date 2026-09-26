@@ -10169,7 +10169,7 @@ function layoutPlayerTags(ctx, players) {
   lastTagTime = now;
   const tags = players.map((p) => {
     const foot = playerFeet(p);
-    const target = p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat);
+    const target = Math.max(p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat), p.umbrella ? UMBRELLA_LIFT : 0);
     const lift = (tagLifts[p.id] ??= target);
     tagLifts[p.id] = lift + (target - lift) * step;
     // The top of their head plus room for their hat. The name, badge, speech
@@ -10806,47 +10806,6 @@ function drawDecorPreview(canvas, item, color) {
   ctx.restore();
 }
 
-// It's raining outside: a slightly gloomy tint over the lawn, streaks of
-// rain falling, and little ripples where drops land.
-function drawOutsideRain(ctx) {
-  const t = performance.now() / 1000;
-  for (const area of lawnAreas()) {
-    const a = toScreen(area.x, area.y), b = toScreen(area.x + area.w, area.y + area.h);
-    const w = b.x - a.x, h = b.y - a.y;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(a.x, a.y, w, h);
-    ctx.clip();
-    ctx.fillStyle = "rgba(55, 75, 95, 0.16)";
-    ctx.fillRect(a.x, a.y, w, h);
-    const seed = Math.round(area.x * 10);
-    // Ripples on the ground.
-    for (let i = 0; i < Math.max(2, (w * h) / 5000); i++) {
-      const cycle = t * 0.9 + noise(seed + i * 5.3);
-      const phase = cycle % 1, round = Math.floor(cycle);
-      const rx = a.x + noise(seed + i * 3.7 + round * 11.1) * w, ry = a.y + noise(seed + i * 9.1 + round * 7.3) * h;
-      ctx.strokeStyle = `rgba(220, 235, 245, ${0.5 * (1 - phase)})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.ellipse(rx, ry, 1 + phase * 6, 0.5 + phase * 2.4, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // Falling rain.
-    ctx.strokeStyle = "rgba(215, 230, 245, 0.45)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i < (w * h) / 900; i++) {
-      const x = a.x + noise(seed + i * 1.3) * (w + 20);
-      const fall = (t * (0.9 + noise(seed + i * 2.9) * 0.5) + noise(seed + i * 4.1)) % 1;
-      const y = a.y - 12 + fall * (h + 24);
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 2.5, y + 9);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
 // Draws the whole house for one frame, scaled to fit the view (see
 // setViewScale). `players` is an array of { x, y, color, name, badge },
 // including yourself, and `pets` the pets following them (see drawPet).
@@ -10864,7 +10823,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
 
   drawFloors(ctx);
   drawPondShimmer(ctx);
-  if (viewFloor !== YARD_FLOOR) drawOutsideRain(ctx);
+  if (viewFloor !== YARD_FLOOR) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
   dropRuneMarks(players);
   drawRuneMarks(ctx);
 
@@ -10872,6 +10831,9 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   const sprites = [...getStaticSprites()];
   for (const p of players) {
     sprites.push({ sortY: p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) });
+    // In the yard when it rains, everyone gets an umbrella (see outdoors.js).
+    p.umbrella = floor === YARD_FLOOR && OUTDOORS.raining && !p.asleep;
+    if (p.umbrella) sprites.push({ sortY: p.y + PLAYER_SIZE + 0.0001, draw: (ctx) => drawUmbrella(ctx, p) });
   }
   for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
   sprites.sort((a, b) => a.sortY - b.sortY);

@@ -134,6 +134,24 @@ body:has(#game-screen:not([hidden])) {
   box-shadow: 0 4px 14px rgba(122, 92, 62, 0.15);
 }
 
+/* The weather chip (weather.js): the hometown's sky and temperature. */
+#weather-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  color: #5c6f8a;
+  background: #fffaf3;
+  padding: 4px 12px 4px 9px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(122, 92, 62, 0.15);
+  cursor: default;
+}
+
+#weather-chip[hidden] {
+  display: none;
+}
+
 #crumb-pill.bump {
   animation: crumb-bump 0.5s ease-out;
 }

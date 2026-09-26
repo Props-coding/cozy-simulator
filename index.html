@@ -175,6 +175,7 @@
             <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
             <span id="crumb-count">0</span>
           </span>
+          <span id="weather-chip" hidden><span class="weather-icon">☀️</span><span class="weather-temp"></span></span>
           <span id="room-label">📍 Hallway</span>
           <button id="admin-button" type="button" title="Admin tools" aria-label="Admin tools" aria-expanded="false" hidden>🛠️</button>
           <!-- Admin tools (admin.js), only for admin accounts. -->
@@ -205,6 +206,18 @@
               <button type="button" class="soft-button" data-season="summer">Summer</button>
               <button type="button" class="soft-button" data-season="autumn">Autumn</button>
               <button type="button" class="soft-button" data-season="winter">Winter</button>
+            </div>
+            <div class="admin-group">
+              <span>Weather</span>
+              <button type="button" class="soft-button" data-weather="">Real weather</button>
+              <button type="button" class="soft-button" data-weather="clear">Sun</button>
+              <button type="button" class="soft-button" data-weather="cloudy">Clouds</button>
+              <button type="button" class="soft-button" data-weather="fog">Fog</button>
+              <button type="button" class="soft-button" data-weather="rain">Rain</button>
+              <button type="button" class="soft-button" data-weather="storm">Storm</button>
+              <button type="button" class="soft-button" data-weather="snow">Snow</button>
+              <button type="button" class="soft-button" data-weather="day">Day</button>
+              <button type="button" class="soft-button" data-weather="night">Night</button>
             </div>
             <div class="admin-group">
               <span>Jump to</span>
@@ -638,7 +651,8 @@
         "./reputation.js": "./reputation.js?v=0.55",
         "./titles.js": "./titles.js?v=0.55",
         "./admin.js": "./admin.js?v=0.55",
-        "./updater.js": "./updater.js?v=0.55"
+        "./updater.js": "./updater.js?v=0.55",
+        "./weather.js": "./weather.js?v=0.55"
       }
     }
   </script>

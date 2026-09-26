@@ -170,6 +170,7 @@ const BASE_FURNITURE = [
   { kind: "coatHooks", x: 0.3, y: 0, w: 1.1, solid: false },
   { kind: "boots", x: 0.4, y: 0.15, w: 0.9, h: 0.35, solid: false },
   { kind: "sconce", x: 1.7, y: 0, solid: false },
+  { kind: "weatherWindow", x: 2.25, y: 0, w: 1.2, solid: false }, // (shows the real weather outside, see weather.js)
   { kind: "sconce", x: 3.9, y: 0, solid: false },
   { kind: "picture", x: 4.55, y: 0, w: 0.9, art: "flowers", solid: false },
   { kind: "bench", x: 4.25, y: 0.1, w: 1.5, h: 0.5 },
@@ -180,6 +181,7 @@ const BASE_FURNITURE = [
   // A grandfather clock showing the real (local) time; it chimes on the hour.
   { kind: "grandfatherClock", x: 13.4, y: 0.05, w: 0.75, h: 0.45 },
   { kind: "sconce", x: 14.6, y: 0, solid: false },
+  { kind: "weatherWindow", x: 15.3, y: 0, w: 1.2, solid: false },
   { kind: "sconce", x: 17.1, y: 0, solid: false },
   { kind: "picture", x: 18.6, y: 0, w: 1.1, art: "sea", solid: false },
   { kind: "sconce", x: 22.3, y: 0, solid: false },
@@ -582,7 +584,7 @@ const YARD_SPAWN = { x: 17.7, y: YARD - 2.3 };
 // Is it night outside? Update 4's weather (weather.js) fills in OUTDOORS
 // from the real sky over the hometown; until it has, night is guessed from
 // this computer's clock (CONFIG.outdoors.nightFrom to nightTo).
-const OUTDOORS = { night: null, sky: "clear", rain: 0, snow: 0, clouds: 0, temp: null, updated: 0 };
+const OUTDOORS = { night: null, sky: "clear", rain: 0, snow: 0, clouds: 0, temp: null, raining: false, words: "", updated: 0 };
 function isNightOutside() {
   if (OUTDOORS.night !== null) return OUTDOORS.night;
   const hour = new Date().getHours();

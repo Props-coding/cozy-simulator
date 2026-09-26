@@ -48,6 +48,7 @@ import {
   playPetSound,
   enterLibrary,
   leaveLibrary,
+  setOutsideRain,
   setRainVolume,
   updateRain,
   enterSleep,
@@ -77,6 +78,7 @@ import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
+import { startWeather } from "./weather.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -324,6 +326,7 @@ joinButton.addEventListener("click", async () => {
     },
   });
   startMail();
+  startWeather(); // the hometown's real sky, outside and through the windows
   initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
   joinScreen.hidden = true;
@@ -2167,6 +2170,7 @@ function tick(now) {
   }
   updateLofi(dt);
   updateTheater();
+  setOutsideRain(currentRoom.outdoor && OUTDOORS.raining ? 0.4 + 0.6 * OUTDOORS.rain : 0);
   updateRain(dt);
   updateWhiteNoise(dt);
   updateFocusTimer(currentRoom.id);

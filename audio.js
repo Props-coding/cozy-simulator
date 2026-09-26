@@ -662,6 +662,14 @@ export function leaveLibrary() {
   inLibrary = false;
 }
 
+// Out in the yard while it rains (Update 4): the same soft rain, as loud as
+// the rain is heavy (0 for none, up to 1), with the same volume slider.
+let outsideRain = 0;
+export function setOutsideRain(amount) {
+  outsideRain = amount;
+  if (amount > 0) startRain();
+}
+
 export function setRainVolume(vol) {
   rainUserVolume = vol;
 }
@@ -670,11 +678,11 @@ export function setRainVolume(vol) {
 // completely once it has faded out after you leave.
 export function updateRain(dt) {
   if (!rain || !rain.out) return;
-  const target = inLibrary && !masterMuted ? rainUserVolume * masterVolume : 0;
+  const target = !masterMuted ? Math.max(inLibrary ? 1 : 0, outsideRain * 0.8) * rainUserVolume * masterVolume : 0;
   rainLevel += (target - rainLevel) * (1 - Math.pow(0.02, dt));
   if (Math.abs(target - rainLevel) < 0.001) rainLevel = target;
   rain.out.gain.value = rainLevel;
-  if (!inLibrary && rainLevel === 0) {
+  if (!inLibrary && outsideRain === 0 && rainLevel === 0) {
     rain.stop();
     rain = null;
   }

@@ -217,8 +217,12 @@ function yardGlows() {
 
 function drawOutdoorLight(ctx) {
   const level = outdoorNightLevel();
-  if (level <= 0.001) return;
   const { left, right, top, bottom } = houseBounds();
+  const whole = [{ x: -WALL_THICKNESS - 2, y: YARD - 8, w: HOUSE_WIDTH + 4, h: 21 }];
+  if (level <= 0.001) {
+    drawOutsideWeather(ctx, whole);
+    return;
+  }
   ctx.fillStyle = `rgba(14, 22, 62, ${0.55 * level})`;
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
   ctx.save();
@@ -234,15 +238,17 @@ function drawOutdoorLight(ctx) {
     ctx.fill();
   }
   ctx.restore();
-  // A few stars over the roof line.
+  // A few stars over the roof line (when the sky is clear enough).
+  const starry = OUTDOORS.clouds < 0.6 && !OUTDOORS.rain && !OUTDOORS.snow && OUTDOORS.sky !== "fog";
   ctx.fillStyle = `rgba(255, 250, 225, ${0.8 * level})`;
   const roofTop = toScreen(0, YARD - 5.8).y - WALL_HEIGHT;
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < (starry ? 26 : 0); i++) {
     const twinkle = 0.5 + 0.5 * Math.sin(performance.now() / 700 + i * 2.1);
     ctx.globalAlpha = level * (0.4 + 0.6 * twinkle);
     ctx.fillRect(left + noise(i * 3.3) * (right - left), top + noise(i * 5.9) * (roofTop - top - 4), 1.8, 1.8);
   }
   ctx.globalAlpha = 1;
+  drawOutsideWeather(ctx, whole); // rain or snow falls in front of the lights
 }
 
 // --- Trees and plants ---
@@ -688,3 +694,281 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.textAlign = "left";
   },
 });
+
+// --- Weather (Update 4, step 2) ---
+// What the sky is doing comes from weather.js, into OUTDOORS (world.js).
+// Over each outdoor area: a tint for clouds, fog or sunshine, drifting
+// cloud shadows, rain (with ripples where drops land) or snow, and the odd
+// flash of lightning in a storm.
+
+// Falling rain over a rectangle (screen pixels), `amount` 0 to 1.
+function drawRainIn(ctx, x0, y0, w, h, amount, seed, ripples) {
+  const t = performance.now() / 1000;
+  if (ripples) {
+    for (let i = 0; i < Math.max(2, ((w * h) / 5000) * amount); i++) {
+      const cycle = t * 0.9 + noise(seed + i * 5.3);
+      const phase = cycle % 1, round = Math.floor(cycle);
+      const rx = x0 + noise(seed + i * 3.7 + round * 11.1) * w, ry = y0 + noise(seed + i * 9.1 + round * 7.3) * h;
+      ctx.strokeStyle = `rgba(220, 235, 245, ${0.5 * (1 - phase)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, 1 + phase * 6, 0.5 + phase * 2.4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = `rgba(215, 230, 245, ${0.3 + 0.25 * amount})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < ((w * h) / 900) * (0.4 + amount); i++) {
+    const x = x0 + noise(seed + i * 1.3) * (w + 20);
+    const fall = (t * (0.9 + noise(seed + i * 2.9) * 0.5) + noise(seed + i * 4.1)) % 1;
+    const y = y0 - 12 + fall * (h + 24);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 2.5, y + 9);
+  }
+  ctx.stroke();
+}
+
+// Snowflakes drifting down over a rectangle, `amount` 0 to 1.
+function drawSnowIn(ctx, x0, y0, w, h, amount, seed) {
+  const t = performance.now() / 1000;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  for (let i = 0; i < ((w * h) / 1400) * (0.4 + amount); i++) {
+    const fall = (t * (0.12 + noise(seed + i * 2.9) * 0.1) + noise(seed + i * 4.1)) % 1;
+    const x = x0 + noise(seed + i * 1.3) * w + Math.sin(t * 1.3 + i) * 6;
+    const y = y0 - 6 + fall * (h + 12);
+    const r = 1 + noise(seed + i * 7.7) * 1.4;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Soft cloud shadows sliding slowly across the ground.
+function drawCloudShadows(ctx, x0, y0, w, h, amount) {
+  const t = performance.now() / 1000;
+  ctx.fillStyle = `rgba(40, 55, 70, ${0.08 + 0.06 * amount})`;
+  for (let i = 0; i < 4; i++) {
+    const x = x0 - 200 + ((t * 9 + noise(i * 3.1) * 2000) % (w + 400));
+    const y = y0 + noise(i * 7.3) * h;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 110 + noise(i) * 60, 40 + noise(i * 2) * 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Lightning: a quick double flash every so often, during a storm.
+function lightningFlash() {
+  if (OUTDOORS.sky !== "storm") return 0;
+  const t = performance.now() / 1000;
+  const cycle = t % 9; // about every nine seconds
+  if (cycle < 0.12) return 0.5;
+  if (cycle > 0.22 && cycle < 0.3) return 0.35;
+  return 0;
+}
+
+// The whole weather look over some outdoor areas (grid rectangles).
+// `ground` is true for the lawn around the house, where it's drawn under
+// everything standing (the yard's goes on top, from drawOutdoorLight).
+function drawOutsideWeather(ctx, areas, ground = false) {
+  const { sky, rain, snow, clouds } = OUTDOORS;
+  const night = isNightOutside();
+  const outsideView = viewFloor <= 2; // (bedrooms have their own view outside)
+  for (const area of areas) {
+    const a = toScreen(area.x, area.y), b = toScreen(area.x + area.w, area.y + area.h);
+    const w = b.x - a.x, h = b.y - a.y;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.x, a.y, w, h);
+    ctx.clip();
+    if (sky === "clear" && !night) {
+      ctx.fillStyle = "rgba(255, 220, 140, 0.08)"; // sunshine
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+    if (clouds > 0.3 || rain > 0 || snow > 0) {
+      ctx.fillStyle = `rgba(60, 75, 95, ${0.06 + 0.12 * Math.max(clouds, rain)})`;
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+    if (snow > 0) {
+      ctx.fillStyle = `rgba(245, 248, 252, ${0.15 + 0.25 * snow})`; // settling snow
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+    if (sky === "partly" || sky === "cloudy") drawCloudShadows(ctx, a.x, a.y, w, h, clouds);
+    if (ground && night && outsideView) {
+      ctx.fillStyle = "rgba(14, 22, 62, 0.4)";
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+    const seed = Math.round(area.x * 10);
+    if (rain > 0) drawRainIn(ctx, a.x, a.y, w, h, rain, seed, true);
+    if (snow > 0) drawSnowIn(ctx, a.x, a.y, w, h, snow, seed);
+    if (sky === "fog") {
+      ctx.fillStyle = "rgba(235, 238, 240, 0.35)";
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+    const flash = lightningFlash();
+    if (flash) {
+      ctx.fillStyle = `rgba(240, 245, 255, ${flash})`;
+      ctx.fillRect(a.x, a.y, w, h);
+    }
+    ctx.restore();
+  }
+}
+
+// --- Umbrellas ---
+// Out in the rain, everyone carries an umbrella in their own color, held
+// over their head (tilting a little as they walk). Name tags lift to
+// clear it.
+const UMBRELLA_LIFT = 20; // pixels
+
+function drawUmbrella(ctx, p) {
+  const foot = playerFeet(p);
+  const r = PLAYER_RADIUS;
+  const walk = p.moving ? Math.sin((performance.now() / 1000) * 12) : 0;
+  const lift = seatLift(p.seated);
+  const hand = { x: foot.x + r * 0.75, y: foot.y - r - 6 + lift };
+  const top = { x: foot.x + walk * 1.5, y: foot.y - r * 2 - 22 + lift - Math.abs(walk) * 1.5 };
+  const color = /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : "#5aa0d8";
+  ctx.save();
+  // The handle: a thin shaft from the hand up to the canopy, with a hook.
+  ctx.strokeStyle = "#5c4530";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(hand.x - 2, hand.y + 3);
+  ctx.quadraticCurveTo(hand.x - 4, hand.y + 7, hand.x, hand.y + 6);
+  ctx.moveTo(hand.x, hand.y + 3);
+  ctx.lineTo(top.x + 2, top.y + 4);
+  ctx.stroke();
+  // The canopy: a dome with scalloped edges, lighter on top (light from above).
+  const span = 27;
+  ctx.fillStyle = shadeColor(color, -18);
+  ctx.beginPath();
+  ctx.moveTo(top.x - span, top.y + 10);
+  ctx.quadraticCurveTo(top.x, top.y - 14, top.x + span, top.y + 10);
+  for (let i = 4; i > 0; i--) {
+    const x1 = top.x - span + (span * 2 * i) / 4, x0 = top.x - span + (span * 2 * (i - 1)) / 4;
+    ctx.quadraticCurveTo((x0 + x1) / 2, top.y + 5, x0, top.y + 10);
+  }
+  ctx.fill();
+  ctx.fillStyle = shadeColor(color, 18);
+  ctx.beginPath();
+  ctx.moveTo(top.x - span + 6, top.y + 4);
+  ctx.quadraticCurveTo(top.x, top.y - 11, top.x + span - 6, top.y + 4);
+  ctx.quadraticCurveTo(top.x, top.y - 4, top.x - span + 6, top.y + 4);
+  ctx.fill();
+  // Ribs, and the tip.
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.18)";
+  ctx.lineWidth = 1;
+  for (const dx of [-13, 0, 13]) {
+    ctx.beginPath();
+    ctx.moveTo(top.x, top.y - 2);
+    ctx.lineTo(top.x + dx, top.y + 8);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#5c4530";
+  ctx.fillRect(top.x - 1, top.y - 6, 2, 5);
+  ctx.restore();
+}
+
+// --- Windows onto the real weather ---
+// A window in the hallway's back wall that shows the sky outside: blue by
+// day with the sun or passing clouds, deep blue with the moon and stars at
+// night, grey when it's raining (drops on the glass) or snowing.
+function drawWeatherPane(ctx, x, y, w, h) {
+  const night = isNightOutside();
+  const { sky, rain, snow, clouds } = OUTDOORS;
+  const t = performance.now() / 1000;
+  const grey = Math.max(clouds, rain, snow > 0 ? 0.7 : 0);
+  const pane = ctx.createLinearGradient(0, y, 0, y + h);
+  if (night) {
+    pane.addColorStop(0, grey > 0.6 ? "#2a3244" : "#1c2750");
+    pane.addColorStop(1, grey > 0.6 ? "#3a4254" : "#34407a");
+  } else {
+    pane.addColorStop(0, grey > 0.6 ? "#9aa6b2" : "#7fb6de");
+    pane.addColorStop(1, grey > 0.6 ? "#c2c8cf" : "#cfe6f2");
+  }
+  ctx.fillStyle = pane;
+  ctx.fillRect(x, y, w, h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  if (grey < 0.6) {
+    if (night) {
+      ctx.fillStyle = "#f7f1d8"; // moon
+      ctx.beginPath();
+      ctx.arc(x + w * 0.72, y + h * 0.3, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#1c2750";
+      ctx.beginPath();
+      ctx.arc(x + w * 0.72 + 2, y + h * 0.3 - 1.5, 3.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 250, 225, 0.85)";
+      for (let i = 0; i < 6; i++) ctx.fillRect(x + noise(i * 3.3) * w, y + noise(i * 5.1) * h * 0.7, 1.2, 1.2);
+    } else {
+      drawGlow(ctx, x + w * 0.72, y + h * 0.3, 10, "rgba(255, 230, 140, 0.7)");
+      ctx.fillStyle = "#ffe07a";
+      ctx.beginPath();
+      ctx.arc(x + w * 0.72, y + h * 0.3, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // Clouds drifting past.
+  if (clouds > 0.1 && sky !== "fog") {
+    ctx.fillStyle = night ? "rgba(120, 130, 150, 0.8)" : grey > 0.6 ? "rgba(235, 238, 242, 0.85)" : "rgba(255, 255, 255, 0.9)";
+    for (let i = 0; i < 2 + Math.round(clouds * 2); i++) {
+      const cx = x - 14 + ((t * 4 + i * 23) % (w + 28)), cy = y + 5 + i * 4;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 8, 3.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 5, cy - 2, 5, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  if (sky === "fog") {
+    ctx.fillStyle = "rgba(240, 242, 244, 0.6)";
+    ctx.fillRect(x, y, w, h);
+  }
+  if (rain > 0) {
+    drawRainIn(ctx, x, y, w, h, rain, Math.round(x), false);
+    // Drops running down the glass.
+    ctx.fillStyle = "rgba(230, 240, 250, 0.7)";
+    for (let i = 0; i < 5; i++) {
+      const fall = (t * (0.15 + noise(i * 1.9) * 0.1) + noise(i * 4.3)) % 1;
+      ctx.fillRect(x + 2 + noise(i * 2.7 + x) * (w - 4), y + fall * h, 1.2, 3);
+    }
+  }
+  if (snow > 0) {
+    drawSnowIn(ctx, x, y, w, h, snow, Math.round(x));
+    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.fillRect(x, y + h - 3, w, 3); // snow piled on the sill
+  }
+  const flash = lightningFlash();
+  if (flash) {
+    ctx.fillStyle = `rgba(245, 248, 255, ${flash * 1.4})`;
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.restore();
+}
+
+FURNITURE_DRAWERS.weatherWindow = (ctx, f) => {
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, top = a.y - WALL_HEIGHT + 5, h = 25;
+  ctx.fillStyle = "#f4efe4"; // frame
+  ctx.fillRect(a.x + 3, top - 2, w - 6, h + 4);
+  drawWeatherPane(ctx, a.x + 5, top, w - 10, h);
+  ctx.fillStyle = "#f4efe4"; // cross bars
+  ctx.fillRect(a.x + w / 2 - 1, top, 2, h);
+  ctx.fillRect(a.x + 5, top + h / 2 - 1, w - 10, 2);
+  ctx.fillStyle = "#c98a8a"; // little curtains tied back
+  ctx.beginPath();
+  ctx.moveTo(a.x + 2, top - 3);
+  ctx.quadraticCurveTo(a.x + 9, top + h / 2, a.x + 4, top + h + 2);
+  ctx.lineTo(a.x + 2, top + h + 2);
+  ctx.closePath();
+  ctx.moveTo(a.x + w - 2, top - 3);
+  ctx.quadraticCurveTo(a.x + w - 9, top + h / 2, a.x + w - 4, top + h + 2);
+  ctx.lineTo(a.x + w - 2, top + h + 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#8a6040"; // sill
+  ctx.fillRect(a.x + 1, top + h + 2, w - 2, 3);
+};

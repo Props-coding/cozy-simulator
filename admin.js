@@ -11,6 +11,7 @@ import { addCrumbs, setCrumbs, grantAllShopItems } from "./shop.js";
 import { unlockAllQuietly, resetAchievements } from "./achievements.js";
 import { grantAllDecor, grantRoomy } from "./home.js";
 import { playClickSound, playCrumbSound } from "./audio.js";
+import { previewWeather } from "./weather.js";
 
 const button = document.getElementById("admin-button");
 const panel = document.getElementById("admin-panel");
@@ -82,6 +83,18 @@ for (const button of panel.querySelectorAll("[data-season]")) {
     const season = button.dataset.season || null;
     previewSeason(season);
     say(season ? `Showing ${season} decorations (just for you, until you reload).` : `Back to the real season (${currentSeason()}).`);
+    playClickSound();
+    button.blur();
+  });
+}
+
+// --- Weather ---
+// Try out rain, snow, night and so on (on this computer only).
+for (const button of panel.querySelectorAll("[data-weather]")) {
+  button.addEventListener("click", () => {
+    const pick = button.dataset.weather || null;
+    previewWeather(pick);
+    say(pick ? `Showing ${pick} outside (just for you). "Real weather" goes back.` : "Back to the real weather.");
     playClickSound();
     button.blur();
   });
