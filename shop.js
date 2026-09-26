@@ -249,9 +249,16 @@ export function crumbBalance() {
 }
 
 // Starts earning crumbs for time spent in the house. Call once, on joining.
+// A minute only counts while you're really here: the tab is showing, and
+// you've done something (a key, a click, the mouse) recently.
 let earning = null;
+let lastActive = Date.now();
+for (const type of ["keydown", "pointerdown", "pointermove", "wheel"]) window.addEventListener(type, () => (lastActive = Date.now()), { capture: true, passive: true });
 export function startEarningCrumbs() {
-  earning ??= setInterval(() => addCrumbs(CONFIG.crumbsPerMinute), 60 * 1000);
+  earning ??= setInterval(() => {
+    const here = document.visibilityState === "visible" && Date.now() - lastActive < CONFIG.crumbsActiveMinutes * 60_000;
+    if (here) addCrumbs(CONFIG.crumbsPerMinute);
+  }, 60 * 1000);
 }
 
 // --- Connecting to main.js ---

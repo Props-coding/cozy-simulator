@@ -90,7 +90,7 @@ const CONFIG = {
   // Every catch gives fishing XP; `levels` is the total XP for each level
   // (level 1 starts at 0). Your level decides which rods Otis will sell you.
   fishing: {
-    biteSeconds: [5, 14],
+    biteSeconds: [8, 18],
     hookSeconds: 1.3,
     junkChance: 0.08,
     xp: [5, 10, 20, 40, 80], // XP for a catch of each rarity (junk gives 1)
@@ -115,37 +115,40 @@ const CONFIG = {
   // finds pricier fish. price: crumbs for one. level: fishing level needed.
   bait: [
     { id: "none", name: "No bait", icon: "🪝", price: 0, level: 1, catches: [1] },
-    { id: "worm", name: "Worms", icon: "🪱", price: 3, level: 1, catches: [1, 2] },
-    { id: "cricket", name: "Crickets", icon: "🦗", price: 10, level: 2, catches: [2, 3] },
-    { id: "minnow", name: "Minnows", icon: "🐟", price: 25, level: 5, catches: [3, 4] },
-    { id: "lure", name: "Golden Lure", icon: "🌟", price: 60, level: 9, catches: [4, 5] },
+    { id: "worm", name: "Worms", icon: "🪱", price: 2, level: 1, catches: [1, 2] },
+    { id: "cricket", name: "Crickets", icon: "🦗", price: 5, level: 2, catches: [2, 3] },
+    { id: "minnow", name: "Minnows", icon: "🐟", price: 12, level: 5, catches: [3, 4] },
+    { id: "lure", name: "Golden Lure", icon: "🌟", price: 30, level: 9, catches: [4, 5] },
   ],
 
   // The fish. rarity: 1 (common) to 5 (legendary). sell: crumbs from Otis.
+  // (Prices were halved after the audit: steady fishing paid 1,100 to 2,000
+  // crumbs an hour, against 60 an hour for time in the house. Now about
+  // 450 to 800.)
   // size: [smallest, biggest] in cm. Optional `when`: night (true: only at
   // night, false: only by day), rain (only while it rains), season (only in
   // these seasons). color: for fish tanks.
   fish: [
-    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 5, size: [8, 20], color: "#6a8ab8" },
-    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 6, size: [10, 25], color: "#c8b050" },
-    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 7, size: [8, 18], color: "#f0a040", when: { night: false } },
-    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 7, size: [6, 14], color: "#c8d0e0", when: { night: true } },
-    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 12, size: [25, 60], color: "#a08050" },
-    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 13, size: [7, 15], color: "#d05a3a" },
-    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 15, size: [20, 50], color: "#e08aa0", when: { season: ["spring", "autumn"] } },
-    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 16, size: [30, 80], color: "#6a6058", when: { night: true } },
-    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 24, size: [25, 60], color: "#5a8a4a" },
-    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 28, size: [40, 100], color: "#7a9a5a" },
-    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 35, size: [30, 70], color: "#f07a3a", when: { night: false } },
-    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 32, size: [40, 110], color: "#4a4a3a", when: { rain: true } },
-    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 60, size: [80, 180], color: "#7a7a80" },
-    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 70, size: [25, 45], color: "#5a6a3a", when: { season: ["summer"] } },
-    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 75, size: [30, 60], color: "#f2c230", when: { season: ["spring", "summer"] } },
-    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 80, size: [20, 40], color: "#d8d0f0", when: { night: true } },
-    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 150, size: [40, 80], color: "#f4f4f8" },
-    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 180, size: [40, 80], color: "#c86bb0", when: { rain: true } },
-    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 180, size: [60, 120], color: "#a8d8f0", when: { season: ["winter"] } },
-    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 250, size: [120, 200], color: "#4a4a44", when: { night: true, rain: true } },
+    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 3, size: [8, 20], color: "#6a8ab8" },
+    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 3, size: [10, 25], color: "#c8b050" },
+    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 4, size: [8, 18], color: "#f0a040", when: { night: false } },
+    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 4, size: [6, 14], color: "#c8d0e0", when: { night: true } },
+    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 6, size: [25, 60], color: "#a08050" },
+    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 6, size: [7, 15], color: "#d05a3a" },
+    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 8, size: [20, 50], color: "#e08aa0", when: { season: ["spring", "autumn"] } },
+    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 8, size: [30, 80], color: "#6a6058", when: { night: true } },
+    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 12, size: [25, 60], color: "#5a8a4a" },
+    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 14, size: [40, 100], color: "#7a9a5a" },
+    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 18, size: [30, 70], color: "#f07a3a", when: { night: false } },
+    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 16, size: [40, 110], color: "#4a4a3a", when: { rain: true } },
+    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 30, size: [80, 180], color: "#7a7a80" },
+    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 35, size: [25, 45], color: "#5a6a3a", when: { season: ["summer"] } },
+    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 38, size: [30, 60], color: "#f2c230", when: { season: ["spring", "summer"] } },
+    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 40, size: [20, 40], color: "#d8d0f0", when: { night: true } },
+    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 75, size: [40, 80], color: "#f4f4f8" },
+    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 90, size: [40, 80], color: "#c86bb0", when: { rain: true } },
+    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 90, size: [60, 120], color: "#a8d8f0", when: { season: ["winter"] } },
+    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 125, size: [120, 200], color: "#4a4a44", when: { night: true, rain: true } },
   ],
 
   // Junk you might reel in instead. The raccoons buy it for `junkPrice`
@@ -544,8 +547,12 @@ const CONFIG = {
 
   // --- Crumbs (the house money) ---
   // You earn crumbs just for hanging out, and spend them at the raccoons'
-  // shop in the hallway on hats and shoes.
+  // shop in the hallway on hats and shoes. Only while you're really here:
+  // the house's tab is showing, and you've pressed a key, clicked or moved
+  // the mouse in the last `crumbsActiveMinutes` minutes (so leaving it
+  // open all night doesn't pile up crumbs).
   crumbsPerMinute: 1,
+  crumbsActiveMinutes: 10,
   focusBonusCrumbs: 10, // extra crumbs for finishing a Study focus session
 
   // --- Study focus timer ---
