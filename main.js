@@ -65,6 +65,7 @@ import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType,
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect } from "./achievements.js";
 import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
+import { addRoomTime } from "./reputation.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
 import { startRooms, refreshRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen, askToEnter, leftRoom, letIn } from "./rooms.js";
@@ -1793,6 +1794,7 @@ function checkTimeAchievements() {
   if (peers.some((p) => p.room === room)) unlock("roommates");
   if (amAsleep && count("sleepSeconds", 5) >= 30 * 60) unlock("wellRested");
   if (room.startsWith("bedroom-") && peers.some((p) => p.room === room)) unlock("sleepover");
+  addRoomTime(getCurrentRoom(player), 5); // room reputation (reputation.js)
 }
 
 // --- Pets ---

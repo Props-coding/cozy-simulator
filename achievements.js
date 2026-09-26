@@ -108,8 +108,7 @@ export function unlock(id) {
   if (!byId[id] || hasAchievement(id)) return;
   save.unlocked[id] = Date.now();
   store();
-  toastQueue.push(byId[id]);
-  if (!toastShowing) showNextToast();
+  showToast({ ...byId[id], label: "Achievement!" });
   hooks.reward(byId[id].crumbs);
   hooks.announce(id);
   renderPanel();
@@ -127,6 +126,11 @@ export function resetAchievements() {
   save = { unlocked: {}, stats: {} };
   store();
   renderPanel();
+}
+
+// Your counters, like { seconds, chats, room_study, ... } (read only).
+export function myStats() {
+  return save.stats;
 }
 
 // Adds to a counter, and returns the new total.
@@ -152,6 +156,14 @@ const toast = document.getElementById("achievement-toast");
 const toastQueue = [];
 let toastShowing = false;
 
+// Shows a pop-up card over the house (after any that are already
+// waiting): { icon, label, name, desc, crumbs, kind }. Crumbs of 0 hide the
+// reward; `kind` ("level", "tier") gives the card its own color.
+export function showToast(card) {
+  toastQueue.push(card);
+  if (!toastShowing) showNextToast();
+}
+
 function showNextToast() {
   const a = toastQueue.shift();
   if (!a) {
@@ -160,6 +172,9 @@ function showNextToast() {
   }
   toastShowing = true;
   toast.querySelector(".toast-icon").textContent = a.icon;
+  toast.querySelector(".toast-label").textContent = a.label ?? "Achievement!";
+  toast.querySelector(".toast-reward").hidden = !a.crumbs;
+  toast.dataset.kind = a.kind ?? "";
   toast.querySelector(".toast-name").textContent = a.name;
   toast.querySelector(".toast-desc").textContent = a.desc;
   toast.querySelector(".toast-crumbs").textContent = `+${a.crumbs}`;

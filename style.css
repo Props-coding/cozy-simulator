@@ -1425,6 +1425,24 @@ input[type="range"]::-moz-range-thumb {
   color: #7a6450;
 }
 
+/* A room level-up: a smaller card with a leafy green border. */
+#achievement-toast[data-kind="level"] {
+  border-color: #6f9a5a;
+  padding: 6px 14px 6px 10px;
+}
+
+#achievement-toast[data-kind="level"] .toast-icon {
+  font-size: 24px;
+}
+
+#achievement-toast[data-kind="level"] .toast-label {
+  color: #4f7a3a;
+}
+
+.toast-reward[hidden] {
+  display: none;
+}
+
 .toast-reward {
   display: inline-flex;
   align-items: center;
@@ -2606,6 +2624,8 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 10px 30px rgba(60, 40, 20, 0.35);
   text-align: center;
   animation: pop-in 0.15s ease-out;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
 }
 
 #profile-close {
@@ -2693,6 +2713,12 @@ input[type="range"]::-moz-range-thumb {
   resize: none;
 }
 
+/* Room levels: four little tiles to a row, each with a progress bar. */
+.profile-rooms {
+  margin-bottom: 12px;
+}
+
+.profile-rooms h3,
 .profile-trophies h3 {
   margin: 0 0 6px;
   font-size: 0.9em;
@@ -2716,6 +2742,56 @@ input[type="range"]::-moz-range-thumb {
   background: #fbefd9;
   border-radius: 8px;
   cursor: default;
+}
+
+.profile-room-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.profile-room {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px 5px;
+  background: #fbefd9;
+  border-radius: 8px;
+  font-size: 0.72em;
+  line-height: 1.15;
+}
+
+.profile-room.unranked {
+  opacity: 0.5;
+}
+
+.profile-room-icon {
+  font-size: 16px;
+}
+
+.profile-room-name {
+  color: #7a6450;
+}
+
+.profile-room-level {
+  font-weight: 700;
+  color: #4f7a3a;
+}
+
+.profile-room-bar {
+  width: 80%;
+  height: 4px;
+  margin-top: 2px;
+  background: #ead8bb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.profile-room-bar span {
+  display: block;
+  height: 100%;
+  background: #6f9a5a;
 }
 
 /* Names in "Who's here" can be clicked to see a profile. */

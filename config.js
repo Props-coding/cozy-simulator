@@ -220,6 +220,27 @@ const CONFIG = {
     lyss: "cottage",
   },
 
+  // --- Room reputation (Update 3) ---
+  // Rooms level up (Lv. 1 to 10) the more time you spend in them. Each
+  // room has a name and an icon for the level-up card and profile cards.
+  // Offices count together, and so do bedrooms. `minutesForLevel` is the
+  // total minutes in a room needed for Lv. 1, Lv. 2, ... Lv. 10 (so Lv. 10
+  // takes 20 hours in that room). Add or remove numbers to change how
+  // many levels there are.
+  roomLevels: {
+    rooms: {
+      study: { name: "Study", icon: "📖" },
+      library: { name: "Library", icon: "📚" },
+      theater: { name: "Theater", icon: "🍿" },
+      conference: { name: "Conference Room", icon: "🖍️" },
+      dinner: { name: "Dinner", icon: "🍝" },
+      workshop: { name: "Workshop", icon: "🔨" },
+      office: { name: "Office", icon: "💼" },
+      bedroom: { name: "Bedroom", icon: "🛏️" },
+    },
+    minutesForLevel: [10, 30, 60, 120, 210, 330, 480, 660, 900, 1200],
+  },
+
   // --- Crumbs (the house money) ---
   // You earn crumbs just for hanging out, and spend them at the raccoons'
   // shop in the hallway on hats and shoes.

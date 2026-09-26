@@ -6,7 +6,8 @@
 // The card comes from the house server, which reads each friend's look,
 // achievements and hours from their cloud save.
 import { serverApi, accountName } from "./account.js";
-import { ACHIEVEMENTS } from "./achievements.js";
+import { ACHIEVEMENTS, myStats } from "./achievements.js";
+import { roomLevels } from "./reputation.js";
 import { itemName } from "./shop.js";
 import { playClickSound } from "./audio.js";
 import { lofiStation } from "./turntable.js";
@@ -136,5 +137,25 @@ export async function openProfile(name) {
   if (!earned.length) row.appendChild(el("span", "profile-meta", "None yet."));
   trophies.appendChild(row);
 
-  body.append(look, head, bioBox, trophies);
+  // Room levels: a little tile per room, with a bar toward the next level.
+  // (Your own come straight from this browser, so they're always current;
+  // friends' come from their cloud save.)
+  const levels = roomLevels(mine ? myStats() : p.rooms ?? {});
+  const rooms = el("div", "profile-rooms");
+  rooms.appendChild(el("h3", "", "Room levels"));
+  const grid = el("div", "profile-room-grid");
+  for (const r of levels) {
+    const tile = el("div", "profile-room" + (r.level ? "" : " unranked"));
+    tile.title = r.level ? `${r.name}: ${Math.floor(r.seconds / 60)} minutes spent here` : `${r.name}: not ranked yet`;
+    tile.append(el("span", "profile-room-icon", r.icon), el("span", "profile-room-name", r.name), el("span", "profile-room-level", `Lv. ${r.level}`));
+    const bar = el("span", "profile-room-bar");
+    const fill = el("span");
+    fill.style.width = r.needed ? `${Math.round((r.into / r.needed) * 100)}%` : "100%";
+    bar.appendChild(fill);
+    tile.appendChild(bar);
+    grid.appendChild(tile);
+  }
+  rooms.appendChild(grid);
+
+  body.append(look, head, bioBox, rooms, trophies);
 }

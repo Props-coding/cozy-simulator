@@ -847,6 +847,8 @@ const routes = {
       lofi: text(saved("cozy-house-lofi"), 30), // their Study station (turntable.js)
       achievements: Object.keys(progress.unlocked ?? {}).slice(0, 200),
       seconds: Number.isFinite(progress.stats?.seconds) ? progress.stats.seconds : 0,
+      // Seconds spent in each room, for room levels ("room_study": 5400).
+      rooms: Object.fromEntries(Object.entries(progress.stats ?? {}).filter(([k, v]) => /^room_[a-z]{1,20}$/.test(k) && Number.isFinite(v)).slice(0, 30)),
     };
   },
 
