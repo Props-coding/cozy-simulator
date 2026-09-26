@@ -78,7 +78,7 @@ import { openJournal, isJournalOpen } from "./journal.js";
 import { initPhone, openPhonePanel, closePhonePanel, isPhonePanelOpen, hangUp, inCall, phoneBusy, checkCall } from "./phone.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
-import { isHouseReady, myBadge, checkBadge, checkRoomPass } from "./account.js";
+import { isHouseReady, myBadge, checkBadge, checkRoomPass, initAccountHooks } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
 import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
@@ -300,9 +300,32 @@ initShop({
 // Starting spot: roughly the middle of the hallway (grid units, not pixels).
 const player = { x: 8.7, y: 1.2 };
 
+// Only one tab per browser can be in the house: tabs share this browser's
+// save, so two at once would keep overwriting each other's progress. A tab
+// that's in the house answers when a new one asks.
+const tabs = "BroadcastChannel" in window ? new BroadcastChannel("cozy-house-tabs") : null;
+let inHouse = false, otherTabAnswered = false;
+tabs?.addEventListener("message", (e) => {
+  if (e.data === "anyone home?" && inHouse) tabs.postMessage("here");
+  if (e.data === "here") otherTabAnswered = true;
+});
+function otherTabInHouse() {
+  otherTabAnswered = false;
+  tabs?.postMessage("anyone home?");
+  return new Promise((resolve) => setTimeout(() => resolve(otherTabAnswered), 300));
+}
+const joinNote = document.getElementById("join-note");
+
 joinButton.addEventListener("click", async () => {
   if (!resume) wakeInBed = true; // (an automatic update puts you back where you were instead)
   if (!isHouseReady()) return; // still logging in (account.js)
+  if (await otherTabInHouse()) {
+    joinNote.textContent = "You're already in the house in another tab. Close that one first (or keep playing there).";
+    joinNote.hidden = false;
+    return;
+  }
+  joinNote.hidden = true;
+  inHouse = true;
   myName = nameInput.value.trim() || "Friend";
   myHat = ownedOr(hatChoices(), myHat);
   myShoes = ownedOr(shoeChoices(), myShoes);
@@ -2073,6 +2096,22 @@ function petInReach() {
 // While it's open, your character stays put and game keys are ignored.
 // Escape (or the soft button) means no.
 let dialogOpen = false;
+
+// If your progress can't be saved as you log out (or a newer save came in
+// from another computer), you're asked before anything's lost.
+initAccountHooks({
+  confirmLogout: (conflict) =>
+    askConfirm({
+      title: conflict ? "Newer progress elsewhere" : "Couldn't save",
+      text: conflict ? "Your account saved newer progress on another computer, so this window stopped saving. Log out here anyway? (Anything done in this window since then won't be kept.)" : "Your latest progress couldn't be saved to your account (the internet may have blipped). Log out anyway and lose it, or stay and try again in a moment?",
+      yes: "Log out anyway",
+      no: "Stay",
+    }),
+  conflict: () => {
+    showNotice("Your account saved newer progress on another computer, so this window stopped saving.");
+    addChatLine({ channel: "house", system: true, text: "⚠️ Your account saved newer progress on another computer, so this window stopped saving. Reload to carry on with the newer progress." });
+  },
+});
 
 function askConfirm({ title, text, yes, no }) {
   document.getElementById("confirm-title").textContent = title;

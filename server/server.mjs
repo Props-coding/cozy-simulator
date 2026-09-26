@@ -11,7 +11,7 @@
 // repo. See server/README.md.
 import http from "node:http";
 import { scrypt as scryptCallback, randomBytes, timingSafeEqual, createHash, createHmac, generateKeyPairSync, createPrivateKey, createPublicKey, sign } from "node:crypto";
-import { readFile, writeFile, rename, mkdir, readdir, unlink, copyFile } from "node:fs/promises";
+import { readFile, writeFile, rename, mkdir, readdir, unlink, copyFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
@@ -71,15 +71,29 @@ function saveDb() {
   return saving;
 }
 
-// A copy of the data file once a day, keeping the last 14.
+// A full copy of the house's data once a day (the data file, the
+// whiteboard picture and the badge signing key), each day in its own
+// folder ("daily-2026-09-27"), keeping the last 14 days. To restore one,
+// stop the server, copy the folder's files back into the data folder, and
+// start it again. (Older single-file copies, "db-...json", are tidied away
+// the same way.)
+const BACKUP_FILES = ["db.json", "whiteboard.png", "badge-key.pem"];
 async function backup() {
   try {
-    await mkdir(BACKUP_DIR, { recursive: true });
-    await copyFile(DB_FILE, join(BACKUP_DIR, `db-${new Date().toISOString().slice(0, 10)}.json`));
-    const files = (await readdir(BACKUP_DIR)).filter((f) => f.startsWith("db-")).sort();
-    for (const old of files.slice(0, -14)) await unlink(join(BACKUP_DIR, old));
+    const day = join(BACKUP_DIR, `daily-${new Date().toISOString().slice(0, 10)}`);
+    await mkdir(day, { recursive: true, mode: 0o700 });
+    for (const file of BACKUP_FILES) {
+      try {
+        await copyFile(join(DATA_DIR, file), join(day, file));
+      } catch (err) {
+        if (err.code !== "ENOENT") throw err; // (no whiteboard yet is fine)
+      }
+    }
+    const all = await readdir(BACKUP_DIR);
+    for (const old of all.filter((f) => f.startsWith("daily-")).sort().slice(0, -14)) await rm(join(BACKUP_DIR, old), { recursive: true, force: true });
+    for (const old of all.filter((f) => f.startsWith("db-2")).sort().slice(0, -14)) await unlink(join(BACKUP_DIR, old));
   } catch (err) {
-    if (err.code !== "ENOENT") console.error("Backup failed:", err.message);
+    console.error("Backup failed:", err.message);
   }
 }
 
@@ -989,6 +1003,10 @@ const routes = {
     const { user } = currentUser(req);
     const body = await readJson(req, MAX_SAVE_BYTES);
     if (!body.data || typeof body.data !== "object" || Array.isArray(body.data)) throw new Oops(400, "That save doesn't look right.");
+    // `base` is the save this one was built on (its updatedAt). If a newer
+    // save has come in since (from another computer), this one would undo
+    // it, so it's refused and the page stops saving and says why.
+    if (Number.isFinite(body.base) && user.save && user.save.updatedAt > body.base) throw new Oops(409, "Your account saved newer progress somewhere else.");
     user.save = { data: body.data, updatedAt: Date.now() };
     await saveDb();
     return { updatedAt: user.save.updatedAt };

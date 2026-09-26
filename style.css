@@ -815,6 +815,15 @@ canvas {
   max-height: 42vh;
 }
 
+.join-note {
+  margin: 0;
+  max-width: 300px;
+  text-align: center;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #b0443a;
+}
+
 #join-button {
   font-family: inherit;
   font-size: 1em;

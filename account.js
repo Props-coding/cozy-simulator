@@ -233,18 +233,34 @@ function collectSave() {
 let lastUploaded = null;
 
 // Sends your save to the server if anything changed since last time.
+// Sends your progress to your account. Returns true if the account has
+// it (sent now, or nothing new to send). Stops for good if your account
+// saved newer progress on another computer, so this page never undoes it.
+let saveConflict = false;
+let hooks = { conflict: () => {}, confirmLogout: async () => false };
+export function initAccountHooks(options) {
+  hooks = { ...hooks, ...options };
+}
+
 async function uploadSave() {
-  if (!account) return;
+  if (!account) return true;
+  if (saveConflict) return false;
   const data = collectSave();
   const text = JSON.stringify(data);
-  if (text === lastUploaded) return;
+  if (text === lastUploaded) return true;
   try {
-    const result = await api("PUT", "/api/save", { data });
+    const result = await api("PUT", "/api/save", { data, base: Number(storage.get(SYNCED_KEY) || 0) || undefined });
     lastUploaded = text;
     storage.set(SYNCED_KEY, String(result.updatedAt));
+    return true;
   } catch (err) {
     if (err.status === 401) logOut(false); // logged out elsewhere (like a password reset)
+    if (err.status === 409) {
+      saveConflict = true;
+      hooks.conflict();
+    }
     // Otherwise try again next time (maybe the internet blipped).
+    return false;
   }
 }
 
@@ -278,8 +294,12 @@ window.addEventListener("pagehide", () => {
   if (!account) return;
   const data = collectSave();
   const text = JSON.stringify({ data });
-  if (JSON.stringify(data) === lastUploaded || text.length > 60_000) return;
-  fetch(SERVER + "/api/save", { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json", Authorization: "Bearer " + account.token }, body: text }).catch(() => {});
+  if (saveConflict || JSON.stringify(data) === lastUploaded) return;
+  const body = JSON.stringify({ data, base: Number(storage.get(SYNCED_KEY) || 0) || undefined });
+  // (A last save as the page closes can only be small; a bigger one waits
+  // for the regular save, at most 30 seconds old.)
+  if (body.length > 60_000) return;
+  fetch(SERVER + "/api/save", { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json", Authorization: "Bearer " + account.token }, body }).catch(() => {});
 });
 
 // --- Logging in and out ---
@@ -402,7 +422,9 @@ async function afterLogin(user) {
 // Logs out: saves your progress to the account first (unless the server
 // has already logged you out), then clears this browser for the next person.
 async function logOut(saveFirst = true) {
-  if (saveFirst) await uploadSave();
+  // Your progress only leaves this browser once your account has it. If
+  // it couldn't be saved, you're asked first (you can stay and try again).
+  if (saveFirst && !(await uploadSave()) && !(await hooks.confirmLogout(saveConflict))) return;
   api("POST", "/api/logout").catch(() => {});
   account = null;
   storage.remove(ACCOUNT_KEY);
