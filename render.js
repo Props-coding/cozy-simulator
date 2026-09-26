@@ -5449,8 +5449,15 @@ const FURNITURE_DRAWERS = {
     hand((now.getMinutes() + now.getSeconds() / 60) / 60, 6.5, 1);
     ctx.fillStyle = "rgba(200, 225, 235, 0.25)"; // the glass window
     ctx.fillRect(x + 5, y + 26, w - 10, h - 36);
-    const swing = Math.sin(performance.now() / 1000 * Math.PI) * 0.35; // one tick a second
+    // One tick a second, swinging only as far as the window allows (the
+    // bob's edge stays a pixel inside it), and clipped to the glass too.
+    const room = (w - 10) / 2 - 4.5, arm = h - 42;
+    const reach = Math.min(0.35, Math.asin(Math.max(0, Math.min(1, room / arm))));
+    const swing = Math.sin(performance.now() / 1000 * Math.PI) * reach;
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 5, y + 26, w - 10, h - 36);
+    ctx.clip();
     ctx.translate(cx, y + 26);
     ctx.rotate(swing);
     ctx.strokeStyle = "#c9a24a";
