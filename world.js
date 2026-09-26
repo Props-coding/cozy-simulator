@@ -597,7 +597,9 @@ function buildHouse(offices, doors = []) {
       name: `${door.owner}'s Bedroom`,
       rect: { x: x0, y: top, w, h: BEDROOM_DEPTH },
       owned: { kind: "bedroom", ownerName: door.owner, color: door.color, mine: !!door.mine, map: door.map },
-      theme: door.style, // its look (see ROOM_STYLES in render.js)
+      // Its look (see OFFICE_THEME_STYLE in render.js). Only the bedroom
+      // styles; the personal office themes stay in offices.
+      theme: ["classic", "cabin", "apartment", "beachHut"].includes(door.style) ? door.style : "classic",
       bedroom: true,
     });
     walls.push(

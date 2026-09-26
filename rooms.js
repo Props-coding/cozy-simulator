@@ -87,18 +87,14 @@ const DECOS = [
   ["pumpkin", "🎃", "Pumpkin"],
   ["snowflake", "❄️", "Snowflake"],
 ];
-// How your room looks inside. The personal themes only show for their owner.
+// How your room looks inside. (The personal office themes, like the Lake
+// house, stay in offices.)
 const STYLES = [
   ["classic", "🛏️", "Classic"],
   ["cabin", "🌲", "Cabin"],
   ["apartment", "🏙️", "Apartment"],
   ["beachHut", "🏖️", "Beach hut"],
-  ["lakehouse", "🛶", "Lake house"],
-  ["stalker", "☢️", "Zone"],
-  ["scholar", "📜", "Scholar"],
-  ["cottage", "🍄", "Cottage"],
 ];
-const PERSONAL = ["lakehouse", "stalker", "scholar", "cottage"];
 
 export const DOOR_STATUS = Object.fromEntries(PRIVACY.map(([id, , label]) => [id, label]));
 
@@ -150,8 +146,7 @@ function renderPanel() {
     await save({ deco: id });
     renderPanel();
   });
-  const myTheme = officeThemeFor(door.owner);
-  choiceButtons(styleRow, STYLES.filter(([id]) => !PERSONAL.includes(id) || id === myTheme), door.style, async (id) => {
+  choiceButtons(styleRow, STYLES, door.style, async (id) => {
     await save({ style: id });
     renderPanel();
   });

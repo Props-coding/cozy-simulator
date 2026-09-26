@@ -346,11 +346,10 @@ function applyKanban(body, user) {
 // nothing they placed is lost.
 const ROOM_PRIVACY = ["open", "knock", "private", "party"];
 const DOOR_DECOS = ["none", "wreath", "flowers", "star", "heart", "plant", "pumpkin", "snowflake"];
-const ROOM_STYLES = ["classic", "cabin", "apartment", "beachHut", "lakehouse", "stalker", "scholar", "cottage"];
+// (The personal office themes, like the Lake house, stay in offices: bedrooms have their own styles.)
+const ROOM_STYLES = ["classic", "cabin", "apartment", "beachHut"];
 const ROOM_AUDIO = ["voice", "lofi", "silent"];
 const ROOM_SIZES = ["cozy", "roomy"];
-// The personal themes, only for their owners.
-const THEME_OWNERS = { lakehouse: "props", stalker: "brightness", scholar: "kxiven", cottage: "lyss" };
 const ONLINE_MS = 90_000; // seen this recently = online (the page checks in every 30 seconds)
 
 function savedData(user, key) {
@@ -375,11 +374,10 @@ function ensureRoom(key, user) {
   if (!room) {
     const home = savedData(user, "cozy-house-home") ?? {};
     const maps = Object.values(db.rooms).map((r) => r.map);
-    const theme = Object.keys(THEME_OWNERS).find((t) => THEME_OWNERS[t] === key);
     room = {
       owner: user.name,
       map: maps.length ? Math.max(...maps) + 1 : 0,
-      style: theme ?? "classic",
+      style: "classic",
       size: home.size === "roomy" ? "roomy" : "cozy",
       placed: (Array.isArray(home.placed) ? home.placed : []).slice(0, 80).map(cleanPiece).filter(Boolean),
       privacy: "open",
@@ -392,6 +390,11 @@ function ensureRoom(key, user) {
     roomsChanged = true;
   }
   room.owner = user.name; // (follows a name change)
+  // A bedroom made while bedrooms could borrow an office theme goes back to Classic.
+  if (!ROOM_STYLES.includes(room.style)) {
+    room.style = "classic";
+    roomsChanged = true;
+  }
   return room;
 }
 let roomsChanged = false;
@@ -698,7 +701,6 @@ const routes = {
     }
     if (body.style !== undefined) {
       if (!ROOM_STYLES.includes(body.style)) throw new Oops(400, "That's not a room style.");
-      if (THEME_OWNERS[body.style] && THEME_OWNERS[body.style] !== key) throw new Oops(403, "That style belongs to someone else.");
       room.style = body.style;
     }
     await saveDb();
