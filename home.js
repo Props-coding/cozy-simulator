@@ -11,6 +11,7 @@ import { sendRoomsPing } from "./network.js";
 import { spendCrumbs, crumbBalance } from "./shop.js";
 import { unlock } from "./achievements.js";
 import { playCrumbSound, playClickSound } from "./audio.js";
+import { addToBasket } from "./basket.js";
 
 // --- Saved home ---
 // size: "cozy" or "roomy". owned: item id -> how many you've bought.
@@ -70,6 +71,20 @@ export function grantAllDecor() {
 export function grantRoomy() {
   home.size = "roomy";
   store();
+}
+
+// The fish in one of your placed fish tanks (Update 4: fishing.js puts
+// them in and takes them out).
+export function setTankFish(index, fish) {
+  const piece = home.placed[index];
+  if (!piece || piece.item !== "fishTank") return;
+  if (fish.length) piece.fish = fish;
+  else delete piece.fish;
+  store();
+}
+
+export function tankFish(index) {
+  return home.placed[index]?.fish ?? [];
 }
 
 // Your room's size and placed decor (main.js puts these in your bedroom).
@@ -706,7 +721,7 @@ function placeHeld() {
     hooks.notice("That doesn't fit there. Try another spot (it can't block the doorway).");
     return;
   }
-  home.placed.push({ item: held.item, x: held.x, y: held.y, ...(held.r ? { r: held.r } : {}) });
+  home.placed.push({ item: held.item, x: held.x, y: held.y, ...(held.r ? { r: held.r } : {}), ...(held.fish?.length ? { fish: held.fish } : {}) });
   held = null;
   store();
   playCrumbSound();
@@ -718,7 +733,7 @@ function placeHeld() {
 // Escape: a piece that was already placed goes back where it was; a new
 // one goes back in the list.
 function cancelHeld() {
-  if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y, ...(held.from.r ? { r: held.from.r } : {}) });
+  if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y, ...(held.from.r ? { r: held.from.r } : {}), ...(held.fish?.length ? { fish: held.fish } : {}) });
   held = null;
   hooks.changed();
   renderBar();
@@ -733,6 +748,8 @@ function putAwayHeld() {
     return;
   }
   const wasPlaced = !!held.from;
+  // A fish tank put away: its fish go back in your basket.
+  for (const id of held.fish ?? []) addToBasket(`fish:${id}`);
   held = null;
   if (wasPlaced) store();
   playClickSound();

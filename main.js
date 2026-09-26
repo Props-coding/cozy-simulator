@@ -48,6 +48,9 @@ import {
   playPetSound,
   enterLibrary,
   leaveLibrary,
+  setOutsideRain,
+  setCampfireSound,
+  updateCampfireSound,
   setRainVolume,
   updateRain,
   enterSleep,
@@ -77,6 +80,12 @@ import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
+import { startWeather } from "./weather.js";
+import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
+import { isNpcOpen } from "./npc.js";
+import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
+import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank } from "./fishing.js";
+import { isBasketOpen } from "./basket.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -324,6 +333,18 @@ joinButton.addEventListener("click", async () => {
     },
   });
   startMail();
+  startWeather(); // the hometown's real sky, outside and through the windows
+  // The shared garden in the yard (beds kept on the house server).
+  initBus({ outside: () => floorOf(player.y) === YARD_FLOOR });
+  // Fishing at the pond: big catches are shared in the house chat.
+  initFishing({
+    notice: (text, ms = 5000) => showNotice(text, ms),
+    post: (text, bigCatch) => {
+      sendChat({ bigCatch });
+      addChatLine({ channel: "house", system: true, text: `🎣 You caught a ${text}!` });
+    },
+  });
+  startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
   initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
   joinScreen.hidden = true;
@@ -425,6 +446,7 @@ function gatherClaims(kind, peers) {
 // Where you pop back to if the room you're in disappears: the middle of
 // your floor's corridor (the bedroom hall, if you were in a bedroom).
 function spawnPoint(floor) {
+  if (floor === YARD_FLOOR) return { ...YARD_SPAWN };
   return { x: 8.7, y: [0, BUSINESS, LANDING][Math.min(floor, 2)] + 1.2 };
 }
 
@@ -451,7 +473,8 @@ function updatePrivateRooms() {
   // If the room you were standing in just vanished (its owner left), pop
   // back to the middle of the hallway (or landing).
   const box = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
-  if (!isInsideARoom(player) || SOLIDS.some((s) => rectsOverlap(box, s))) Object.assign(player, spawnPoint(floorOf(player.y)));
+  // (Sitting on a bench, log or swing overlaps it on purpose, so that's fine.)
+  if (!isInsideARoom(player) || (!mySeat && SOLIDS.some((s) => rectsOverlap(box, s)))) Object.assign(player, spawnPoint(floorOf(player.y)));
 }
 
 // A short message that shows in the prompt line for a few seconds, like
@@ -567,6 +590,11 @@ function roomHintFor(room) {
   if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
+  if (nearestInteraction(player) === "hazel") return "Press E to talk to Hazel: seeds for sale, and she buys your harvest.";
+  if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
+  if (nearestInteraction(player) === "otis") return "Press E to talk to Otis: rods, bait, selling fish and your fish log.";
+  if (nearestInteraction(player) === "fishTank") return "Your fish tank. Press E to add or take out fish.";
+  if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint();
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
   if (nearestInteraction(player) === "bedroomDoor") {
@@ -580,6 +608,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   if (nearestInteraction(player) === "phone") return inCall() ? "Press E to hang up." : "Press E to use your phone: call a friend, or leave a message.";
   if (nearestInteraction(player) === "journal") return "Press E to open your journal. Only you can read it.";
+  if (!nearestInteraction(player) && nearWaitingBus(player)) return busHint(true);
   if (mySeat) return "Sitting. Move (or press E) to get up.";
   if (!nearestInteraction(player) && nearestFreeSeat()) return "Press E to sit.";
   const lockedDoor = lockedDoorInFront(player);
@@ -599,7 +628,11 @@ function roomHintFor(room) {
   }
   if (ride) return "";
   if (nearestInteraction(player) === "elevator") return "Press E to call the elevator.";
+  const yardDoor = yardDoorNear(player);
+  if (yardDoor) return floorOf(player.y) === YARD_FLOOR ? `Walk through the ${yardDoor.name.toLowerCase()} to go back inside.` : "Walk through the door to go out to the yard.";
   if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
+  if (room.id === "busStop") return busHint(false);
+  if (room.id === "campfire") return campfireLit() ? "The campfire's crackling. Voice is on around the fire. Press E by a log to sit." : "The campfire lights itself at night. Voice is on around it.";
   if (room.id === "conference") {
     return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
   }
@@ -675,9 +708,48 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
+  if (key === "e" && nearestInteraction(player) === "hazel") {
+    for (const k in keysDown) keysDown[k] = false;
+    talkToHazel();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "gardenBed") {
+    for (const k in keysDown) keysDown[k] = false;
+    useGardenBed(gardenBedInReach(player));
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "otis") {
+    for (const k in keysDown) keysDown[k] = false;
+    stopFishing(null);
+    talkToOtis();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "fishTank") {
+    for (const k in keysDown) keysDown[k] = false;
+    openFishTank(myFishTankInReach(player));
+    return;
+  }
+
+  if (key === "e" && (isFishing() || nearestInteraction(player) === "fishing")) {
+    for (const k in keysDown) keysDown[k] = false;
+    const spot = fishingSpot(player);
+    if (spot || isFishing()) useFishing(spot);
+    return;
+  }
+
   if (key === "e" && nearestInteraction(player) === "raccoons") {
     for (const k in keysDown) keysDown[k] = false; // stop walking while you chat
     talkToRaccoons();
+    return;
+  }
+
+  // The bus is waiting and you're by its door: talk to the driver.
+  if (key === "e" && !nearestInteraction(player) && !mySeat && nearWaitingBus(player)) {
+    for (const k in keysDown) keysDown[k] = false;
+    talkToDriver();
     return;
   }
 
@@ -1283,8 +1355,16 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // box), so letters don't move you or trigger E, F, K, L or R.
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
+// A friend's fishing line, as it comes over the network: only a bobber
+// close to them (and numbers that make sense) gets drawn.
+function cleanFishing(f, at) {
+  if (!f || !Number.isFinite(f.bx) || !Number.isFinite(f.by)) return null;
+  if (Math.hypot(f.bx - at.x, f.by - at.y) > 4) return null;
+  return { bx: f.bx, by: f.by, bite: f.bite === true };
+}
+
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
+  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the landing), and out again
@@ -1681,6 +1761,13 @@ onChat((message, peerId) => {
     const title = clipText(k.title, 80);
     const text = k.kind === "added" ? `📝 ${peerName} added "${title}" to ${clipText(String(k.board ?? "a board"), 30)}.` : `✅ ${clipText(String(k.who ?? peerName), 16)} finished "${title}"!`;
     addChatLine({ channel: "house", system: true, text });
+    return;
+  }
+  // A friend landed an epic or legendary fish.
+  const fish = CONFIG.fish.find((f) => f.id === message?.bigCatch?.id);
+  if (fish) {
+    const size = Math.round(Number(message.bigCatch.size)) || "?";
+    addChatLine({ channel: "house", system: true, text: `🎣 ${peerName} caught a ${fish.name} (${size} cm)!` });
     return;
   }
   // A friend went to bed, or got up.
@@ -2118,10 +2205,17 @@ function tick(now) {
   if ((dx !== 0 || dy !== 0) && mySeat) {
     standUp(); // moving gets you up (back where you were)
   } else if (dx !== 0 || dy !== 0) {
+    if (isFishing()) stopFishing("You reeled your line back in.");
     movePlayer(player, dx, dy);
     stopMyEmote(); // walking off ends an emote
   }
   checkMySeat();
+  // Walking through a door between the house and the yard.
+  const crossing = doorwayCrossing(player);
+  if (crossing) {
+    Object.assign(player, crossing.to);
+    playClickSound();
+  }
   updateElevator(dt);
   checkLeftBedroom();
   visiblePeers = getPeers().filter(peerAllowed);
@@ -2149,7 +2243,9 @@ function tick(now) {
     if (currentRoom.id === "library") enterLibrary();
     if (previousRoomId === "conference") closeWhiteboard();
     if (currentRoom.id === "theater") enterTheater();
-    if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
+    // (No chime walking between the yard's areas: it's all one outdoors.)
+    const outdoorsBoth = currentRoom.outdoor && ROOMS.find((r) => r.id === previousRoomId)?.outdoor;
+    if (previousRoomId !== null && !outdoorsBoth) playRoomChangeSound(currentRoom.id);
     previousRoomId = currentRoom.id;
     const visited = collect("rooms", currentRoom.owned ? currentRoom.owned.kind : currentRoom.id);
     if (TOUR_ROOMS.every((r) => visited.includes(r))) unlock("tour");
@@ -2163,7 +2259,11 @@ function tick(now) {
   }
   updateLofi(dt);
   updateTheater();
+  setOutsideRain(currentRoom.outdoor && OUTDOORS.raining ? 0.4 + 0.6 * OUTDOORS.rain : 0);
   updateRain(dt);
+  // The campfire crackles at night: loud at the fire, faint elsewhere outside.
+  setCampfireSound(floorOf(player.y) === YARD_FLOOR && campfireLit() ? (currentRoom.id === "campfire" ? 1 : 0.2) : 0);
+  updateCampfireSound(dt);
   updateWhiteNoise(dt);
   updateFocusTimer(currentRoom.id);
 
@@ -2171,9 +2271,14 @@ function tick(now) {
   if (timeSinceLastBroadcast >= broadcastInterval) {
     timeSinceLastBroadcast = 0;
     const pass = currentRoom.bedroom && myPass?.owner === currentRoom.owned.ownerName.toLowerCase() ? myPass.pass : null;
-    broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: inCall() ? null : whisperTarget(), phone: inCall() });
+    broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: inCall() ? null : whisperTarget(), phone: inCall(), fishing: fishingLine() });
   }
 
+  // The porch swing sways while anyone's sitting on it (and them with it).
+  const swingSeats = new Set(FURNITURE.filter((f) => f.kind === "porchSwing").flatMap(seatSpots).map((s) => s.key));
+  const onSwing = (key) => !!key && swingSeats.has(key);
+  globalThis.porchSwingBusy = onSwing(mySeat?.key) || visiblePeers.some((peer) => onSwing(peer.seat?.key));
+  const swingY = porchSwingSway();
   const scenePlayers = visiblePeers.map((peer) => {
     const shown = getSmoothedPosition(peer, dt);
     // A friend's hat name comes over the network, so only accept known hats.
@@ -2183,14 +2288,14 @@ function tick(now) {
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
     const seat = peer.seat ? seatByKey(peer.seat.key, floorOf(peer.y)) : undefined;
-    const at = bed ? tuckedIn(bed) : seat ? { x: seat.x - PLAYER_SIZE / 2, y: seat.y - PLAYER_SIZE } : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: seat?.face ?? (SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null), seatLift: seat?.lift ?? 0, sortY: seat?.sortY, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null };
+    const at = bed ? tuckedIn(bed) : seat ? { x: seat.x - PLAYER_SIZE / 2, y: seat.y - PLAYER_SIZE + (onSwing(seat.key) ? swingY : 0) } : shown;
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: seat?.face ?? (SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null), seatLift: seat?.lift ?? 0, sortY: seat?.sortY, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null, fishing: cleanFishing(peer.fishing, shown) };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
-  const myAt = myBed ? tuckedIn(myBed) : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null });
+  const myAt = myBed ? tuckedIn(myBed) : onSwing(mySeat?.key) ? { x: player.x, y: player.y + swingY } : player;
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
   // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.

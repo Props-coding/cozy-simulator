@@ -221,6 +221,63 @@ const publicUser = (u) => ({ name: u.name, member: !!u.member, admin: !!u.admin,
 // Used for unknown names, so a wrong name takes as long as a wrong password.
 const DUMMY_SALT = randomBytes(16).toString("hex");
 
+// --- The shared garden (Update 4) ---
+const GARDEN_BEDS = 24; // the most beds the page can have (it has 12 now)
+const GARDEN_MAX_PER_PERSON = 6; // a safety cap (the page's own limit is in config.js)
+const WATER_GAP = 30 * 60_000; // waterings closer together than this count once
+const MAX_WATERS = 200;
+
+function gardenState() {
+  db.garden ??= { version: 1, plots: {} };
+  return { version: db.garden.version, plots: db.garden.plots, now: Date.now() };
+}
+
+function waterPlot(plot, when, by) {
+  const last = plot.waters.at(-1) ?? 0;
+  if (when - last < WATER_GAP) return false;
+  plot.waters.push(when);
+  if (plot.waters.length > MAX_WATERS) plot.waters.shift();
+  plot.wateredBy = by;
+  return true;
+}
+
+// One gardening action: { action, bed, crop }. "plant" (an empty bed),
+// "water" (anyone's bed), "rain" (every bed), "harvest" or "clear" (your
+// own bed: it's emptied, and the page adds the harvest to your basket).
+function applyGarden(body, user) {
+  gardenState();
+  const plots = db.garden.plots;
+  const now = Date.now();
+  if (body.action === "rain") {
+    let watered = 0;
+    for (const plot of Object.values(plots)) if (waterPlot(plot, now, "rain")) watered++;
+    return { watered };
+  }
+  const bed = Number(body.bed);
+  if (!Number.isInteger(bed) || bed < 0 || bed >= GARDEN_BEDS) throw new Oops(400, "That's not a garden bed.");
+  const plot = plots[bed];
+  const mine = plot && plot.owner.toLowerCase() === user.name.toLowerCase();
+  if (body.action === "plant") {
+    if (plot) throw new Oops(409, `${plot.owner} is already growing something there.`);
+    const crop = String(body.crop ?? "");
+    if (!/^[a-zA-Z]{1,20}$/.test(crop)) throw new Oops(400, "That's not a seed.");
+    const count = Object.values(plots).filter((p) => p.owner.toLowerCase() === user.name.toLowerCase()).length;
+    if (count >= GARDEN_MAX_PER_PERSON) throw new Oops(409, "You're already growing plenty!");
+    // Your color (for the little name stake), as the page sends it.
+    const color = /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : "#999999";
+    plots[bed] = { owner: user.name, color, crop, plantedAt: now, waters: [now], wateredBy: user.name };
+    return { planted: crop };
+  }
+  if (!plot) throw new Oops(404, "Nothing's growing there.");
+  if (body.action === "water") return { watered: waterPlot(plot, now, user.name) };
+  if (body.action === "harvest" || body.action === "clear") {
+    if (!mine) throw new Oops(403, `That's ${plot.owner}'s bed.`);
+    delete plots[bed];
+    return { crop: plot.crop };
+  }
+  throw new Oops(400, "That's not something you can do in the garden.");
+}
+
 // --- The Workshop's kanban boards ---
 // db.kanban: { version, jar, boards: [{ id, name, archived, cards: [card] }] }
 // card: { id, title, column ("todo", "doing" or "done"), label, due, note,
@@ -365,6 +422,11 @@ function cleanPiece(p) {
   if (!p || typeof p.item !== "string" || p.item.length > 40 || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
   const piece = { item: p.item, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000 };
   if (p.r === 1 || p.r === 3) piece.r = p.r;
+  // The fish swimming in a fish tank (Update 4): a few fish names.
+  if (Array.isArray(p.fish)) {
+    const fish = p.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12);
+    if (fish.length) piece.fish = fish;
+  }
   return piece;
 }
 
@@ -663,6 +725,28 @@ const routes = {
     return { ...kanbanState(), result };
   },
 
+  // --- The shared garden (Update 4) ---
+  // db.garden.plots: bed number -> { owner (their name), color, crop,
+  // plantedAt, waters: [times], wateredBy }. How fast crops grow is worked
+  // out by each page from those times (the crop list is in config.js), so
+  // the server only keeps who planted what, when, and when it was watered.
+  "GET /api/garden": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    return gardenState();
+  },
+
+  "POST /api/garden": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    if (!allowed("garden:" + key, 600)) throw new Oops(429, "Lots of gardening! Please wait a few minutes.");
+    const body = await readJson(req, 2_000);
+    const result = applyGarden(body, user);
+    db.garden.version++;
+    await saveDb();
+    return { ...gardenState(), result };
+  },
+
   // --- Bedrooms: everyone's door (for the bedroom hallway) ---
   "GET /api/rooms": async (req) => {
     const { user: me, key: myKey } = currentUser(req);
@@ -858,7 +942,7 @@ const routes = {
       pinned: (Array.isArray(progress.pinned) ? progress.pinned : []).filter((id) => typeof id === "string" && /^[a-zA-Z]{1,30}$/.test(id)).slice(0, 5),
       // The counters their tiers are counted in, for "progress to the next tier".
       stats: Object.fromEntries(
-        ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited"]
+        ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught"]
           .filter((k) => Number.isFinite(progress.stats?.[k]))
           .map((k) => [k, progress.stats[k]])
       ),

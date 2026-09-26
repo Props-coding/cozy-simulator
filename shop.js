@@ -2,7 +2,8 @@
 //
 // You earn crumbs just for being in the house (see config.js), and spend
 // them on hats, shoes, glasses, scarves, backpacks, earrings and pets sold by three raccoons in a trenchcoat who lurk
-// in the hallway. Talking to them opens a chatty speech box: their words
+// out in the yard, by the bins (they lived in the hallway until Update 4).
+// They also buy junk you fish out of the pond. Talking to them opens a chatty speech box: their words
 // type out letter by letter with a babbling voice. Then the coat swings
 // open to show the wares.
 //
@@ -10,6 +11,7 @@
 // server), so they don't follow you to another computer.
 import { playBabble, playCoatWhoosh, playCrumbSound, playClickSound } from "./audio.js";
 import { unlock, count } from "./achievements.js";
+import { basketItems, takeFromBasket } from "./basket.js";
 
 // --- The raccoons ---
 // Three voices: `pitch` is how high their babble sounds.
@@ -391,8 +393,30 @@ function mainChoices() {
         ["reginald", "BEAN."],
       ], mainChoices);
     }],
+    ["Want some pond junk?", sellJunk],
     ["Never mind", () => say(pick(GOODBYES))],
   ]);
+}
+
+// Junk from the pond (old boots, tin cans...): the raccoons love it, and
+// pay CONFIG.junkPrice crumbs a piece (Update 4).
+function sellJunk() {
+  const junk = basketItems("junk:");
+  const n = junk.reduce((sum, [, k]) => sum + k, 0);
+  if (n === 0) {
+    say([["pip", "junk? JUNK?? you have no junk!"], ["reginald", "come back when you've fished up something... unwanted."], ["bean", "boots."]], mainChoices);
+    return;
+  }
+  for (const [id, k] of junk) takeFromBasket(id, k);
+  const price = CONFIG.junkPrice ?? 3;
+  addCrumbs(n * price);
+  playCrumbSound();
+  unlock("junkDealer");
+  say([
+    ["pip", n > 1 ? `ooh ooh ooh! ${n} treasures!` : "ooh! a treasure!"],
+    ["reginald", `we'll take it all. ${n * price} crumbs, and no questions asked.`],
+    ["bean", junk.some(([id]) => id === "junk:duck") ? "...duck. mine." : "nice."],
+  ], mainChoices);
 }
 
 // Start a conversation (main.js calls this when you press E by them).

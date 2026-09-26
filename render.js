@@ -344,6 +344,10 @@ function paintIndoorBackdrop(ctx) {
 // of grass and a few flowers, so the space north of the hallway looks like
 // garden, not a dark gap. Upper floors are indoors (see above).
 function paintYard(ctx) {
+  if (viewFloor === YARD_FLOOR) {
+    paintYardGround(ctx); // the yard itself (Update 4, see outdoors.js)
+    return;
+  }
   if (viewFloor >= 1) {
     paintIndoorBackdrop(ctx);
     return;
@@ -368,6 +372,7 @@ function paintYard(ctx) {
       ctx.fill();
     }
   }
+  paintFrontSteps(ctx); // stepping stones from the front door (outdoors.js)
 }
 
 function drawRug(ctx, f) {
@@ -451,6 +456,7 @@ function drawRug(ctx, f) {
 function paintFloors(ctx) {
   paintYard(ctx);
   for (const room of ROOMS) {
+    if (room.outdoor && !CONFIG.roomFloors[room.id]) continue; // grass, already painted
     const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.owned?.kind] || CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
     // Rooms north of a corridor also get floor under the corridor's wall,
@@ -591,6 +597,7 @@ function wallFaceParts(wall) {
 // only be a sliver at the bottom end. A soft shade on the floor just
 // below the wall helps it read as standing up.
 function drawWall(ctx, wall) {
+  if (wall.hidden) return; // (the yard's edges and the pond: nothing to see)
   const height = wall.low ? LOW_WALL_HEIGHT : WALL_HEIGHT;
   const a = toScreen(wall.x, wall.y);
   const b = toScreen(wall.x + wall.w, wall.y + wall.h);
@@ -615,8 +622,8 @@ function drawWall(ctx, wall) {
   }
   for (const part of wallFaceParts(wall)) {
     const left = toScreen(part.x0, 0).x, right = toScreen(part.x1, 0).x, w = right - left;
-    if (!part.room) {
-      // Facing outside (the garden): warm wooden house siding.
+    if (!part.room || part.room.outdoor) {
+      // Facing outside (the garden, or the yard): warm wooden house siding.
       ctx.fillStyle = "#a07c55";
       ctx.fillRect(left, b.y - height, w, height);
       ctx.fillStyle = "rgba(60, 35, 15, 0.28)";
@@ -1809,7 +1816,11 @@ const FURNITURE_DRAWERS = {
       ctx.quadraticCurveTo(px + Math.sin(t * 1.5 + px) * 3, bottom - 12, px + 1, bottom - 18);
       ctx.stroke();
     }
-    for (const [color, speed, row, phase] of [["#f2a03a", 0.5, 0.4, 0], ["#e37aa0", 0.35, 0.65, 2]]) {
+    // Fish you've caught and put in (Update 4), or two little starter fish.
+    const caught = Array.isArray(f.fish) && f.fish.length
+      ? f.fish.map((id, i) => [CONFIG.fish.find((fish) => fish.id === id)?.color ?? "#f2a03a", 0.3 + ((i * 0.13) % 0.35), 0.25 + ((i * 0.37) % 0.55), i * 1.7])
+      : [["#f2a03a", 0.5, 0.4, 0], ["#e37aa0", 0.35, 0.65, 2]];
+    for (const [color, speed, row, phase] of caught) {
       const swim = (Math.sin(t * speed + phase) + 1) / 2;
       const fx = x + 6 + swim * (w - 14), fy = top + row * h;
       const dir = Math.cos(t * speed + phase) >= 0 ? 1 : -1;
@@ -7055,6 +7066,10 @@ function drawLamp(ctx, x, y) {
 // Warm light effects, drawn over everything in a final pass so glows
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
+  if (viewFloor === YARD_FLOOR) {
+    drawOutdoorLight(ctx); // daylight, dusk and night in the yard (outdoors.js)
+    return;
+  }
   // Study, Dinner and the Hallway get a soft golden wash, like rooms lit
   // by lamps at night: warm in the middle, a little dimmer at the edges.
   for (const id of ["study", "dinner", "hallway", "business", "landing", "elevator", "elevatorUp", "elevatorTop"]) {
@@ -10158,7 +10173,7 @@ function layoutPlayerTags(ctx, players) {
   lastTagTime = now;
   const tags = players.map((p) => {
     const foot = playerFeet(p);
-    const target = p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat);
+    const target = Math.max(p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat), p.umbrella ? UMBRELLA_LIFT : 0);
     const lift = (tagLifts[p.id] ??= target);
     tagLifts[p.id] = lift + (target - lift) * step;
     // The top of their head plus room for their hat. The name, badge, speech
@@ -10574,6 +10589,34 @@ function drawDoorTags(ctx, me) {
     ctx.fillStyle = "#5c4530";
     ctx.fillText(room.name, c.x, y + 12.5);
   }
+  // The doors between the house and the yard.
+  for (const door of YARD_DOORS) {
+    const inYard = viewFloor === YARD_FLOOR;
+    if (!inYard && viewFloor !== 0) continue;
+    const id = "yard-" + door.id;
+    const dx = inYard ? door.yardX : door.house.x, dy = inYard ? YARD_WALL_Y : door.house.top;
+    const near = me && Math.abs(me.x + PLAYER_SIZE / 2 - (dx + 0.8)) < NEAR_DOOR && Math.abs(me.y + PLAYER_SIZE / 2 - dy) < NEAR_DOOR;
+    const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
+    signFade[id] = fade;
+    if (fade === 0) continue;
+    const label = inYard ? (door.id === "kitchen" ? "🏠 Kitchen (Dinner)" : "🏠 Front door (elevator)") : "🌳 Out to the yard";
+    const c = toScreen(dx + 0.8, dy);
+    const w = ctx.measureText(label).width + 14, h = 17;
+    // (In the house the doorway is in the bottom wall, so the tag sits beside it.)
+    const x = inYard ? c.x - w / 2 : c.x + 0.8 * TILE + 6, y = inYard ? c.y + 6 : c.y - h - 2;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    roundRectPath(ctx, x + 1, y + 2, w, h, 8);
+    ctx.fill();
+    roundRectPath(ctx, x, y, w, h, 8);
+    ctx.fillStyle = "#fffaf3";
+    ctx.fill();
+    ctx.strokeStyle = "#c9955f";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#5c4530";
+    ctx.fillText(label, x + w / 2, y + 12.5);
+  }
   // Bedroom doors: whose room, whether you can come in, and their note.
   for (const f of FURNITURE) {
     if (f.kind !== "bedroomDoor" || !f.door || floorOf(f.y) !== viewFloor) continue;
@@ -10640,6 +10683,8 @@ function drawStudySign(ctx, text) {
 // east end. Rain falls there. (Upper floors are indoors: none.)
 function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
+  // In the yard, everything is outside (the porch roof aside).
+  if (viewFloor === YARD_FLOOR) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
   if (viewFloor >= 1) return []; // (indoors, rain only shows through windows)
   const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
     .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
@@ -10744,47 +10789,6 @@ function drawDecorPreview(canvas, item, color) {
   ctx.restore();
 }
 
-// It's raining outside: a slightly gloomy tint over the lawn, streaks of
-// rain falling, and little ripples where drops land.
-function drawOutsideRain(ctx) {
-  const t = performance.now() / 1000;
-  for (const area of lawnAreas()) {
-    const a = toScreen(area.x, area.y), b = toScreen(area.x + area.w, area.y + area.h);
-    const w = b.x - a.x, h = b.y - a.y;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(a.x, a.y, w, h);
-    ctx.clip();
-    ctx.fillStyle = "rgba(55, 75, 95, 0.16)";
-    ctx.fillRect(a.x, a.y, w, h);
-    const seed = Math.round(area.x * 10);
-    // Ripples on the ground.
-    for (let i = 0; i < Math.max(2, (w * h) / 5000); i++) {
-      const cycle = t * 0.9 + noise(seed + i * 5.3);
-      const phase = cycle % 1, round = Math.floor(cycle);
-      const rx = a.x + noise(seed + i * 3.7 + round * 11.1) * w, ry = a.y + noise(seed + i * 9.1 + round * 7.3) * h;
-      ctx.strokeStyle = `rgba(220, 235, 245, ${0.5 * (1 - phase)})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.ellipse(rx, ry, 1 + phase * 6, 0.5 + phase * 2.4, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // Falling rain.
-    ctx.strokeStyle = "rgba(215, 230, 245, 0.45)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i < (w * h) / 900; i++) {
-      const x = a.x + noise(seed + i * 1.3) * (w + 20);
-      const fall = (t * (0.9 + noise(seed + i * 2.9) * 0.5) + noise(seed + i * 4.1)) % 1;
-      const y = a.y - 12 + fall * (h + 24);
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 2.5, y + 9);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
 // Draws the whole house for one frame, scaled to fit the view (see
 // setViewScale). `players` is an array of { x, y, color, name, badge },
 // including yourself, and `pets` the pets following them (see drawPet).
@@ -10801,7 +10805,8 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   ctx.translate(-left, -top);
 
   drawFloors(ctx);
-  drawOutsideRain(ctx);
+  drawPondShimmer(ctx);
+  if (viewFloor !== YARD_FLOOR) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
   dropRuneMarks(players);
   drawRuneMarks(ctx);
 
@@ -10809,6 +10814,15 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   const sprites = [...getStaticSprites()];
   for (const p of players) {
     sprites.push({ sortY: p.sortY ?? p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) }); // (sitting: sorted with the seat)
+    // In the yard when it rains, everyone gets an umbrella (see outdoors.js).
+    p.umbrella = floor === YARD_FLOOR && OUTDOORS.raining && !p.asleep;
+    if (p.umbrella) sprites.push({ sortY: (p.sortY ?? p.y + PLAYER_SIZE) + 0.0001, draw: (ctx) => drawUmbrella(ctx, p) });
+    // Fishing at the pond: the rod and line (in front of you) and the
+    // bobber out on the water (see outdoors.js).
+    if (p.fishing && floor === YARD_FLOOR) {
+      sprites.push({ sortY: p.y + PLAYER_SIZE + 0.0002, draw: (ctx) => drawFishingLine(ctx, p) });
+      sprites.push({ sortY: p.fishing.by - 0.5, draw: (ctx) => drawBobber(ctx, p) });
+    }
   }
   for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
   sprites.sort((a, b) => a.sortY - b.sortY);

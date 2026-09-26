@@ -42,6 +42,8 @@ let theaterAction = null;
 let externalOnBoard = null;
 let boardAction = null;
 let kanbanAction = null;
+let gardenAction = null;
+let externalOnGarden = null;
 let roomsAction = null;
 let externalOnRooms = null;
 let externalOnKanban = null;
@@ -155,6 +157,16 @@ export function sendKanbanPing() {
   kanbanAction?.send(1);
 }
 
+// Someone planted, watered or harvested in the garden: friends fetch the
+// garden from the server right away. Just a nudge, no details.
+export function onGardenPing(callback) {
+  externalOnGarden = callback;
+}
+
+export function sendGardenPing() {
+  gardenAction?.send(1);
+}
+
 // Someone changed their bedroom door (or room): friends fetch the latest
 // from the server right away. Just a nudge, no details.
 export function onRoomsPing(callback) {
@@ -230,6 +242,9 @@ export function connectToRoom(myName, myColor) {
 
   kanbanAction = room.makeAction("kanban");
   kanbanAction.onMessage = () => externalOnKanban?.();
+
+  gardenAction = room.makeAction("garden");
+  gardenAction.onMessage = () => externalOnGarden?.();
 
   theaterAction = room.makeAction("theater");
   theaterAction.onMessage = (message, { peerId }) => externalOnTheater?.(message, peerId);

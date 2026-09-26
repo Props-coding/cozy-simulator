@@ -7,7 +7,7 @@
 // room; a bedroom's owner can also pick lo-fi or silence instead). main.js
 // passes "asleep" as the room while you're in bed, which isn't a voice
 // room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge"];
+const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire"];
 
 function isVoiceRoom(roomId) {
   if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
@@ -86,6 +86,13 @@ const ROOM_CHIME_NOTES = {
   study: [493.88, 587.33], // B4, D5: softer, calmer
   dinner: [440, 554.37], // A4, C#5: warm, settling in
   workshop: [523.25, 698.46], // C5, F5: busy and cheerful
+  // Stepping outside (any of the yard's areas): G4, D5, open and airy.
+  yard: [392, 587.33],
+  porch: [392, 587.33],
+  garden: [392, 587.33],
+  pond: [392, 587.33],
+  campfire: [392, 587.33],
+  busStop: [392, 587.33],
 };
 
 export function playRoomChangeSound(roomId) {
@@ -211,6 +218,29 @@ export function playAchievementSound() {
   playTone(659.25, 110, { gain: 0.08, duration: 0.14, type: "triangle" });
   playTone(783.99, 220, { gain: 0.08, duration: 0.14, type: "triangle" });
   playTone(1046.5, 330, { gain: 0.09, duration: 0.6, type: "triangle" });
+}
+
+// Garden sounds (Update 4): a trickle of water (quick falling blips), a
+// soft "pop" for planting, and a bright "pluck" for harvesting.
+export function playWaterSound() {
+  for (let i = 0; i < 6; i++) playTone(1400 - i * 90 + Math.random() * 120, i * 45, { gain: 0.035, duration: 0.06, type: "sine" });
+}
+
+export function playPlantSound() {
+  playTone(220, 0, { gain: 0.09, duration: 0.12, type: "triangle" });
+  playTone(330, 60, { gain: 0.05, duration: 0.1, type: "sine" });
+}
+
+export function playHarvestSound() {
+  playTone(587.33, 0, { gain: 0.07, duration: 0.1, type: "triangle" });
+  playTone(880, 70, { gain: 0.07, duration: 0.1, type: "triangle" });
+  playTone(1174.66, 140, { gain: 0.06, duration: 0.25, type: "triangle" });
+}
+
+// The bus's friendly "beep beep" as it pulls in at the stop (Update 4).
+export function playBusHorn() {
+  playTone(415.3, 0, { gain: 0.07, duration: 0.14, type: "square" });
+  playTone(415.3, 200, { gain: 0.07, duration: 0.2, type: "square" });
 }
 
 // A soft, happy chirp for petting a pet.
@@ -655,6 +685,96 @@ export function leaveLibrary() {
   inLibrary = false;
 }
 
+// Out in the yard while it rains (Update 4): the same soft rain, as loud as
+// the rain is heavy (0 for none, up to 1), with the same volume slider.
+let outsideRain = 0;
+// --- The campfire's crackle (Update 4) ---
+// Made in code: a soft, warm hiss of noise (the flames) with little random
+// pops and snaps on top. `amount` is how loud (0 to 1): full at the
+// campfire, faint elsewhere in the yard, off by day or indoors.
+let fire = null;
+let fireTarget = 0;
+let fireLevel = 0;
+
+export function setCampfireSound(amount) {
+  fireTarget = amount;
+  if (amount > 0 && !fire && toneContext) startFire();
+}
+
+function noiseBuffer(seconds) {
+  const buffer = toneContext.createBuffer(1, toneContext.sampleRate * seconds, toneContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+function startFire() {
+  const out = toneContext.createGain();
+  out.gain.value = 0;
+  out.connect(toneContext.destination);
+  // The flames' hiss: noise, softened to a warm rumble.
+  const bed = toneContext.createBufferSource();
+  bed.buffer = noiseBuffer(2);
+  bed.loop = true;
+  const warm = toneContext.createBiquadFilter();
+  warm.type = "lowpass";
+  warm.frequency.value = 500;
+  const bedGain = toneContext.createGain();
+  bedGain.gain.value = 0.18;
+  bed.connect(warm);
+  warm.connect(bedGain);
+  bedGain.connect(out);
+  bed.start();
+  // Pops and snaps: tiny bursts of bright noise at random moments.
+  const snap = noiseBuffer(0.05);
+  const timer = setInterval(() => {
+    if (Math.random() > 0.35) return;
+    const pop = toneContext.createBufferSource();
+    pop.buffer = snap;
+    const bright = toneContext.createBiquadFilter();
+    bright.type = "bandpass";
+    bright.frequency.value = 1200 + Math.random() * 2500;
+    const g = toneContext.createGain();
+    const now = toneContext.currentTime;
+    g.gain.setValueAtTime(0.25 + Math.random() * 0.5, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.03 + Math.random() * 0.05);
+    pop.connect(bright);
+    bright.connect(g);
+    g.connect(out);
+    pop.start(now);
+  }, 70);
+  fire = {
+    out,
+    stop: () => {
+      clearInterval(timer);
+      try {
+        bed.stop();
+      } catch {
+        // Already stopped.
+      }
+      out.disconnect();
+    },
+  };
+}
+
+// Called every frame (from main.js): fades the crackle in and out.
+export function updateCampfireSound(dt) {
+  if (!fire) return;
+  const target = masterMuted ? 0 : fireTarget * masterVolume * 0.5;
+  fireLevel += (target - fireLevel) * (1 - Math.pow(0.05, dt));
+  fire.out.gain.value = fireLevel;
+  if (fireTarget === 0 && fireLevel < 0.002) {
+    fire.stop();
+    fire = null;
+    fireLevel = 0;
+  }
+}
+
+export function setOutsideRain(amount) {
+  outsideRain = amount;
+  if (amount > 0) startRain();
+}
+
 export function setRainVolume(vol) {
   rainUserVolume = vol;
 }
@@ -663,11 +783,11 @@ export function setRainVolume(vol) {
 // completely once it has faded out after you leave.
 export function updateRain(dt) {
   if (!rain || !rain.out) return;
-  const target = inLibrary && !masterMuted ? rainUserVolume * masterVolume : 0;
+  const target = !masterMuted ? Math.max(inLibrary ? 1 : 0, outsideRain * 0.8) * rainUserVolume * masterVolume : 0;
   rainLevel += (target - rainLevel) * (1 - Math.pow(0.02, dt));
   if (Math.abs(target - rainLevel) < 0.001) rainLevel = target;
   rain.out.gain.value = rainLevel;
-  if (!inLibrary && rainLevel === 0) {
+  if (!inLibrary && outsideRain === 0 && rainLevel === 0) {
     rain.stop();
     rain = null;
   }

@@ -18,6 +18,155 @@ const CONFIG = {
     lounge: "Lounge",
     landing: "Suite Floor",
     workshop: "Workshop",
+    // Outside (Update 4)
+    yard: "Yard",
+    porch: "Porch",
+    garden: "Garden",
+    pond: "Pond",
+    campfire: "Campfire",
+    busStop: "Bus Stop",
+  },
+
+  // --- Outdoors (Update 4) ---
+  // Night outside, until the live weather has told us when the sun really
+  // sets and rises over the hometown: from this hour (24-hour clock) to
+  // that one, on your own computer's clock.
+  outdoors: {
+    nightFrom: 20,
+    nightTo: 6,
+  },
+
+  // Live weather: the real sky over the house's hometown shows in the yard
+  // and through the windows (from Open-Meteo, free, no account needed).
+  // PLACEHOLDER: the hometown below is only a stand-in until Brandon picks
+  // the real one. To change it, put in the town's name and its latitude and
+  // longitude (search "<town> latitude longitude"; west and south are
+  // negative numbers). units: "F" or "C". refreshMinutes: how often each
+  // browser checks for new weather.
+  weather: {
+    hometown: { name: "Seattle (placeholder)", latitude: 47.61, longitude: -122.33 },
+    units: "F",
+    refreshMinutes: 15,
+  },
+
+  // --- The shared garden (Update 4) ---
+  // Twelve raised beds inside the garden's fence. Anyone can plant in an
+  // empty bed (up to `maxPlotsPerPlayer` at once) with seeds from Hazel,
+  // the gardener by the garden gate. Crops grow in real time, even while
+  // nobody's in the house. Watering keeps a crop growing at full speed for
+  // `waterHours`; dry, it grows at `dryGrowth` of full speed (0.4 is 40%).
+  // Anyone can water anyone's bed, and rain waters every bed (while
+  // someone is in the house to see it rain). Nothing ever wilts or dies.
+  garden: {
+    maxPlotsPerPlayer: 3,
+    waterHours: 6,
+    dryGrowth: 0.4,
+  },
+
+  // The crops. hours: how long it takes to grow when kept watered (it
+  // shows four stages on the way: seed, sprout, growing, flowering, then
+  // ripe). seed: what Hazel charges for a seed. sell: crumbs Hazel pays for
+  // each one you harvest. yield: how many you harvest, [fewest, most].
+  // look: how it's drawn ("root", "leafy", "berry", "vine", "flower",
+  // "stalk" or "pumpkin"). color: the crop's own color.
+  crops: [
+    { id: "radish", name: "Radish", icon: "🌱", hours: 1, seed: 4, sell: 6, yield: [2, 3], look: "root", color: "#d9485a" },
+    { id: "lettuce", name: "Lettuce", icon: "🥬", hours: 2, seed: 5, sell: 5, yield: [3, 4], look: "leafy", color: "#8fc06a" },
+    { id: "carrot", name: "Carrot", icon: "🥕", hours: 3, seed: 6, sell: 8, yield: [2, 4], look: "root", color: "#e8883a" },
+    { id: "strawberry", name: "Strawberry", icon: "🍓", hours: 6, seed: 12, sell: 6, yield: [4, 7], look: "berry", color: "#e0404a" },
+    { id: "tomato", name: "Tomato", icon: "🍅", hours: 10, seed: 15, sell: 8, yield: [4, 7], look: "vine", color: "#e0503a" },
+    { id: "sunflower", name: "Sunflower", icon: "🌻", hours: 12, seed: 10, sell: 30, yield: [1, 1], look: "flower", color: "#f2c230" },
+    { id: "corn", name: "Corn", icon: "🌽", hours: 16, seed: 14, sell: 12, yield: [3, 5], look: "stalk", color: "#f0d25a" },
+    { id: "pumpkin", name: "Pumpkin", icon: "🎃", hours: 24, seed: 25, sell: 90, yield: [1, 1], look: "pumpkin", color: "#e8883a" },
+    { id: "blueberry", name: "Blueberries", icon: "🫐", hours: 48, seed: 30, sell: 10, yield: [9, 13], look: "berry", color: "#4a5ab8" },
+  ],
+
+  // --- Fishing at the pond (Update 4) ---
+  // Stand at the pond's edge (or on the dock) and press E to cast. Wait for
+  // a bite (biteSeconds, [shortest, longest]; better rods get bites
+  // sooner), press E within hookSeconds when the "!" pops up, then press E
+  // again while the moving marker is in the green zone to land it.
+  // junkChance: how often you reel in junk instead (0.08 is 8%).
+  // Every catch gives fishing XP; `levels` is the total XP for each level
+  // (level 1 starts at 0). Your level decides which rods Otis will sell you.
+  fishing: {
+    biteSeconds: [5, 14],
+    hookSeconds: 1.3,
+    junkChance: 0.08,
+    xp: [5, 10, 20, 40, 80], // XP for a catch of each rarity (junk gives 1)
+    levels: [0, 30, 80, 150, 250, 400, 600, 850, 1150, 1500, 2000, 2600, 3300, 4100, 5000],
+    tankSize: 6, // how many fish fit in a bedroom fish tank
+  },
+
+  // Rods, from Otis the otter by the dock. level: the fishing level you need
+  // before he'll sell it. zone: how wide the green "catch" zone is (0 to 1).
+  // bite: how long bites take (0.6 is 40% quicker). luck: how often you
+  // catch the rarer of the fish your bait can find (0 is never extra).
+  rods: [
+    { id: "twig", name: "Twig Rod", icon: "🎣", level: 1, price: 0, zone: 0.2, bite: 1, luck: 0 },
+    { id: "bamboo", name: "Bamboo Rod", icon: "🎋", level: 3, price: 150, zone: 0.25, bite: 0.9, luck: 0.1 },
+    { id: "fiberglass", name: "Fiberglass Rod", icon: "🎣", level: 6, price: 500, zone: 0.3, bite: 0.8, luck: 0.2 },
+    { id: "carbon", name: "Carbon Rod", icon: "🎣", level: 10, price: 1500, zone: 0.35, bite: 0.7, luck: 0.3 },
+    { id: "golden", name: "Golden Rod", icon: "✨", level: 14, price: 4000, zone: 0.4, bite: 0.6, luck: 0.4 },
+  ],
+
+  // Bait decides which fish you can catch: `catches` lists the rarities
+  // (1 common, 2 uncommon, 3 rare, 4 epic, 5 legendary). Pricier bait
+  // finds pricier fish. price: crumbs for one. level: fishing level needed.
+  bait: [
+    { id: "none", name: "No bait", icon: "🪝", price: 0, level: 1, catches: [1] },
+    { id: "worm", name: "Worms", icon: "🪱", price: 3, level: 1, catches: [1, 2] },
+    { id: "cricket", name: "Crickets", icon: "🦗", price: 10, level: 2, catches: [2, 3] },
+    { id: "minnow", name: "Minnows", icon: "🐟", price: 25, level: 5, catches: [3, 4] },
+    { id: "lure", name: "Golden Lure", icon: "🌟", price: 60, level: 9, catches: [4, 5] },
+  ],
+
+  // The fish. rarity: 1 (common) to 5 (legendary). sell: crumbs from Otis.
+  // size: [smallest, biggest] in cm. Optional `when`: night (true: only at
+  // night, false: only by day), rain (only while it rains), season (only in
+  // these seasons). color: for fish tanks.
+  fish: [
+    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 5, size: [8, 20], color: "#6a8ab8" },
+    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 6, size: [10, 25], color: "#c8b050" },
+    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 7, size: [8, 18], color: "#f0a040", when: { night: false } },
+    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 7, size: [6, 14], color: "#c8d0e0", when: { night: true } },
+    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 12, size: [25, 60], color: "#a08050" },
+    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 13, size: [7, 15], color: "#d05a3a" },
+    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 15, size: [20, 50], color: "#e08aa0", when: { season: ["spring", "autumn"] } },
+    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 16, size: [30, 80], color: "#6a6058", when: { night: true } },
+    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 24, size: [25, 60], color: "#5a8a4a" },
+    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 28, size: [40, 100], color: "#7a9a5a" },
+    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 35, size: [30, 70], color: "#f07a3a", when: { night: false } },
+    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 32, size: [40, 110], color: "#4a4a3a", when: { rain: true } },
+    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 60, size: [80, 180], color: "#7a7a80" },
+    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 70, size: [25, 45], color: "#5a6a3a", when: { season: ["summer"] } },
+    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 75, size: [30, 60], color: "#f2c230", when: { season: ["spring", "summer"] } },
+    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 80, size: [20, 40], color: "#d8d0f0", when: { night: true } },
+    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 150, size: [40, 80], color: "#f4f4f8" },
+    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 180, size: [40, 80], color: "#c86bb0", when: { rain: true } },
+    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 180, size: [60, 120], color: "#a8d8f0", when: { season: ["winter"] } },
+    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 250, size: [120, 200], color: "#4a4a44", when: { night: true, rain: true } },
+  ],
+
+  // Junk you might reel in instead. The raccoons buy it for `junkPrice`
+  // crumbs a piece (talk to them by the bins).
+  junkPrice: 3,
+  junk: [
+    { id: "boot", name: "Old Boot", icon: "👢" },
+    { id: "can", name: "Tin Can", icon: "🥫" },
+    { id: "weeds", name: "Pond Weeds", icon: "🌿" },
+    { id: "letter", name: "Soggy Letter", icon: "✉️" },
+    { id: "duck", name: "Rubber Duck", icon: "🦆" },
+  ],
+
+  // --- The bus stop (Update 4) ---
+  // A little bus pulls up at the stop by the road every `everyMinutes`
+  // (on the same clock for everyone), waits `waitSeconds`, and drives off.
+  // Trips (destinations and mini games) plug in later: see bus.js.
+  bus: {
+    everyMinutes: 8,
+    waitSeconds: 40,
+    driver: "Gus",
   },
 
   // The floors the elevator goes to, bottom to top, and what's on each
@@ -163,6 +312,7 @@ const CONFIG = {
     lounge: { style: "carpet", color: "#a8876a" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
+    porch: { style: "planks", color: "#a88258" }, // (the rest of the yard is grass)
   },
 
   // The color of the walls you see inside each room.
@@ -272,6 +422,11 @@ const CONFIG = {
       workshop: { name: "Workshop", icon: "🔨" },
       office: { name: "Office", icon: "💼" },
       bedroom: { name: "Bedroom", icon: "🛏️" },
+      // Outside (Update 4)
+      garden: { name: "Garden", icon: "🌱" },
+      pond: { name: "Pond", icon: "🎣" },
+      campfire: { name: "Campfire", icon: "🔥" },
+      porch: { name: "Porch", icon: "🪑" },
     },
     minutesForLevel: [10, 30, 60, 120, 210, 330, 480, 660, 900, 1200],
   },
@@ -313,6 +468,10 @@ const CONFIG = {
     { id: "dancer", icon: "🕺", name: "Dance Machine", stat: "dances", desc: "Dance {n} time{s}.", goals: [1, 25, 100, 300, 1000, 3000], was: ["jig"] },
     { id: "focus", icon: "⏳", name: "Deep Focus", stat: "focusSessions", desc: "Finish {n} Study focus session{s}.", goals: [1, 5, 15, 40, 100, 250], was: ["focus", "scholar"] },
     { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hour{s} in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
+    // Outdoors (Update 4)
+    { id: "harvester", icon: "🥕", name: "Green Thumb", stat: "harvests", desc: "Harvest {n} crop{s} from the garden.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "angler", icon: "🎣", name: "Angler", stat: "fishCaught", desc: "Catch {n} fish at the pond.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "goodNeighbor", icon: "💧", name: "Good Neighbor", stat: "friendsWatered", desc: "Water a friend's garden bed {n} time{s}.", goals: [1, 10, 30, 80, 200, 500] },
   ],
 
   // --- Titles (Update 3) ---
@@ -340,6 +499,14 @@ const CONFIG = {
     { id: "workaholic", text: "the Workaholic", room: "office", level: 10 },
     { id: "napper", text: "the Napper", room: "bedroom", level: 5 },
     { id: "dreamer", text: "the Dreamer", room: "bedroom", level: 10 },
+    { id: "greenThumb", text: "the Green Thumb", room: "garden", level: 5 },
+    { id: "groundskeeper", text: "the Groundskeeper", room: "garden", level: 10 },
+    { id: "pondside", text: "the Pondside Dreamer", room: "pond", level: 5 },
+    { id: "lakeLegend", text: "Legend of the Pond", room: "pond", level: 10 },
+    { id: "firesideTeller", text: "the Fireside Storyteller", room: "campfire", level: 5 },
+    { id: "fireKeeper", text: "the Fire Keeper", room: "campfire", level: 10 },
+    { id: "porchSitter", text: "the Porch Sitter", room: "porch", level: 5 },
+    { id: "porchPhilosopher", text: "the Porch Philosopher", room: "porch", level: 10 },
     { id: "homebody", text: "the Homebody", tier: "homebody", level: 3 },
     { id: "resident", text: "the Resident", tier: "homebody", level: 5 },
     { id: "hearthKeeper", text: "the Hearth Keeper", tier: "homebody", level: 6 },
@@ -362,6 +529,15 @@ const CONFIG = {
     { id: "sleepyhead", text: "the Sleepyhead", tier: "rested", level: 3 },
     { id: "snoozer", text: "the Snoozer Supreme", tier: "rested", level: 6 },
     { id: "raccoonFriend", text: "Friend of Raccoons", achievement: "whoAreYou" },
+    { id: "gardener", text: "the Gardener", tier: "harvester", level: 3 },
+    { id: "harvestMoon", text: "the Harvest Moon", tier: "harvester", level: 6 },
+    { id: "goodNeighbor", text: "the Good Neighbor", tier: "goodNeighbor", level: 3 },
+    { id: "rainmaker", text: "the Rainmaker", tier: "goodNeighbor", level: 6 },
+    { id: "pumpkinChampion", text: "the Pumpkin Champion", achievement: "greatPumpkin" },
+    { id: "angler", text: "the Angler", tier: "angler", level: 3 },
+    { id: "masterAngler", text: "the Master Angler", tier: "angler", level: 6 },
+    { id: "fishWhisperer", text: "the Fish Whisperer", achievement: "legendCatch" },
+    { id: "treasureHunter", text: "the Treasure Hunter", achievement: "junkDealer" },
     { id: "nightOwl", text: "the Night Owl", achievement: "nightOwl" },
     { id: "earlyBird", text: "the Early Bird", achievement: "earlyBird" },
   ],

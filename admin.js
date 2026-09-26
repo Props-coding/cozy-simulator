@@ -11,6 +11,10 @@ import { addCrumbs, setCrumbs, grantAllShopItems } from "./shop.js";
 import { unlockAllQuietly, resetAchievements } from "./achievements.js";
 import { grantAllDecor, grantRoomy } from "./home.js";
 import { playClickSound, playCrumbSound } from "./audio.js";
+import { previewWeather } from "./weather.js";
+import { ripenGardenPreview } from "./garden.js";
+import { stockBasket } from "./basket.js";
+import { addFishingXp } from "./fishing.js";
 
 const button = document.getElementById("admin-button");
 const panel = document.getElementById("admin-panel");
@@ -86,6 +90,40 @@ for (const button of panel.querySelectorAll("[data-season]")) {
     button.blur();
   });
 }
+
+// --- Weather ---
+// Try out rain, snow, night and so on (on this computer only).
+for (const button of panel.querySelectorAll("[data-weather]")) {
+  button.addEventListener("click", () => {
+    const pick = button.dataset.weather || null;
+    previewWeather(pick);
+    say(pick ? `Showing ${pick} outside (just for you). "Real weather" goes back.` : "Back to the real weather.");
+    playClickSound();
+    button.blur();
+  });
+}
+
+// --- Garden ---
+// Ripen all: shows every bed as ripe on this computer (so you can try
+// harvesting without waiting). Fill my basket: 5 of every seed and crop.
+document.getElementById("admin-ripen").addEventListener("click", (e) => {
+  ripenGardenPreview();
+  say("Every garden bed looks ripe on this computer until the garden next refreshes (about 30 seconds).");
+  playClickSound();
+  e.currentTarget.blur();
+});
+document.getElementById("admin-fishxp").addEventListener("click", (e) => {
+  addFishingXp(200);
+  say("+200 fishing XP (for trying out rods and bait).");
+  playClickSound();
+  e.currentTarget.blur();
+});
+document.getElementById("admin-basket").addEventListener("click", (e) => {
+  stockBasket();
+  say("Your basket now has at least 5 of everything.");
+  playCrumbSound();
+  e.currentTarget.blur();
+});
 
 // --- Jump to a room ---
 const roomSelect = document.getElementById("admin-room");

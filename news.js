@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.59",
+    title: "Outdoors: the yard, live weather, a garden, fishing and more",
+    text: "Step out through the kitchen door (bottom of Dinner) or the front door (bottom of the elevator lobby) into a big yard. The weather out there is real: rain, snow, fog, storms and sunshine from our hometown, with umbrellas when it rains and a weather chip in the header. Buy seeds from Hazel the hedgehog and grow crops in the shared garden (anyone can water anyone's bed, and rain waters them all), then sell your harvest. Fish at the pond with rods and bait from Otis the otter: better bait finds rarer fish, your fishing level unlocks better rods, and fish can swim in your bedroom fish tank. At night the campfire lights itself, and voice is on around it. There's a porch swing for two, a bus stop with a little bus on a schedule (trips coming soon), and the raccoons have moved out to a shady spot by the bins, where they'll buy any junk you fish up. Your new basket (🧺) holds it all.",
+  },
+  {
     build: "0.52",
     title: "Style & Progression: faces, accessories, room levels, tiers and titles",
     text: "Your wardrobe has a new Face tab: pick your eyes, mouth, cheeks and freckles. The raccoons restocked with scarves, backpacks (yes, a jetpack) and earrings, plus three new glasses. Rooms now level up the more time you spend in them (Study Lv. 1 to 10 and so on), shown on your profile card. Many achievements now have tiers, from Bronze to Legend, with crumbs for every tier and progress bars on the trophy shelf. And you can earn titles like \"the Scholar\" and wear one under your name tag, picked in your wardrobe's Titles tab.",
