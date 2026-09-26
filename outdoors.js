@@ -531,32 +531,60 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.stroke();
   },
 
-  // A door in the house's back wall, standing open: warm light inside, the
-  // door swung in, a little roof over it.
+  // A door in the house's back wall, in the same style as the bedroom
+  // doors: a thin wooden frame, a painted door with two tall panels and a
+  // brass knob, and a little roof over it. The front door (a real
+  // doorway: walk up into it) fills in the wall either side of it; the
+  // side door is just for looks, on the wall itself.
   yardDoor(ctx, f) {
     const a = toScreen(f.x, f.y);
-    const w = f.w * TILE, top = a.y - WALL_HEIGHT + 2, x = a.x + 6, dw = w - 12;
-    drawDoorFrame(ctx, x, top + 2, dw, WALL_HEIGHT - 2);
-    const inside = ctx.createLinearGradient(0, top, 0, a.y);
-    inside.addColorStop(0, "#f2c98a");
-    inside.addColorStop(1, "#d99a58");
-    ctx.fillStyle = inside;
-    ctx.fillRect(x, top + 2, dw, WALL_HEIGHT - 2);
-    // The door, open against the frame (seen edge-on, a narrow panel).
-    ctx.fillStyle = f.door === "kitchen" ? "#5f8a6a" : "#7a4a3a";
-    ctx.fillRect(x, top + 2, 8, WALL_HEIGHT - 2);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
-    ctx.fillRect(x, top + 2, 1.5, WALL_HEIGHT - 2);
+    const w = f.w * TILE, bottom = a.y, top = a.y - WALL_HEIGHT;
+    if (f.door === "front") {
+      // The wall around the door: siding below, the wooden top above.
+      ctx.fillStyle = "#a07c55";
+      ctx.fillRect(a.x, top, w, WALL_HEIGHT);
+      ctx.fillStyle = "rgba(60, 35, 15, 0.28)";
+      for (let y = top + 6; y < bottom - 2; y += 7) ctx.fillRect(a.x, y, w, 1.5);
+      ctx.fillStyle = "rgba(255, 235, 200, 0.12)";
+      for (let y = top + 1; y < bottom - 2; y += 7) ctx.fillRect(a.x, y, w, 1);
+      ctx.fillStyle = WOOD;
+      ctx.fillRect(a.x, top - WALL_THICKNESS * TILE, w, WALL_THICKNESS * TILE);
+    }
+    const dw = 0.95 * TILE, x = a.x + (w - dw) / 2, dtop = top + 5, dh = bottom - dtop;
+    const color = f.door === "front" ? "#8a4a3a" : "#5f8a6a";
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
+    ctx.fillRect(x, dtop + 2, dw + 4, dh - 2);
+    ctx.fillStyle = "#6b4630"; // frame
+    ctx.fillRect(x - 2, dtop - 2, dw + 4, dh + 2);
+    ctx.fillStyle = "#8a5c3c";
+    ctx.fillRect(x - 2, dtop - 2, dw + 4, 1.5);
+    const panel = ctx.createLinearGradient(0, dtop, 0, bottom);
+    panel.addColorStop(0, shadeColor(color, 22));
+    panel.addColorStop(1, shadeColor(color, -18));
+    ctx.fillStyle = panel;
+    ctx.fillRect(x, dtop, dw, dh);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.2)"; // two tall inset panels
+    ctx.lineWidth = 1;
+    const pw = (dw - 11) / 2;
+    ctx.strokeRect(x + 4, dtop + 5, pw, dh - 9);
+    ctx.strokeRect(x + 7 + pw, dtop + 5, pw, dh - 9);
+    ctx.fillStyle = "#b8923a"; // the knob, on a little brass plate
+    roundRectPath(ctx, x + dw - 5.5, dtop + dh * 0.5, 3, 6, 1);
+    ctx.fill();
+    ctx.fillStyle = "#e0b84c";
+    ctx.beginPath();
+    ctx.arc(x + dw - 4, dtop + dh * 0.5 + 3, 1.6, 0, Math.PI * 2);
+    ctx.fill();
     // A small roof over the door.
     ctx.fillStyle = "#6a3f33";
     ctx.beginPath();
-    ctx.moveTo(x - 8, top + 2);
-    ctx.lineTo(x + dw / 2, top - 10);
-    ctx.lineTo(x + dw + 8, top + 2);
+    ctx.moveTo(x - 8, dtop - 1);
+    ctx.lineTo(x + dw / 2, dtop - 12);
+    ctx.lineTo(x + dw + 8, dtop - 1);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = "#8a5242";
-    ctx.fillRect(x - 8, top, dw + 16, 3);
+    ctx.fillRect(x - 8, dtop - 3, dw + 16, 3);
   },
 
   // A window in the house's back wall, glowing warm from the rooms inside,
@@ -1888,7 +1916,7 @@ FURNITURE_DRAWERS.porchSwing = (ctx, f) => {
 // bus's left end, grid units), untilNext (seconds until it next arrives),
 // leavesIn (seconds, while waiting) }.
 const BUS_LENGTH = 4.4;
-const BUS_STOP_X = 18.4; // where its left end stops, by the shelter
+const BUS_STOP_X = 18.8; // where its left end stops, by the shelter
 const BUS_DRIVE = 7; // seconds to drive in (or out)
 function busState(now = Date.now()) {
   const period = Math.max(2, CONFIG.bus.everyMinutes) * 60;
@@ -2083,5 +2111,164 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.font = "600 6px 'Quicksand', sans-serif";
     ctx.fillText("Trips coming soon", b.x, b.y - 34);
     ctx.textAlign = "left";
+  },
+});
+
+// --- Yard odds and ends (the cleanup pass) ---
+// A scarecrow and a watering station in the garden, a birdbath, and the
+// mailbox by the gate. Each stands on the grass with a soft shadow, lit
+// from above.
+Object.assign(FURNITURE_DRAWERS, {
+  // A scarecrow on a post: a burlap head with button eyes and a stitched
+  // smile under a straw hat, a patched plaid shirt, and straw hands.
+  scarecrow(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h * 0.6);
+    const sway = Math.sin(performance.now() / 1400 + f.x) * 0.03;
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(sway);
+    ctx.fillStyle = "#7a5238"; // the post and crossbar
+    ctx.fillRect(-1.5, -40, 3, 40);
+    ctx.fillRect(-16, -30, 32, 2.5);
+    ctx.fillStyle = "#e3c26a"; // straw hands
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 4; k++) ctx.fillRect(side * 16 - (side < 0 ? 4 : 0) + side * k * 0.5, -31 + k * 1.6, 4, 1.2);
+    }
+    ctx.fillStyle = "#c0554a"; // shirt
+    roundRectPath(ctx, -11, -32, 22, 20, 4);
+    ctx.fill();
+    ctx.fillStyle = "rgba(90, 30, 25, 0.35)"; // plaid
+    for (const px of [-6, 0, 6]) ctx.fillRect(px, -32, 1.5, 20);
+    for (const py of [-26, -19]) ctx.fillRect(-11, py, 22, 1.5);
+    ctx.fillStyle = "#6f8a6a"; // a patch
+    ctx.fillRect(3, -22, 5, 5);
+    ctx.fillStyle = "#d9b77a"; // burlap head
+    ctx.beginPath();
+    ctx.arc(0, -39, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3a2a1e";
+    ctx.beginPath();
+    ctx.arc(-2.6, -40, 1.2, 0, Math.PI * 2);
+    ctx.arc(2.6, -40, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#3a2a1e";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.arc(0, -38, 3, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    ctx.fillStyle = "#c9a24a"; // straw hat
+    ctx.fillRect(-11, -45, 22, 2.5);
+    roundRectPath(ctx, -6, -52, 12, 8, 3);
+    ctx.fill();
+    ctx.fillStyle = "#c0554a";
+    ctx.fillRect(-6, -46.5, 12, 1.5);
+    ctx.restore();
+  },
+
+  // A wooden rain barrel (water on top) with two watering cans beside it.
+  wateringStation(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const barrel = toScreen(f.x + 0.3, f.y + f.h);
+    const bw = 22, bh = 24;
+    ctx.fillStyle = "#8a5c3c";
+    roundRectPath(ctx, barrel.x - bw / 2, barrel.y - bh, bw, bh, 4);
+    ctx.fill();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+    for (const sx of [-5, 0, 5]) ctx.fillRect(barrel.x + sx, barrel.y - bh + 2, 1, bh - 3);
+    ctx.fillStyle = "#4a4a4a"; // hoops
+    ctx.fillRect(barrel.x - bw / 2, barrel.y - bh + 5, bw, 2);
+    ctx.fillRect(barrel.x - bw / 2, barrel.y - 7, bw, 2);
+    ctx.fillStyle = "#6fa8c0"; // water
+    ctx.beginPath();
+    ctx.ellipse(barrel.x, barrel.y - bh + 1, bw / 2 - 1, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+    ctx.fillRect(barrel.x - 4, barrel.y - bh, 5, 1);
+    for (const [cx, color] of [[0.72, "#6f9a5a"], [0.95, "#9aa4ae"]]) {
+      const c = toScreen(f.x + cx, f.y + f.h);
+      ctx.fillStyle = shadeColor(color, -15); // spout
+      ctx.save();
+      ctx.translate(c.x + 5, c.y - 8);
+      ctx.rotate(-0.6);
+      ctx.fillRect(0, -1, 9, 2.2);
+      ctx.restore();
+      ctx.fillStyle = color; // body
+      roundRectPath(ctx, c.x - 6, c.y - 12, 12, 12, 3);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.fillRect(c.x - 5, c.y - 11, 10, 2);
+      ctx.strokeStyle = shadeColor(color, -25); // handle
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y - 12, 4.5, Math.PI, 0);
+      ctx.stroke();
+    }
+  },
+
+  // A stone birdbath: a pedestal and a shallow bowl of water, with a
+  // little bluebird on the rim (except in winter, when the water's ice).
+  birdbath(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h * 0.6);
+    ctx.fillStyle = "#a8a196"; // pedestal
+    ctx.beginPath();
+    ctx.moveTo(b.x - 7, b.y);
+    ctx.lineTo(b.x - 3, b.y - 16);
+    ctx.lineTo(b.x + 3, b.y - 16);
+    ctx.lineTo(b.x + 7, b.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#948d82";
+    ctx.fillRect(b.x - 8, b.y - 2, 16, 3);
+    ctx.fillStyle = "#b8b1a6"; // bowl
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 18, 14, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = yardSeason() === "winter" ? "#dfeef4" : "#8fc3d6"; // water (or ice)
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 18.5, 11, 3.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.fillRect(b.x - 5, b.y - 20, 4, 1);
+    if (yardSeason() !== "winter") {
+      const bx = b.x + 10, by = b.y - 22 + (Math.sin(performance.now() / 700 + f.x) > 0.8 ? -1 : 0);
+      ctx.fillStyle = "#5a8ac8"; // a bluebird
+      ctx.beginPath();
+      ctx.ellipse(bx, by, 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(bx + 3, by - 2.5, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e8883a";
+      ctx.fillRect(bx + 5, by - 2.8, 2, 1);
+      ctx.fillStyle = "#f2b8a0";
+      ctx.beginPath();
+      ctx.ellipse(bx + 0.5, by + 0.8, 2.2, 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // A mailbox on a wooden post, with its little red flag up.
+  mailbox(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h * 0.6);
+    ctx.fillStyle = "#7a5238"; // post
+    ctx.fillRect(b.x - 1.5, b.y - 20, 3, 20);
+    ctx.fillStyle = "#5a7a9a"; // box, with a rounded top
+    ctx.beginPath();
+    ctx.moveTo(b.x - 9, b.y - 20);
+    ctx.lineTo(b.x - 9, b.y - 27);
+    ctx.arc(b.x, b.y - 27, 9, Math.PI, 0);
+    ctx.lineTo(b.x + 9, b.y - 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.fillRect(b.x - 7, b.y - 31, 6, 2);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+    ctx.fillRect(b.x - 9, b.y - 22, 18, 2);
+    ctx.fillStyle = "#c0554a"; // the flag
+    ctx.fillRect(b.x + 9, b.y - 33, 1.5, 11);
+    ctx.fillRect(b.x + 9, b.y - 33, 6, 4);
   },
 });

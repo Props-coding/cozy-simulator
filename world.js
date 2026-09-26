@@ -42,8 +42,7 @@ function floorOf(y) {
 // The yard (Update 4): the outdoors behind the house, on its own map one
 // "floor" above the ground floor on the grid (floor -1), the same size as a
 // floor so the view doesn't change size when you step outside. You get
-// there through the kitchen door (the bottom of Dinner) or the front door
-// (the bottom of the elevator lobby). In the yard, the house's back wall
+// there through the front door (the bottom of the elevator lobby). In the yard, the house's back wall
 // runs along the top, with a porch along it.
 const YARD_FLOOR = -1;
 const YARD = YARD_FLOOR * UPSTAIRS; // add this to a yard spot's y (so "YARD + 2" is 2 tiles down the yard)
@@ -82,10 +81,7 @@ const BASE_ROOMS = [
 // so they're made in buildHouse instead.)
 const BASE_WALLS = [
   // Outer walls
-  // bottom (drawn short so it doesn't hide the rooms), with the kitchen
-  // door out to the yard at the bottom of Dinner (x 14.2 to 15.8)
-  { x: -WALL_THICKNESS, y: 11, w: 14.2 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
-  { x: 15.8, y: 11, w: 18 - 15.8 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
+  { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
   { x: -WALL_THICKNESS, y: -5.8, w: WALL_THICKNESS, h: 17.2 }, // left, from the Library down to the bottom
   { x: HOUSE_WIDTH, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 3.2 + WALL_THICKNESS }, // right, the hallway's end
 
@@ -435,15 +431,14 @@ const YARD_ROOMS = [
   { id: "campfire", name: CONFIG.roomNames.campfire, rect: { x: 0, y: YARD - 5.4, w: 8.6, h: 5.6 }, outdoor: true },
   { id: "garden", name: CONFIG.roomNames.garden, rect: { x: 12.6, y: YARD - 1.6, w: 11.4, h: 6.4 }, outdoor: true },
   { id: "pond", name: CONFIG.roomNames.pond, rect: { x: 0, y: YARD + 2.4, w: 10.6, h: 7.2 }, outdoor: true },
-  { id: "busStop", name: CONFIG.roomNames.busStop, rect: { x: 16.2, y: YARD + 6.8, w: 7.8, h: 3.2 }, outdoor: true },
+  { id: "busStop", name: CONFIG.roomNames.busStop, rect: { x: 16.2, y: YARD + 6.8, w: 7.8, h: 3.5 }, outdoor: true },
 ];
-const YARD_AREA = { id: "yard", name: CONFIG.roomNames.yard, rect: { x: 0, y: YARD - 5.4, w: HOUSE_WIDTH, h: 15.4 }, outdoor: true };
+const YARD_AREA = { id: "yard", name: CONFIG.roomNames.yard, rect: { x: 0, y: YARD - 5.4, w: HOUSE_WIDTH, h: 15.7 }, outdoor: true };
 
 // The doors between the house and the yard. `house` is the doorway in the
 // house's wall (x its left edge, top and bottom the wall's edges), `yard`
 // the doorway in the house's back wall seen from the yard.
 const YARD_DOORS = [
-  { id: "kitchen", name: "Kitchen door", house: { x: 14.2, top: 11, bottom: 11 + WALL_THICKNESS }, yardX: 14.2 },
   { id: "front", name: "Front door", house: { x: 20.2, top: 7 - WALL_THICKNESS / 2, bottom: 7 + WALL_THICKNESS / 2 }, yardX: 20.2 },
 ];
 const YARD_WALL_Y = YARD - 5.4; // the bottom edge of the house's back wall, seen from the yard
@@ -479,8 +474,8 @@ function yardDoorNear(player) {
 // The pond: an oval of water. It's solid (you can't walk on water), built
 // from thin slices so its edge follows the oval, except where the dock
 // reaches out over it from the east bank.
-const POND = { cx: 4.8, cy: YARD + 5.9, rx: 3.6, ry: 2.4 };
-const DOCK = { x: 7.0, y: YARD + 5.5, w: 2.6, h: 0.8 };
+const POND = { cx: 4.6, cy: YARD + 5.9, rx: 3.0, ry: 2.0 };
+const DOCK = { x: 6.3, y: YARD + 5.5, w: 2.6, h: 0.8 };
 function pondSolids() {
   const slices = [];
   for (let y = POND.cy - POND.ry + 0.15; y < POND.cy + POND.ry - 0.15; y += 0.25) {
@@ -495,14 +490,13 @@ function pondSolids() {
 }
 
 // The yard's edges (invisible: the fence and trees show where they are),
-// the house's back wall with the two doors in it, and the pond.
+// the house's back wall with the front door in it, and the pond.
 const YARD_WALLS = [
   { x: -WALL_THICKNESS, y: YARD - 5.8, w: WALL_THICKNESS, h: 16, hidden: true }, // west edge
   { x: HOUSE_WIDTH, y: YARD - 5.8, w: WALL_THICKNESS, h: 16, hidden: true }, // east edge
-  { x: -WALL_THICKNESS, y: YARD + 10, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true }, // the curb (the road is beyond)
-  // The house's back wall, with the kitchen door and the front door in it.
-  { x: -WALL_THICKNESS, y: YARD - 5.8, w: 14.2 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 15.8, y: YARD - 5.8, w: 20.2 - 15.8, h: WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: YARD + 10.3, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true }, // the curb (the road is beyond)
+  // The house's back wall, with the front door in it.
+  { x: -WALL_THICKNESS, y: YARD - 5.8, w: 20.2 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 21.8, y: YARD - 5.8, w: HOUSE_WIDTH - 21.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   ...pondSolids(),
 ];
@@ -525,10 +519,11 @@ const YARD_PATHS = [
   { x: 8.9, y: -2.4, w: 0.9, h: 8.2 }, // down to the pond's dock
   { x: 17.4, y: 4.6, w: 1.2, h: 2.6 }, // out of the garden's bottom gate
   { x: 9.2, y: 6.6, w: 14.2, h: 0.9 }, // along the bottom, from the pond to the bus stop
+  { x: 17.4, y: 7.2, w: 1.2, h: 2.5 }, // through the gate in the fence to the sidewalk
 ];
 
 // The garden beds (yard spots): [x, local y], each 1.7 wide and 1.0 deep.
-const GARDEN_BEDS = [13.2, 15.4, 19.3, 21.5].flatMap((x) => [-0.75, 1.0, 2.75].map((y) => ({ x, y: YARD + y, w: 1.7, h: 1.0 })))
+const GARDEN_BEDS = [13.5, 15.6, 18.7, 20.8].flatMap((x) => [-0.75, 1.0, 2.75].map((y) => ({ x, y: YARD + y, w: 1.7, h: 1.0 })))
   .sort((a, b) => a.y - b.y || a.x - b.x);
 
 // Where you'd cast from (a spot at the pond's edge or on the dock), and
@@ -573,19 +568,21 @@ function gardenBedInReach(player) {
 }
 
 const YARD_FURNITURE = [
-  // The house's back wall: the two doors (walk up into one to go in),
-  // windows glowing warm from inside, and a lantern by each door.
-  { kind: "yardDoor", x: 14.2, y: YARD_WALL_Y, w: 1.6, door: "kitchen", solid: false },
+  // The house's back wall: the front door on the porch (walk up into it
+  // to go in), a side door on the west section (just for looks: it's
+  // locked), windows glowing warm from inside, and lanterns by the doors.
   { kind: "yardDoor", x: 20.2, y: YARD_WALL_Y, w: 1.6, door: "front", solid: false },
+  { kind: "yardDoor", x: 4.9, y: YARD_WALL_Y, w: 1.6, door: "side", solid: false },
   { kind: "houseWindow", x: 0.9, y: YARD_WALL_Y, w: 1.2, solid: false },
-  { kind: "houseWindow", x: 3.5, y: YARD_WALL_Y, w: 1.2, solid: false },
-  { kind: "houseWindow", x: 6.1, y: YARD_WALL_Y, w: 1.2, solid: false },
-  { kind: "houseWindow", x: 8.7, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 3.0, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 7.2, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 9.6, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 11.7, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 14.4, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 17.4, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 22.5, y: YARD_WALL_Y, w: 1.2, solid: false },
-  { kind: "porchLantern", x: 13.55, y: YARD_WALL_Y, solid: false },
-  { kind: "porchLantern", x: 16.15, y: YARD_WALL_Y, solid: false },
+  { kind: "porchLantern", x: 4.55, y: YARD_WALL_Y, solid: false },
+  { kind: "porchLantern", x: 6.85, y: YARD_WALL_Y, solid: false },
   { kind: "porchLantern", x: 19.55, y: YARD_WALL_Y, solid: false },
   { kind: "porchLantern", x: 22.15, y: YARD_WALL_Y, solid: false },
 
@@ -595,7 +592,6 @@ const YARD_FURNITURE = [
   { kind: "porchRail", x: 18.8, y: YARD - 3.2, w: 5.2, h: 0.2 },
   { kind: "porchRailSide", x: 11.5, y: YARD - 5.4, w: 0.2, h: 2.4 },
   { kind: "porchSteps", x: 17.2, y: YARD - 3.1, w: 1.6, h: 0.5, solid: false },
-  { kind: "doormat", x: 14.45, y: YARD - 5.3, w: 1.1, h: 0.45, solid: false },
   { kind: "doormat", x: 20.45, y: YARD - 5.3, w: 1.1, h: 0.45, solid: false },
   { kind: "rockingChair", x: 23.0, y: YARD - 4.95, w: 0.8, h: 0.6 },
   // A porch swing for two, hanging on chains at the porch's west end
@@ -604,9 +600,9 @@ const YARD_FURNITURE = [
   { kind: "fern", x: 16.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
   { kind: "snakePlant", x: 19.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
 
-  // Flower beds along the house west of the porch.
-  { kind: "flowerBed", x: 0.2, y: YARD - 5.35, w: 5.3, h: 0.5 },
-  { kind: "flowerBed", x: 6.1, y: YARD - 5.35, w: 5.2, h: 0.5 },
+  // Flower beds along the house west of the porch, either side of the side door.
+  { kind: "flowerBed", x: 0.2, y: YARD - 5.35, w: 4.1, h: 0.5 },
+  { kind: "flowerBed", x: 7.1, y: YARD - 5.35, w: 4.2, h: 0.5 },
 
   // The garden: a picket fence all round, with a gate at the top (under
   // the porch steps) and at the bottom (toward the bus stop).
@@ -619,26 +615,38 @@ const YARD_FURNITURE = [
 
   // The pond's dock, reeds and a few stones.
   { kind: "dock", ...DOCK, solid: false },
-  { kind: "reeds", x: 1.0, y: YARD + 4.3, w: 0.6, h: 0.4, solid: false },
-  { kind: "reeds", x: 1.6, y: YARD + 7.9, w: 0.6, h: 0.4, solid: false },
-  { kind: "reeds", x: 6.9, y: YARD + 7.6, w: 0.6, h: 0.4, solid: false },
-  { kind: "pondStones", x: 2.2, y: YARD + 3.3, w: 0.8, h: 0.4 },
+  { kind: "reeds", x: 2.0, y: YARD + 4.3, w: 0.6, h: 0.4, solid: false },
+  { kind: "reeds", x: 2.6, y: YARD + 7.3, w: 0.6, h: 0.4, solid: false },
+  { kind: "reeds", x: 5.9, y: YARD + 7.4, w: 0.6, h: 0.4, solid: false },
+  { kind: "pondStones", x: 2.6, y: YARD + 3.3, w: 0.8, h: 0.4 },
+  // A log bench on the bank by the dock, looking out over the water.
+  { kind: "logSeat", x: 7.1, y: YARD + 3.95, w: 1.6, h: 0.45, facing: "down" },
 
-  // The yard's west and south edges: a rustic fence (open at the bus stop).
+  // The yard's west and south edges: a rustic fence, with a gate in the
+  // bottom one where the path goes out to the sidewalk and the bus stop.
   fenceRun(0.1, -4.6, 0.1, 9.3, "rail"),
-  fenceRun(0.1, 9.3, 16.2, 9.3, "rail"),
+  fenceRun(0.1, 9.3, 17.2, 9.3, "rail"),
+  fenceRun(18.8, 9.3, 23.9, 9.3, "rail"),
 
   // Trees (big and leafy, or pines), bushes and a few flowers.
-  { kind: "yardTree", x: 9.3, y: YARD - 3.75, w: 1.0, h: 0.55, n: 0 },
-  { kind: "yardTree", x: 0.4, y: YARD + 0.55, w: 1.0, h: 0.55, n: 1 },
+  { kind: "yardTree", x: 6.7, y: YARD + 1.0, w: 1.0, h: 0.55, n: 0 },
+  { kind: "yardTree", x: 1.0, y: YARD + 0.55, w: 1.0, h: 0.55, n: 1 },
   { kind: "pineTree", x: 11.2, y: YARD + 2.6, w: 0.9, h: 0.5, n: 2 },
-  { kind: "yardTree", x: 10.2, y: YARD + 8.4, w: 1.0, h: 0.55, n: 3 },
-  { kind: "pineTree", x: 0.6, y: YARD + 9.3, w: 0.9, h: 0.5, n: 4 },
+  { kind: "yardTree", x: 0.6, y: YARD + 8.3, w: 1.0, h: 0.55, n: 3 },
   { kind: "pineTree", x: 23.0, y: YARD + 5.9, w: 0.9, h: 0.5, n: 6 },
   { kind: "bush", x: 12.9, y: YARD + 5.4, w: 0.9, h: 0.55, n: 1 },
-  { kind: "bush", x: 7.6, y: YARD - 0.3, w: 0.9, h: 0.55, n: 2 },
+  { kind: "bush", x: 4.1, y: YARD + 1.4, w: 0.9, h: 0.55, n: 2 },
   { kind: "bush", x: 20.6, y: YARD + 5.3, w: 0.9, h: 0.55, n: 3 },
-  { kind: "wildflowers", x: 3.1, y: YARD + 9.0, w: 1.1, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 3.1, y: YARD + 8.7, w: 1.1, h: 0.3, solid: false },
+  // A little life in the open grass (kept light): flowers and a rock
+  // between the campfire and the pond; a birdbath, flowers, rocks and the
+  // mailbox by the gate in the bottom right.
+  { kind: "wildflowers", x: 2.0, y: YARD + 2.3, w: 1.1, h: 0.3, solid: false },
+  { kind: "pondStones", x: 5.4, y: YARD + 2.6, w: 0.7, h: 0.35 },
+  { kind: "mailbox", x: 19.1, y: YARD + 8.55, w: 0.4, h: 0.3 },
+  { kind: "wildflowers", x: 19.8, y: YARD + 8.75, w: 0.9, h: 0.3, solid: false },
+  { kind: "birdbath", x: 21.5, y: YARD + 8.05, w: 0.6, h: 0.4 },
+  { kind: "pondStones", x: 23.1, y: YARD + 7.8, w: 0.7, h: 0.35 },
   { kind: "wildflowers", x: 12.2, y: YARD + 3.6, w: 0.5, h: 0.3, solid: false },
   { kind: "wildflowers", x: 21.3, y: YARD + 6.0, w: 1.0, h: 0.3, solid: false },
 
@@ -646,6 +654,10 @@ const YARD_FURNITURE = [
   // two columns each side of the middle path, three rows, with room to
   // walk between the rows.
   ...GARDEN_BEDS.map((b, n) => ({ kind: "gardenPlot", ...b, bed: n })),
+  // A scarecrow keeping watch, and a watering station (a rain barrel with
+  // cans) by the east fence.
+  { kind: "scarecrow", x: 22.8, y: YARD + 0.6, w: 0.7, h: 0.35 },
+  { kind: "wateringStation", x: 22.6, y: YARD + 2.8, w: 1.0, h: 0.5 },
 
   // Hazel the hedgehog's seed stand, just outside the garden's west fence
   // (walk up and press E to buy seeds or sell your harvest; see garden.js).
@@ -676,8 +688,8 @@ const YARD_FURNITURE = [
   // The bus stop by the road: a shelter with a bench (press E to sit and
   // wait), the bus stop sign with its timetable, and the bus itself, which
   // drives along the road on a schedule (see outdoors.js and bus.js).
-  { kind: "busShelter", x: 19.0, y: YARD + 8.25, w: 2.5, h: 0.8 },
-  { kind: "busSign", x: 22.2, y: YARD + 8.95, w: 0.3, h: 0.2 },
+  { kind: "busShelter", x: 19.4, y: YARD + 9.5, w: 2.5, h: 0.75 },
+  { kind: "busSign", x: 22.6, y: YARD + 10.0, w: 0.3, h: 0.2 },
   { kind: "bus", x: 0, y: YARD + 10.7, w: HOUSE_WIDTH, h: 0.5, solid: false },
 
   // Signposts, so you know where you are.
