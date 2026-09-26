@@ -1826,3 +1826,57 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.stroke();
   },
 });
+
+// --- The porch swing (Update 4, step 6) ---
+// How far the swing (and whoever's on it) has swung toward or away from
+// you right now, in grid units. Still when nobody's sitting on it; eases
+// in and out so it doesn't jerk.
+let swingEnergy = 0;
+let swingLast = performance.now();
+function porchSwingSway() {
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - swingLast) / 1000);
+  swingLast = now;
+  swingEnergy += ((globalThis.porchSwingBusy ? 1 : 0) - swingEnergy) * (1 - Math.pow(0.3, dt));
+  return Math.sin(now / 1000 * 1.7) * 0.13 * swingEnergy;
+}
+
+FURNITURE_DRAWERS.porchSwing = (ctx, f) => {
+  const sway = porchSwingSway() * TILE; // pixels, toward (+) or away from (-) you
+  drawShadow(ctx, f.x, f.y, f.w, f.h);
+  const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+  const w = b.x - a.x;
+  const seatY = b.y - 10 + sway, backTop = seatY - 26;
+  // Chains up to the porch ceiling (off the top of the view), a little
+  // longer or shorter as it swings.
+  ctx.strokeStyle = "#6a6a70";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 2]);
+  for (const x of [a.x + 6, b.x - 6]) {
+    ctx.beginPath();
+    ctx.moveTo(x, a.y - 58);
+    ctx.lineTo(x, backTop + 2);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // The back: slats between two rails.
+  ctx.fillStyle = "#b08a5e";
+  ctx.fillRect(a.x + 4, backTop, w - 8, 4);
+  for (let x = a.x + 8; x < b.x - 8; x += 9) ctx.fillRect(x, backTop + 3, 5, 18);
+  ctx.fillStyle = "#9a7650";
+  ctx.fillRect(a.x + 4, backTop + 18, w - 8, 3);
+  // The seat, with a cushion and a little throw pillow.
+  ctx.fillStyle = "#8a6444";
+  ctx.fillRect(a.x + 2, seatY - 4, w - 4, 9);
+  ctx.fillStyle = "#c8d8b8";
+  roundRectPath(ctx, a.x + 5, seatY - 7, w - 10, 7, 3);
+  ctx.fill();
+  ctx.fillStyle = "#e0a0a0";
+  roundRectPath(ctx, b.x - 22, backTop + 8, 13, 12, 4);
+  ctx.fill();
+  // Armrests.
+  ctx.fillStyle = "#7a5638";
+  for (const x of [a.x + 2, b.x - 7]) ctx.fillRect(x, seatY - 16, 5, 14);
+  ctx.fillStyle = "rgba(255, 240, 210, 0.25)";
+  ctx.fillRect(a.x + 4, backTop, w - 8, 1.5);
+};

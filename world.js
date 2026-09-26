@@ -570,6 +570,9 @@ const YARD_FURNITURE = [
   { kind: "doormat", x: 14.45, y: YARD - 5.3, w: 1.1, h: 0.45, solid: false },
   { kind: "doormat", x: 20.45, y: YARD - 5.3, w: 1.1, h: 0.45, solid: false },
   { kind: "rockingChair", x: 23.0, y: YARD - 4.95, w: 0.8, h: 0.6 },
+  // A porch swing for two, hanging on chains at the porch's west end
+  // (press E by it to sit; it sways gently while someone's on it).
+  { kind: "porchSwing", x: 11.95, y: YARD - 4.75, w: 1.9, h: 0.55 },
   { kind: "fern", x: 16.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
   { kind: "snakePlant", x: 19.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
 
@@ -752,6 +755,7 @@ const SEATS = {
   beanbag: [{ x: 0.5, y: 0.8, face: "front" }],
   pouf: [{ x: 0.5, y: 0.8, face: "front" }],
   mushroomStool: [{ x: 0.5, y: 0.8, face: "front" }],
+  porchSwing: [{ x: 0.28, y: 0.9, face: "front" }, { x: 0.72, y: 0.9, face: "front" }],
   logSeat: [{ x: 0.28, y: 0.5, face: "own" }, { x: 0.72, y: 0.5, face: "own" }], // the campfire's logs (facing the fire)
   floorCushions: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],
   // Beds: sit on the edge, at the foot.

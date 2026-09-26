@@ -471,7 +471,8 @@ function updatePrivateRooms() {
   // If the room you were standing in just vanished (its owner left), pop
   // back to the middle of the hallway (or landing).
   const box = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
-  if (!isInsideARoom(player) || SOLIDS.some((s) => rectsOverlap(box, s))) Object.assign(player, spawnPoint(floorOf(player.y)));
+  // (Sitting on a bench, log or swing overlaps it on purpose, so that's fine.)
+  if (!isInsideARoom(player) || (!mySeat && SOLIDS.some((s) => rectsOverlap(box, s)))) Object.assign(player, spawnPoint(floorOf(player.y)));
 }
 
 // A short message that shows in the prompt line for a few seconds, like
@@ -2255,6 +2256,11 @@ function tick(now) {
     broadcastPosition({ pass, name: myName, color: myColor, hat: myHat, shoes: myShoes, pet: myPet, glasses: myGlasses, face: myFace, ...myAccessories, title: myTitle, x: player.x, y: player.y, room: currentRoom.id, tz: myTimeZone, office: claimInfo("office"), typing: amTyping(), build: MY_BUILD, aura: myAura(), badge: myBadge(), seat: mySeat ? { key: mySeat.key, face: mySeat.face } : null, speaking: mySpeaking, whisper: inCall() ? null : whisperTarget(), phone: inCall(), fishing: fishingLine() });
   }
 
+  // The porch swing sways while anyone's sitting on it (and them with it).
+  const swingSeats = new Set(FURNITURE.filter((f) => f.kind === "porchSwing").flatMap(seatSpots).map((s) => s.key));
+  const onSwing = (key) => !!key && swingSeats.has(key);
+  globalThis.porchSwingBusy = onSwing(mySeat?.key) || visiblePeers.some((peer) => onSwing(peer.seat?.key));
+  const swingY = porchSwingSway();
   const scenePlayers = visiblePeers.map((peer) => {
     const shown = getSmoothedPosition(peer, dt);
     // A friend's hat name comes over the network, so only accept known hats.
@@ -2263,13 +2269,13 @@ function tick(now) {
     const pet = Object.hasOwn(PET_DRAWERS, peer.pet) ? peer.pet : "none";
     const glasses = Object.hasOwn(GLASSES_DRAWERS, peer.glasses) ? peer.glasses : "none";
     const bed = peer.seat ? null : bedAt(shown);
-    const at = bed ? tuckedIn(bed) : shown;
+    const at = bed ? tuckedIn(bed) : onSwing(peer.seat?.key) ? { x: shown.x, y: shown.y + swingY } : shown;
     return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null, fishing: cleanFishing(peer.fishing, shown) };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
-  const myAt = myBed ? tuckedIn(myBed) : player;
+  const myAt = myBed ? tuckedIn(myBed) : onSwing(mySeat?.key) ? { x: player.x, y: player.y + swingY } : player;
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
