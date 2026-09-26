@@ -298,6 +298,16 @@ const BASE_FURNITURE = [
   { kind: "readingTable", x: 0.45, y: -2.2, w: 1.6, h: 0.6 },
   { kind: "chair", x: 0.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
   { kind: "fern", x: 5.2, y: -1.8, w: 0.6, h: 0.6 },
+  // A little garden on the lawn north of the hallway (outside, seen past
+  // the Library): flower beds along the house, a few bushes and wildflowers.
+  { kind: "flowerBed", x: 8.4, y: -2.7, w: 4.0, h: 0.5 },
+  { kind: "flowerBed", x: 15.6, y: -2.7, w: 4.0, h: 0.5 },
+  { kind: "bush", x: 6.9, y: -2.8, w: 0.9, h: 0.55, n: 1 },
+  { kind: "bush", x: 22.4, y: -2.9, w: 0.9, h: 0.55, n: 2 },
+  { kind: "bush", x: 13.4, y: -4.4, w: 0.9, h: 0.55, n: 3 },
+  { kind: "wildflowers", x: 8.2, y: -3.6, w: 1.1, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 17.6, y: -4.2, w: 1.0, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 12.8, y: -3.3, w: 0.8, h: 0.3, solid: false },
 
   // Elevator lobby (downstairs): brass elevator doors on the back wall
   // (walk up and press E), a lamp, a round rug, a bench and a palm.
@@ -361,6 +371,12 @@ const BASE_FURNITURE = [
   // elevator lobby.
   { kind: "rug", x: 1.5, y: SUITE + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
   { kind: "cactus", x: 0.15, y: SUITE + 2.05, w: 0.6, h: 0.6 },
+  // Along the hall's south side, so the long hall isn't bare.
+  { kind: "snakePlant", x: 4.6, y: SUITE + 2.05, w: 0.6, h: 0.6 },
+  { kind: "bench", x: 7.9, y: SUITE + 2.2, w: 1.5, h: 0.5 },
+  { kind: "floorLamp", x: 11.3, y: SUITE + 2.25, w: 0.4, h: 0.4 },
+  { kind: "fern", x: 14.2, y: SUITE + 2.05, w: 0.6, h: 0.6 },
+  { kind: "monstera", x: 16.7, y: SUITE + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: SUITE + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 2, solid: false },
   { kind: "sconce", x: 18.7, y: SUITE + 3.2, solid: false },
   { kind: "rug", x: 20.8, y: SUITE + 4.3, w: 2.8, h: 1.9, color: "#6f5a8c", round: true, solid: false },
