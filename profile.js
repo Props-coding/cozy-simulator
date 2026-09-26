@@ -3,9 +3,11 @@
 //
 // The top of the card is always there: their character and pet, name,
 // title, bio (your own card lets you edit it) and one line of stats.
-// Below it are three tabs:
+// Below it are four tabs:
 //   Overview      up to 5 achievements they pinned, and their top 3 rooms
-//   Rooms         every room's level, highest first
+//   About         facts about their time here: favorite lo-fi and room,
+//                 days visited, time asleep, chats, dances and more
+//   Levels        every room's level, highest first
 //   Achievements  every achievement, grouped, with tiers and progress
 //                 (on your own card, open one to pin or unpin it)
 //
@@ -146,9 +148,9 @@ function showProfile(p, tab) {
   const show = (id) => {
     tab = id;
     for (const b of tabs.children) b.classList.toggle("active", b.dataset.tab === id);
-    page.replaceChildren(...{ overview, rooms, achievements }[id](p, mine, () => show(tab)));
+    page.replaceChildren(...{ overview, about, rooms, achievements }[id](p, mine, () => show(tab)));
   };
-  for (const [id, label] of [["overview", "Overview"], ["rooms", "Rooms"], ["achievements", "Achievements"]]) {
+  for (const [id, label] of [["overview", "Overview"], ["about", "About"], ["rooms", "Levels"], ["achievements", "Achievements"]]) {
     const b = el("button", "", label);
     b.type = "button";
     b.dataset.tab = id;
@@ -231,13 +233,13 @@ function header(p, mine) {
   }
   info.append(bioBox);
 
-  // One line of stats: when they joined, their time in the house, and
-  // their favorite lo-fi.
+  // One line of stats: when they joined, and their time in the house.
+  // (More facts are in the About tab.)
   const seconds = mine && Number.isFinite(myStats().seconds) ? myStats().seconds : p.seconds;
   const hours = Math.floor(seconds / 3600), minutes = Math.floor((seconds % 3600) / 60);
   const since = new Date(p.since).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
   const time = hours ? `${hours.toLocaleString()} hour${hours === 1 ? "" : "s"}` : `${minutes} minute${minutes === 1 ? "" : "s"}`;
-  info.append(el("p", "pf-stats", `Joined ${since} · ${time} in the house · ${lofiStation(p.lofi).name} lo-fi`));
+  info.append(el("p", "pf-stats", `Joined ${since} · ${time} in the house`));
 
   head.append(look, info);
   return head;
@@ -368,6 +370,43 @@ function overview(p, mine, redraw) {
     out.push(el("p", "pf-empty", "No time in any room yet."));
   }
   return out;
+}
+
+// Facts about their time in the house, as little tiles. Counters that
+// haven't started yet (0) are left out. (Their joined date and hours are
+// in the header, so they aren't repeated here.)
+function about(p, mine) {
+  const stats = mine ? myStats() : { ...p.stats, ...p.rooms };
+  const n = (v) => (Number.isFinite(v) ? v : 0);
+  const count = (v, one, many) => `${Math.floor(v).toLocaleString()} ${Math.floor(v) === 1 ? one : many}`;
+  const hours = (seconds) => (seconds < 3600 ? count(seconds / 60, "minute", "minutes") : count(seconds / 3600, "hour", "hours"));
+  const favorite = roomLevels(stats).filter((r) => r.seconds > 0).sort((a, b) => b.seconds - a.seconds)[0];
+  const days = Math.max(1, Math.floor((Date.now() - p.since) / 86_400_000));
+  const owned = mine ? ownedCount() : (p.owned ?? []).length;
+  const pets = mine ? ownedPets().length : petsAmong(p.owned ?? []);
+  const facts = [
+    ["lofi", "Favorite lo-fi", lofiStation(p.lofi).name],
+    ...(favorite ? [["room:" + favorite.key, "Favorite room", `${favorite.name} · ${hours(favorite.seconds)}`]] : []),
+    ["wellRounded", "Member for", count(days, "day", "days")],
+    ...(n(stats.daysVisited) ? [["calendar", "Days visited", count(stats.daysVisited, "day", "days")]] : []),
+    ...(n(stats.sleepSeconds) ? [["goodnight", "Time asleep", hours(stats.sleepSeconds)]] : []),
+    ...(n(stats.chats) ? [["hello", "Chat messages", count(stats.chats, "message", "messages")]] : []),
+    ...(n(stats.emotesUsed) ? [["expressive", "Emotes used", count(stats.emotesUsed, "time", "times")]] : []),
+    ...(n(stats.dances) ? [["dancer", "Dances", count(stats.dances, "dance", "dances")]] : []),
+    ...(n(stats.focusSessions) ? [["focus", "Focus sessions", count(stats.focusSessions, "session", "sessions")]] : []),
+    ...(n(stats.crumbsEarned) ? [["crumbs", "Crumbs earned", count(stats.crumbsEarned, "crumb", "crumbs")]] : []),
+    ...(owned ? [["collector", "From the raccoons", count(owned, "thing", "things")]] : []),
+    ...(pets ? [["menagerie", "Pets adopted", count(pets, "pet", "pets")]] : []),
+  ];
+  const grid = el("div", "pf-facts");
+  for (const [icon, label, value] of facts) {
+    const tile = el("div", "pf-fact");
+    const text = el("div", "pf-fact-text");
+    text.append(el("span", "pf-fact-label", label), el("strong", "", value));
+    tile.append(iconCanvas(icon, 30), text);
+    grid.appendChild(tile);
+  }
+  return [grid];
 }
 
 function rooms(p, mine) {

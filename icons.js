@@ -65,6 +65,10 @@ const ICONS = {
   focus: { glyph: "hourglass" },
   rested: { f: "canopyBed", w: 1.8, h: 2.3 },
 
+  // Facts on the profile card's About tab
+  lofi: { f: "recordPlayer", w: 0.8, h: 0.5 },
+  calendar: { glyph: "calendar" },
+
   // Rooms (CONFIG.roomLevels)
   "room:study": { f: "studyTable", w: 1.6, h: 0.9 },
   "room:library": { f: "libraryShelf", w: 1.6, h: 0.5 },

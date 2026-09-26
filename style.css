@@ -3064,6 +3064,46 @@ canvas.house-icon {
   font-size: 0.85em;
 }
 
+/* The About tab: facts as little tiles, two to a row. */
+.pf-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+}
+
+.pf-fact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fbefd9;
+}
+
+.pf-fact .house-icon {
+  flex: none;
+  background: #fffaf3;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.pf-fact-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pf-fact-label {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #6b5a4a;
+}
+
+.pf-fact-text strong {
+  color: #3a2a1e;
+  overflow-wrap: anywhere;
+}
+
 /* The showcase: the pinned achievements, side by side. */
 .pf-showcase {
   display: grid;
