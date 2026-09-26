@@ -134,6 +134,8 @@
 
 - Server set up and secured (2026-09-23): a DigitalOcean droplet (Ubuntu 24.04) at 142.93.3.149. Fully updated, automatic security updates on, firewall on (only SSH, 80 and 443 open), password logins off, root login off, fail2ban running. You log in as `props` with your SSH key (`ssh props@142.93.3.149`); admin commands use `sudo` and your password.
 
+- Name tags no longer pile up (2026-09-26, not yet in a numbered build): when friends stand close together, each person's name tag, badge and speech bubble now stack neatly above each other instead of overlapping. Whoever stands in front keeps their tag right above their head; the person behind gets theirs lifted just above, and it glides back down when they step apart.
+
 ## Server plan (agreed 2026-09-23)
 The site stays on GitHub Pages. The droplet runs one small program for the things a static site can't do. One phase at a time, tested before the next.
 - Phase 0, groundwork: a web address for the server (needed for HTTPS, since the site is HTTPS), then Caddy (a web server that gets and renews HTTPS certificates by itself) and a tiny "hello" program, so the site can talk to the server.
