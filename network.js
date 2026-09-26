@@ -7,16 +7,18 @@
 // small packages that only resolve correctly when served through a CDN
 // like esm.sh. Pinning the version means it won't silently change on us.
 import { joinRoom, selfId } from "https://esm.sh/trystero@0.25.4/nostr";
-import { makeWhisperStream } from "./audio.js";
+import { makeWhisperStream, makeVoiceStream } from "./audio.js";
 
 // This browser's id in the room (the same one friends see us as).
 export const myPeerId = selfId;
 
-// Sends a friend their own private whisper line (see audio.js), only to
-// them, labelled so they can tell it from normal voice.
-function sendWhisperLine(peerId) {
-  const stream = makeWhisperStream(peerId);
-  if (stream) room.addStream(stream, { target: peerId, metadata: { whisper: true } });
+// Sends a friend their own voice line and private whisper line (see
+// audio.js), only to them, labelled so they can tell the two apart.
+function sendMicLines(peerId) {
+  const voice = makeVoiceStream(peerId);
+  if (voice) room.addStream(voice, { target: peerId, metadata: { voice: true } });
+  const whisper = makeWhisperStream(peerId);
+  if (whisper) room.addStream(whisper, { target: peerId, metadata: { whisper: true } });
 }
 
 let room = null;
@@ -40,11 +42,11 @@ let theaterAction = null;
 let externalOnBoard = null;
 let boardAction = null;
 let kanbanAction = null;
+let roomsAction = null;
+let externalOnRooms = null;
 let externalOnKanban = null;
 let externalOnEmote = null;
 let emoteAction = null;
-let externalOnDecor = null;
-let decorAction = null;
 let externalOnMail = null;
 let mailAction = null;
 
@@ -64,6 +66,16 @@ export function onPeerJoin(callback) {
 // peer id and which room ("office" or "bedroom").
 export function onKnock(callback) {
   externalOnKnock = callback;
+}
+
+// Bedroom phone calls: ringing, answering, hanging up (see phone.js).
+let phoneAction = null;
+let externalOnPhone = null;
+export function onPhone(callback) {
+  externalOnPhone = callback;
+}
+export function sendPhone(peerId, message) {
+  phoneAction?.send(message, { target: peerId });
 }
 
 // The Study focus timer was started, moved on, or stopped by a friend.
@@ -112,16 +124,6 @@ export function sendEmote(id) {
   emoteAction?.send(id);
 }
 
-// Bedroom decor: the list of pieces a friend has placed in their bedroom.
-export function onDecor(callback) {
-  externalOnDecor = callback;
-}
-
-// Sends your bedroom's decor to everyone, or to one friend if peerId is given.
-export function sendDecor(message, peerId) {
-  decorAction?.send(message, peerId ? { target: peerId } : undefined);
-}
-
 // Laptop mail: a letter, or a note saying a letter arrived.
 export function onMail(callback) {
   externalOnMail = callback;
@@ -153,18 +155,27 @@ export function sendKanbanPing() {
   kanbanAction?.send(1);
 }
 
+// Someone changed their bedroom door (or room): friends fetch the latest
+// from the server right away. Just a nudge, no details.
+export function onRoomsPing(callback) {
+  externalOnRooms = callback;
+}
+
+export function sendRoomsPing() {
+  roomsAction?.send(1);
+}
+
 // Knock on one friend's office or bedroom door (only they get the message).
 export function sendKnock(peerId, kind) {
   knockAction?.send(kind, { target: peerId });
 }
 
-// Sends your mic audio to everyone in the room. Call once, after both
-// connectToRoom and mic permission have gone through.
+// Sends each friend their own lines from your mic. Call once, after
+// both connectToRoom and mic permission have gone through.
 export function addLocalStream(stream) {
   localStream = stream;
   if (room) {
-    room.addStream(stream);
-    for (const peerId of Object.keys(peers)) sendWhisperLine(peerId);
+    for (const peerId of Object.keys(peers)) sendMicLines(peerId);
   }
 }
 
@@ -198,20 +209,24 @@ export function connectToRoom(myName, myColor) {
   };
 
   // A knock says which door: "office" or "bedroom".
+  phoneAction = room.makeAction("phone");
+  phoneAction.onMessage = (message, { peerId }) => externalOnPhone?.(message, peerId);
+
   knockAction = room.makeAction("knock");
   knockAction.onMessage = (kind, { peerId }) => externalOnKnock?.(peerId, kind);
 
   emoteAction = room.makeAction("emote");
   emoteAction.onMessage = (id, { peerId }) => externalOnEmote?.(id, peerId);
 
-  decorAction = room.makeAction("decor");
-  decorAction.onMessage = (message, { peerId }) => externalOnDecor?.(message, peerId);
 
   mailAction = room.makeAction("mail");
   mailAction.onMessage = (message, { peerId }) => externalOnMail?.(message, peerId);
 
   boardAction = room.makeAction("board");
   boardAction.onMessage = (message, { peerId }) => externalOnBoard?.(message, peerId);
+
+  roomsAction = room.makeAction("rooms");
+  roomsAction.onMessage = () => externalOnRooms?.();
 
   kanbanAction = room.makeAction("kanban");
   kanbanAction.onMessage = () => externalOnKanban?.();
@@ -232,11 +247,8 @@ export function connectToRoom(myName, myColor) {
     // their first real position message arrives a moment later.
     peers[peerId] = { name: "...", color: "#999", x: 8.7, y: 1.2, room: "hallway" };
     // addLocalStream only reaches friends who were already here, so
-    // anyone arriving later needs our mic sent to them directly.
-    if (localStream) {
-      room.addStream(localStream, { target: peerId });
-      sendWhisperLine(peerId);
-    }
+    // anyone arriving later needs their lines sent to them directly.
+    if (localStream) sendMicLines(peerId);
     // Tell the new friend who we are right away, don't wait for the next tick.
     positionAction(lastKnownPosition);
     externalOnPeerJoin?.(peerId);

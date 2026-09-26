@@ -338,6 +338,61 @@
               </div>
             </div>
           </div>
+          <!-- Your bedroom door's settings (rooms.js). -->
+          <div id="door-panel" hidden>
+            <h3>Your door and room</h3>
+            <p class="door-label">Who can come in</p>
+            <div id="door-privacy" class="door-row"></div>
+            <p class="door-label">A note on your door</p>
+            <input id="door-note" type="text" maxlength="40" placeholder="Back soon! / Studying / Come say hi">
+            <p class="door-label">Sound inside</p>
+            <div id="door-audio" class="door-row"></div>
+            <p class="door-label">Decoration</p>
+            <div id="door-decos" class="door-row"></div>
+            <p class="door-label">Room style</p>
+            <div id="door-styles" class="door-row"></div>
+            <button id="door-close" type="button" class="warm-button">Done</button>
+          </div>
+          <!-- The bedroom phone (phone.js): who to call, or a message to leave. -->
+          <div id="phone-panel" hidden>
+            <div class="journal-top">
+              <h3>📞 Bedroom phone</h3>
+              <button id="phone-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+            </div>
+            <div id="phone-friends"></div>
+            <form id="phone-message" hidden>
+              <p>A message for <strong id="phone-message-to"></strong> (they'll see it when they come in):</p>
+              <textarea id="phone-message-text" rows="3" maxlength="500" placeholder="Hey! Call me back when you're up."></textarea>
+              <button type="submit" class="warm-button">Leave message</button>
+            </form>
+          </div>
+          <!-- A call ringing, or going on (phone.js). -->
+          <div id="phone-popup" hidden>
+            <p id="phone-popup-text"></p>
+            <div id="phone-popup-buttons"></div>
+          </div>
+          <!-- The bedroom journal on your nightstand (journal.js). -->
+          <div id="journal-panel" hidden>
+            <div class="journal-top">
+              <h3>📔 My journal</h3>
+              <button id="journal-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+            </div>
+            <div id="journal-lock" hidden>
+              <p id="journal-lock-note"></p>
+              <input id="journal-password" type="password" maxlength="200" autocomplete="current-password" placeholder="Your password">
+              <button id="journal-unlock" type="button" class="warm-button">Open</button>
+            </div>
+            <div id="journal-page" hidden>
+              <div class="journal-dates">
+                <button id="journal-prev" type="button" class="journal-flip" title="An earlier day">◀</button>
+                <span id="journal-date"></span>
+                <button id="journal-next" type="button" class="journal-flip" title="A later day">▶</button>
+              </div>
+              <div class="journal-mood-row"><span>Mood (optional):</span> <span id="journal-moods"></span></div>
+              <textarea id="journal-text" rows="9" placeholder="How was today?"></textarea>
+            </div>
+            <p id="journal-status" class="journal-status"></p>
+          </div>
           <!-- The Workshop's project boards (kanban.js). -->
           <div id="kanban-panel" hidden>
             <div class="kanban-top">
@@ -571,6 +626,7 @@
         "./turntable.js": "./turntable.js?v=0.50",
         "./wardrobe.js": "./wardrobe.js?v=0.50",
         "./kanban.js": "./kanban.js?v=0.50",
+        "./rooms.js": "./rooms.js?v=0.50",
         "./laptop.js": "./laptop.js?v=0.50",
         "./news.js": "./news.js?v=0.50",
         "./account.js": "./account.js?v=0.50",

@@ -217,20 +217,67 @@ function drawCinemaCarpet(ctx, box, color) {
 
 const FLOOR_STYLES = { planks: drawPlanks, carpet: drawCarpet, checker: drawChecker, concrete: drawConcrete, cinema: drawCinemaCarpet };
 
-// The look of each secret office theme: floor, wall color, a pattern on
-// the walls, and a tint over the whole room (warm or cold).
+// The look of each secret office theme (and each bedroom style): floor,
+// wall color, a pattern on the walls, a tint over the whole room (warm or
+// cold), and for bedrooms what you see outside it.
 const OFFICE_THEME_STYLE = {
-  lakehouse: { floor: { style: "planks", color: "#a8744c" }, wall: "#9c6b43", wallPattern: "logs", tint: "rgba(255, 160, 80, 0.10)" },
-  stalker: { floor: { style: "concrete", color: "#8e908b" }, wall: "#8a8d88", wallPattern: "concrete", tint: "rgba(30, 60, 50, 0.16)" },
-  scholar: { floor: { style: "planks", color: "#7a4a32" }, wall: "#eadcc0", wallPattern: "lacquer", tint: "rgba(255, 190, 120, 0.08)" },
-  cottage: { floor: { style: "planks", color: "#5c3d2a" }, wall: "#3e4a36", wallPattern: "ivy", tint: "rgba(110, 55, 20, 0.14)" },
+  // Bedroom styles anyone can pick (the four themes below are only for
+  // their owners' bedrooms).
+  classic: { floor: { style: "carpet", color: "#b7a2c4" }, wall: "#a9b8cf", wallPattern: null, tint: "rgba(0, 0, 0, 0)", outside: "lawn" },
+  cabin: { floor: { style: "planks", color: "#946244" }, wall: "#8a5c3c", wallPattern: "logs", tint: "rgba(255, 150, 70, 0.08)", outside: "snow" },
+  apartment: { floor: { style: "planks", color: "#c49a6c" }, wall: "#d9d0c4", wallPattern: "brick", tint: "rgba(0, 0, 0, 0)", outside: "city" },
+  beachHut: { floor: { style: "planks", color: "#d9c29a" }, wall: "#8fcac6", wallPattern: "slats", tint: "rgba(255, 230, 170, 0.08)", outside: "beach" },
+  lakehouse: { floor: { style: "planks", color: "#a8744c" }, wall: "#9c6b43", wallPattern: "logs", tint: "rgba(255, 160, 80, 0.10)", outside: "lake" },
+  stalker: { floor: { style: "concrete", color: "#8e908b" }, wall: "#8a8d88", wallPattern: "concrete", tint: "rgba(30, 60, 50, 0.16)", outside: "wasteland" },
+  scholar: { floor: { style: "planks", color: "#7a4a32" }, wall: "#eadcc0", wallPattern: "lacquer", tint: "rgba(255, 190, 120, 0.08)", outside: "lawn" },
+  cottage: { floor: { style: "planks", color: "#5c3d2a" }, wall: "#3e4a36", wallPattern: "ivy", tint: "rgba(110, 55, 20, 0.14)", outside: "lawn" },
 };
+
+// The bedroom whose map is being drawn (floors 2 and up), or undefined.
+function viewedBedroom() {
+  return viewFloor >= 2 ? ROOMS.find((r) => r.bedroom && floorOf(r.rect.y) === viewFloor) : undefined;
+}
+
+// Around a bedroom: what you'd see out of it, by its style.
+const OUTSIDES = {
+  lawn: { ground: "#93b06c", bits: ["rgba(70, 110, 50, 0.45)", "rgba(180, 210, 130, 0.5)"] },
+  snow: { ground: "#e8eef2", bits: ["rgba(150, 170, 190, 0.5)", "rgba(255, 255, 255, 0.9)"] },
+  beach: { ground: "#e8d3a2", bits: ["rgba(180, 150, 100, 0.5)", "rgba(255, 245, 220, 0.8)"], water: "#6fb7c9" },
+  lake: { ground: "#8aa866", bits: ["rgba(70, 110, 50, 0.45)", "rgba(180, 210, 130, 0.5)"], water: "#5a8fa8" },
+  city: { ground: "#5d5a66", bits: ["rgba(40, 38, 48, 0.6)", "rgba(255, 220, 140, 0.55)"] },
+  wasteland: { ground: "#7c7a62", bits: ["rgba(60, 58, 40, 0.5)", "rgba(150, 140, 100, 0.5)"] },
+};
+
+function paintOutside(ctx, kind) {
+  const look = OUTSIDES[kind] ?? OUTSIDES.lawn;
+  const { left, right, top, bottom } = houseBounds();
+  ctx.fillStyle = look.ground;
+  ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
+  if (look.water) {
+    // Water along the bottom of the view, with a few ripples.
+    const y = bottom - (bottom - top) * 0.22;
+    ctx.fillStyle = look.water;
+    ctx.fillRect(left - 20, y, right - left + 40, bottom - y + 20);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    for (let i = 0; i < 40; i++) ctx.fillRect(left + noise(i * 3.1) * (right - left), y + 6 + noise(i * 5.7) * (bottom - y - 8), 8, 1.5);
+  }
+  const w = right - left, h = bottom - top;
+  for (let i = 0; i < (w * h) / 700; i++) {
+    const x = left + noise(i * 1.7) * w, y = top + noise(i * 2.3 + 5) * h;
+    ctx.fillStyle = look.bits[noise(i + 11) > 0.5 ? 0 : 1];
+    ctx.fillRect(x, y, kind === "city" ? 3 : 2, kind === "city" ? 3 : 2);
+  }
+}
 
 // Outside the house: a soft lawn with little tufts of grass and a few
 // flowers, so empty office spots look like garden, not a dark gap.
 function paintYard(ctx) {
   if (viewFloor === 1) {
     paintRoof(ctx);
+    return;
+  }
+  if (viewFloor >= 2) {
+    paintOutside(ctx, OFFICE_THEME_STYLE[viewedBedroom()?.theme]?.outside);
     return;
   }
   const { left, right, top, bottom } = houseBounds();
@@ -383,6 +430,8 @@ let viewFloor = 0;
 // doesn't change size when you take the stairs. Used for the saved floor
 // picture and for fitting the house to the window.
 function houseBounds() {
+  const bedroom = viewedBedroom();
+  if (bedroom) return bedroomBounds(bedroom);
   const base = viewFloor * UPSTAIRS;
   return {
     left: toScreen(-WALL_THICKNESS, 0).x - 6,
@@ -391,6 +440,22 @@ function houseBounds() {
     top: toScreen(0, base + houseTopY).y - WALL_HEIGHT - 14,
     bottom: toScreen(0, base + 11 + WALL_THICKNESS).y + 6,
   };
+}
+
+// In a bedroom, the view zooms in on it: the same shape as the house's
+// view (so the picture on screen stays the same size), just smaller, and
+// centered on the room.
+function bedroomBounds(room) {
+  const floor = viewFloor;
+  viewFloor = 0;
+  const house = houseBounds();
+  viewFloor = floor;
+  const W = house.right - house.left, H = house.bottom - house.top;
+  const a = toScreen(room.rect.x - 1.2, room.rect.y), b = toScreen(room.rect.x + room.rect.w + 1.2, room.rect.y + room.rect.h + 1.6);
+  const top = a.y - WALL_HEIGHT - 34;
+  const k = Math.max((b.x - a.x) / W, (b.y - top) / H);
+  const cx = (a.x + b.x) / 2, cy = (top + b.y) / 2;
+  return { left: cx - (W * k) / 2, right: cx + (W * k) / 2, top: cy - (H * k) / 2, bottom: cy + (H * k) / 2 };
 }
 
 // The whole house's size, in the house's own pixels (before scaling).
@@ -623,6 +688,19 @@ function drawWallPattern(ctx, pattern, x, y, w, h) {
     ctx.stroke();
     let i = 0;
     for (let sx = x + 5; sx < x + w - 3; sx += 13, i++) drawIvySprig(ctx, sx, y + 4, 6 + ((i * 7) % 11), i % 2 ? 1 : -1);
+  } else if (pattern === "brick") {
+    // A painted-over brick wall: faint rows of bricks, offset every row.
+    ctx.fillStyle = "rgba(90, 70, 60, 0.12)";
+    for (let by = y + 4, row = 0; by < y + h - 6; by += 6, row++) {
+      ctx.fillRect(x, by, w, 1);
+      for (let bx = x + (row % 2) * 7; bx < x + w; bx += 14) ctx.fillRect(bx, by, 1, 6);
+    }
+  } else if (pattern === "slats") {
+    // Beach hut boards running up and down, and a white trim along the top.
+    ctx.fillStyle = "rgba(20, 60, 70, 0.18)";
+    for (let sx = x + 6; sx < x + w; sx += 8) ctx.fillRect(sx, y, 1, h - 5);
+    ctx.fillStyle = "#f7f1e6";
+    ctx.fillRect(x, y + 3, w, 3);
   } else if (pattern === "lacquer") {
     ctx.fillStyle = "#9a2f24";
     ctx.fillRect(x, y + 5, w, 4);
@@ -772,6 +850,56 @@ function drawDeskSide(ctx, f, color, topper) {
     }
     ctx.fillStyle = "#e98ac0";
     ctx.fillRect(x + w / 2 - 5, y + h / 2, 12, 16);
+  }
+}
+
+// A bedroom door's little decoration, centered at (cx, cy).
+function drawDoorDeco(ctx, deco, cx, cy) {
+  if (deco === "wreath") {
+    ctx.strokeStyle = "#3f7a4a";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#c0303a";
+    ctx.fillRect(cx - 2, cy + 3, 4, 2.5);
+  } else if (deco === "flowers") {
+    for (const [dx, dy, c] of [[-2.5, -1, "#f2a0b8"], [2.5, -1.5, "#fff2a8"], [0, -3.5, "#c8b0e8"]]) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#6aa05a";
+    ctx.fillRect(cx - 0.6, cy, 1.2, 4);
+  } else if (deco === "star" || deco === "snowflake") {
+    ctx.fillStyle = deco === "star" ? "#f2c94c" : "#ffffff";
+    ctx.beginPath();
+    for (let k = 0; k < (deco === "star" ? 10 : 12); k++) {
+      const n = deco === "star" ? 10 : 12;
+      const r = k % 2 ? (deco === "star" ? 1.8 : 1.2) : 4.5, a = (k / n) * Math.PI * 2 - Math.PI / 2;
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    ctx.fill();
+  } else if (deco === "heart") {
+    ctx.fillStyle = "#f06a9a";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 4);
+    ctx.bezierCurveTo(cx - 6, cy, cx - 3.5, cy - 5, cx, cy - 2);
+    ctx.bezierCurveTo(cx + 3.5, cy - 5, cx + 6, cy, cx, cy + 4);
+    ctx.fill();
+  } else if (deco === "plant") {
+    ctx.fillStyle = "#c98a5a";
+    ctx.fillRect(cx - 2.5, cy + 1, 5, 3.5);
+    drawLeaf(ctx, cx, cy + 1, -0.5, 5, 2, "#5a9a4a", null);
+    drawLeaf(ctx, cx, cy + 1, 0.5, 5, 2, "#6aaa5a", null);
+  } else if (deco === "pumpkin") {
+    ctx.fillStyle = "#e07a2e";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 1, 4.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5a7a3a";
+    ctx.fillRect(cx - 0.6, cy - 3.5, 1.2, 2);
   }
 }
 
@@ -1320,6 +1448,40 @@ const FURNITURE_DRAWERS = {
   },
 
   // Hung on a wall face: a framed poster ("stars", "mountains" or "cat").
+  // The bedroom phone: a retro wall phone with a coiled cord.
+  wallPhone(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x + w / 2 - 7, y = a.y - WALL_HEIGHT + 10;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.22)";
+    ctx.fillRect(x + 2, y + 3, 14, 20);
+    ctx.fillStyle = "#d9534f"; // the body
+    roundRectPath(ctx, x, y, 14, 20, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f6e7d0"; // the dial
+    ctx.beginPath();
+    ctx.arc(x + 7, y + 12, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b8403c";
+    ctx.beginPath();
+    ctx.arc(x + 7, y + 12, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#c2433f"; // the handset on top
+    roundRectPath(ctx, x - 2, y - 3, 18, 4, 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8f2f2c"; // the curly cord
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) ctx.lineTo(x - 2 + Math.sin(i * 1.7) * 1.5, y + 1 + i * 2.2);
+    ctx.stroke();
+    // A little glow and wiggle while it's ringing (globalThis.phoneRinging).
+    if (f.mine && globalThis.phoneRinging) {
+      ctx.fillStyle = "rgba(255, 220, 120, 0.35)";
+      ctx.beginPath();
+      ctx.arc(x + 7, y + 8, 13 + Math.sin(performance.now() / 60) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
   poster(ctx, f) {
     const a = toScreen(f.x, f.y);
     const w = f.w * TILE, x = a.x, y = a.y - WALL_HEIGHT + 3, h = 30;
@@ -5232,6 +5394,101 @@ const FURNITURE_DRAWERS = {
     ctx.strokeRect(x + 5, y + 26, w - 10, h - 36);
   },
 
+  // A bedroom door on the bedroom hallway's wall (f.door comes from the
+  // house server): a wooden frame, a panel in the owner's color, their
+  // nameplate, a little decoration, a sticky note if they left one, and a
+  // light showing who can come in: green open, amber knock first, red
+  // private, or a balloon for a party.
+  bedroomDoor(ctx, f) {
+    const door = f.door;
+    if (!door) return;
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x, bottom = a.y, top = a.y - WALL_HEIGHT + 4;
+    const h = bottom - top;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
+    ctx.fillRect(x - 1, top + 2, w + 4, h);
+    ctx.fillStyle = "#6b4630"; // frame
+    ctx.fillRect(x - 2, top - 2, w + 4, h + 2);
+    const panel = ctx.createLinearGradient(0, top, 0, bottom);
+    panel.addColorStop(0, shadeColor(door.color, 25));
+    panel.addColorStop(1, shadeColor(door.color, -20));
+    ctx.fillStyle = panel;
+    ctx.fillRect(x + 1, top + 1, w - 2, h - 1);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.18)"; // two inset panels
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 5, top + 12, w - 10, h * 0.32);
+    ctx.strokeRect(x + 5, top + 14 + h * 0.36, w - 10, h * 0.28);
+    ctx.fillStyle = "#e0b84c"; // the knob
+    ctx.beginPath();
+    ctx.arc(x + w - 7, top + h * 0.62, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    // The nameplate.
+    ctx.font = "700 7px 'Quicksand', sans-serif";
+    const name = clipText(door.owner, 10, "…");
+    const pw = Math.min(w - 6, ctx.measureText(name).width + 8);
+    ctx.fillStyle = "#f7f1e6";
+    roundRectPath(ctx, x + w / 2 - pw / 2, top + 3, pw, 8, 2);
+    ctx.fill();
+    ctx.fillStyle = "#4a3a2c";
+    ctx.textAlign = "center";
+    ctx.fillText(name, x + w / 2, top + 9.5, pw - 2);
+    ctx.textAlign = "left";
+    // The decoration, in the middle of the door.
+    drawDoorDeco(ctx, door.deco, x + w / 2, top + h * 0.42);
+    // A sticky note, if they left one (read it up close).
+    if (door.note) {
+      ctx.fillStyle = "#fff2a8";
+      ctx.save();
+      ctx.translate(x + 6, top + h * 0.72);
+      ctx.rotate(-0.12);
+      ctx.fillRect(0, 0, 8, 7);
+      ctx.fillStyle = "rgba(90, 70, 40, 0.5)";
+      ctx.fillRect(1.5, 2, 5, 0.8);
+      ctx.fillRect(1.5, 4, 4, 0.8);
+      ctx.restore();
+    }
+    // The light over the door (or a balloon for a party).
+    if (door.privacy === "party") {
+      const t = performance.now() / 1000;
+      const bx = x + w + 5, by = top - 10 + Math.sin(t * 1.5 + x) * 1.5;
+      ctx.strokeStyle = "rgba(90, 70, 50, 0.7)";
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 6);
+      ctx.quadraticCurveTo(bx - 2, by + 12, x + w - 1, top + 6);
+      ctx.stroke();
+      ctx.fillStyle = "#e84a5a";
+      ctx.beginPath();
+      ctx.ellipse(bx, by, 4.5, 5.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.beginPath();
+      ctx.ellipse(bx - 1.5, by - 2, 1.2, 2, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const light = { open: "#5fd07a", knock: "#f2a640", private: "#e8505a" }[door.privacy] ?? "#5fd07a";
+      ctx.fillStyle = "#3a2a22";
+      roundRectPath(ctx, x + w / 2 - 4, top - 6, 8, 4, 2);
+      ctx.fill();
+      ctx.fillStyle = light;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, top - 4, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // A little moon on the door while its owner is away, asleep in bed.
+    if (!door.online) {
+      const mx = x + w - 6, my = top + 17;
+      ctx.fillStyle = "#f4e3a1";
+      ctx.beginPath();
+      ctx.arc(mx, my, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = shadeColor(door.color, 10); // the door shows through, making a crescent
+      ctx.beginPath();
+      ctx.arc(mx + 1.7, my - 1.2, 2.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
   // --- The Workshop ---
 
   // The house's project board on the Workshop wall: a big corkboard with
@@ -5911,6 +6168,16 @@ const FURNITURE_DRAWERS = {
     ctx.lineTo(cx - 5, cy - 22);
     ctx.closePath();
     ctx.fill();
+    // The journal lying beside the lamp, with a ribbon bookmark.
+    if (f.journal) {
+      const bx = n.top.x + 2, by = n.top.y + n.top.h / 2 - 3;
+      ctx.fillStyle = "#8c3b46";
+      ctx.fillRect(bx, by, 7, 5);
+      ctx.fillStyle = "#f3e6cc"; // the pages' edge
+      ctx.fillRect(bx + 7, by + 0.5, 1, 4);
+      ctx.fillStyle = "#e0b84c";
+      ctx.fillRect(bx + 4, by + 5, 1, 2.5);
+    }
   },
 
   // A tall wooden wardrobe with two doors and brass knobs.
@@ -7659,19 +7926,20 @@ Object.assign(HAT_DRAWERS, {
 
   // A soft bucket hat with a wide floppy brim.
   bucketHat(ctx, cx, cy, r) {
+    const brimY = cy - r * 0.6; // the brim sits on the forehead, above the eyes
     ctx.fillStyle = "#c9b27a";
     ctx.beginPath();
-    ctx.ellipse(cx, cy - r * 0.35, r + 5, 4.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, brimY, r + 5, 3.2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#d9c38a";
     ctx.beginPath();
-    ctx.moveTo(cx - r + 1, cy - r * 0.4);
-    ctx.quadraticCurveTo(cx - r + 2, cy - r - 5, cx, cy - r - 5);
-    ctx.quadraticCurveTo(cx + r - 2, cy - r - 5, cx + r - 1, cy - r * 0.4);
+    ctx.moveTo(cx - r + 2, brimY);
+    ctx.quadraticCurveTo(cx - r + 3, cy - r - 6, cx, cy - r - 6);
+    ctx.quadraticCurveTo(cx + r - 3, cy - r - 6, cx + r - 2, brimY);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = "#8a6a3a"; // band
-    ctx.fillRect(cx - r + 2, cy - r * 0.6, r * 2 - 4, 2.5);
+    ctx.fillRect(cx - r + 3, brimY - 3.5, r * 2 - 6, 2.5);
   },
 
   // Cat ears on a headband.
@@ -7744,31 +8012,48 @@ Object.assign(HAT_DRAWERS, {
 
   // A red mushroom cap with white spots.
   mushroomCap(ctx, cx, cy, r) {
+    // A dome that sits down over the top of the head, like a real cap.
+    const rimY = cy - r * 0.4;
+    ctx.fillStyle = "#efe4cf"; // the frilly underside, peeking out at the rim
+    ctx.beginPath();
+    ctx.ellipse(cx, rimY, r + 3, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#d8423a";
     ctx.beginPath();
-    ctx.ellipse(cx, cy - r + 2, r + 4, r * 0.8, 0, Math.PI, 0);
+    ctx.ellipse(cx, rimY - 0.5, r + 4, 14, 0, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // lit from above
+    ctx.beginPath();
+    ctx.ellipse(cx - 4, rimY - 10, 6, 3, -0.3, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#f7f1e6";
-    for (const [dx, dy, s] of [[-7, -4, 2.2], [1, -9, 2.6], [8, -4, 2], [-2, -3, 1.5]]) {
+    for (const [dx, dy, s] of [[-8, -5, 2.2], [1, -11, 2.6], [8, -6, 2], [-2, -4, 1.5], [5, -12, 1.3]]) {
       ctx.beginPath();
-      ctx.arc(cx + dx, cy - r + 2 + dy, s, 0, Math.PI * 2);
+      ctx.arc(cx + dx, rimY + dy, s, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
-    ctx.fillRect(cx - r - 3, cy - r + 1, (r + 3) * 2, 1.5);
   },
 
   // A striped beanie with a spinning propeller on top.
   propellerCap(ctx, cx, cy, r) {
+    // Colored panels on the top of the head only (clipped above the eyes).
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cx - r - 3, cy - r - 4, r * 2 + 6, r * 0.55 + 4);
+    ctx.clip();
     const stripes = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a"];
     stripes.forEach((c, i) => {
       ctx.fillStyle = c;
       ctx.beginPath();
       ctx.moveTo(cx, cy - 1);
-      ctx.arc(cx, cy - 1, r + 1, Math.PI * (1.08 + i * 0.21), Math.PI * (1.08 + (i + 1) * 0.21));
+      ctx.arc(cx, cy - 1, r + 1, Math.PI * (1 + i * 0.25), Math.PI * (1 + (i + 1) * 0.25));
       ctx.closePath();
       ctx.fill();
     });
+    ctx.restore();
+    ctx.fillStyle = "#3a5f80"; // the band along the bottom edge
+    ctx.fillRect(cx - r + 1, cy - r * 0.45 - 2, r * 2 - 2, 2.5);
     ctx.fillStyle = "#6b6b70";
     ctx.fillRect(cx - 0.8, cy - r - 6, 1.6, 6);
     const spin = performance.now() / 70;
@@ -7780,49 +8065,63 @@ Object.assign(HAT_DRAWERS, {
 
   // A black pirate hat with gold trim and a tiny skull.
   pirateHat(ctx, cx, cy, r) {
+    // A black pirate hat whose bottom edge curves over the head, so it sits
+    // on it rather than floating above.
+    const rimY = cy - r * 0.35;
     ctx.fillStyle = "#26222a";
     ctx.beginPath();
-    ctx.moveTo(cx - r - 5, cy - r + 3);
-    ctx.quadraticCurveTo(cx - r + 2, cy - r - 10, cx, cy - r - 12);
-    ctx.quadraticCurveTo(cx + r - 2, cy - r - 10, cx + r + 5, cy - r + 3);
-    ctx.quadraticCurveTo(cx, cy - r - 2, cx - r - 5, cy - r + 3);
+    ctx.moveTo(cx - r - 5, rimY);
+    ctx.quadraticCurveTo(cx - r + 1, cy - r - 8, cx, cy - r - 11);
+    ctx.quadraticCurveTo(cx + r - 1, cy - r - 8, cx + r + 5, rimY);
+    ctx.quadraticCurveTo(cx, cy - r * 1.05, cx - r - 5, rimY);
     ctx.fill();
     ctx.strokeStyle = "#d9a441";
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.3;
     ctx.beginPath();
-    ctx.moveTo(cx - r - 4, cy - r + 2.5);
-    ctx.quadraticCurveTo(cx, cy - r - 2.5, cx + r + 4, cy - r + 2.5);
+    ctx.moveTo(cx - r - 4, rimY - 0.5);
+    ctx.quadraticCurveTo(cx, cy - r * 1.05 - 1, cx + r + 4, rimY - 0.5);
     ctx.stroke();
     ctx.fillStyle = "#f7f1e6"; // skull
     ctx.beginPath();
-    ctx.arc(cx, cy - r - 5, 2.6, 0, Math.PI * 2);
+    ctx.arc(cx, cy - r - 4, 2.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#26222a";
-    ctx.fillRect(cx - 1.4, cy - r - 5.5, 1, 1);
-    ctx.fillRect(cx + 0.4, cy - r - 5.5, 1, 1);
+    ctx.fillRect(cx - 1.5, cy - r - 4.6, 1.1, 1.1);
+    ctx.fillRect(cx + 0.4, cy - r - 4.6, 1.1, 1.1);
   },
 
   // A viking helmet with horns.
   vikingHelmet(ctx, cx, cy, r) {
+    // Horns first (behind the helmet): ivory with a darker outline and
+    // shading, so they show up on any background.
     for (const side of [-1, 1]) {
-      ctx.fillStyle = "#efe4cf";
       ctx.beginPath();
-      ctx.moveTo(cx + side * (r - 2), cy - r * 0.55);
-      ctx.quadraticCurveTo(cx + side * (r + 9), cy - r * 0.6, cx + side * (r + 6), cy - r - 8);
-      ctx.quadraticCurveTo(cx + side * (r + 3), cy - r * 0.9, cx + side * (r - 3), cy - r * 0.95);
+      ctx.moveTo(cx + side * (r - 2), cy - r * 0.5);
+      ctx.quadraticCurveTo(cx + side * (r + 10), cy - r * 0.55, cx + side * (r + 7), cy - r - 9);
+      ctx.quadraticCurveTo(cx + side * (r + 3), cy - r * 0.95, cx + side * (r - 3), cy - r * 0.95);
+      ctx.closePath();
+      const horn = ctx.createLinearGradient(cx + side * r, cy - r - 9, cx + side * r, cy - r * 0.5);
+      horn.addColorStop(0, "#fdf8ee");
+      horn.addColorStop(1, "#d9c7a0");
+      ctx.fillStyle = horn;
       ctx.fill();
+      ctx.strokeStyle = "#8a7550";
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
     ctx.fillStyle = "#8a8f96";
     ctx.beginPath();
     ctx.arc(cx, cy - 1, r + 1, Math.PI * 1.06, Math.PI * 1.94);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
     ctx.beginPath();
     ctx.ellipse(cx - 4, cy - r + 2, 4, 2, -0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#6b6f75";
+    ctx.fillStyle = "#6b6f75"; // the rim, with rivets
     ctx.fillRect(cx - r, cy - r * 0.5, r * 2, 3);
+    ctx.fillStyle = "#c9ccd0";
+    for (const dx of [-8, 0, 8]) ctx.fillRect(cx + dx - 0.6, cy - r * 0.5 + 0.8, 1.2, 1.2);
   },
 
   // A graduation cap with a swinging tassel.
@@ -7908,23 +8207,24 @@ Object.assign(HAT_DRAWERS, {
 
   // A wide straw sun hat with a ribbon.
   strawHat(ctx, cx, cy, r) {
+    const brimY = cy - r * 0.6; // above the eyes
     ctx.fillStyle = "#e3c27a";
     ctx.beginPath();
-    ctx.ellipse(cx, cy - r * 0.4, r + 8, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, brimY, r + 8, 3.6, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#edd08e";
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - r + 1, r - 3, 6, 0, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = "#e8607a";
-    ctx.fillRect(cx - r + 3, cy - r * 0.62, r * 2 - 6, 2.5);
     ctx.strokeStyle = "rgba(150, 110, 40, 0.3)";
     ctx.lineWidth = 0.6;
-    for (let k = -2; k <= 2; k++) {
+    for (let k = 1; k <= 2; k++) {
       ctx.beginPath();
-      ctx.ellipse(cx, cy - r * 0.4, r + 8 - Math.abs(k) * 2, 4, 0, 0, Math.PI);
+      ctx.ellipse(cx, brimY, r + 8 - k * 3, 3.6 - k * 0.8, 0, 0, Math.PI);
       ctx.stroke();
     }
+    ctx.fillStyle = "#edd08e";
+    ctx.beginPath();
+    ctx.ellipse(cx, brimY - 1, r - 3, 7, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#e8607a";
+    ctx.fillRect(cx - r + 3, brimY - 4, r * 2 - 6, 2.5);
   },
 });
 
@@ -9468,6 +9768,32 @@ function drawDoorTags(ctx, me) {
     ctx.fillStyle = "#5c4530";
     ctx.fillText(room.name, c.x, y + 12.5);
   }
+  // Bedroom doors: whose room, whether you can come in, and their note.
+  for (const f of FURNITURE) {
+    if (f.kind !== "bedroomDoor" || !f.door || floorOf(f.y) !== viewFloor) continue;
+    const id = "door-" + f.door.owner;
+    const near = me && Math.abs(me.x + PLAYER_SIZE / 2 - (f.x + f.w / 2)) < NEAR_DOOR && Math.abs(me.y + PLAYER_SIZE / 2 - f.y) < NEAR_DOOR;
+    const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
+    signFade[id] = fade;
+    if (fade === 0) continue;
+    const status = { open: "Open", knock: "Knock first", private: "Private", party: "Party!" }[f.door.privacy] ?? "Open";
+    const lines = [`${f.door.owner}'s room · ${status}${f.door.online ? "" : " · 🌙 asleep"}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
+    const c = toScreen(f.x + f.w / 2, f.y);
+    const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14, h = 6 + lines.length * 13;
+    const x = c.x - w / 2, y = c.y + 4;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    roundRectPath(ctx, x + 1, y + 2, w, h, 8);
+    ctx.fill();
+    roundRectPath(ctx, x, y, w, h, 8);
+    ctx.fillStyle = "#fffaf3";
+    ctx.fill();
+    ctx.strokeStyle = "#c9955f";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#5c4530";
+    lines.forEach((l, i) => ctx.fillText(l, c.x, y + 13 + i * 13));
+  }
   ctx.globalAlpha = 1;
   ctx.textAlign = "left";
 }
@@ -9508,6 +9834,18 @@ function drawStudySign(ctx, text) {
 // rectangles in grid units.
 function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
+  // Around a bedroom: everything outside its four walls.
+  const bedroom = viewedBedroom();
+  if (bedroom) {
+    const { x, y, w, h } = bedroom.rect;
+    const l = -t - 2, r = HOUSE_WIDTH + t + 2, top = base + houseTopY - 2, bottom = base + 12;
+    return [
+      { x: l, y: top, w: r - l, h: y - t - top },
+      { x: l, y: y + h + t, w: r - l, h: bottom - (y + h + t) },
+      { x: l, y: y - t, w: x - t - l, h: h + 2 * t },
+      { x: x + w + t, y: y - t, w: r - (x + w + t), h: h + 2 * t },
+    ];
+  }
   const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
     .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
     .sort((a, b) => a[0] - b[0]);

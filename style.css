@@ -2774,7 +2774,8 @@ input[type="range"]::-moz-range-thumb {
 /* The Study's turntable (turntable.js): a warm wooden crate of records,
    one per lo-fi type. The one you're playing spins and has a ring. */
 #turntable-panel:not([hidden]),
-#wardrobe-panel:not([hidden]) {
+#wardrobe-panel:not([hidden]),
+#door-panel:not([hidden]) {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -3500,4 +3501,270 @@ input[type="range"]::-moz-range-thumb {
   background:
     radial-gradient(circle, #fffaf3 58%, transparent 61%),
     conic-gradient(var(--accent) var(--cooldown), #e6dccb var(--cooldown)) !important;
+}
+
+/* Your bedroom door's settings (rooms.js): rows of choice buttons, a
+   note, in the same cream card as the turntable. */
+#door-panel {
+  width: min(430px, calc(100% - 28px)) !important;
+}
+
+#door-panel h3 {
+  margin: 0;
+}
+
+.door-label {
+  align-self: flex-start;
+  margin: 4px 0 0;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: #6b4f38;
+}
+
+.door-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.door-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 2px solid #ead8bd;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #6b4f38;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.door-choice.chosen {
+  background: #f3e6d0;
+  border-color: #c98a3a;
+  color: #4a3a2c;
+}
+
+#door-note {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 7px 10px;
+  border: 2px solid #ead8bd;
+  border-radius: 10px;
+  background: #fffdf8;
+  color: #4a3a2c;
+  outline: none;
+}
+
+#door-note:focus {
+  border-color: #c98a3a;
+}
+
+/* The bedroom journal (journal.js): a cream page with lined paper. */
+#journal-panel:not([hidden]) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(480px, calc(100% - 28px));
+  box-sizing: border-box;
+  padding: 14px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fffaf3;
+  border: 6px solid #7a5238;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(60, 35, 15, 0.35);
+  color: #4a3a2c;
+}
+
+.journal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.journal-top h3 {
+  margin: 0;
+}
+
+#journal-lock:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+#journal-lock p {
+  margin: 0;
+  text-align: center;
+}
+
+#journal-password {
+  width: 80%;
+  padding: 6px 10px;
+  border: 1px solid #c9a27a;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.journal-dates {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+
+.journal-flip {
+  border: none;
+  background: #f2e3cf;
+  color: #6b4f38;
+  border-radius: 8px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.journal-flip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.journal-mood-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  font-size: 0.9em;
+  color: #6b4f38;
+}
+
+.journal-mood {
+  border: 2px solid transparent;
+  background: none;
+  font-size: 1.35em;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 1px 3px;
+}
+
+.journal-mood.chosen {
+  border-color: #d9a441;
+  background: #fff1cf;
+}
+
+#journal-text {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid #d8c3a5;
+  border-radius: 10px;
+  font: inherit;
+  line-height: 24px;
+  background: repeating-linear-gradient(#fffdf8, #fffdf8 23px, #eadcc6 24px);
+  color: #3f3024;
+}
+
+.journal-status {
+  margin: 0;
+  font-size: 0.8em;
+  color: #8a7058;
+  text-align: center;
+}
+
+/* The bedroom phone (phone.js). */
+#phone-panel:not([hidden]) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100% - 28px));
+  box-sizing: border-box;
+  padding: 14px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fffaf3;
+  border: 6px solid #b8403c;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(60, 35, 15, 0.35);
+  color: #4a3a2c;
+}
+
+#phone-friends {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.phone-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f7ecdc;
+  border-radius: 10px;
+}
+
+.phone-empty {
+  margin: 0;
+  text-align: center;
+  color: #8a7058;
+}
+
+#phone-message:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#phone-message p {
+  margin: 0;
+}
+
+#phone-message-text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid #d8c3a5;
+  border-radius: 10px;
+  font: inherit;
+}
+
+#phone-popup:not([hidden]) {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffaf3;
+  border: 3px solid #b8403c;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(60, 35, 15, 0.3);
+  color: #4a3a2c;
+  z-index: 50;
+  white-space: nowrap;
+  animation: pop-in 0.2s ease-out;
+}
+
+#phone-popup p {
+  margin: 0;
+  font-weight: 700;
+}
+
+#phone-popup-buttons {
+  display: flex;
+  gap: 6px;
 }

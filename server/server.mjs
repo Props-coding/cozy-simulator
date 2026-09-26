@@ -40,6 +40,7 @@ const TURN_HOST = env.TURN_HOST || "api.thecozy.world";
 // --- The data file ---
 // users: lowercase name -> { name, salt, hash, createdAt, member, save, reset, inbox, bio }
 // kanban: the Workshop's boards (see applyKanban)
+// rooms: everyone's bedroom (see ensureRoom)
 // sessions: hash of a login token -> { user, createdAt, lastUsed }
 let db = { users: {}, sessions: {} };
 
@@ -183,6 +184,7 @@ function currentUser(req) {
   const user = session && db.users[session.user];
   if (!user) throw new Oops(401, "Please log in again.");
   session.lastUsed = Date.now();
+  user.lastSeen = session.lastUsed; // (for "who's online": offline people sleep in their bedrooms)
   return { user, key: session.user, tokenHash: sha256(token) };
 }
 
@@ -333,6 +335,126 @@ function applyKanban(body, user) {
     default:
       throw new Oops(400, "That's not something the board can do.");
   }
+}
+
+// --- Bedrooms ---
+// Every member has one bedroom, kept here so it's there even when they're
+// offline: db.rooms[account key] = { owner, map, style, size, placed,
+// privacy, note, deco, audio, migratedAt }. `map` is which bedroom map it
+// is (each room is its own little map). The first time a room is needed,
+// it's made from that person's saved bedroom (their layout and size), so
+// nothing they placed is lost.
+const ROOM_PRIVACY = ["open", "knock", "private", "party"];
+const DOOR_DECOS = ["none", "wreath", "flowers", "star", "heart", "plant", "pumpkin", "snowflake"];
+const ROOM_STYLES = ["classic", "cabin", "apartment", "beachHut", "lakehouse", "stalker", "scholar", "cottage"];
+const ROOM_AUDIO = ["voice", "lofi", "silent"];
+const ROOM_SIZES = ["cozy", "roomy"];
+// The personal themes, only for their owners.
+const THEME_OWNERS = { lakehouse: "props", stalker: "brightness", scholar: "kxiven", cottage: "lyss" };
+const ONLINE_MS = 90_000; // seen this recently = online (the page checks in every 30 seconds)
+
+function savedData(user, key) {
+  try {
+    return JSON.parse(user.save?.data?.[key] ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+// A placed piece of decor, checked: { item, x, y } and maybe r (turned).
+function cleanPiece(p) {
+  if (!p || typeof p.item !== "string" || p.item.length > 40 || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+  const piece = { item: p.item, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000 };
+  if (p.r === 1 || p.r === 3) piece.r = p.r;
+  return piece;
+}
+
+function ensureRoom(key, user) {
+  db.rooms ??= {};
+  let room = db.rooms[key];
+  if (!room) {
+    const home = savedData(user, "cozy-house-home") ?? {};
+    const maps = Object.values(db.rooms).map((r) => r.map);
+    const theme = Object.keys(THEME_OWNERS).find((t) => THEME_OWNERS[t] === key);
+    room = {
+      owner: user.name,
+      map: maps.length ? Math.max(...maps) + 1 : 0,
+      style: theme ?? "classic",
+      size: home.size === "roomy" ? "roomy" : "cozy",
+      placed: (Array.isArray(home.placed) ? home.placed : []).slice(0, 80).map(cleanPiece).filter(Boolean),
+      privacy: "open",
+      note: "",
+      deco: "none",
+      audio: "voice",
+      migratedAt: Date.now(),
+    };
+    db.rooms[key] = room;
+    roomsChanged = true;
+  }
+  room.owner = user.name; // (follows a name change)
+  return room;
+}
+let roomsChanged = false;
+
+// Whether `viewerKey` may be in `key`'s room right now: the owner always;
+// anyone while it's open (or a party); with "knock first", only people the
+// owner let in (for a little while after); a private room, nobody else at
+// all (admins included).
+const LET_IN_MS = 10 * 60_000; // how long a let-in lasts to walk in
+function mayEnter(room, key, viewerKey) {
+  if (viewerKey === key) return true;
+  if (room.privacy === "open" || room.privacy === "party") return true;
+  if (room.privacy === "knock") return (room.allowed?.[viewerKey] ?? 0) > Date.now();
+  return false;
+}
+
+// Whether `viewerKey` may see inside right now: anyone who may walk in,
+// plus people already let in to a "knock first" room who haven't left
+// yet (room.inside, cleared when they walk out, or a few minutes after
+// their browser stops checking in).
+function maySee(room, key, viewerKey) {
+  if (mayEnter(room, key, viewerKey)) return true;
+  return room.privacy === "knock" && (room.inside?.[viewerKey] ?? 0) > Date.now();
+}
+
+// A room pass: the server's signature on "room|owner|visitor|peer id|expires",
+// which everyone's browser checks before they show (or talk to) someone
+// inside a bedroom. Signed with the badge key, so nobody can make their own.
+const PASS_HOURS = 12;
+// A let-in visitor stays welcome while their browser keeps checking in;
+// if they just close the page, they need to knock again after this long.
+const INSIDE_MS = 3 * 60_000;
+function roomPass(ownerKey, visitorKey, peerId) {
+  const payload = `room|${ownerKey}|${visitorKey}|${peerId}|${Date.now() + PASS_HOURS * 3600_000}`;
+  return { payload, sig: sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64") };
+}
+
+// Scrambled (encrypted) text from the journal, as base64, or null.
+const sealed = (v, max) => (typeof v === "string" && v.length <= max && /^[A-Za-z0-9+/=]+$/.test(v) ? v : null);
+
+// A short piece of text from a save, or null.
+const shortText = (v, max) => (typeof v === "string" ? v.slice(0, max) : null);
+
+// What everyone sees of a room from the hallway: the door (and, if
+// they're allowed in, what's inside).
+function doorInfo(key, user, viewerKey = key) {
+  const room = ensureRoom(key, user);
+  const look = savedData(user, "cozy-house-profile") ?? {};
+  return {
+    owner: user.name,
+    map: room.map,
+    color: /^#[0-9a-fA-F]{6}$/.test(look.color) ? look.color : "#999999",
+    privacy: room.privacy,
+    note: room.note,
+    deco: room.deco,
+    style: room.style,
+    size: room.size,
+    audio: room.audio,
+    placed: maySee(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
+    // How they look, so they can be shown asleep in bed while they're away.
+    look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30) },
+    online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
+  };
 }
 
 const routes = {
@@ -530,10 +652,163 @@ const routes = {
     return { ...kanbanState(), result };
   },
 
+  // --- Bedrooms: everyone's door (for the bedroom hallway) ---
+  "GET /api/rooms": async (req) => {
+    const { user: me, key: myKey } = currentUser(req);
+    if (!me.member) throw new Oops(403, "Enter the house phrase first.");
+    const doors = Object.entries(db.users)
+      .filter(([, u]) => u.member)
+      .map(([key, u]) => doorInfo(key, u, myKey))
+      .sort((a, b) => a.owner.toLowerCase().localeCompare(b.owner.toLowerCase()));
+    if (roomsChanged) {
+      roomsChanged = false;
+      await saveDb();
+    }
+    return { doors };
+  },
+
+  // Your own door: who can come in, a short note, and a decoration.
+  "PUT /api/room/door": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 5_000);
+    const room = ensureRoom(key, user);
+    if (body.privacy !== undefined) {
+      if (!ROOM_PRIVACY.includes(body.privacy)) throw new Oops(400, "That's not a door setting.");
+      room.privacy = body.privacy;
+      // Going private sends everyone else out (their browsers see it).
+      if (room.privacy === "private") room.allowed = room.inside = {};
+    }
+    if (body.note !== undefined) room.note = String(body.note).replace(/\s+/g, " ").trim().slice(0, 40);
+    if (body.deco !== undefined) {
+      if (!DOOR_DECOS.includes(body.deco)) throw new Oops(400, "That's not a door decoration.");
+      room.deco = body.deco;
+    }
+    if (body.audio !== undefined) {
+      if (!ROOM_AUDIO.includes(body.audio)) throw new Oops(400, "That's not a room sound.");
+      room.audio = body.audio;
+    }
+    if (body.style !== undefined) {
+      if (!ROOM_STYLES.includes(body.style)) throw new Oops(400, "That's not a room style.");
+      if (THEME_OWNERS[body.style] && THEME_OWNERS[body.style] !== key) throw new Oops(403, "That style belongs to someone else.");
+      room.style = body.style;
+    }
+    await saveDb();
+    return { door: doorInfo(key, user) };
+  },
+
+  // Going into someone's bedroom (or your own): a pass if you may.
+  "POST /api/room/enter": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const ownerKey = String(body.owner ?? "").trim().toLowerCase();
+    const peerId = String(body.peerId ?? "");
+    const room = db.rooms?.[ownerKey];
+    if (!room || !db.users[ownerKey]?.member) throw new Oops(404, "There's no room like that.");
+    if (!/^[\w-]{1,64}$/.test(peerId)) throw new Oops(400, "That doesn't look right.");
+    if (!maySee(room, ownerKey, key)) {
+      if (room.privacy === "knock") throw new Oops(403, "knock");
+      throw new Oops(403, "private");
+    }
+    const pass = roomPass(ownerKey, key, peerId);
+    if (key !== ownerKey && room.privacy === "knock") {
+      // A let-in is used up once you're in; you stay welcome until you leave.
+      if (room.allowed) delete room.allowed[key];
+      room.inside ??= {};
+      room.inside[key] = Date.now() + INSIDE_MS; // (their browser checks in every minute while inside)
+      await saveDb();
+    }
+    return { pass };
+  },
+
+  // Walking back out of someone's bedroom (so a "knock first" room needs
+  // a new knock next time).
+  "POST /api/room/leave": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const room = db.rooms?.[String(body.owner ?? "").trim().toLowerCase()];
+    if (room?.inside?.[key]) {
+      delete room.inside[key];
+      await saveDb();
+    }
+    return { ok: true };
+  },
+
+  // The owner lets someone who knocked come in.
+  "POST /api/room/let-in": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const visitorKey = String(body.name ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    if (!db.users[visitorKey]?.member) throw new Oops(404, "There's nobody by that name.");
+    const room = ensureRoom(key, user);
+    room.allowed = Object.fromEntries(Object.entries(room.allowed ?? {}).filter(([, until]) => until > Date.now()));
+    room.allowed[visitorKey] = Date.now() + LET_IN_MS;
+    await saveDb();
+    return { ok: true };
+  },
+
+  // What's in your own room (from your decorating), and its size.
+  "PUT /api/room/home": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 20_000);
+    const room = ensureRoom(key, user);
+    if (!Array.isArray(body.placed) || !ROOM_SIZES.includes(body.size)) throw new Oops(400, "That doesn't look like a room.");
+    room.placed = body.placed.slice(0, 80).map(cleanPiece).filter(Boolean);
+    room.size = body.size;
+    await saveDb();
+    return { ok: true };
+  },
+
+  // --- The bedroom journal ---
+  // Locked in your own browser before it ever gets here: the server (and
+  // anyone who can read its files, admins included) only keeps scrambled
+  // text. db.journals[account] = { lock: { salt, iv, data }, entries:
+  // { "2026-09-26": { iv, data } } }. The lock is the journal's key,
+  // itself locked with your password; only your browser can open it.
+  "GET /api/journal": async (req) => {
+    const { key } = currentUser(req);
+    const journal = db.journals?.[key];
+    return { lock: journal?.lock ?? null, entries: journal?.entries ?? {} };
+  },
+  "PUT /api/journal/lock": async (req) => {
+    const { key } = currentUser(req);
+    const body = await readJson(req, 5_000);
+    const lock = { salt: sealed(body.salt, 64), iv: sealed(body.iv, 64), data: sealed(body.data, 200) };
+    if (!lock.salt || !lock.iv || !lock.data) throw new Oops(400, "That lock doesn't look right.");
+    db.journals ??= {};
+    const journal = (db.journals[key] ??= { lock: null, entries: {} });
+    // A new lock only replaces an old one on purpose (after a password change).
+    if (journal.lock && body.replace !== true) throw new Oops(409, "Your journal already has a lock.");
+    journal.lock = lock;
+    await saveDb();
+    return { ok: true };
+  },
+  "PUT /api/journal/entry": async (req) => {
+    const { key } = currentUser(req);
+    const body = await readJson(req, 40_000);
+    const journal = db.journals?.[key];
+    if (!journal?.lock) throw new Oops(400, "Your journal isn't set up yet.");
+    const date = String(body.date ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Oops(400, "That's not a date.");
+    if (body.data === null) delete journal.entries[date];
+    else {
+      const entry = { iv: sealed(body.iv, 64), data: sealed(body.data, 30_000) };
+      if (!entry.iv || !entry.data) throw new Oops(400, "That entry doesn't look right.");
+      if (!journal.entries[date] && Object.keys(journal.entries).length >= 5000) throw new Oops(403, "Your journal is full.");
+      journal.entries[date] = entry;
+    }
+    await saveDb();
+    return { ok: true };
+  },
+
   // --- Profiles: what friends see when they click on you. Your look,
   // achievements and hours come from your cloud save; the bio you write.
   "GET /api/profile": async (req) => {
-    const { user: me } = currentUser(req);
+    const { user: me, key: myKey } = currentUser(req);
     if (!me.member) throw new Oops(403, "Enter the house phrase first.");
     const name = new URL(req.url, "http://x").searchParams.get("name") ?? "";
     const user = db.users[name.trim().replace(/\s+/g, " ").toLowerCase()];
@@ -580,7 +855,7 @@ const routes = {
     };
   },
   "POST /api/admin/reset": async (req) => {
-    const { user: me } = currentUser(req);
+    const { user: me, key: myKey } = currentUser(req);
     if (!me.admin) throw new Oops(403, "Admins only.");
     const body = await readJson(req, 2_000);
     const user = db.users[String(body.name ?? "").trim().toLowerCase()];
@@ -622,6 +897,14 @@ const routes = {
       db.users[newKey] = user;
       delete db.users[key];
       for (const s of Object.values(db.sessions)) if (s.user === key) s.user = newKey;
+      if (db.rooms?.[key]) {
+        db.rooms[newKey] = db.rooms[key]; // your bedroom comes with you
+        delete db.rooms[key];
+      }
+      if (db.journals?.[key]) {
+        db.journals[newKey] = db.journals[key]; // and your journal
+        delete db.journals[key];
+      }
     }
     await saveDb();
     return { user: publicUser(user) };
@@ -693,6 +976,8 @@ const adminRoutes = {
     if (!db.users[key]) throw new Oops(404, "No account with that name.");
     const name = db.users[key].name;
     delete db.users[key];
+    delete db.rooms?.[key]; // and their bedroom
+    delete db.journals?.[key]; // and their journal
     for (const [k, s] of Object.entries(db.sessions)) if (s.user === key) delete db.sessions[k];
     await saveDb();
     return { name };

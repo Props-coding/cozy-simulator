@@ -4,12 +4,21 @@
 
 // Rooms where voice chat is on: the Theater and the Conference Room, plus
 // every office and bedroom (where you only hear the people in that same
-// room). main.js passes "asleep" as the room while you're in bed, which
-// isn't a voice room: your mic is off and you hear nobody.
+// room; a bedroom's owner can also pick lo-fi or silence instead). main.js
+// passes "asleep" as the room while you're in bed, which isn't a voice
+// room: your mic is off and you hear nobody.
 const VOICE_ROOMS = ["theater", "conference", "workshop"];
 
 function isVoiceRoom(roomId) {
-  return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-") || roomId.startsWith("bedroom-");
+  if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
+  return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-");
+}
+
+// main.js tells us how to look up a bedroom's sound ("voice", "lofi" or
+// "silent"), from its owner's door.
+let bedroomAudio = () => "voice";
+export function setBedroomAudioLookup(lookup) {
+  bedroomAudio = lookup;
 }
 
 // Dinner ("away eating") and being asleep: no sounds at all, not even
@@ -89,6 +98,18 @@ export function playRoomChangeSound(roomId) {
 export function playKnockSound() {
   playTone(170, 0, { gain: 0.3, duration: 0.08, type: "triangle" });
   playTone(150, 180, { gain: 0.3, duration: 0.08, type: "triangle" });
+}
+
+// A friendly old-phone trill (played every few seconds while it rings).
+export function playPhoneRing() {
+  for (let i = 0; i < 6; i++) playTone(i % 2 ? 1320 : 1100, i * 70, { gain: 0.06, duration: 0.06, type: "square" });
+  for (let i = 0; i < 6; i++) playTone(i % 2 ? 1320 : 1100, 600 + i * 70, { gain: 0.06, duration: 0.06, type: "square" });
+}
+
+// The click of a phone being hung up.
+export function playHangUp() {
+  playTone(300, 0, { gain: 0.15, duration: 0.05, type: "triangle" });
+  playTone(220, 60, { gain: 0.12, duration: 0.08, type: "triangle" });
 }
 
 // Three gentle rising notes: the Study focus timer moving on to a break,
@@ -781,6 +802,21 @@ export function isSpeaking() {
   return now - lastLoud < CONFIG.speaking.holdMs;
 }
 
+// --- Voice lines ---
+// Every friend gets their own copy of your mic line, switched off. Only
+// the lines to friends in the same voice room as you are switched on
+// (see updateVoiceRouting), so your voice never goes to anyone else.
+const voiceTracks = {}; // peer id -> your line to them
+
+// Makes a friend's line. network.js sends it to them only.
+export function makeVoiceStream(peerId) {
+  if (!localTrack || voiceTracks[peerId]) return null;
+  const track = localTrack.clone();
+  track.enabled = false;
+  voiceTracks[peerId] = track;
+  return new MediaStream([track]);
+}
+
 // --- Whispering ---
 // Every friend gets their own private copy of your mic line, switched off.
 // Whispering switches on just the one to the friend you're whispering to
@@ -856,23 +892,29 @@ export function resumeAudio() {
 export function removePeerAudio(peerId) {
   peerAudioElements[peerId]?.remove();
   delete peerAudioElements[peerId];
+  voiceTracks[peerId]?.stop();
+  delete voiceTracks[peerId];
   whisperAudioElements[peerId]?.remove();
   forgetWhisperLine(peerId);
 }
 
 // Call every frame with your current room and the list of peers, to
-// mute or unmute each friend's voice according to the room rules.
-export function updateVoiceRouting(myRoomId, peers) {
+// switch your line to each friend on or off, and mute or unmute their
+// voice, according to the room rules. `allowed(peer)` says whether a
+// friend may be where they are (see the room passes in main.js).
+export function updateVoiceRouting(myRoomId, peers, allowed = () => true) {
   const iAmInVoiceRoom = isVoiceRoom(myRoomId);
   for (const peer of peers) {
+    const sameVoiceRoom = iAmInVoiceRoom && peer.room === myRoomId && allowed(peer);
+    if (voiceTracks[peer.id]) voiceTracks[peer.id].enabled = sameVoiceRoom && !whisperingTo && !!localTrack?.enabled;
     const audioEl = peerAudioElements[peer.id];
     if (!audioEl) continue;
-    const sameVoiceRoom = iAmInVoiceRoom && peer.room === myRoomId;
     audioEl.muted = masterMuted || !sameVoiceRoom;
     audioEl.volume = masterVolume;
   }
-  for (const el of Object.values(whisperAudioElements)) {
-    el.muted = masterMuted || isSilentSpot();
+  for (const [id, el] of Object.entries(whisperAudioElements)) {
+    const peer = peers.find((p) => p.id === id);
+    el.muted = masterMuted || isSilentSpot() || (peer ? !allowed(peer) : false);
     el.volume = masterVolume;
   }
 }
