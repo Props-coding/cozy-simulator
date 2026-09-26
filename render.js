@@ -9127,18 +9127,79 @@ function tagLiftFor(hat) {
   return Math.max(0, height + 5 - 8);
 }
 
-function drawPlayerTag(ctx, p) {
-  const foot = playerFeet(p);
-  const cx = foot.x;
+// How far each player's labels are pushed up this moment to stay clear of
+// a nearby friend's labels (eased too, so tags glide apart and back
+// together instead of jumping). Keyed by player id.
+const tagStacks = {};
+
+// Where each player's labels go this frame. Normally right above their
+// head, but when two people stand close, their name tags (plus badge and
+// speech bubble) would pile on top of each other. So we place them one
+// by one, starting with whoever stands lowest on screen (the one in
+// front), and if someone's labels would touch labels already placed,
+// they're lifted just above them. Returns a list of { p, cx, headTop }.
+function layoutPlayerTags(ctx, players) {
   const now = performance.now();
-  const step = Math.min(1, ((now - lastTagTime) / 1000) * 10);
+  const step = Math.min(1, ((now - lastTagTime) / 1000) * 10); // same easing speed for everyone
   lastTagTime = now;
-  const target = p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat);
-  const lift = (tagLifts[p.id] ??= target);
-  tagLifts[p.id] = lift + (target - lift) * step;
-  // The top of their head plus room for their hat. The name, badge, speech
-  // bubbles and emotes all sit above this, so none of them cover the hat.
-  const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
+  const tags = players.map((p) => {
+    const foot = playerFeet(p);
+    const target = p.aura?.robe && !p.asleep ? tagLiftFor("hood") : tagLiftFor(p.hat);
+    const lift = (tagLifts[p.id] ??= target);
+    tagLifts[p.id] = lift + (target - lift) * step;
+    // The top of their head plus room for their hat. The name, badge, speech
+    // bubbles and emotes all sit above this, so none of them cover the hat.
+    const headTop = foot.y - PLAYER_RADIUS * 2 - 10 - tagLifts[p.id] + seatLift(p.seated);
+    // How wide and tall their labels are, measured the same way they're drawn.
+    ctx.font = "600 11px 'Quicksand', sans-serif";
+    let width = ctx.measureText(p.name).width + 12 + (p.admin ? 13 : 0);
+    let height = 18; // just the name tag
+    if (p.badge) {
+      ctx.font = "13px sans-serif";
+      width = Math.max(width, ctx.measureText(p.badge).width + 16);
+      height = 40;
+    }
+    if (p.bubble || p.typing) {
+      ctx.font = "600 12px 'Quicksand', sans-serif";
+      const bubbleWidth = p.bubble ? ctx.measureText(clipText(p.bubble, 34, "…")).width + 18 : 34;
+      width = Math.max(width, bubbleWidth);
+      height = (p.badge ? 46 : 26) + 22;
+    }
+    return { p, cx: foot.x, headTop, width, height, top: headTop };
+  });
+
+  // Front to back: the person lowest on screen keeps their spot.
+  tags.sort((a, b) => b.headTop - a.headTop);
+  const GAP = 2; // pixels between stacked labels
+  const placed = [];
+  for (const t of tags) {
+    // The labels run from (top - height) down to (top - 4), the bottom of
+    // the name tag. Keep lifting until nothing already placed is in the way.
+    let bumped = true;
+    while (bumped) {
+      bumped = false;
+      for (const o of placed) {
+        const sideBySide = Math.abs(t.cx - o.cx) >= (t.width + o.width) / 2 + GAP;
+        const clear = t.top - 4 + GAP <= o.top - o.height || t.top - t.height >= o.top - 4 + GAP;
+        if (!sideBySide && !clear) {
+          t.top = o.top - o.height - GAP + 4; // sit just above their labels
+          bumped = true;
+        }
+      }
+    }
+    placed.push(t);
+  }
+
+  return tags.map((t) => {
+    const target = t.top - t.headTop; // 0, or how far up it had to go
+    const stack = (tagStacks[t.p.id] ??= target);
+    tagStacks[t.p.id] = stack + (target - stack) * step;
+    return { p: t.p, cx: t.cx, headTop: t.headTop + tagStacks[t.p.id] };
+  });
+}
+
+// Draws one player's labels at the spot layoutPlayerTags picked.
+function drawPlayerTag(ctx, { p, cx, headTop }) {
 
   if (p.emote) drawEmoteFloaters(ctx, p, cx, headTop);
   if (p.whisper) drawWhisperSwirl(ctx, cx, headTop, p.whisper.dir);
@@ -9692,7 +9753,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   drawLights(ctx);
   if (held) drawHeldPiece(ctx, held);
   if (studySign) drawStudySign(ctx, studySign); // under name tags, so names stay readable
-  for (const p of players) drawPlayerTag(ctx, p);
+  for (const tag of layoutPlayerTags(ctx, players)) drawPlayerTag(ctx, tag);
   for (const pet of pets) drawPetHearts(ctx, pet);
   drawDoorTags(ctx, me); // on top: it's only there because you walked up to a door
   ctx.restore();
