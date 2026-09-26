@@ -16,7 +16,7 @@ const CONFIG = {
     elevator: "Elevator",
     business: "Business Floor",
     lounge: "Lounge",
-    landing: "Bedroom Hall",
+    landing: "Suite Floor",
     workshop: "Workshop",
   },
 
@@ -25,7 +25,7 @@ const CONFIG = {
   floors: [
     { name: "Ground floor", rooms: "Hallway, Theater, Study, Dinner, Library" },
     { name: "Business floor", rooms: "Offices, Conference Room, Workshop, Lounge" },
-    { name: "Bedrooms", rooms: "Everyone's bedroom" },
+    { name: "Suite floor", rooms: "Everyone's bedroom" },
   ],
 
   // Faces (the wardrobe's Face tab). How strong each cheek blush is (0 is
@@ -92,9 +92,10 @@ const CONFIG = {
 
   // Bedrooms: everyone's door is on the upstairs landing (the bedroom
   // hallway). Doors are checked with the house server every `pollSeconds`
-  // (and right away when a friend changes theirs). Doors are `doorSpacing`
-  // tiles apart, starting `firstDoorX` tiles from the west wall.
-  bedrooms: { pollSeconds: 20, doorSpacing: 2.8, firstDoorX: 1 },
+  // (and right away when a friend changes theirs). The suite floor's wall
+  // is split evenly into `doorSpots` spots, each with a door (or a window,
+  // until someone new moves in), with a lamp between each pair.
+  bedrooms: { pollSeconds: 20, doorSpots: 8 },
 
   // Sitting: press E within this many tiles of a free seat to sit down.
   sit: { reach: 1.0 },

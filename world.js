@@ -13,7 +13,7 @@
 // 2. Business floor: a corridor with the Conference Room and the offices
 //    on its north side, and the Workshop, the Lounge and the elevator
 //    lobby on its south side.
-// 3. Bedroom hall: everyone's bedroom door along its north wall. Each
+// 3. Suite floor: everyone's bedroom door along its north wall. Each
 //    bedroom is its own little map behind its door. The upstairs is
 // Each floor is kept further down the same grid (UPSTAIRS units lower
 // than the one before), so floors never overlap and all the walking and room rules work the same
@@ -551,6 +551,7 @@ const WINGS = {
 };
 const BEDROOM_DEPTH = 8; // every bedroom, from its back wall to its door
 const DOOR_WIDTH = 1.6;
+const SUITE_DOOR = 0.9; // a bedroom door on the suite floor (narrower: it's a door, not a doorway)
 
 // Left edge of spot 1, 2, 3... for a kind of room.
 function wingX(kind, slot) {
@@ -635,15 +636,17 @@ function buildHouse(offices, doors = []) {
   // The bedroom hallway (the upstairs landing): one solid wall with every
   // member's bedroom door on it, and a warm lamp between each pair.
   corridorWall(LANDING, []);
-  // Spots with no door yet get a rain window instead (the only place the
-  // weather shows, indoors).
-  const { doorSpacing, firstDoorX } = CONFIG.bedrooms;
-  const spots = Math.floor((HOUSE_WIDTH - firstDoorX) / doorSpacing);
+  // The wall is split evenly into spots, each with a door in the middle
+  // (a door is about one and a half people wide). Spots with no door yet get a rain
+  // window instead (the only place the weather shows, indoors). A lamp
+  // hangs between each pair of spots.
+  const spots = CONFIG.bedrooms.doorSpots;
+  const spot = HOUSE_WIDTH / spots;
   for (let i = 0; i < spots; i++) {
-    const x = firstDoorX + i * doorSpacing;
-    if (i < doors.length) furniture.push({ kind: "bedroomDoor", x, y: LANDING, w: DOOR_WIDTH, door: doors[i], solid: false });
-    else furniture.push({ kind: "rainWindow", x: x + (DOOR_WIDTH - 1.3) / 2, y: LANDING, w: 1.3, solid: false });
-    if (i < spots - 1 || x + doorSpacing < HOUSE_WIDTH) furniture.push({ kind: "sconce", x: x + DOOR_WIDTH + (doorSpacing - DOOR_WIDTH) / 2 - 0.15, y: LANDING, solid: false });
+    const middle = (i + 0.5) * spot;
+    if (i < doors.length) furniture.push({ kind: "bedroomDoor", x: middle - SUITE_DOOR / 2, y: LANDING, w: SUITE_DOOR, door: doors[i], solid: false });
+    else furniture.push({ kind: "rainWindow", x: middle - 0.65, y: LANDING, w: 1.3, solid: false });
+    if (i < spots - 1) furniture.push({ kind: "sconce", x: (i + 1) * spot - 0.15, y: LANDING, solid: false });
   }
 
   // Each bedroom, on its own map: four walls with a doorway in the bottom
