@@ -16,7 +16,7 @@ import { playCrumbSound, playClickSound } from "./audio.js";
 // size: "cozy" or "roomy". owned: item id -> how many you've bought.
 // placed: [{ item, x, y }], x and y from your room's top-left corner.
 const STORAGE_KEY = "cozy-house-home";
-let home = { size: "cozy", owned: { starterDesk: 1, starterMattress: 1 }, placed: [] };
+let home = { size: "cozy", owned: { starterDesk: 1, starterMattress: 1, starterNightstand: 1 }, placed: [] };
 try {
   const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if (loaded && typeof loaded === "object") {
@@ -729,7 +729,7 @@ function cancelHeld() {
 function putAwayHeld() {
   if (DECOR[held.item].keep) {
     playClickSound();
-    hooks.notice("Your laptop desk has to stay in your room, but you can move it anywhere.");
+    hooks.notice(`Your ${DECOR[held.item].name.toLowerCase()} has to stay in your room, but you can move it anywhere.`);
     return;
   }
   const wasPlaced = !!held.from;

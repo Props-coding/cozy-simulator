@@ -6134,6 +6134,16 @@ const FURNITURE_DRAWERS = {
     ctx.lineTo(cx - 5, cy - 22);
     ctx.closePath();
     ctx.fill();
+    // The journal lying beside the lamp, with a ribbon bookmark.
+    if (f.journal) {
+      const bx = n.top.x + 2, by = n.top.y + n.top.h / 2 - 3;
+      ctx.fillStyle = "#8c3b46";
+      ctx.fillRect(bx, by, 7, 5);
+      ctx.fillStyle = "#f3e6cc"; // the pages' edge
+      ctx.fillRect(bx + 7, by + 0.5, 1, 4);
+      ctx.fillStyle = "#e0b84c";
+      ctx.fillRect(bx + 4, by + 5, 1, 2.5);
+    }
   },
 
   // A tall wooden wardrobe with two doors and brass knobs.

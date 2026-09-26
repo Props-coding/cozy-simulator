@@ -204,6 +204,7 @@ passwordForm.addEventListener("submit", async (e) => {
   button.disabled = true;
   try {
     await api("POST", "/api/account/password", { current: current.value, password: next.value });
+    await passwordChanged(next.value).catch(() => {}); // (the journal's lock moves to the new password)
     current.value = next.value = again.value = "";
     showOk(passwordNote, "Password changed.");
   } catch (err) {
@@ -212,6 +213,12 @@ passwordForm.addEventListener("submit", async (e) => {
     button.disabled = false;
   }
 });
+
+// Called after you change your password (journal.js sets it).
+let passwordChanged = async () => {};
+export function onPasswordChange(callback) {
+  passwordChanged = callback;
+}
 
 // --- Cloud saves ---
 function collectSave() {
@@ -401,6 +408,7 @@ async function logOut(saveFirst = true) {
   storage.remove(ACCOUNT_KEY);
   storage.remove(SYNCED_KEY);
   for (const key of SAVE_KEYS) storage.remove(key); // the next person here starts clean
+  storage.remove("cozy-house-journal-key"); // (and can't open your journal)
   location.reload();
 }
 

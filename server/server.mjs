@@ -425,6 +425,9 @@ function roomPass(ownerKey, visitorKey, peerId) {
   return { payload, sig: sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64") };
 }
 
+// Scrambled (encrypted) text from the journal, as base64, or null.
+const sealed = (v, max) => (typeof v === "string" && v.length <= max && /^[A-Za-z0-9+/=]+$/.test(v) ? v : null);
+
 // A short piece of text from a save, or null.
 const shortText = (v, max) => (typeof v === "string" ? v.slice(0, max) : null);
 
@@ -756,6 +759,48 @@ const routes = {
     return { ok: true };
   },
 
+  // --- The bedroom journal ---
+  // Locked in your own browser before it ever gets here: the server (and
+  // anyone who can read its files, admins included) only keeps scrambled
+  // text. db.journals[account] = { lock: { salt, iv, data }, entries:
+  // { "2026-09-26": { iv, data } } }. The lock is the journal's key,
+  // itself locked with your password; only your browser can open it.
+  "GET /api/journal": async (req) => {
+    const { key } = currentUser(req);
+    const journal = db.journals?.[key];
+    return { lock: journal?.lock ?? null, entries: journal?.entries ?? {} };
+  },
+  "PUT /api/journal/lock": async (req) => {
+    const { key } = currentUser(req);
+    const body = await readJson(req, 5_000);
+    const lock = { salt: sealed(body.salt, 64), iv: sealed(body.iv, 64), data: sealed(body.data, 200) };
+    if (!lock.salt || !lock.iv || !lock.data) throw new Oops(400, "That lock doesn't look right.");
+    db.journals ??= {};
+    const journal = (db.journals[key] ??= { lock: null, entries: {} });
+    // A new lock only replaces an old one on purpose (after a password change).
+    if (journal.lock && body.replace !== true) throw new Oops(409, "Your journal already has a lock.");
+    journal.lock = lock;
+    await saveDb();
+    return { ok: true };
+  },
+  "PUT /api/journal/entry": async (req) => {
+    const { key } = currentUser(req);
+    const body = await readJson(req, 40_000);
+    const journal = db.journals?.[key];
+    if (!journal?.lock) throw new Oops(400, "Your journal isn't set up yet.");
+    const date = String(body.date ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Oops(400, "That's not a date.");
+    if (body.data === null) delete journal.entries[date];
+    else {
+      const entry = { iv: sealed(body.iv, 64), data: sealed(body.data, 30_000) };
+      if (!entry.iv || !entry.data) throw new Oops(400, "That entry doesn't look right.");
+      if (!journal.entries[date] && Object.keys(journal.entries).length >= 5000) throw new Oops(403, "Your journal is full.");
+      journal.entries[date] = entry;
+    }
+    await saveDb();
+    return { ok: true };
+  },
+
   // --- Profiles: what friends see when they click on you. Your look,
   // achievements and hours come from your cloud save; the bio you write.
   "GET /api/profile": async (req) => {
@@ -852,6 +897,10 @@ const routes = {
         db.rooms[newKey] = db.rooms[key]; // your bedroom comes with you
         delete db.rooms[key];
       }
+      if (db.journals?.[key]) {
+        db.journals[newKey] = db.journals[key]; // and your journal
+        delete db.journals[key];
+      }
     }
     await saveDb();
     return { user: publicUser(user) };
@@ -924,6 +973,7 @@ const adminRoutes = {
     const name = db.users[key].name;
     delete db.users[key];
     delete db.rooms?.[key]; // and their bedroom
+    delete db.journals?.[key]; // and their journal
     for (const [k, s] of Object.entries(db.sessions)) if (s.user === key) delete db.sessions[k];
     await saveDb();
     return { name };

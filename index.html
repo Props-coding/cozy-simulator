@@ -353,6 +353,28 @@
             <div id="door-styles" class="door-row"></div>
             <button id="door-close" type="button" class="warm-button">Done</button>
           </div>
+          <!-- The bedroom journal on your nightstand (journal.js). -->
+          <div id="journal-panel" hidden>
+            <div class="journal-top">
+              <h3>📔 My journal</h3>
+              <button id="journal-close" type="button" class="kanban-icon" title="Close (Escape)">✕</button>
+            </div>
+            <div id="journal-lock" hidden>
+              <p id="journal-lock-note"></p>
+              <input id="journal-password" type="password" maxlength="200" autocomplete="current-password" placeholder="Your password">
+              <button id="journal-unlock" type="button" class="warm-button">Open</button>
+            </div>
+            <div id="journal-page" hidden>
+              <div class="journal-dates">
+                <button id="journal-prev" type="button" class="journal-flip" title="An earlier day">◀</button>
+                <span id="journal-date"></span>
+                <button id="journal-next" type="button" class="journal-flip" title="A later day">▶</button>
+              </div>
+              <div class="journal-mood-row"><span>Mood (optional):</span> <span id="journal-moods"></span></div>
+              <textarea id="journal-text" rows="9" placeholder="How was today?"></textarea>
+            </div>
+            <p id="journal-status" class="journal-status"></p>
+          </div>
           <!-- The Workshop's project boards (kanban.js). -->
           <div id="kanban-panel" hidden>
             <div class="kanban-top">

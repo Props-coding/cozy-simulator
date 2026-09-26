@@ -69,6 +69,7 @@ import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance 
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
 import { startRooms, refreshRooms, bedroomDoors, openDoorPanel, isDoorPanelOpen, askToEnter, leftRoom, letIn } from "./rooms.js";
 import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
+import { openJournal, isJournalOpen } from "./journal.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass } from "./account.js";
@@ -540,6 +541,7 @@ function roomHintFor(room) {
   }
   if (nearestInteraction(player) === "turntable") return `Press E to choose your lo-fi type. (Now playing: ${myLofiStation().name})`;
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
+  if (nearestInteraction(player) === "journal") return "Press E to open your journal. Only you can read it.";
   if (mySeat) return "Sitting. Move (or press E) to get up.";
   if (!nearestInteraction(player) && nearestFreeSeat()) return "Press E to sit.";
   const lockedDoor = lockedDoorInFront(player);
@@ -574,6 +576,12 @@ function roomHintFor(room) {
 window.addEventListener("keydown", (e) => {
   if (gameScreen.hidden || e.repeat || dialogOpen || uiBusy() || isTyping(e)) return;
   const key = e.key.toLowerCase();
+
+  if (key === "e" && nearestInteraction(player) === "journal") {
+    for (const k in keysDown) keysDown[k] = false;
+    openJournal();
+    return;
+  }
 
   if (key === "e" && nearestInteraction(player) === "laptop") {
     for (const k in keysDown) keysDown[k] = false;
@@ -1221,7 +1229,7 @@ let lastOfficeRoomId = null; // the office you're standing in, if any
 // True while the raccoons, the laptop or decorating has the keyboard (the
 // game's own keys and walking pause meanwhile).
 function uiBusy() {
-  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || !!ride;
+  return isShopBusy() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || !!ride;
 }
 
 // Going into a bedroom (E at its door on the landing), and out again

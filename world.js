@@ -877,6 +877,8 @@ const DECOR = {
   // --- Starter pieces every bedroom comes with (not sold) ---
   starterDesk: { name: "Laptop Desk", tab: null, price: 0, kind: "laptopDesk", w: 1.3, h: 0.6, keep: true , turn: true },
   starterMattress: { name: "Plain Mattress", tab: null, price: 0, kind: "mattress", w: 1.4, h: 2.1, sleep: true, solid: false, ownerColor: true , turn: true },
+  // The nightstand with your journal on it (press E there). It stays in your room.
+  starterNightstand: { name: "Journal Nightstand", tab: null, price: 0, kind: "nightstand", w: 0.55, h: 0.45, keep: true, journal: true },
 };
 
 // Where the starter pieces go in a brand new bedroom (from its top-left
@@ -934,7 +936,35 @@ function tidyDecor(size, placed) {
     if (piece?.r === 1 || piece?.r === 3) clean.r = piece.r; // turned to face right or left
     if (decorFits(size, kept, clean)) kept.push(clean);
   }
+  if (!kept.some((p) => p.item === "starterNightstand")) {
+    const spot = nightstandSpot(size, kept);
+    if (spot) kept.push(spot);
+  }
   return kept;
+}
+
+// Rooms from before the journal get its nightstand in a free spot: by the
+// head of the bed if there's room (right side, then left), otherwise the
+// first free spot along the back of the room.
+function nightstandSpot(size, placed) {
+  const { w, h } = DECOR.starterNightstand;
+  const tryAt = (x, y) => {
+    const piece = { item: "starterNightstand", x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+    return decorFits(size, placed, piece) ? piece : null;
+  };
+  const bedPiece = placed.find((p) => DECOR[p.item]?.sleep);
+  if (bedPiece) {
+    const bed = decorSize(bedPiece);
+    const spot = tryAt(bedPiece.x + bed.w + 0.05, bedPiece.y + 0.1) || tryAt(bedPiece.x - w - 0.05, bedPiece.y + 0.1);
+    if (spot) return spot;
+  }
+  for (let y = 0.1; y + h <= BEDROOM_DEPTH; y += 0.25) {
+    for (let x = 0.1; x + w <= bedroomWidth(size); x += 0.25) {
+      const spot = tryAt(x, y);
+      if (spot) return spot;
+    }
+  }
+  return null;
 }
 
 // Turns a placed piece of decor { item, x, y, r } (x and y from the room's
@@ -975,6 +1005,13 @@ function bedAt(player) {
       return cx >= f.x + 0.15 && cx <= f.x + f.w - 0.15 && cy >= f.y + 0.5 && cy <= f.y + f.h;
     }) || null
   );
+}
+
+// True if the player is right next to a nightstand in their own bedroom
+// (where the journal is).
+function isNearMyNightstand(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.some((f) => f.kind === "nightstand" && f.mine && floorOf(f.y) === floorOf(player.y) && Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h)) < 0.7);
 }
 
 // True if the player is standing at their own bedroom's laptop desk.
@@ -1042,6 +1079,7 @@ function nearestInteraction(player) {
     options.push(["raccoons", Math.hypot(cx - (r.x + r.w / 2), cy - (r.y + r.h / 2))]);
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
+  if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
   if (bedroomDoorInReach(player)) options.push(["bedroomDoor", 0]);
   // The Workshop's corkboard: stand below it.
