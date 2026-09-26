@@ -2697,7 +2697,7 @@ input[type="range"]::-moz-range-thumb {
 
 .profile-inner {
   position: relative;
-  width: min(380px, calc(100% - 40px));
+  width: min(500px, calc(100% - 40px));
   box-sizing: border-box;
   padding: 22px 24px 20px;
   background: #fffaf3;
@@ -2763,12 +2763,6 @@ input[type="range"]::-moz-range-thumb {
   color: #9a6a1e;
 }
 
-.profile-meta {
-  margin: 0;
-  font-size: 0.85em;
-  color: #9c8770;
-}
-
 .profile-bio-box {
   display: flex;
   flex-direction: column;
@@ -2802,101 +2796,309 @@ input[type="range"]::-moz-range-thumb {
   resize: none;
 }
 
-/* Room levels: four little tiles to a row, each with a progress bar. */
-.profile-rooms {
-  margin-bottom: 12px;
-}
-
-.profile-rooms h3,
-.profile-trophies h3 {
-  margin: 0 0 6px;
-  font-size: 0.9em;
-  color: var(--wood);
-}
-
-.profile-trophy-row {
+/* --- The profile card's layout (profile.js) ---
+   A header (character, name, title, bio, one line of stats), then tabs,
+   then rows. Text and bars are darker than the rest of the card so they
+   read easily. */
+.pf-header {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 14px;
+  text-align: left;
 }
 
-.profile-trophy {
-  font-size: 20px;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
+.pf-header .profile-look {
+  flex: none;
+}
+
+.pf-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pf-info .profile-name {
+  margin-top: 4px;
+}
+
+.pf-info .profile-bio-box {
+  align-items: flex-start;
+  margin: 8px 0;
+}
+
+.pf-stats {
+  margin: 0;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #6b5440;
+}
+
+.pf-tabs {
+  display: flex;
   justify-content: center;
+  gap: 6px;
+  margin: 14px 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #efe0c6;
+}
+
+.pf-tabs button {
+  font-family: inherit;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 2px solid #ead8bd;
+  background: #fffaf3;
+  color: #6b4f38;
+  cursor: pointer;
+}
+
+.pf-tabs button.active {
+  background: #f3e6d0;
+  border-color: #c98a3a;
+  color: #3a2a1e;
+}
+
+.pf-page {
+  text-align: left;
+}
+
+.pf-heading {
+  margin: 12px 0 6px;
+  font-size: 0.95em;
+  color: #4a3a2c;
+}
+
+.pf-heading:first-child {
+  margin-top: 0;
+}
+
+.pf-summary {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #4a3a2c;
+  text-align: center;
+}
+
+.pf-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: #fbefd9;
-  border-radius: 8px;
-  cursor: default;
+  color: #6b5440;
+  font-size: 0.9em;
 }
 
-.profile-room-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-}
-
-.profile-room {
+.pf-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 4px 2px 5px;
+  gap: 6px;
+}
+
+.pf-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 12px;
   background: #fbefd9;
-  border-radius: 8px;
-  font-size: 0.72em;
-  line-height: 1.15;
+  color: #3a2a1e;
 }
 
-.profile-room.unranked {
-  opacity: 0.5;
+/* Icons (icons.js) are small drawings, not the house view: no frame. */
+canvas.house-icon {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
-.profile-room-icon {
-  font-size: 16px;
+.pf-row .house-icon {
+  flex: none;
+  background: #fffaf3;
+  border-radius: 9px;
+  padding: 3px;
 }
 
-.profile-room-name {
-  color: #7a6450;
+.pf-ach {
+  cursor: pointer;
 }
 
-.profile-room-level {
+.pf-ach:hover,
+.pf-ach.open {
+  background: #f6e3c3;
+}
+
+.pf-ach:focus-visible {
+  outline: 2px solid #c98a3a;
+}
+
+/* Locked ones (and rooms not visited yet) are greyed out. */
+.pf-row.locked {
+  background: #f4efe8;
+}
+
+.pf-row.locked .house-icon {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.pf-row.locked strong {
+  color: #7d6e60;
+}
+
+.pf-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pf-row-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-tier,
+.pf-earned,
+.pf-pinned {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px 1px 4px;
+  border: 1.5px solid;
+  border-radius: 999px;
+  background: #fffaf3;
+  font-size: 0.75em;
   font-weight: 700;
-  color: #4f7a3a;
 }
 
-.profile-room-bar {
-  width: 80%;
-  height: 4px;
-  margin-top: 2px;
-  background: #ead8bb;
-  border-radius: 2px;
+.pf-earned {
+  padding-left: 7px;
+  color: #4f7a3a;
+  border-color: #8fb86a;
+}
+
+.pf-pinned {
+  padding-left: 7px;
+  color: #9a6a1e;
+  border-color: #e0c27a;
+}
+
+.pf-level {
+  font-weight: 700;
+  color: #3f6a2c;
+}
+
+.pf-hint {
+  font-size: 0.85em;
+  color: #6b5a4a;
+}
+
+.pf-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #e2cfae;
   overflow: hidden;
 }
 
-.profile-room-bar span {
+.pf-bar span {
   display: block;
   height: 100%;
-  background: #6f9a5a;
+  background: #c98a3a;
+  border-radius: 4px;
 }
 
-/* A tier on a profile card: its icon, with the tier's medal in the corner. */
-.profile-trophy.tiered {
-  position: relative;
+.pf-progress-label {
+  flex: none;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: #4a3a2c;
 }
 
-.profile-tier-medal {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  font-size: 12px;
+.pf-details {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.profile-trophy-row + .profile-trophy-row {
-  margin-top: 6px;
+.pf-details[hidden] {
+  display: none;
+}
+
+.pf-details .pf-hint {
+  margin: 0;
+}
+
+.pf-goals {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85em;
+  color: #7d6e60;
+}
+
+.pf-goals li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pf-goals li.done {
+  color: #3a2a1e;
+  font-weight: 600;
+}
+
+.pf-pin {
+  font-size: 0.85em;
+}
+
+/* The showcase: the pinned achievements, side by side. */
+.pf-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 8px;
+}
+
+.pf-show {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: #fbefd9;
+  text-align: center;
+}
+
+.pf-show-name {
+  font-size: 0.8em;
+  font-weight: 700;
+  color: #3a2a1e;
+  line-height: 1.15;
+}
+
+@media (max-width: 480px) {
+  .pf-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .pf-info .profile-bio-box {
+    align-items: center;
+  }
 }
 
 /* Names in "Who's here" can be clicked to see a profile. */

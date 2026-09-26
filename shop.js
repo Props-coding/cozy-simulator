@@ -177,6 +177,11 @@ export function ownedOfType(type) {
   return CATALOG.filter((item) => item.type === type && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
+// How many of a list of item ids (like a friend's) are pets.
+export function petsAmong(ids) {
+  return CATALOG.filter((item) => item.type === "pet" && ids.includes(item.id)).length;
+}
+
 // How many things you own from the raccoons, and what they cost in all.
 export function ownedCount() {
   return save.owned.length;

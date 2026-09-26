@@ -854,6 +854,16 @@ const routes = {
       // Tiered achievements: how many tiers of each ("homebody": 3).
       tiers: Object.fromEntries(Object.entries(progress.tiers ?? {}).filter(([k, v]) => /^[a-zA-Z]{1,30}$/.test(k) && Number.isInteger(v) && v > 0 && v <= 20).slice(0, 50)),
       rooms: Object.fromEntries(Object.entries(progress.stats ?? {}).filter(([k, v]) => /^room_[a-z]{1,20}$/.test(k) && Number.isFinite(v)).slice(0, 30)),
+      // The achievements they pinned to show off (up to 5).
+      pinned: (Array.isArray(progress.pinned) ? progress.pinned : []).filter((id) => typeof id === "string" && /^[a-zA-Z]{1,30}$/.test(id)).slice(0, 5),
+      // The counters their tiers are counted in, for "progress to the next tier".
+      stats: Object.fromEntries(
+        ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited"]
+          .filter((k) => Number.isFinite(progress.stats?.[k]))
+          .map((k) => [k, progress.stats[k]])
+      ),
+      // What they own from the raccoons (the page counts items and pets from it).
+      owned: (Array.isArray(saved("cozy-house-crumbs")?.owned) ? saved("cozy-house-crumbs").owned : []).filter((id) => typeof id === "string" && /^[a-zA-Z0-9]{1,30}$/.test(id)).slice(0, 300),
     };
   },
 

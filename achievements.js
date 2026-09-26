@@ -64,6 +64,16 @@ export const ACHIEVEMENTS = [
 
 const byId = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
+// The groups moments are shown in on profile cards (tiered achievements
+// are their own group, "Milestones", first).
+export const MOMENT_GROUPS = [
+  ["Settling in", ["welcome", "tour", "office", "lock", "knock", "doodle", "movie", "bookworm", "snack", "bedroomMade", "goodnight", "sleepover", "decorator", "designer", "roomy", "penPal", "gotMail", "newsReader"]],
+  ["Friends", ["hello", "roommates", "fullHouse", "expressive", "jigParty"]],
+  ["Time of day", ["nightOwl", "earlyBird"]],
+  ["Raccoons and pets", ["raccoons", "firstBuy", "allHats", "allShoes", "patPat", "pettingZoo", "hoarder"]],
+  ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
+];
+
 // One-time achievements that became tiers (see `was` in config.js). They
 // stay in your save, so the tiers know you were already paid for them.
 const RETIRED = new Set(tracks().flatMap((t) => t.was ?? []).filter(Boolean));
@@ -80,13 +90,16 @@ function tiers() {
 // tiers: tiered achievement id -> how many tiers reached (1 is Bronze).
 // caughtUp: true once tiers existing progress earned have been given out.
 const STORAGE_KEY = "cozy-house-achievements";
-let save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false };
+// pinned: up to 5 achievement ids (moments or tiered) shown on your profile.
+const MAX_PINS = 5;
+let save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false, pinned: [] };
 try {
   const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if (loaded && typeof loaded === "object") {
     for (const id of Object.keys(loaded.unlocked ?? {})) if (byId[id] || RETIRED.has(id)) save.unlocked[id] = loaded.unlocked[id];
     for (const [id, n] of Object.entries(loaded.tiers ?? {})) if (tracks().some((t) => t.id === id) && Number.isInteger(n) && n > 0) save.tiers[id] = n;
     save.caughtUp = loaded.caughtUp === true;
+    save.pinned = (Array.isArray(loaded.pinned) ? loaded.pinned : []).filter((id) => byId[id] || tracks().some((t) => t.id === id)).slice(0, MAX_PINS);
     for (const [key, value] of Object.entries(loaded.stats ?? {})) {
       if (Number.isFinite(value) || Array.isArray(value)) save.stats[key] = value;
     }
@@ -139,10 +152,25 @@ export function unlockAllQuietly() {
 }
 
 export function resetAchievements() {
-  save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false };
+  save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false, pinned: [] };
   store();
   renderPanel();
 }
+
+// --- Pins: the achievements you show off on your profile ---
+export function myPins() {
+  return save.pinned;
+}
+
+// Pins or unpins one. Returns false if you already have the most pins.
+export function togglePin(id) {
+  if (save.pinned.includes(id)) save.pinned = save.pinned.filter((p) => p !== id);
+  else if (save.pinned.length >= MAX_PINS) return false;
+  else save.pinned = [...save.pinned, id];
+  store();
+  return true;
+}
+export { MAX_PINS };
 
 // Your counters, like { seconds, chats, room_study, ... } (read only).
 export function myStats() {
@@ -165,7 +193,12 @@ export function setStat(stat, value) {
 // --- Tiered achievements ---
 // How far along you are on one: the number its goals are counted in.
 function trackValue(track) {
-  const s = save.stats;
+  return trackValueFrom(track, save.stats, hooks.values());
+}
+
+// The same for anyone: from their saved counters (`s`), plus `values`
+// for the counts kept elsewhere ({ items, pets, roomLevels }).
+export function trackValueFrom(track, s = {}, values = {}) {
   const n = (v) => (Number.isFinite(v) ? v : 0);
   const built = {
     hours: n(s.seconds) / 3600,
@@ -177,7 +210,7 @@ function trackValue(track) {
     dances: n(s.dances),
     daysVisited: n(s.daysVisited),
   };
-  const v = Object.hasOwn(built, track.stat) ? built[track.stat] : hooks.values()[track.stat];
+  const v = Object.hasOwn(built, track.stat) ? built[track.stat] : values[track.stat];
   return n(v);
 }
 
@@ -230,7 +263,7 @@ export function checkTiers() {
 }
 
 // A goal written out, like "Spend 10 hours in the house."
-function goalText(track, index) {
+export function goalText(track, index) {
   const goal = track.goals[index];
   return track.desc.replace("{n}", goal < 1 ? String(goal) : goal.toLocaleString());
 }
