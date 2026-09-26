@@ -18,6 +18,13 @@ const CONFIG = {
     workshop: "Workshop",
   },
 
+  // Faces (the wardrobe's Face tab). How strong each cheek blush is (0 is
+  // invisible, 1 is solid pink), and the color of freckles.
+  faces: {
+    blush: { none: 0, soft: 0.35, rosy: 0.6 },
+    freckleColor: "rgba(95, 50, 25, 0.7)",
+  },
+
   // The color swatches in the wardrobe (there's also a "custom" one that
   // opens the full color picker).
   wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],

@@ -435,6 +435,14 @@ const sealed = (v, max) => (typeof v === "string" && v.length <= max && /^[A-Za-
 // A short piece of text from a save, or null.
 const shortText = (v, max) => (typeof v === "string" ? v.slice(0, max) : null);
 
+// Someone's face (eyes, mouth, blush, freckles) from their saved look:
+// short words only (the page checks them against its own list).
+function faceOf(look) {
+  const f = look?.face;
+  if (!f || typeof f !== "object") return null;
+  return { eyes: shortText(f.eyes, 20), mouth: shortText(f.mouth, 20), blush: shortText(f.blush, 20), freckles: f.freckles === true };
+}
+
 // What everyone sees of a room from the hallway: the door (and, if
 // they're allowed in, what's inside).
 function doorInfo(key, user, viewerKey = key) {
@@ -452,7 +460,7 @@ function doorInfo(key, user, viewerKey = key) {
     audio: room.audio,
     placed: maySee(room, key, viewerKey) ? room.placed : [], // what's inside (only if you may go in)
     // How they look, so they can be shown asleep in bed while they're away.
-    look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30) },
+    look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30), face: faceOf(look) },
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
   };
 }
@@ -832,6 +840,7 @@ const routes = {
       shoes: text(look.shoes, 30),
       pet: text(look.pet, 30),
       glasses: text(look.glasses, 30),
+      face: faceOf(look),
       lofi: text(saved("cozy-house-lofi"), 30), // their Study station (turntable.js)
       achievements: Object.keys(progress.unlocked ?? {}).slice(0, 200),
       seconds: Number.isFinite(progress.stats?.seconds) ? progress.stats.seconds : 0,

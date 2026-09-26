@@ -411,7 +411,7 @@ function renderShop() {
     preview.width = 88;
     preview.height = 132;
     if (item.type === "pet") drawPetPreview(preview, item.id);
-    else drawCharacterPreview(preview, current.color, item.type === "hat" ? item.id : current.hat, item.type === "shoes" ? item.id : current.shoes, null, item.type === "glasses" ? item.id : current.glasses);
+    else drawCharacterPreview(preview, { ...current, [item.type]: item.id });
 
     const name = document.createElement("div");
     name.className = "shop-item-name";

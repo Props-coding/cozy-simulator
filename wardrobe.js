@@ -1,5 +1,5 @@
 // The wardrobe: buy one at Nest & Nook, place it in your bedroom, and
-// press E at it to change your color, hat, shoes and pet without going
+// press E at it to change your face, color, hat, shoes and pet without going
 // back to the Join screen. Changes show right away.
 //
 // It looks like the shop: a big preview of you (with your pet beside
@@ -126,7 +126,7 @@ function drawPreview() {
   ctx.clearRect(0, 0, preview.width, preview.height);
   const hasPet = look.pet && look.pet !== "none";
   const me = canvas(96, 136);
-  drawCharacterPreview(me, look.color, look.hat, look.shoes, myAura(), look.glasses);
+  drawCharacterPreview(me, look, myAura());
   ctx.drawImage(me, preview.width / 2 - 48 - (hasPet ? 26 : 0), preview.height - 136);
   if (hasPet) {
     const pet = canvas(88, 92);
@@ -141,7 +141,7 @@ function tilePicture(tab, id) {
   const look = hooks.look();
   if (tab === "hats" || tab === "shoes" || tab === "glasses") {
     const c = canvas(96, 136);
-    drawCharacterPreview(c, look.color, tab === "hats" ? id : "none", tab === "shoes" ? id : "none", null, tab === "glasses" ? id : "none");
+    drawCharacterPreview(c, { color: look.color, face: look.face, hat: tab === "hats" ? id : "none", shoes: tab === "shoes" ? id : "none", glasses: tab === "glasses" ? id : "none" });
     return c;
   }
   if (tab === "pets") {
@@ -154,7 +154,7 @@ function tilePicture(tab, id) {
   const ctx = c.getContext("2d");
   if (id === "robe") {
     const me = canvas(96, 136);
-    drawCharacterPreview(me, look.color, "none", "none", { robe: true });
+    drawCharacterPreview(me, { color: look.color, face: look.face }, { robe: true });
     ctx.drawImage(me, 0, -34);
   } else if (id === "sigil") {
     ctx.save();
@@ -200,7 +200,7 @@ function drawRuneTrail(ctx) {
 let tab = "hats";
 
 function tabsFor() {
-  const list = [["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
+  const list = [["face", "🙂 Face"], ["hats", "🎩 Hats"], ["shoes", "👟 Shoes"], ["glasses", "👓 Glasses"], ["pets", "🐾 Pets"], ["dances", "🕺 Dances"]];
   if (myAura()) list.push(["exalted", "✦ Exalted"]);
   return list;
 }
@@ -275,15 +275,59 @@ function tile(picture, name, on, onClick, exalted = false) {
   if (on) {
     const badge = document.createElement("span");
     badge.className = "wardrobe-badge";
-    badge.textContent = exalted ? "On" : tab === "dances" ? "Chosen" : "Wearing";
+    badge.textContent = exalted ? "On" : tab === "dances" || tab === "face" ? "Chosen" : "Wearing";
     el.appendChild(badge);
   }
   el.addEventListener("click", onClick);
   return el;
 }
 
+// A close-up of your face with one part changed, for the Face tab's
+// tiles: your character is drawn, then just the head is cut out, bigger.
+function facePicture(change) {
+  const look = hooks.look();
+  const whole = canvas(96, 136);
+  drawCharacterPreview(whole, { color: look.color, face: { ...look.face, ...change } });
+  const c = canvas(80, 80);
+  // (In the preview the head's middle is 85 pixels down, 28 across.)
+  c.getContext("2d").drawImage(whole, 48 - 34, 85 - 34, 68, 68, 0, 0, 80, 80);
+  return c;
+}
+
+// The Face tab: a row each for eyes, mouth and cheeks, and freckles on or
+// off. These are free, so everyone has all of them.
+function renderFace() {
+  const face = hooks.look().face;
+  const section = (title) => {
+    const h = document.createElement("h4");
+    h.className = "wardrobe-section";
+    h.textContent = title;
+    itemsGrid.appendChild(h);
+  };
+  const choose = (change) => {
+    hooks.wear("face", { ...hooks.look().face, ...change });
+    playClickSound();
+    render();
+  };
+  const rows = [
+    ["Eyes", "eyes", FACE_EYE_STYLES],
+    ["Mouth", "mouth", FACE_MOUTH_STYLES],
+    ["Cheeks", "blush", FACE_BLUSH_STYLES],
+  ];
+  for (const [title, part, styles] of rows) {
+    section(title);
+    for (const [id, name] of styles) {
+      itemsGrid.appendChild(tile(facePicture({ [part]: id }), name, face[part] === id, () => choose({ [part]: id })));
+    }
+  }
+  section("Freckles");
+  itemsGrid.appendChild(tile(facePicture({ freckles: false }), "No freckles", !face.freckles, () => choose({ freckles: false })));
+  itemsGrid.appendChild(tile(facePicture({ freckles: true }), "Freckles", face.freckles, () => choose({ freckles: true })));
+}
+
 function renderItems() {
   itemsGrid.innerHTML = "";
+  if (tab === "face") return renderFace();
   if (tab === "dances") {
     const chosen = savedDance();
     for (const [id, icon, name, blurb] of DANCES) {
@@ -364,6 +408,7 @@ document.getElementById("wardrobe-random").addEventListener("click", () => {
   hooks.wear("shoes", pickFrom(shoes)[0]);
   hooks.wear("glasses", pickFrom(glasses)[0]);
   hooks.wear("pet", pickFrom(pets)[0]);
+  hooks.wear("face", { eyes: pickFrom(FACE_EYE_STYLES)[0], mouth: pickFrom(FACE_MOUTH_STYLES)[0], blush: pickFrom(FACE_BLUSH_STYLES)[0], freckles: Math.random() < 0.3 });
   playClickSound();
   render();
 });

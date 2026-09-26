@@ -8981,6 +8981,240 @@ function seatLift(seated) {
   return seated === "upTall" ? -12 : seated ? 4 : 0;
 }
 
+// --- Faces (the wardrobe's Face tab) ---
+// Everyone picks eyes, a mouth, cheeks and freckles. Each style draws on
+// a face centered at (cx, cy): eyes sit at cx ± 4, cy - 2, the mouth
+// around cy + 2 to cy + 5. Emotes (laughing, sleepy, dancing...) still
+// swap in their own eyes and mouth while they last.
+// [id, name] lists, in the order the wardrobe shows them.
+const FACE_EYE_STYLES = [["dot", "Classic"], ["sparkly", "Sparkly"], ["happy", "Happy"], ["sleepy", "Sleepy"], ["lashes", "Lashes"], ["wink", "Wink"], ["starry", "Starry"], ["hearts", "Lovestruck"]];
+const FACE_MOUTH_STYLES = [["smile", "Classic"], ["grin", "Big grin"], ["cat", "Cat"], ["flat", "Calm"], ["surprised", "Oh!"], ["smirk", "Smirk"], ["silly", "Silly"], ["fang", "Fang"]];
+const FACE_BLUSH_STYLES = [["soft", "Soft blush"], ["rosy", "Rosy"], ["none", "No blush"]];
+const DEFAULT_FACE = { eyes: "dot", mouth: "smile", blush: "soft", freckles: false };
+
+// A face as sent by a friend (or saved), with anything unknown swapped
+// for the classic look, so a bad value can't break the drawing.
+function cleanFace(face) {
+  const pick = (list, v, fallback) => (list.some(([id]) => id === v) ? v : fallback);
+  if (!face || typeof face !== "object") return DEFAULT_FACE;
+  return {
+    eyes: pick(FACE_EYE_STYLES, face.eyes, "dot"),
+    mouth: pick(FACE_MOUTH_STYLES, face.mouth, "smile"),
+    blush: pick(FACE_BLUSH_STYLES, face.blush, "soft"),
+    freckles: face.freckles === true,
+  };
+}
+
+// A tiny heart centered at (x, y), `s` pixels across.
+function heartPath(ctx, x, y, s) {
+  const h = s / 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y + h * 0.9);
+  ctx.bezierCurveTo(x - h * 1.3, y, x - h * 0.9, y - h * 1.1, x, y - h * 0.35);
+  ctx.bezierCurveTo(x + h * 0.9, y - h * 1.1, x + h * 1.3, y, x, y + h * 0.9);
+  ctx.closePath();
+}
+
+const FACE_EYES = {
+  // Two little dots (the original look).
+  dot(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.arc(cx + 4, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  },
+  // Big round eyes with a white shine, like a cartoon.
+  sparkly(ctx, cx, cy) {
+    for (const ex of [cx - 4.5, cx + 4.5]) {
+      ctx.fillStyle = "#2b2b2b";
+      ctx.beginPath();
+      ctx.ellipse(ex, cy - 2, 2.4, 2.9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(ex + 0.8, cy - 3.2, 0.95, 0, Math.PI * 2);
+      ctx.arc(ex - 0.8, cy - 1, 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#2b2b2b";
+  },
+  // Always-smiling eyes, like ^ ^.
+  happy(ctx, cx, cy) {
+    for (const ex of [cx - 4, cx + 4]) {
+      ctx.beginPath();
+      ctx.arc(ex, cy - 1, 2, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+    }
+  },
+  // Relaxed, half-closed eyes: a dot under a heavy lid.
+  sleepy(ctx, cx, cy) {
+    for (const ex of [cx - 4, cx + 4]) {
+      ctx.beginPath();
+      ctx.arc(ex, cy - 1.4, 1.5, 0, Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ex - 2.4, cy - 1.8);
+      ctx.lineTo(ex + 2.4, cy - 1.8);
+      ctx.stroke();
+    }
+  },
+  // Dots with two little lashes flicking out on each side.
+  lashes(ctx, cx, cy) {
+    FACE_EYES.dot(ctx, cx, cy);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      const ex = cx + side * 4;
+      ctx.moveTo(ex + side * 1.3, cy - 3.2);
+      ctx.lineTo(ex + side * 3, cy - 4.6);
+      ctx.moveTo(ex + side * 1.6, cy - 2.2);
+      ctx.lineTo(ex + side * 3.4, cy - 2.8);
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+  },
+  // One eye open, one eye winking.
+  wink(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + 2, cy - 2.6);
+    ctx.lineTo(cx + 5.5, cy - 1.6);
+    ctx.lineTo(cx + 2, cy - 0.6);
+    ctx.stroke();
+  },
+  // Little four-pointed stars.
+  starry(ctx, cx, cy) {
+    for (const ex of [cx - 4.2, cx + 4.2]) {
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 - Math.PI / 2;
+        const rr = k % 2 === 0 ? 3 : 1;
+        ctx.lineTo(ex + Math.cos(a) * rr, cy - 2 + Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+  },
+  // Tiny red hearts.
+  hearts(ctx, cx, cy) {
+    ctx.fillStyle = "#e8405a";
+    ctx.lineWidth = 0.8;
+    for (const ex of [cx - 4.3, cx + 4.3]) {
+      heartPath(ctx, ex, cy - 2, 5);
+      ctx.fill();
+      ctx.stroke(); // a thin dark edge, so they show on any color
+    }
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = "#2b2b2b";
+  },
+};
+
+const FACE_MOUTHS = {
+  // A small, gentle smile (the original look).
+  smile(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+  },
+  // A wide open grin with a pink tongue.
+  grin(ctx, cx, cy) {
+    ctx.fillStyle = "#6b2a2a";
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, cy + 2.2);
+    ctx.quadraticCurveTo(cx, cy + 2.8, cx + 4, cy + 2.2);
+    ctx.quadraticCurveTo(cx + 3.6, cy + 7.4, cx, cy + 7.4);
+    ctx.quadraticCurveTo(cx - 3.6, cy + 7.4, cx - 4, cy + 2.2);
+    ctx.fill();
+    ctx.fillStyle = "#e88a8a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 6.2, 2, 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+  },
+  // A cat mouth, like :3.
+  cat(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.arc(cx - 1.6, cy + 3, 1.6, 0.1 * Math.PI, 0.95 * Math.PI);
+    ctx.moveTo(cx + 3.2, cy + 3.2);
+    ctx.arc(cx + 1.6, cy + 3, 1.6, 0.05 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+  },
+  // A calm straight line.
+  flat(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 2.5, cy + 4);
+    ctx.lineTo(cx + 2.5, cy + 4);
+    ctx.stroke();
+  },
+  // A little round "oh!".
+  surprised(ctx, cx, cy) {
+    ctx.fillStyle = "#6b2a2a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 4.2, 1.7, 2.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+  },
+  // A lopsided smile, pulled up on one side.
+  smirk(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 2.5, cy + 4.2);
+    ctx.quadraticCurveTo(cx + 1, cy + 5, cx + 3.5, cy + 2.6);
+    ctx.stroke();
+  },
+  // A smile with the tongue poking out.
+  silly(ctx, cx, cy) {
+    ctx.fillStyle = "#e0707a";
+    ctx.beginPath();
+    ctx.ellipse(cx + 1, cy + 5.2, 1.8, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2b2b2b";
+    FACE_MOUTHS.smile(ctx, cx, cy);
+  },
+  // A smile with one little white fang.
+  fang(ctx, cx, cy) {
+    FACE_MOUTHS.smile(ctx, cx, cy);
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(cx + 0.4, cy + 4.6);
+    ctx.lineTo(cx + 2.4, cy + 4.3);
+    ctx.lineTo(cx + 1.5, cy + 6.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#2b2b2b";
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = "#2b2b2b";
+  },
+};
+
+// Cheeks and freckles. How strong each blush is lives in config.js
+// (CONFIG.faces), so it's easy to make softer or stronger.
+function drawCheeks(ctx, cx, cy, face) {
+  const strength = CONFIG.faces?.blush?.[face.blush] ?? { none: 0, soft: 0.35, rosy: 0.6 }[face.blush] ?? 0.35;
+  if (strength > 0) {
+    ctx.fillStyle = `rgba(240, 120, 120, ${strength})`;
+    ctx.beginPath();
+    ctx.ellipse(cx - 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (face.freckles) {
+    ctx.fillStyle = CONFIG.faces?.freckleColor ?? "rgba(95, 50, 25, 0.7)";
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      for (const [fx, fy] of [[5.6, 0.4], [7.6, 1], [6.4, 2.4], [8.6, 2.6]]) {
+        ctx.moveTo(cx + side * fx + 0.7, cy + fy);
+        ctx.arc(cx + side * fx, cy + fy, 0.7, 0, Math.PI * 2);
+      }
+    }
+    ctx.fill();
+  }
+  ctx.fillStyle = "#2b2b2b";
+}
+
 function drawPlayerBody(ctx, p) {
   const foot = playerFeet(p);
   const r = PLAYER_RADIUS;
@@ -9114,6 +9348,9 @@ function drawPlayerBody(ctx, p) {
   ctx.translate(faceShift, 0);
   if (facingAway) ctx.globalAlpha = 0; // (the face is on the other side)
   // Face: eyes, rosy cheeks and a mouth, which change with some emotes.
+  // (When no emote is changing them, they're the ones picked in the
+  // wardrobe's Face tab.)
+  const face = cleanFace(p.face);
   ctx.strokeStyle = "#2b2b2b";
   ctx.fillStyle = "#2b2b2b";
   ctx.lineWidth = 1.5;
@@ -9163,16 +9400,11 @@ function drawPlayerBody(ctx, p) {
     ctx.quadraticCurveTo(cx + 5, cy - 9, cx + 7.5, cy - 7.5);
     ctx.stroke();
   } else {
-    ctx.beginPath();
-    ctx.arc(cx - 4, cy - 2, 1.6, 0, Math.PI * 2);
-    ctx.arc(cx + 4, cy - 2, 1.6, 0, Math.PI * 2);
-    ctx.fill();
+    // Their own eyes, picked in the wardrobe's Face tab (see FACE_EYES).
+    (FACE_EYES[face.eyes] ?? FACE_EYES.dot)(ctx, cx, cy);
   }
-  ctx.fillStyle = "rgba(240, 120, 120, 0.35)";
-  ctx.beginPath();
-  ctx.ellipse(cx - 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
-  ctx.ellipse(cx + 7, cy + 2, 2.6, 1.6, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Cheeks (soft, rosy or none) and freckles, from the Face tab too.
+  drawCheeks(ctx, cx, cy, face);
   if (emote === "idleYawn") {
     // (the yawning mouth is drawn with the eyes)
   } else if (emote === "laugh") {
@@ -9186,9 +9418,7 @@ function drawPlayerBody(ctx, p) {
     ctx.lineTo(cx + 2.5, cy + 3.3);
     ctx.stroke();
   } else {
-    ctx.beginPath();
-    ctx.arc(cx, cy + 2, 3, 0.15 * Math.PI, 0.85 * Math.PI);
-    ctx.stroke();
+    (FACE_MOUTHS[face.mouth] ?? FACE_MOUTHS.smile)(ctx, cx, cy);
   }
 
   // Glasses go on the face (a robe's hood hides them).
@@ -9480,10 +9710,15 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
 
 // Draws a character by itself, centered in a small canvas, for the
 // preview on the Join screen.
-function drawCharacterPreview(canvas, color, hat, shoes, aura = null, glasses = "none") {
+// It takes a look: { color, hat, shoes, glasses, face, and so on }. (The
+// older way, drawCharacterPreview(canvas, color, hat, shoes, aura,
+// glasses), still works too.)
+function drawCharacterPreview(canvas, look, hatOrAura, shoes, aura = null, glasses = "none") {
+  if (typeof look === "string") look = { color: look, hat: hatOrAura, shoes, glasses };
+  else aura = hatOrAura ?? null;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const p = { x: 0, y: 0, color, hat, shoes, glasses, moving: false, aura: aura && { robe: aura.robe } }; // (just the robe: the rest wouldn't fit)
+  const p = { hat: "none", shoes: "none", glasses: "none", ...look, x: 0, y: 0, moving: false, aura: aura && { robe: aura.robe } }; // (just the robe: the rest wouldn't fit)
   const foot = playerFeet(p);
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height - 13);

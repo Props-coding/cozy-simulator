@@ -3071,6 +3071,18 @@ input[type="range"]::-moz-range-thumb {
   50% { opacity: 1; transform: scale(1.15) rotate(20deg); }
 }
 
+/* A heading between rows of tiles (the Face tab's Eyes, Mouth, ...). */
+.wardrobe-section {
+  grid-column: 1 / -1;
+  margin: 6px 0 -4px;
+  font-size: 0.85em;
+  color: #7a5c3e;
+}
+
+.wardrobe-section:first-child {
+  margin-top: 0;
+}
+
 .wardrobe-empty {
   grid-column: 1 / -1;
   margin: 10px 0;
