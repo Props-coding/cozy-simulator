@@ -645,6 +645,13 @@ const YARD_FURNITURE = [
   { kind: "raccoons", x: 15.0, y: YARD + 8.15, w: 0.65, h: 0.45 },
   { kind: "shadySign", x: 11.3, y: YARD + 8.95, w: 0.3, h: 0.15 },
 
+  // The bus stop by the road: a shelter with a bench (press E to sit and
+  // wait), the bus stop sign with its timetable, and the bus itself, which
+  // drives along the road on a schedule (see outdoors.js and bus.js).
+  { kind: "busShelter", x: 19.0, y: YARD + 8.25, w: 2.5, h: 0.8 },
+  { kind: "busSign", x: 22.2, y: YARD + 8.95, w: 0.3, h: 0.2 },
+  { kind: "bus", x: 0, y: YARD + 10.7, w: HOUSE_WIDTH, h: 0.5, solid: false },
+
   // Signposts, so you know where you are.
   { kind: "signpost", x: 8.3, y: YARD - 1.4, w: 0.3, h: 0.2, text: "Campfire", point: "left" },
   { kind: "signpost", x: 10.05, y: YARD + 3.4, w: 0.3, h: 0.2, text: "Pond", point: "left" },
@@ -755,6 +762,7 @@ const SEATS = {
   beanbag: [{ x: 0.5, y: 0.8, face: "front" }],
   pouf: [{ x: 0.5, y: 0.8, face: "front" }],
   mushroomStool: [{ x: 0.5, y: 0.8, face: "front" }],
+  busShelter: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],
   porchSwing: [{ x: 0.28, y: 0.9, face: "front" }, { x: 0.72, y: 0.9, face: "front" }],
   logSeat: [{ x: 0.28, y: 0.5, face: "own" }, { x: 0.72, y: 0.5, face: "own" }], // the campfire's logs (facing the fire)
   floorCushions: [{ x: 0.3, y: 0.8, face: "front" }, { x: 0.7, y: 0.8, face: "front" }],

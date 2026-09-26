@@ -1880,3 +1880,208 @@ FURNITURE_DRAWERS.porchSwing = (ctx, f) => {
   ctx.fillStyle = "rgba(255, 240, 210, 0.25)";
   ctx.fillRect(a.x + 4, backTop, w - 8, 1.5);
 };
+
+// --- The bus stop (Update 4, step 7) ---
+// Where the bus is right now. Everyone's clock agrees (it's worked out from
+// the time of day), so friends see the bus at the same moment.
+// Returns { phase: "away" | "arriving" | "waiting" | "leaving", x (the
+// bus's left end, grid units), untilNext (seconds until it next arrives),
+// leavesIn (seconds, while waiting) }.
+const BUS_LENGTH = 4.4;
+const BUS_STOP_X = 18.4; // where its left end stops, by the shelter
+const BUS_DRIVE = 7; // seconds to drive in (or out)
+function busState(now = Date.now()) {
+  const period = Math.max(2, CONFIG.bus.everyMinutes) * 60;
+  const wait = CONFIG.bus.waitSeconds;
+  const t = (now / 1000) % period;
+  const ease = (k) => 1 - (1 - k) ** 3; // slowing down as it pulls in
+  if (t < BUS_DRIVE) {
+    return { phase: "arriving", x: -BUS_LENGTH - 1 + (BUS_STOP_X + BUS_LENGTH + 1) * ease(t / BUS_DRIVE), untilNext: 0 };
+  }
+  if (t < BUS_DRIVE + wait) return { phase: "waiting", x: BUS_STOP_X, untilNext: 0, leavesIn: BUS_DRIVE + wait - t };
+  if (t < BUS_DRIVE * 2 + wait) {
+    const k = (t - BUS_DRIVE - wait) / BUS_DRIVE;
+    return { phase: "leaving", x: BUS_STOP_X + (HOUSE_WIDTH + 1 - BUS_STOP_X) * k * k, untilNext: period - t };
+  }
+  return { phase: "away", x: null, untilNext: period - t };
+}
+
+Object.assign(FURNITURE_DRAWERS, {
+  // A cute little bus, seen from the side: cream and teal, round windows,
+  // a door in the middle (open while it waits), and headlights at night.
+  bus(ctx, f) {
+    const bus = busState();
+    if (bus.x === null) return;
+    const t = performance.now() / 1000;
+    const a = toScreen(bus.x, f.y + f.h);
+    const w = BUS_LENGTH * TILE, h = 50;
+    const moving = bus.phase !== "waiting";
+    const bob = moving ? Math.sin(t * 18) * 0.8 : 0;
+    const x = a.x, base = a.y - 4, top = base - h + bob;
+    // Shadow on the road.
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, base + 2, w / 2 + 4, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Body: teal below, cream above, rounded.
+    ctx.fillStyle = "#4f9a9a";
+    roundRectPath(ctx, x, top, w, h - 6, 12);
+    ctx.fill();
+    ctx.fillStyle = "#f4ead4";
+    roundRectPath(ctx, x + 2, top + 2, w - 4, 26, 10);
+    ctx.fill();
+    ctx.fillStyle = "#e0b84c"; // a stripe
+    ctx.fillRect(x + 2, top + 28, w - 4, 4);
+    // Windows (a friendly face at the driver's window, at the front).
+    for (let i = 0; i < 5; i++) {
+      const wx = x + 12 + i * ((w - 30) / 5);
+      if (i === 2) continue; // the door goes here
+      ctx.fillStyle = "#9cc8dc";
+      roundRectPath(ctx, wx, top + 6, (w - 30) / 5 - 6, 16, 4);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.fillRect(wx + 3, top + 8, 3, 10);
+    }
+    const driverX = x + 12 + 4 * ((w - 30) / 5) + 10;
+    ctx.fillStyle = "#8a6444"; // Gus the bear, driving
+    ctx.beginPath();
+    ctx.arc(driverX, top + 16, 5.5, 0, Math.PI * 2);
+    ctx.arc(driverX - 4, top + 11, 2.2, 0, Math.PI * 2);
+    ctx.arc(driverX + 4, top + 11, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3f6f9f";
+    ctx.fillRect(driverX - 6, top + 8, 12, 3); // his cap
+    // The door: folded open while it waits.
+    const doorX = x + 12 + 2 * ((w - 30) / 5), doorW = (w - 30) / 5 - 6;
+    ctx.fillStyle = bus.phase === "waiting" ? "#f2c98a" : "#7ab0c8";
+    ctx.fillRect(doorX, top + 6, doorW, h - 14);
+    ctx.strokeStyle = "#3a6a6a";
+    ctx.lineWidth = 1.5;
+    if (bus.phase === "waiting") {
+      ctx.strokeRect(doorX, top + 6, 3, h - 14);
+      ctx.strokeRect(doorX + doorW - 3, top + 6, 3, h - 14);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(doorX + doorW / 2, top + 6);
+      ctx.lineTo(doorX + doorW / 2, base - 8);
+      ctx.stroke();
+    }
+    // Wheels, turning while it drives.
+    for (const wx of [x + 22, x + w - 24]) {
+      ctx.fillStyle = "#2b2b30";
+      ctx.beginPath();
+      ctx.arc(wx, base - 4, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#b8b8c0";
+      ctx.beginPath();
+      ctx.arc(wx, base - 4, 4, 0, Math.PI * 2);
+      ctx.fill();
+      const spin = moving ? t * 12 : 0;
+      ctx.strokeStyle = "#6a6a70";
+      ctx.beginPath();
+      ctx.moveTo(wx + Math.cos(spin) * 4, base - 4 + Math.sin(spin) * 4);
+      ctx.lineTo(wx - Math.cos(spin) * 4, base - 4 - Math.sin(spin) * 4);
+      ctx.stroke();
+    }
+    // Lights: headlight at the front (right), a red tail light at the back.
+    const night = isNightOutside();
+    ctx.fillStyle = night ? "#fff2b0" : "#f4e8c0";
+    ctx.beginPath();
+    ctx.arc(x + w - 4, top + 36, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    if (night) drawGlow(ctx, x + w + 10, top + 38, 30, "rgba(255, 240, 170, 0.5)");
+    ctx.fillStyle = "#d8404a";
+    ctx.fillRect(x + 1, top + 33, 3, 6);
+    // The route sign over the windscreen.
+    ctx.fillStyle = "#2b2b30";
+    roundRectPath(ctx, x + w / 2 - 26, top - 9, 52, 11, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f2c94c";
+    ctx.font = "700 7.5px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("TRIPS SOON", x + w / 2, top - 1);
+    ctx.textAlign = "left";
+  },
+
+  // A bus shelter: a glass back panel, a curved roof and a wooden bench.
+  busShelter(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
+    const w = b.x - a.x;
+    const roofY = b.y - 70;
+    // Posts.
+    ctx.fillStyle = "#4a5a6a";
+    for (const x of [a.x + 3, b.x - 7]) ctx.fillRect(x, roofY, 4, b.y - roofY - 2);
+    // Glass back panel, with a little poster.
+    ctx.fillStyle = "rgba(170, 210, 230, 0.55)";
+    ctx.fillRect(a.x + 7, roofY + 6, w - 14, b.y - roofY - 30);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.fillRect(a.x + 11, roofY + 9, 3, b.y - roofY - 38);
+    ctx.fillStyle = "#f4ead4";
+    ctx.fillRect(b.x - 38, roofY + 12, 22, 26);
+    ctx.fillStyle = "#e0883a";
+    ctx.beginPath();
+    ctx.arc(b.x - 27, roofY + 21, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6a9a5a";
+    ctx.fillRect(b.x - 36, roofY + 28, 18, 6);
+    // Bench.
+    const benchY = b.y - 18;
+    ctx.fillStyle = "#8a6040";
+    ctx.fillRect(a.x + 9, benchY, w - 18, 6);
+    ctx.fillStyle = "#a87a52";
+    ctx.fillRect(a.x + 9, benchY, w - 18, 2);
+    ctx.fillStyle = "#4a5a6a";
+    for (const x of [a.x + 14, b.x - 17]) ctx.fillRect(x, benchY + 6, 3, 10);
+    // Curved roof.
+    ctx.fillStyle = "#3f6f7f";
+    ctx.beginPath();
+    ctx.moveTo(a.x - 4, roofY + 4);
+    ctx.quadraticCurveTo(a.x + w / 2, roofY - 12, b.x + 4, roofY + 4);
+    ctx.lineTo(b.x + 4, roofY + 8);
+    ctx.quadraticCurveTo(a.x + w / 2, roofY - 6, a.x - 4, roofY + 8);
+    ctx.closePath();
+    ctx.fill();
+    if (yardSeason() === "winter") {
+      ctx.fillStyle = "#f4f8fb";
+      ctx.beginPath();
+      ctx.moveTo(a.x - 2, roofY + 2);
+      ctx.quadraticCurveTo(a.x + w / 2, roofY - 15, b.x + 2, roofY + 2);
+      ctx.quadraticCurveTo(a.x + w / 2, roofY - 10, a.x - 2, roofY + 2);
+      ctx.fill();
+    }
+  },
+
+  // The bus stop sign: a pole with a round "BUS" sign and a timetable
+  // board that counts down to the next bus.
+  busSign(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#6a7078";
+    ctx.fillRect(b.x - 1.5, b.y - 70, 3, 70);
+    ctx.fillStyle = "#3f6f9f";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y - 72, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#f4f4f0";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#f4f4f0";
+    ctx.font = "800 8px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("BUS", b.x, b.y - 69);
+    // Timetable board.
+    const bus = busState();
+    const text = bus.phase === "waiting" ? "Here now!" : bus.phase === "arriving" ? "Arriving..." : `Next: ${Math.max(1, Math.ceil(bus.untilNext / 60))} min`;
+    ctx.fillStyle = "#2b2b30";
+    roundRectPath(ctx, b.x - 22, b.y - 52, 44, 22, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f2c94c";
+    ctx.font = "700 7px 'Quicksand', sans-serif";
+    ctx.fillText(text, b.x, b.y - 43);
+    ctx.fillStyle = "#c8c8d0";
+    ctx.font = "600 6px 'Quicksand', sans-serif";
+    ctx.fillText("Trips coming soon", b.x, b.y - 34);
+    ctx.textAlign = "left";
+  },
+});

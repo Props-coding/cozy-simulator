@@ -237,6 +237,12 @@ export function playHarvestSound() {
   playTone(1174.66, 140, { gain: 0.06, duration: 0.25, type: "triangle" });
 }
 
+// The bus's friendly "beep beep" as it pulls in at the stop (Update 4).
+export function playBusHorn() {
+  playTone(415.3, 0, { gain: 0.07, duration: 0.14, type: "square" });
+  playTone(415.3, 200, { gain: 0.07, duration: 0.2, type: "square" });
+}
+
 // A soft, happy chirp for petting a pet.
 export function playPetSound() {
   playTone(1046.5, 0, { gain: 0.05, duration: 0.08, type: "sine" });

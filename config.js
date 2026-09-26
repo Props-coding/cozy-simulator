@@ -158,6 +158,16 @@ const CONFIG = {
     { id: "duck", name: "Rubber Duck", icon: "🦆" },
   ],
 
+  // --- The bus stop (Update 4) ---
+  // A little bus pulls up at the stop by the road every `everyMinutes`
+  // (on the same clock for everyone), waits `waitSeconds`, and drives off.
+  // Trips (destinations and mini games) plug in later: see bus.js.
+  bus: {
+    everyMinutes: 8,
+    waitSeconds: 40,
+    driver: "Gus",
+  },
+
   // The floors the elevator goes to, bottom to top, and what's on each
   // (shown on the elevator's buttons).
   floors: [

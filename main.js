@@ -83,6 +83,7 @@ import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
 import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
 import { isNpcOpen } from "./npc.js";
+import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
 import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
@@ -334,6 +335,7 @@ joinButton.addEventListener("click", async () => {
   startMail();
   startWeather(); // the hometown's real sky, outside and through the windows
   // The shared garden in the yard (beds kept on the house server).
+  initBus({ outside: () => floorOf(player.y) === YARD_FLOOR });
   // Fishing at the pond: big catches are shared in the house chat.
   initFishing({
     notice: (text, ms = 5000) => showNotice(text, ms),
@@ -606,6 +608,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "laptop") return "Press E to open your laptop.";
   if (nearestInteraction(player) === "phone") return inCall() ? "Press E to hang up." : "Press E to use your phone: call a friend, or leave a message.";
   if (nearestInteraction(player) === "journal") return "Press E to open your journal. Only you can read it.";
+  if (!nearestInteraction(player) && nearWaitingBus(player)) return busHint(true);
   if (mySeat) return "Sitting. Move (or press E) to get up.";
   if (!nearestInteraction(player) && nearestFreeSeat()) return "Press E to sit.";
   const lockedDoor = lockedDoorInFront(player);
@@ -628,6 +631,7 @@ function roomHintFor(room) {
   const yardDoor = yardDoorNear(player);
   if (yardDoor) return floorOf(player.y) === YARD_FLOOR ? `Walk through the ${yardDoor.name.toLowerCase()} to go back inside.` : "Walk through the door to go out to the yard.";
   if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
+  if (room.id === "busStop") return busHint(false);
   if (room.id === "campfire") return campfireLit() ? "The campfire's crackling. Voice is on around the fire. Press E by a log to sit." : "The campfire lights itself at night. Voice is on around it.";
   if (room.id === "conference") {
     return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
@@ -739,6 +743,13 @@ window.addEventListener("keydown", (e) => {
   if (key === "e" && nearestInteraction(player) === "raccoons") {
     for (const k in keysDown) keysDown[k] = false; // stop walking while you chat
     talkToRaccoons();
+    return;
+  }
+
+  // The bus is waiting and you're by its door: talk to the driver.
+  if (key === "e" && !nearestInteraction(player) && !mySeat && nearWaitingBus(player)) {
+    for (const k in keysDown) keysDown[k] = false;
+    talkToDriver();
     return;
   }
 
