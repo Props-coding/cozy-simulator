@@ -246,6 +246,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Known: when two people stand very close (sitting side by side, whispering), their name tags overlap.
 
 ## Next
+- Update 2: Bedrooms. Step 0 done: the plan is in `BEDROOMS-PLAN.md`, with the backup and restore commands. Waiting for Brandon's OK and his backup before Step 1.
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog: seasonal decorations, distance voice, a guestbook. (Weather station, porch, fireplace room, music room and leaderboards were scrapped for now, 0.40.)
