@@ -1,5 +1,5 @@
 // Bedrooms, the hallway side: everyone's bedroom door on the upstairs
-// landing (the bedroom hallway), kept up to date from the house server,
+// suite floor (the bedroom hallway), kept up to date from the house server,
 // and the little card for changing your own door (press E at it).
 //
 // The house server keeps one bedroom for every member (see server.mjs:

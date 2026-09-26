@@ -16,7 +16,7 @@ const CONFIG = {
     elevator: "Elevator",
     business: "Business Floor",
     lounge: "Lounge",
-    landing: "Suite Floor",
+    suite: "Suite Floor",
     workshop: "Workshop",
     // Outside (Update 4)
     yard: "Yard",
@@ -242,7 +242,7 @@ const CONFIG = {
   // `endRange` tiles apart.
   whisper: { key: "v", range: 1.3, endRange: 1.8 },
 
-  // Bedrooms: everyone's door is on the upstairs landing (the bedroom
+  // Bedrooms: everyone's door is on the suite floor (the bedroom
   // hallway). Doors are checked with the house server every `pollSeconds`
   // (and right away when a friend changes theirs). The suite floor's wall
   // is split evenly into `doorSpots` spots, each with a door (or a window,
@@ -313,7 +313,7 @@ const CONFIG = {
     workshop: { style: "planks", color: "#b88a5a" },
     business: { style: "planks", color: "#b9a58c" },
     lounge: { style: "carpet", color: "#a8876a" },
-    landing: { style: "planks", color: "#c9a57e" },
+    suite: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
     porch: { style: "planks", color: "#a88258" }, // (the rest of the yard is grass)
   },
@@ -333,7 +333,7 @@ const CONFIG = {
     workshop: "#c9b28a",
     business: "#dcd6cc",
     lounge: "#c7b49a",
-    landing: "#e6d6c6",
+    suite: "#e6d6c6",
     bedroom: "#a9b8cf", // used for every bedroom
   },
 

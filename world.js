@@ -30,7 +30,10 @@ const UPSTAIRS = 40; // how much further down the grid each floor is kept than t
 // in them). They sit a little lower than the ground floor's hallway does,
 // which leaves room for the rooms north of them.
 const BUSINESS = UPSTAIRS + 3; // the business floor (floor 2)
-const LANDING = 2 * UPSTAIRS + 3; // the bedroom hall (floor 3)
+const SUITE = 2 * UPSTAIRS + 3; // the suite floor's hall, with the bedroom doors (floor 3)
+// The front door, at the bottom of the ground floor's elevator lobby (and
+// in the house's back wall, seen from the yard): its left edge and width.
+const FRONT_DOOR_X = 20.2, FRONT_DOOR_W = 1.6;
 
 // Which floor a grid y position is on: 0 the ground floor, 1 business,
 // 2 the bedroom hall, and 3 and up for the bedrooms (each is its own
@@ -70,7 +73,7 @@ const BASE_ROOMS = [
   // The business corridor and the bedroom hall are added in buildHouse;
   // here are their elevator lobbies.
   { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: BUSINESS + 3, w: 6, h: 4 }, sign: { x: 20, y: BUSINESS + 3 } },
-  { id: "elevatorTop", name: CONFIG.roomNames.elevator, rect: { x: 18, y: LANDING + 3, w: 6, h: 4 }, sign: { x: 20, y: LANDING + 3 } },
+  { id: "elevatorTop", name: CONFIG.roomNames.elevator, rect: { x: 18, y: SUITE + 3, w: 6, h: 4 }, sign: { x: 20, y: SUITE + 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -96,9 +99,9 @@ const BASE_WALLS = [
   { x: 18 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
   // (drawn short so it doesn't hide the lobby), with the front door out to
-  // the yard (x 20.2 to 21.8)
-  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: 20.2 - 18 + WALL_THICKNESS / 2, h: WALL_THICKNESS, low: true },
-  { x: 21.8, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 21.8 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
+  // the yard (FRONT_DOOR_X)
+  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: FRONT_DOOR_X - 18 + WALL_THICKNESS / 2, h: WALL_THICKNESS, low: true },
+  { x: FRONT_DOOR_X + FRONT_DOOR_W, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - FRONT_DOOR_X - FRONT_DOOR_W + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
 
   // The business floor: the Conference Room's north wall, left side and
   // right side, the corridor's sides and bottom (with a doorway into its
@@ -109,7 +112,7 @@ const BASE_WALLS = [
   { x: 5.6, y: BUSINESS - 5.8, w: WALL_THICKNESS, h: 5.4 },
   { x: -WALL_THICKNESS, y: BUSINESS - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: BUSINESS - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
-  // (the landing's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
+  // (the business corridor's bottom wall has the Workshop's doorway, x 5.4 to 7.0)
   { x: -WALL_THICKNESS, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.4 + WALL_THICKNESS, h: WALL_THICKNESS },
   // (and the Lounge's, x 12.2 to 13.8)
   { x: 7.0, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: 5.2, h: WALL_THICKNESS },
@@ -128,12 +131,12 @@ const BASE_WALLS = [
   // The bedroom hall: its sides and bottom (with a doorway into its
   // elevator lobby, x 19.2 to 20.8), and the lobby's walls. The hall's top
   // wall holds the bedroom doors, so it's made in buildHouse.
-  { x: -WALL_THICKNESS, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
-  { x: HOUSE_WIDTH, y: LANDING - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
-  { x: -WALL_THICKNESS, y: LANDING + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
-  { x: 20.8, y: LANDING + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: LANDING + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: LANDING + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+  { x: -WALL_THICKNESS, y: SUITE - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
+  { x: HOUSE_WIDTH, y: SUITE - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
+  { x: -WALL_THICKNESS, y: SUITE + 3 - WALL_THICKNESS / 2, w: 19.2 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
+  { x: 20.8, y: SUITE + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: SUITE + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
+  { x: 18 - WALL_THICKNESS / 2, y: SUITE + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
 
   // Dividers between rooms (no doors between rooms directly). They start
   // at the same line as the walls above the rooms so the tops line up.
@@ -356,13 +359,13 @@ const BASE_FURNITURE = [
   // The bedroom hall: a runner down the middle and a cactus (the bedroom
   // doors and the lamps between them come from buildHouse), and its
   // elevator lobby.
-  { kind: "rug", x: 1.5, y: LANDING + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
-  { kind: "cactus", x: 0.15, y: LANDING + 2.05, w: 0.6, h: 0.6 },
-  { kind: "elevatorDoor", x: 21.65, y: LANDING + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 2, solid: false },
-  { kind: "sconce", x: 18.7, y: LANDING + 3.2, solid: false },
-  { kind: "rug", x: 20.8, y: LANDING + 4.3, w: 2.8, h: 1.9, color: "#6f5a8c", round: true, solid: false },
-  { kind: "bench", x: 18.3, y: LANDING + 4.2, w: 1.5, h: 0.5 },
-  { kind: "palm", x: 18.3, y: LANDING + 6.0, w: 0.6, h: 0.6 },
+  { kind: "rug", x: 1.5, y: SUITE + 0.95, w: 21, h: 0.95, color: "#6f5a8c", solid: false },
+  { kind: "cactus", x: 0.15, y: SUITE + 2.05, w: 0.6, h: 0.6 },
+  { kind: "elevatorDoor", x: 21.65, y: SUITE + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 2, solid: false },
+  { kind: "sconce", x: 18.7, y: SUITE + 3.2, solid: false },
+  { kind: "rug", x: 20.8, y: SUITE + 4.3, w: 2.8, h: 1.9, color: "#6f5a8c", round: true, solid: false },
+  { kind: "bench", x: 18.3, y: SUITE + 4.2, w: 1.5, h: 0.5 },
+  { kind: "palm", x: 18.3, y: SUITE + 6.0, w: 0.6, h: 0.6 },
 ];
 
 // The elevator: one set of doors on each floor, in the same spot. Stand
@@ -386,11 +389,11 @@ function bedroomEntry(door) {
   return { x: x0 + BEDROOM_DOOR_X + DOOR_WIDTH / 2 - PLAYER_SIZE / 2, y: top + BEDROOM_DEPTH - 1 };
 }
 
-// Walking out of a bedroom: back on the landing, in front of its door
-// (or the middle of the landing if its door isn't there any more).
+// Walking out of a bedroom: back on the suite floor, in front of its door
+// (or the middle of the suite floor if its door isn't there any more).
 function bedroomExit(owner) {
   const f = FURNITURE.find((f) => f.kind === "bedroomDoor" && f.door.owner === owner);
-  return f ? { x: f.x + f.w / 2 - PLAYER_SIZE / 2, y: LANDING + 0.35 } : { x: 8.7, y: LANDING + 1.2 };
+  return f ? { x: f.x + f.w / 2 - PLAYER_SIZE / 2, y: SUITE + 0.35 } : { x: 8.7, y: SUITE + 1.2 };
 }
 
 // The bedroom door you're standing right in front of (its furniture
@@ -438,7 +441,7 @@ const YARD_AREA = { id: "yard", name: CONFIG.roomNames.yard, rect: { x: 0, y: YA
 // house's wall (x its left edge, top and bottom the wall's edges), `yard`
 // the doorway in the house's back wall seen from the yard.
 const YARD_DOORS = [
-  { id: "front", name: "Front door", house: { x: 20.2, top: 7 - WALL_THICKNESS / 2, bottom: 7 + WALL_THICKNESS / 2 }, yardX: 20.2 },
+  { id: "front", name: "Front door", house: { x: FRONT_DOOR_X, top: 7 - WALL_THICKNESS / 2, bottom: 7 + WALL_THICKNESS / 2 }, yardX: FRONT_DOOR_X },
 ];
 const YARD_WALL_Y = YARD - 5.4; // the bottom edge of the house's back wall, seen from the yard
 
@@ -495,8 +498,8 @@ const YARD_WALLS = [
   { x: HOUSE_WIDTH, y: YARD - 5.8, w: WALL_THICKNESS, h: 16, hidden: true }, // east edge
   { x: -WALL_THICKNESS, y: YARD + 10.3, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true }, // the curb (the road is beyond)
   // The house's back wall, with the front door in it.
-  { x: -WALL_THICKNESS, y: YARD - 5.8, w: 20.2 + WALL_THICKNESS, h: WALL_THICKNESS },
-  { x: 21.8, y: YARD - 5.8, w: HOUSE_WIDTH - 21.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: YARD - 5.8, w: FRONT_DOOR_X + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: FRONT_DOOR_X + FRONT_DOOR_W, y: YARD - 5.8, w: HOUSE_WIDTH - FRONT_DOOR_X - FRONT_DOOR_W + WALL_THICKNESS, h: WALL_THICKNESS },
   ...pondSolids(),
 ];
 
@@ -570,7 +573,7 @@ const YARD_FURNITURE = [
   // The house's back wall: the front door on the porch (walk up into it
   // to go in), a side door on the west section (just for looks: it's
   // locked), windows glowing warm from inside, and lanterns by the doors.
-  { kind: "yardDoor", x: 20.2, y: YARD_WALL_Y, w: 1.6, door: "front", solid: false },
+  { kind: "yardDoor", x: FRONT_DOOR_X, y: YARD_WALL_Y, w: FRONT_DOOR_W, door: "front", solid: false },
   { kind: "yardDoor", x: 4.9, y: YARD_WALL_Y, w: 1.6, door: "side", solid: false },
   { kind: "houseWindow", x: 0.9, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 3.0, y: YARD_WALL_Y, w: 1.2, solid: false },
@@ -762,7 +765,7 @@ function seasonalFurniture() {
 function seasonalWallDecor(walls, furniture) {
   const style = currentSeason();
   const decor = [];
-  for (const corridor of [0, BUSINESS, LANDING]) {
+  for (const corridor of [0, BUSINESS, SUITE]) {
     const taken = furniture.filter((f) => f.y === corridor).map((f) => [f.x - 0.12, f.x + (f.w ?? 0.3) + 0.12]);
     const stretches = walls.filter((w) => w.y === corridor - WALL_THICKNESS && w.h === WALL_THICKNESS);
     for (const wall of stretches) {
@@ -868,8 +871,13 @@ function seatSpots(f) {
 }
 
 // Every seat spot on a floor (0 downstairs, 1 upstairs).
+// (Asked for every frame, so each floor's list is remembered until the
+// house changes.)
+let seatCache = { version: -1, floors: new Map() }; // floor -> seat spots, for one house layout
 function seatsOnFloor(floor) {
-  return FURNITURE.filter((f) => floorOf(f.y) === floor).flatMap(seatSpots);
+  if (seatCache.version !== houseVersion) seatCache = { version: houseVersion, floors: new Map() };
+  if (!seatCache.floors.has(floor)) seatCache.floors.set(floor, FURNITURE.filter((f) => floorOf(f.y) === floor).flatMap(seatSpots));
+  return seatCache.floors.get(floor);
 }
 
 // --- Private rooms: offices ---
@@ -879,7 +887,7 @@ function seatsOnFloor(floor) {
 // next free spot. The layout:
 //   slots: how many can exist at once. width: grid units per room,
 //   including its wall. firstX: left edge of the first spot. floorY: the y
-//   of the corridor wall they open onto (the hallway, or the landing).
+//   of the corridor wall they open onto (the hallway, or the suite floor).
 //   doorX: where the doorway starts, from the room's left edge. depth: how
 //   far north it reaches from the corridor.
 const WINGS = {
@@ -909,7 +917,7 @@ const buildDoors = { office: null }; // left edge of each kind's next free spot,
 // already in order (slot 1 first). An office's id comes from when it was
 // made, so it stays the same when it slides to a different spot.
 // doors: everyone's bedroom door, from the house server (see rooms.js),
-// in the order they go along the landing.
+// in the order they go along the suite floor.
 let lastBuild = [[], []]; // what the house was last built with (see previewSeason)
 function buildHouse(offices, doors = []) {
   lastBuild = [offices, doors];
@@ -969,9 +977,9 @@ function buildHouse(offices, doors = []) {
   corridorWall(BUSINESS, [2, ...offices.map((o) => wingX("office", o.slot) + WINGS.office.doorX)]);
   add("office", offices);
 
-  // The bedroom hallway (the upstairs landing): one solid wall with every
+  // The suite floor's hall: one solid wall with every
   // member's bedroom door on it, and a warm lamp between each pair.
-  corridorWall(LANDING, []);
+  corridorWall(SUITE, []);
   // The wall is split evenly into spots, each with a door in the middle
   // (a door is about one and a half people wide). Spots with no door yet get a rain
   // window instead (the only place the weather shows, indoors). A lamp
@@ -980,13 +988,13 @@ function buildHouse(offices, doors = []) {
   const spot = HOUSE_WIDTH / spots;
   for (let i = 0; i < spots; i++) {
     const middle = (i + 0.5) * spot;
-    if (i < doors.length) furniture.push({ kind: "bedroomDoor", x: middle - SUITE_DOOR / 2, y: LANDING, w: SUITE_DOOR, door: doors[i], solid: false });
-    else furniture.push({ kind: "rainWindow", x: middle - 0.65, y: LANDING, w: 1.3, solid: false });
-    if (i < spots - 1) furniture.push({ kind: "sconce", x: (i + 1) * spot - 0.15, y: LANDING, solid: false });
+    if (i < doors.length) furniture.push({ kind: "bedroomDoor", x: middle - SUITE_DOOR / 2, y: SUITE, w: SUITE_DOOR, door: doors[i], solid: false });
+    else furniture.push({ kind: "rainWindow", x: middle - 0.65, y: SUITE, w: 1.3, solid: false });
+    if (i < spots - 1) furniture.push({ kind: "sconce", x: (i + 1) * spot - 0.15, y: SUITE, solid: false });
   }
 
   // Each bedroom, on its own map: four walls with a doorway in the bottom
-  // one (walk out of it and you're back on the landing), and everything
+  // one (walk out of it and you're back on the suite floor), and everything
   // its owner has placed inside.
   for (const door of doors) {
     const { x0, top, w } = bedroomSpot(door);
@@ -1016,7 +1024,7 @@ function buildHouse(offices, doors = []) {
   // no sign: the header already says where you are.
   rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 } });
   rooms.push({ id: "business", name: CONFIG.roomNames.business, rect: { x: 0, y: BUSINESS, w: HOUSE_WIDTH, h: 3 } });
-  rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 } });
+  rooms.push({ id: "suite", name: CONFIG.roomNames.suite, rect: { x: 0, y: SUITE, w: HOUSE_WIDTH, h: 3 } });
   rooms.push(YARD_AREA);
 
   furniture.push(...seasonalWallDecor(walls, furniture));
@@ -1576,12 +1584,12 @@ function movePlayer(player, dx, dy) {
 }
 
 // Returns the room the player's center point is currently inside (or the
-// hallway or landing, if they're somehow in between).
+// hallway or suite floor, if they're somehow in between).
 function getCurrentRoom(player) {
   const cx = player.x + PLAYER_SIZE / 2;
   const cy = player.y + PLAYER_SIZE / 2;
   const room = ROOMS.find((r) => cx >= r.rect.x && cx <= r.rect.x + r.rect.w && cy >= r.rect.y && cy <= r.rect.y + r.rect.h);
   if (room) return room;
   if (floorOf(cy) === YARD_FLOOR) return YARD_AREA;
-  return ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "landing")); // (a bedroom's doorway counts as the bedroom hall)
+  return ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "suite")); // (a bedroom's doorway counts as the suite floor's hall)
 }

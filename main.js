@@ -340,7 +340,7 @@ joinButton.addEventListener("click", async () => {
   startEarningCrumbs();
   applyMyLofi(); // your Study station (it may have come with your cloud save)
   loadSavedBoard(); // the Conference Room whiteboard, as it was left
-  // Everyone's bedroom door on the landing, from the house server.
+  // Everyone's bedroom door on the suite floor, from the house server.
   // (And your own room, as it is in this browser, goes up to the server.)
   shareMyRoom();
   startRooms({ changed: () => (houseSignature = ""), notice: (text) => showNotice(text) });
@@ -398,16 +398,19 @@ joinButton.addEventListener("click", async () => {
   }
 });
 
-// --- Offices (and the old bedroom claims) ---
+// --- Offices ---
 // Your own office, if you've made one: { since, locked }. Your browser
 // remembers it, so it comes back each time you join. Nobody else stores
-// it: it only exists while you're here.
-// (Bedrooms used to work the same way; now every member has one kept on
-// the house server, see rooms.js. The old bedroom claim is left in your
-// save, unused, in case we ever need to go back.)
+// it: it only exists while you're here. (Bedrooms are kept on the house
+// server instead: see rooms.js.)
 const KINDS = ["office"];
-const STORAGE_KEYS = { office: "cozy-house-office", bedroom: "cozy-house-bedroom" };
-const mine = {}; // "office" or "bedroom" -> { since, locked }, or null
+const STORAGE_KEYS = { office: "cozy-house-office" };
+const mine = {}; // "office" -> { since, locked }, or null
+try {
+  localStorage.removeItem("cozy-house-bedroom"); // (the old bedroom claim, from before bedrooms were kept on the server)
+} catch {
+  // Storage blocked: nothing to tidy.
+}
 for (const kind of KINDS) {
   try {
     mine[kind] = JSON.parse(localStorage.getItem(STORAGE_KEYS[kind]));
@@ -470,7 +473,7 @@ function gatherClaims(kind, peers) {
 // your floor's corridor (the bedroom hall, if you were in a bedroom).
 function spawnPoint(floor) {
   if (floor === YARD_FLOOR) return { ...YARD_SPAWN };
-  return { x: 8.7, y: [0, BUSINESS, LANDING][Math.min(floor, 2)] + 1.2 };
+  return { x: 8.7, y: [0, BUSINESS, SUITE][Math.min(floor, 2)] + 1.2 };
 }
 
 // Everyone's bedroom door (and room) as buildHouse wants them: yours
@@ -494,7 +497,7 @@ function updatePrivateRooms() {
   const after = ROOMS.find((r) => r.id === before.id);
   if (before.owned && after) player.x += after.rect.x - before.rect.x;
   // If the room you were standing in just vanished (its owner left), pop
-  // back to the middle of the hallway (or landing).
+  // back to the middle of the hallway (or the suite floor).
   const box = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
   // (Sitting on a bench, log or swing overlaps it on purpose, so that's fine.)
   if (!isInsideARoom(player) || (!mySeat && SOLIDS.some((s) => rectsOverlap(box, s)))) Object.assign(player, spawnPoint(floorOf(player.y)));
@@ -867,7 +870,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Removing asks first, since it can't be undone (though you can always
-  // make a new one). You get moved back to the hallway or landing once
+  // make a new one). You get moved back to the hallway or suite floor once
   // it's gone.
   if (key === "r" && here?.mine && here.kind === "office") {
     const kind = here.kind;
@@ -1390,7 +1393,7 @@ function uiBusy() {
   return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
 }
 
-// Going into a bedroom (E at its door on the landing), and out again
+// Going into a bedroom (E at its door on the suite floor), and out again
 // (walk out through its doorway).
 // The house server says who may go in: you get a signed pass, which goes
 // out with your position so friends' browsers know you're allowed there
@@ -1426,7 +1429,7 @@ async function enterBedroom(door) {
   if (isMe(door.owner)) unlock("bedroomMade");
 }
 
-// Back out to the landing, in front of the door.
+// Back out to the suite floor, in front of the door.
 function leaveBedroom(owner) {
   Object.assign(player, bedroomExit(owner));
   if (owner && !isMe(owner)) leftRoom(owner);
@@ -2215,7 +2218,7 @@ function peerRow(color, text, outdated = false, name = "") {
 }
 
 // Clicking a name in "Who's here" opens their profile. (The list is
-// redrawn every frame, so this listens for the press, not the click.)
+// redrawn whenever it changes, so this listens for the press, not the click.)
 peerList.addEventListener("mousedown", (e) => {
   const name = e.target.closest("li[data-name]")?.dataset.name;
   if (name) openProfile(name);
@@ -2233,8 +2236,12 @@ function updateSidebar(myRoomName) {
     rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD, peer.name);
   }
   for (const { door } of sleepers()) rows += peerRow(door.color, `${door.owner} · 💤 asleep in their room`, false, door.owner);
+  // (Built every frame, but only put on the page when something changed.)
+  if (rows === lastSidebar) return;
+  lastSidebar = rows;
   peerList.innerHTML = rows;
 }
+let lastSidebar = "";
 
 let visiblePeers = []; // friends you're allowed to see (see peerAllowed), updated each frame
 let lofiPlaying = false;
