@@ -347,6 +347,10 @@ function paintOutside(ctx, kind) {
 // Outside the house: a soft lawn with little tufts of grass and a few
 // flowers, so empty office spots look like garden, not a dark gap.
 function paintYard(ctx) {
+  if (viewFloor === YARD_FLOOR) {
+    paintYardGround(ctx); // the yard itself (Update 4, see outdoors.js)
+    return;
+  }
   if (viewFloor === 1 || viewFloor === 2) {
     paintRoof(ctx);
     return;
@@ -375,6 +379,7 @@ function paintYard(ctx) {
       ctx.fill();
     }
   }
+  paintFrontSteps(ctx); // stepping stones from the front door (outdoors.js)
 }
 
 // Upstairs, everything outside the rooms is the roof below you: rows of
@@ -475,6 +480,7 @@ function drawRug(ctx, f) {
 function paintFloors(ctx) {
   paintYard(ctx);
   for (const room of ROOMS) {
+    if (room.outdoor && !CONFIG.roomFloors[room.id]) continue; // grass, already painted
     const floor = room.theme ? OFFICE_THEME_STYLE[room.theme].floor : CONFIG.roomFloors[room.owned?.kind] || CONFIG.roomFloors[room.id] || CONFIG.roomFloors.office;
     const a = toScreen(room.rect.x, room.rect.y);
     // Rooms north of a corridor also get floor under the corridor's wall,
@@ -607,6 +613,7 @@ function wallFaceParts(wall) {
 // only be a sliver at the bottom end. A soft shade on the floor just
 // below the wall helps it read as standing up.
 function drawWall(ctx, wall) {
+  if (wall.hidden) return; // (the yard's edges and the pond: nothing to see)
   const height = wall.low ? LOW_WALL_HEIGHT : WALL_HEIGHT;
   const a = toScreen(wall.x, wall.y);
   const b = toScreen(wall.x + wall.w, wall.y + wall.h);
@@ -631,8 +638,8 @@ function drawWall(ctx, wall) {
   }
   for (const part of wallFaceParts(wall)) {
     const left = toScreen(part.x0, 0).x, right = toScreen(part.x1, 0).x, w = right - left;
-    if (!part.room) {
-      // Facing outside (the garden): warm wooden house siding.
+    if (!part.room || part.room.outdoor) {
+      // Facing outside (the garden, or the yard): warm wooden house siding.
       ctx.fillStyle = "#a07c55";
       ctx.fillRect(left, b.y - height, w, height);
       ctx.fillStyle = "rgba(60, 35, 15, 0.28)";
@@ -7050,6 +7057,10 @@ function drawLamp(ctx, x, y) {
 // Warm light effects, drawn over everything in a final pass so glows
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
+  if (viewFloor === YARD_FLOOR) {
+    drawOutdoorLight(ctx); // daylight, dusk and night in the yard (outdoors.js)
+    return;
+  }
   // Study, Dinner and the Hallway get a soft golden wash, like rooms lit
   // by lamps at night: warm in the middle, a little dimmer at the edges.
   for (const id of ["study", "dinner", "hallway", "business", "landing", "elevator", "elevatorUp", "elevatorTop"]) {
@@ -10574,6 +10585,34 @@ function drawDoorTags(ctx, me) {
     ctx.fillStyle = "#5c4530";
     ctx.fillText(room.name, c.x, y + 12.5);
   }
+  // The doors between the house and the yard.
+  for (const door of YARD_DOORS) {
+    const inYard = viewFloor === YARD_FLOOR;
+    if (!inYard && viewFloor !== 0) continue;
+    const id = "yard-" + door.id;
+    const dx = inYard ? door.yardX : door.house.x, dy = inYard ? YARD_WALL_Y : door.house.top;
+    const near = me && Math.abs(me.x + PLAYER_SIZE / 2 - (dx + 0.8)) < NEAR_DOOR && Math.abs(me.y + PLAYER_SIZE / 2 - dy) < NEAR_DOOR;
+    const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
+    signFade[id] = fade;
+    if (fade === 0) continue;
+    const label = inYard ? (door.id === "kitchen" ? "🏠 Kitchen (Dinner)" : "🏠 Front door (elevator)") : "🌳 Out to the yard";
+    const c = toScreen(dx + 0.8, dy);
+    const w = ctx.measureText(label).width + 14, h = 17;
+    // (In the house the doorway is in the bottom wall, so the tag sits beside it.)
+    const x = inYard ? c.x - w / 2 : c.x + 0.8 * TILE + 6, y = inYard ? c.y + 6 : c.y - h - 2;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    roundRectPath(ctx, x + 1, y + 2, w, h, 8);
+    ctx.fill();
+    roundRectPath(ctx, x, y, w, h, 8);
+    ctx.fillStyle = "#fffaf3";
+    ctx.fill();
+    ctx.strokeStyle = "#c9955f";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#5c4530";
+    ctx.fillText(label, x + w / 2, y + 12.5);
+  }
   // Bedroom doors: whose room, whether you can come in, and their note.
   for (const f of FURNITURE) {
     if (f.kind !== "bedroomDoor" || !f.door || floorOf(f.y) !== viewFloor) continue;
@@ -10640,6 +10679,8 @@ function drawStudySign(ctx, text) {
 // rectangles in grid units.
 function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
+  // In the yard, everything is outside (the porch roof aside).
+  if (viewFloor === YARD_FLOOR) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
   // Around a bedroom: everything outside its four walls.
   const bedroom = viewedBedroom();
   if (bedroom) {
@@ -10822,7 +10863,8 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   ctx.translate(-left, -top);
 
   drawFloors(ctx);
-  drawOutsideRain(ctx);
+  drawPondShimmer(ctx);
+  if (viewFloor !== YARD_FLOOR) drawOutsideRain(ctx);
   dropRuneMarks(players);
   drawRuneMarks(ctx);
 

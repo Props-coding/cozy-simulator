@@ -17,6 +17,22 @@ const CONFIG = {
     business: "Business Floor",
     landing: "Bedroom Hall",
     workshop: "Workshop",
+    // Outside (Update 4)
+    yard: "Yard",
+    porch: "Porch",
+    garden: "Garden",
+    pond: "Pond",
+    campfire: "Campfire",
+    busStop: "Bus Stop",
+  },
+
+  // --- Outdoors (Update 4) ---
+  // Night outside, until the live weather has told us when the sun really
+  // sets and rises over the hometown: from this hour (24-hour clock) to
+  // that one, on your own computer's clock.
+  outdoors: {
+    nightFrom: 20,
+    nightTo: 6,
   },
 
   // The floors the elevator goes to, bottom to top, and what's on each
@@ -159,6 +175,7 @@ const CONFIG = {
     business: { style: "planks", color: "#b9a58c" },
     landing: { style: "planks", color: "#c9a57e" },
     bedroom: { style: "carpet", color: "#b7a2c4" }, // used for every bedroom
+    porch: { style: "planks", color: "#a88258" }, // (the rest of the yard is grass)
   },
 
   // The color of the walls you see inside each room.
@@ -267,6 +284,11 @@ const CONFIG = {
       workshop: { name: "Workshop", icon: "🔨" },
       office: { name: "Office", icon: "💼" },
       bedroom: { name: "Bedroom", icon: "🛏️" },
+      // Outside (Update 4)
+      garden: { name: "Garden", icon: "🌱" },
+      pond: { name: "Pond", icon: "🎣" },
+      campfire: { name: "Campfire", icon: "🔥" },
+      porch: { name: "Porch", icon: "🪑" },
     },
     minutesForLevel: [10, 30, 60, 120, 210, 330, 480, 660, 900, 1200],
   },
@@ -335,6 +357,14 @@ const CONFIG = {
     { id: "workaholic", text: "the Workaholic", room: "office", level: 10 },
     { id: "napper", text: "the Napper", room: "bedroom", level: 5 },
     { id: "dreamer", text: "the Dreamer", room: "bedroom", level: 10 },
+    { id: "greenThumb", text: "the Green Thumb", room: "garden", level: 5 },
+    { id: "groundskeeper", text: "the Groundskeeper", room: "garden", level: 10 },
+    { id: "pondside", text: "the Pondside Dreamer", room: "pond", level: 5 },
+    { id: "lakeLegend", text: "Legend of the Pond", room: "pond", level: 10 },
+    { id: "firesideTeller", text: "the Fireside Storyteller", room: "campfire", level: 5 },
+    { id: "fireKeeper", text: "the Fire Keeper", room: "campfire", level: 10 },
+    { id: "porchSitter", text: "the Porch Sitter", room: "porch", level: 5 },
+    { id: "porchPhilosopher", text: "the Porch Philosopher", room: "porch", level: 10 },
     { id: "homebody", text: "the Homebody", tier: "homebody", level: 3 },
     { id: "resident", text: "the Resident", tier: "homebody", level: 5 },
     { id: "hearthKeeper", text: "the Hearth Keeper", tier: "homebody", level: 6 },

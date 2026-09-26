@@ -35,8 +35,17 @@ const LANDING = 2 * UPSTAIRS + 3; // the bedroom hall (floor 3)
 // 2 the bedroom hall, and 3 and up for the bedrooms (each is its own
 // little map, see bedroomSpot).
 function floorOf(y) {
-  return Math.max(0, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
+  return Math.max(YARD_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
 }
+
+// The yard (Update 4): the outdoors behind the house, on its own map one
+// "floor" above the ground floor on the grid (floor -1), the same size as a
+// floor so the view doesn't change size when you step outside. You get
+// there through the kitchen door (the bottom of Dinner) or the front door
+// (the bottom of the elevator lobby). In the yard, the house's back wall
+// runs along the top, with a porch along it.
+const YARD_FLOOR = -1;
+const YARD = YARD_FLOOR * UPSTAIRS; // add this to a yard spot's y (so "YARD + 2" is 2 tiles down the yard)
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
@@ -70,7 +79,10 @@ const BASE_ROOMS = [
 // so they're made in buildHouse instead.)
 const BASE_WALLS = [
   // Outer walls
-  { x: -WALL_THICKNESS, y: 11, w: 18 + WALL_THICKNESS * 2, h: WALL_THICKNESS, low: true }, // bottom (drawn short so it doesn't hide the rooms)
+  // bottom (drawn short so it doesn't hide the rooms), with the kitchen
+  // door out to the yard at the bottom of Dinner (x 14.2 to 15.8)
+  { x: -WALL_THICKNESS, y: 11, w: 14.2 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
+  { x: 15.8, y: 11, w: 18 - 15.8 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
   { x: -WALL_THICKNESS, y: -WALL_THICKNESS, w: WALL_THICKNESS, h: 11.4 + WALL_THICKNESS }, // left, from the hallway down to the bottom
   { x: HOUSE_WIDTH, y: -5.8, w: WALL_THICKNESS, h: 9 }, // right, from the Library down to the hallway's end
 
@@ -84,7 +96,10 @@ const BASE_WALLS = [
   { x: 20.8, y: 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 8 + WALL_THICKNESS * 1.5 },
   { x: HOUSE_WIDTH, y: 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
-  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true }, // drawn short so it doesn't hide the lobby
+  // (drawn short so it doesn't hide the lobby), with the front door out to
+  // the yard (x 20.2 to 21.8)
+  { x: 18 - WALL_THICKNESS / 2, y: 7 - WALL_THICKNESS / 2, w: 20.2 - 18 + WALL_THICKNESS / 2, h: WALL_THICKNESS, low: true },
+  { x: 21.8, y: 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 21.8 + WALL_THICKNESS, h: WALL_THICKNESS, low: true },
 
   // The business floor: the Conference Room's north wall, left side and
   // right side, the corridor's sides and bottom (with a doorway into its
@@ -376,6 +391,205 @@ function elevatorArrival(toFloor) {
   return { x: door.x + door.w / 2 - PLAYER_SIZE / 2, y: door.y + 0.3 };
 }
 
+// --- The yard (Update 4) ---
+// Everything outside, in yard spots (x across as in the house, y from the
+// top of the yard, where the house's back wall is; YARD is added to y).
+// Top: the house's back wall with its two doors, and a porch along its
+// east half. Northwest: a clearing for the campfire. East: the fenced
+// garden. Southwest: the pond. Southeast: the bus stop, on a sidewalk by
+// the road along the bottom.
+//
+// The outdoor areas count as rooms (for room levels, voice rules and the
+// room name on screen). "outdoor" marks them for drawing and sound. The
+// plain "yard" is whatever's between them, so it's added last.
+const YARD_ROOMS = [
+  { id: "porch", name: CONFIG.roomNames.porch, rect: { x: 11.6, y: YARD - 5.4, w: 12.4, h: 2.4 }, outdoor: true },
+  { id: "campfire", name: CONFIG.roomNames.campfire, rect: { x: 0, y: YARD - 5.4, w: 8.6, h: 5.6 }, outdoor: true },
+  { id: "garden", name: CONFIG.roomNames.garden, rect: { x: 12.6, y: YARD - 1.6, w: 11.4, h: 6.4 }, outdoor: true },
+  { id: "pond", name: CONFIG.roomNames.pond, rect: { x: 0, y: YARD + 2.4, w: 10.6, h: 7.2 }, outdoor: true },
+  { id: "busStop", name: CONFIG.roomNames.busStop, rect: { x: 16.2, y: YARD + 6.8, w: 7.8, h: 3.2 }, outdoor: true },
+];
+const YARD_AREA = { id: "yard", name: CONFIG.roomNames.yard, rect: { x: 0, y: YARD - 5.4, w: HOUSE_WIDTH, h: 15.4 }, outdoor: true };
+
+// The doors between the house and the yard. `house` is the doorway in the
+// house's wall (x its left edge, top and bottom the wall's edges), `yard`
+// the doorway in the house's back wall seen from the yard.
+const YARD_DOORS = [
+  { id: "kitchen", name: "Kitchen door", house: { x: 14.2, top: 11, bottom: 11 + WALL_THICKNESS }, yardX: 14.2 },
+  { id: "front", name: "Front door", house: { x: 20.2, top: 7 - WALL_THICKNESS / 2, bottom: 7 + WALL_THICKNESS / 2 }, yardX: 20.2 },
+];
+const YARD_WALL_Y = YARD - 5.4; // the bottom edge of the house's back wall, seen from the yard
+
+// Where walking through a door takes you, or null if you're not walking
+// through one. From the house: stepping into the doorway puts you just
+// outside the matching door in the yard; from the yard, walking up into a
+// door puts you just inside.
+function doorwayCrossing(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  for (const door of YARD_DOORS) {
+    const inGap = (x) => cx > x + 0.15 && cx < x + DOOR_WIDTH - 0.15;
+    if (floorOf(player.y) === 0 && inGap(door.house.x) && cy > door.house.top + 0.1 && cy < door.house.bottom + 1) {
+      return { to: { x: door.yardX + DOOR_WIDTH / 2 - PLAYER_SIZE / 2, y: YARD_WALL_Y + 0.15 }, door, out: true };
+    }
+    if (floorOf(player.y) === YARD_FLOOR && inGap(door.yardX) && cy < YARD_WALL_Y - 0.05) {
+      return { to: { x: door.house.x + DOOR_WIDTH / 2 - PLAYER_SIZE / 2, y: door.house.top - PLAYER_SIZE - 0.15 }, door, out: false };
+    }
+  }
+  return null;
+}
+
+// The door you're walking toward (within a step of it), for the "Walk
+// through to go outside" prompt.
+function yardDoorNear(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return YARD_DOORS.find((door) => {
+    if (floorOf(player.y) === 0) return cx > door.house.x - 0.3 && cx < door.house.x + DOOR_WIDTH + 0.3 && cy > door.house.top - 1.3 && cy < door.house.top + 0.2;
+    return floorOf(player.y) === YARD_FLOOR && cx > door.yardX - 0.3 && cx < door.yardX + DOOR_WIDTH + 0.3 && cy < YARD_WALL_Y + 1.3;
+  }) ?? null;
+}
+
+// The pond: an oval of water. It's solid (you can't walk on water), built
+// from thin slices so its edge follows the oval, except where the dock
+// reaches out over it from the east bank.
+const POND = { cx: 4.8, cy: YARD + 5.9, rx: 3.6, ry: 2.4 };
+const DOCK = { x: 7.0, y: YARD + 5.5, w: 2.6, h: 0.8 };
+function pondSolids() {
+  const slices = [];
+  for (let y = POND.cy - POND.ry + 0.15; y < POND.cy + POND.ry - 0.15; y += 0.25) {
+    const mid = y + 0.125, half = POND.rx * Math.sqrt(Math.max(0, 1 - ((mid - POND.cy) / POND.ry) ** 2)) - 0.2;
+    if (half <= 0) continue;
+    const left = POND.cx - half;
+    let right = POND.cx + half;
+    if (mid > DOCK.y - 0.1 && mid < DOCK.y + DOCK.h + 0.1) right = Math.min(right, DOCK.x); // the dock
+    slices.push({ x: left, y, w: right - left, h: 0.25, hidden: true });
+  }
+  return slices;
+}
+
+// The yard's edges (invisible: the fence and trees show where they are),
+// the house's back wall with the two doors in it, and the pond.
+const YARD_WALLS = [
+  { x: -WALL_THICKNESS, y: YARD - 5.8, w: WALL_THICKNESS, h: 16, hidden: true }, // west edge
+  { x: HOUSE_WIDTH, y: YARD - 5.8, w: WALL_THICKNESS, h: 16, hidden: true }, // east edge
+  { x: -WALL_THICKNESS, y: YARD + 10, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true }, // the curb (the road is beyond)
+  // The house's back wall, with the kitchen door and the front door in it.
+  { x: -WALL_THICKNESS, y: YARD - 5.8, w: 14.2 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 15.8, y: YARD - 5.8, w: 20.2 - 15.8, h: WALL_THICKNESS },
+  { x: 21.8, y: YARD - 5.8, w: HOUSE_WIDTH - 21.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  ...pondSolids(),
+];
+
+// A straight run of fence from (x1, y1) to (x2, y2), in yard spots (one of
+// them the same), as furniture. Along the page it's a row of pickets;
+// down the page it's drawn from the side.
+function fenceRun(x1, y1, x2, y2, style = "picket") {
+  const across = y1 === y2;
+  return across
+    ? { kind: "fence", style, x: Math.min(x1, x2), y: YARD + y1 - 0.1, w: Math.abs(x2 - x1), h: 0.2 }
+    : { kind: "fenceSide", style, x: x1 - 0.1, y: YARD + Math.min(y1, y2), w: 0.2, h: Math.abs(y2 - y1) };
+}
+
+// Flat things painted on the ground: paths (rectangles with rounded ends,
+// in yard spots), the road and sidewalk, and the pond (see outdoors.js).
+const YARD_PATHS = [
+  { x: 17.2, y: -2.9, w: 1.6, h: 1.5 }, // porch steps down to the garden gate
+  { x: 1.2, y: -2.8, w: 16.2, h: 0.9 }, // along the front of the porch, west to the campfire
+  { x: 8.9, y: -2.4, w: 0.9, h: 8.2 }, // down to the pond's dock
+  { x: 17.4, y: 4.6, w: 1.2, h: 2.6 }, // out of the garden's bottom gate
+  { x: 9.2, y: 6.6, w: 14.2, h: 0.9 }, // along the bottom, from the pond to the bus stop
+];
+
+const YARD_FURNITURE = [
+  // The house's back wall: the two doors (walk up into one to go in),
+  // windows glowing warm from inside, and a lantern by each door.
+  { kind: "yardDoor", x: 14.2, y: YARD_WALL_Y, w: 1.6, door: "kitchen", solid: false },
+  { kind: "yardDoor", x: 20.2, y: YARD_WALL_Y, w: 1.6, door: "front", solid: false },
+  { kind: "houseWindow", x: 0.9, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 3.5, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 6.1, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 8.7, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 11.7, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 17.4, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 22.5, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "porchLantern", x: 13.55, y: YARD_WALL_Y, solid: false },
+  { kind: "porchLantern", x: 16.15, y: YARD_WALL_Y, solid: false },
+  { kind: "porchLantern", x: 19.55, y: YARD_WALL_Y, solid: false },
+  { kind: "porchLantern", x: 22.15, y: YARD_WALL_Y, solid: false },
+
+  // The porch: a railing along its front (with the steps in the middle)
+  // and its west end, doormats, a rocking chair and potted plants.
+  { kind: "porchRail", x: 11.6, y: YARD - 3.2, w: 5.6, h: 0.2 },
+  { kind: "porchRail", x: 18.8, y: YARD - 3.2, w: 5.2, h: 0.2 },
+  { kind: "porchRailSide", x: 11.5, y: YARD - 5.4, w: 0.2, h: 2.4 },
+  { kind: "porchSteps", x: 17.2, y: YARD - 3.1, w: 1.6, h: 0.5, solid: false },
+  { kind: "doormat", x: 14.45, y: YARD - 5.3, w: 1.1, h: 0.45, solid: false },
+  { kind: "doormat", x: 20.45, y: YARD - 5.3, w: 1.1, h: 0.45, solid: false },
+  { kind: "rockingChair", x: 23.0, y: YARD - 4.95, w: 0.8, h: 0.6 },
+  { kind: "fern", x: 16.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
+  { kind: "snakePlant", x: 19.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
+
+  // Flower beds along the house west of the porch.
+  { kind: "flowerBed", x: 0.2, y: YARD - 5.35, w: 5.3, h: 0.5 },
+  { kind: "flowerBed", x: 6.1, y: YARD - 5.35, w: 5.2, h: 0.5 },
+
+  // The garden: a picket fence all round, with a gate at the top (under
+  // the porch steps) and at the bottom (toward the bus stop).
+  fenceRun(12.8, -1.4, 17.2, -1.4),
+  fenceRun(18.8, -1.4, 23.8, -1.4),
+  fenceRun(12.8, 4.6, 17.4, 4.6),
+  fenceRun(18.6, 4.6, 23.8, 4.6),
+  fenceRun(12.8, -1.4, 12.8, 4.6),
+  fenceRun(23.8, -1.4, 23.8, 4.6),
+
+  // The pond's dock, reeds and a few stones.
+  { kind: "dock", ...DOCK, solid: false },
+  { kind: "reeds", x: 1.0, y: YARD + 4.3, w: 0.6, h: 0.4, solid: false },
+  { kind: "reeds", x: 1.6, y: YARD + 7.9, w: 0.6, h: 0.4, solid: false },
+  { kind: "reeds", x: 6.9, y: YARD + 7.6, w: 0.6, h: 0.4, solid: false },
+  { kind: "pondStones", x: 2.2, y: YARD + 3.3, w: 0.8, h: 0.4 },
+
+  // The yard's west and south edges: a rustic fence (open at the bus stop).
+  fenceRun(0.1, -4.6, 0.1, 9.3, "rail"),
+  fenceRun(0.1, 9.3, 16.2, 9.3, "rail"),
+
+  // Trees (big and leafy, or pines), bushes and a few flowers.
+  { kind: "yardTree", x: 9.3, y: YARD - 3.75, w: 1.0, h: 0.55, n: 0 },
+  { kind: "yardTree", x: 0.4, y: YARD + 0.55, w: 1.0, h: 0.55, n: 1 },
+  { kind: "pineTree", x: 11.0, y: YARD + 1.2, w: 0.9, h: 0.5, n: 2 },
+  { kind: "yardTree", x: 11.3, y: YARD + 8.4, w: 1.0, h: 0.55, n: 3 },
+  { kind: "pineTree", x: 0.6, y: YARD + 9.3, w: 0.9, h: 0.5, n: 4 },
+  { kind: "yardTree", x: 14.4, y: YARD + 8.3, w: 1.0, h: 0.55, n: 5 },
+  { kind: "pineTree", x: 23.0, y: YARD + 5.9, w: 0.9, h: 0.5, n: 6 },
+  { kind: "bush", x: 10.3, y: YARD + 4.9, w: 0.9, h: 0.55, n: 0 },
+  { kind: "bush", x: 12.9, y: YARD + 5.4, w: 0.9, h: 0.55, n: 1 },
+  { kind: "bush", x: 7.6, y: YARD - 0.3, w: 0.9, h: 0.55, n: 2 },
+  { kind: "bush", x: 20.6, y: YARD + 5.3, w: 0.9, h: 0.55, n: 3 },
+  { kind: "wildflowers", x: 3.1, y: YARD + 9.0, w: 1.1, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 12.2, y: YARD + 3.6, w: 0.5, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 21.3, y: YARD + 6.0, w: 1.0, h: 0.3, solid: false },
+
+  // Signposts, so you know where you are.
+  { kind: "signpost", x: 8.3, y: YARD - 1.4, w: 0.3, h: 0.2, text: "Campfire", point: "left" },
+  { kind: "signpost", x: 10.05, y: YARD + 3.4, w: 0.3, h: 0.2, text: "Pond", point: "left" },
+  { kind: "signpost", x: 19.1, y: YARD - 1.9, w: 0.3, h: 0.2, text: "Garden", point: "down" },
+  { kind: "signpost", x: 16.3, y: YARD + 7.7, w: 0.3, h: 0.2, text: "Bus Stop", point: "right" },
+];
+
+// Where you pop back to in the yard (say the area you were in vanished):
+// at the bottom of the porch steps.
+const YARD_SPAWN = { x: 17.7, y: YARD - 2.3 };
+
+// Is it night outside? Update 4's weather (weather.js) fills in OUTDOORS
+// from the real sky over the hometown; until it has, night is guessed from
+// this computer's clock (CONFIG.outdoors.nightFrom to nightTo).
+const OUTDOORS = { night: null, sky: "clear", rain: 0, snow: 0, clouds: 0, temp: null, updated: 0 };
+function isNightOutside() {
+  if (OUTDOORS.night !== null) return OUTDOORS.night;
+  const hour = new Date().getHours();
+  const { nightFrom, nightTo } = CONFIG.outdoors;
+  return hour >= nightFrom || hour < nightTo;
+}
+
 // --- Seasonal decorations ---
 // The shared rooms (hallways, Theater, Study, Dinner, Library) dress up
 // for the season: little cutouts stuck along the hallway walls (bats and
@@ -392,7 +606,7 @@ const SEASONAL = {
     { size: "big", x: 18.9, y: 0.1 }, // hallway, under the sea painting
     { size: "small", x: 7.4, y: 9.8 }, // Study, by the beanbag
     { size: "big", x: 10.9, y: 8.7 }, // Study, beside the rug
-    { size: "small", x: 13.8, y: 10.15 }, // Dinner, by the tea cart
+    { size: "small", x: 13.65, y: 10.15 }, // Dinner, by the tea cart
     { size: "big", x: 16.9, y: 8.9 }, // Dinner, by the lemon tree
     { size: "small", x: 5.3, y: 9.2 }, // Theater, by the popcorn
     { size: "big", x: 1.0, y: 10.0 }, // Theater, back corner
@@ -552,9 +766,9 @@ let lastBuild = [[], []]; // what the house was last built with (see previewSeas
 function buildHouse(offices, doors = []) {
   lastBuild = [offices, doors];
   const t = WALL_THICKNESS;
-  const rooms = [...BASE_ROOMS];
-  const walls = [...BASE_WALLS];
-  const furniture = [...BASE_FURNITURE, ...seasonalFurniture()];
+  const rooms = [...BASE_ROOMS, ...YARD_ROOMS];
+  const walls = [...BASE_WALLS, ...YARD_WALLS];
+  const furniture = [...BASE_FURNITURE, ...seasonalFurniture(), ...YARD_FURNITURE];
 
   // A corridor's top wall, from x -t to the east end, with gaps for its doorways.
   const corridorWall = (y, doorways) => {
@@ -650,6 +864,7 @@ function buildHouse(offices, doors = []) {
   rooms.push({ id: "hallway", name: CONFIG.roomNames.hallway, rect: { x: 0, y: 0, w: HOUSE_WIDTH, h: 3 } });
   rooms.push({ id: "business", name: CONFIG.roomNames.business, rect: { x: 0, y: BUSINESS, w: HOUSE_WIDTH, h: 3 } });
   rooms.push({ id: "landing", name: CONFIG.roomNames.landing, rect: { x: 0, y: LANDING, w: HOUSE_WIDTH, h: 3 } });
+  rooms.push(YARD_AREA);
 
   furniture.push(...seasonalWallDecor(walls, furniture));
   ROOMS = rooms;
@@ -1201,5 +1416,7 @@ function getCurrentRoom(player) {
   const cx = player.x + PLAYER_SIZE / 2;
   const cy = player.y + PLAYER_SIZE / 2;
   const room = ROOMS.find((r) => cx >= r.rect.x && cx <= r.rect.x + r.rect.w && cy >= r.rect.y && cy <= r.rect.y + r.rect.h);
-  return room || ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "landing")); // (a bedroom's doorway counts as the bedroom hall)
+  if (room) return room;
+  if (floorOf(cy) === YARD_FLOOR) return YARD_AREA;
+  return ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "landing")); // (a bedroom's doorway counts as the bedroom hall)
 }

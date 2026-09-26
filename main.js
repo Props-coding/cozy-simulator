@@ -425,6 +425,7 @@ function gatherClaims(kind, peers) {
 // Where you pop back to if the room you're in disappears: the middle of
 // your floor's corridor (the bedroom hall, if you were in a bedroom).
 function spawnPoint(floor) {
+  if (floor === YARD_FLOOR) return { ...YARD_SPAWN };
   return { x: 8.7, y: [0, BUSINESS, LANDING][Math.min(floor, 2)] + 1.2 };
 }
 
@@ -599,6 +600,8 @@ function roomHintFor(room) {
   }
   if (ride) return "";
   if (nearestInteraction(player) === "elevator") return "Press E to call the elevator.";
+  const yardDoor = yardDoorNear(player);
+  if (yardDoor) return floorOf(player.y) === YARD_FLOOR ? `Walk through the ${yardDoor.name.toLowerCase()} to go back inside.` : "Walk through the door to go out to the yard.";
   if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
   if (room.id === "conference") {
     return isWhiteboardOpen() ? "Draw on the whiteboard together. Press B or Escape to close it." : "Press B to open the whiteboard.";
@@ -2115,6 +2118,12 @@ function tick(now) {
     stopMyEmote(); // walking off ends an emote
   }
   checkMySeat();
+  // Walking through a door between the house and the yard.
+  const crossing = doorwayCrossing(player);
+  if (crossing) {
+    Object.assign(player, crossing.to);
+    playClickSound();
+  }
   updateElevator(dt);
   checkLeftBedroom();
   visiblePeers = getPeers().filter(peerAllowed);
@@ -2142,7 +2151,9 @@ function tick(now) {
     if (currentRoom.id === "library") enterLibrary();
     if (previousRoomId === "conference") closeWhiteboard();
     if (currentRoom.id === "theater") enterTheater();
-    if (previousRoomId !== null) playRoomChangeSound(currentRoom.id);
+    // (No chime walking between the yard's areas: it's all one outdoors.)
+    const outdoorsBoth = currentRoom.outdoor && ROOMS.find((r) => r.id === previousRoomId)?.outdoor;
+    if (previousRoomId !== null && !outdoorsBoth) playRoomChangeSound(currentRoom.id);
     previousRoomId = currentRoom.id;
     const visited = collect("rooms", currentRoom.owned ? currentRoom.owned.kind : currentRoom.id);
     if (TOUR_ROOMS.every((r) => visited.includes(r))) unlock("tour");

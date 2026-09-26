@@ -86,6 +86,13 @@ const ROOM_CHIME_NOTES = {
   study: [493.88, 587.33], // B4, D5: softer, calmer
   dinner: [440, 554.37], // A4, C#5: warm, settling in
   workshop: [523.25, 698.46], // C5, F5: busy and cheerful
+  // Stepping outside (any of the yard's areas): G4, D5, open and airy.
+  yard: [392, 587.33],
+  porch: [392, 587.33],
+  garden: [392, 587.33],
+  pond: [392, 587.33],
+  campfire: [392, 587.33],
+  busStop: [392, 587.33],
 };
 
 export function playRoomChangeSound(roomId) {
