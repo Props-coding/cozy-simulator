@@ -410,7 +410,8 @@ function mayEnter(room, key, viewerKey) {
 
 // Whether `viewerKey` may see inside right now: anyone who may walk in,
 // plus people already let in to a "knock first" room who haven't left
-// yet (room.inside, cleared when they walk out or their pass runs out).
+// yet (room.inside, cleared when they walk out, or a few minutes after
+// their browser stops checking in).
 function maySee(room, key, viewerKey) {
   if (mayEnter(room, key, viewerKey)) return true;
   return room.privacy === "knock" && (room.inside?.[viewerKey] ?? 0) > Date.now();
@@ -420,6 +421,9 @@ function maySee(room, key, viewerKey) {
 // which everyone's browser checks before they show (or talk to) someone
 // inside a bedroom. Signed with the badge key, so nobody can make their own.
 const PASS_HOURS = 12;
+// A let-in visitor stays welcome while their browser keeps checking in;
+// if they just close the page, they need to knock again after this long.
+const INSIDE_MS = 3 * 60_000;
 function roomPass(ownerKey, visitorKey, peerId) {
   const payload = `room|${ownerKey}|${visitorKey}|${peerId}|${Date.now() + PASS_HOURS * 3600_000}`;
   return { payload, sig: sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64") };
@@ -712,7 +716,7 @@ const routes = {
       // A let-in is used up once you're in; you stay welcome until you leave.
       if (room.allowed) delete room.allowed[key];
       room.inside ??= {};
-      room.inside[key] = Date.now() + PASS_HOURS * 3600_000;
+      room.inside[key] = Date.now() + INSIDE_MS; // (their browser checks in every minute while inside)
       await saveDb();
     }
     return { pass };

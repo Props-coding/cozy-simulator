@@ -1254,6 +1254,7 @@ function uiBusy() {
 let myPass = null; // { owner: their account name in lowercase, pass, expires }
 let askingForPass = false;
 let nextPassTry = 0; // after a hiccup, wait a little before asking again
+let nextCheckIn = 0; // in someone's "knock first" room: tell the server we're still here every minute
 
 async function getPass(owner) {
   askingForPass = true;
@@ -1308,7 +1309,9 @@ function checkMyPass(room) {
     return;
   }
   const soon = Date.now() + 30 * 60_000;
-  if (myPass?.owner === owner.toLowerCase() && myPass.expires > soon) return;
+  const checkIn = !isMe(owner) && door?.privacy === "knock" && performance.now() > nextCheckIn;
+  if (myPass?.owner === owner.toLowerCase() && myPass.expires > soon && !checkIn) return;
+  nextCheckIn = performance.now() + 60_000;
   getPass(owner).then((answer) => {
     if (answer.pass) return;
     if (answer.refused === "error") return void (nextPassTry = performance.now() + 10000); // (a hiccup: try again soon)
