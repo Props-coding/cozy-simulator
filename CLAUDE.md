@@ -98,6 +98,7 @@ network.js        Trystero connection, sharing positions
 audio.js          voice rules, lo-fi, mute and volume
 config.js         easy settings: room name, password, stream URL, colors, room names
 vendor/           a pinned copy of the Trystero file, so the site does not depend on a CDN
+tests/            the automated tests (see "Testing notes"); package.json lists developer tools only
 CLAUDE.md         this file
 PROGRESS.md       running checklist
 README.md         short plain-language description
@@ -119,6 +120,13 @@ Do these in order. Stop after each one for the user to test.
 8. **Further polish.** Cozier look, join and leave sounds, nicer characters, once the rendering base is solid.
 
 ## Testing notes
+
+- **Checks before every update (the safety net, added 2026-09-28).** Run all three before saying a change is done, and fix what they find:
+  - `npm run lint`: the mistake checker (ESLint). Errors must be zero; warnings are leftovers and can wait. It learns the shared names from the plain `<script>` tags in index.html, so a new classic script needs no extra setup.
+  - `npm test`: opens the house in a hidden browser with a throwaway test server and test account, visits every floor, and fails on any page or drawing error. It prints how many milliseconds each floor takes to draw (under about 16 is smooth). When a new floor or map is added, add it to `FLOORS` in `tests/helpers.js`.
+  - `npm run test:pictures`: compares a picture of every floor with the approved ones in `tests/pictures/`. When a visual change is intended, look at the new pictures honestly first, then approve them with `npm run test:pictures:update` and commit them. The approved pictures come from the Linux cloud machine; on another computer (like the owner's Windows PC) they will differ a little, so skip this one there or re-approve on that machine.
+  - GitHub runs the first two automatically on every push (`.github/workflows/checks.yml`). Don't merge a change with a red X.
+  - The page has a small test hook, only on localhost (see "For the automated tests" in main.js): `window.porchlightTest.go(x, y)` jumps to a spot, and it records drawing errors and frame times. Use it for screenshots instead of fighting the spawn rules.
 
 - You cannot fully test voice alone. Two windows on one PC are enough for movement. For voice, the user should use headphones to avoid feedback.
 - The real test is friends on different networks and different home internet.

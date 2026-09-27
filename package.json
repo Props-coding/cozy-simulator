@@ -1,0 +1,19 @@
+{
+  "name": "porchlight",
+  "private": true,
+  "description": "Developer tools only (checks and tests). The site itself needs no build step and none of these packages.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "playwright test --project=checks",
+    "test:pictures": "playwright test --project=pictures",
+    "test:pictures:update": "playwright test --project=pictures --update-snapshots"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.56.1",
+    "eslint": "10.11.0",
+    "espree": "11.2.0",
+    "globals": "17.12.0"
+  }
+}

@@ -226,7 +226,7 @@ async function refreshNames() {
 // Letters from before mail lived on the server were kept in the browser.
 // Bring them over once (and send anything that was still waiting to go).
 async function bringOverOldMail() {
-  let old = null;
+  let old;
   try {
     old = JSON.parse(localStorage.getItem("cozy-house-mail"));
   } catch {
