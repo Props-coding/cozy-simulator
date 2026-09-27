@@ -60,7 +60,7 @@ export function openPhonePanel() {
   for (const row of rows.sort((a, b) => !!a.away - !!b.away || a.name.localeCompare(b.name))) {
     const li = document.createElement("div");
     li.className = "phone-row";
-    li.append(Object.assign(document.createElement("span"), { textContent: row.away ? `${row.name} · 🌙 away` : `${row.name} · in the house` }));
+    li.append(Object.assign(document.createElement("span"), { textContent: row.away ? `${row.name} · away` : `${row.name} · in the house` }));
     const button = document.createElement("button");
     button.type = "button";
     button.className = "warm-button";
@@ -94,7 +94,7 @@ messageForm.addEventListener("submit", async (e) => {
   const body = messageText.value.trim();
   if (!body) return;
   try {
-    await serverApi("POST", "/api/mail", { to: messageTo.textContent, subject: "📞 Phone message", body, color: hooks.color() });
+    await serverApi("POST", "/api/mail", { to: messageTo.textContent, subject: "Phone message", body, color: hooks.color() });
     hooks.notice(`Message left for ${messageTo.textContent}. They'll see it when they come in.`);
     closePhonePanel();
   } catch (err) {
@@ -140,7 +140,7 @@ function startTalking() {
     return endCall("Phone calls need your microphone.");
   }
   call.state = "talking";
-  showPopup(`📞 On the phone with ${call.name}`, [["Hang up", hangUp]]);
+  showPopup(`On the phone with ${call.name}`, [["Hang up", hangUp]]);
 }
 
 export function hangUp() {
@@ -202,7 +202,7 @@ onPhone((message, peerId) => {
     playPhoneRing();
     ringTimer = setInterval(playPhoneRing, RING_EVERY_MS);
     giveUpTimer = setTimeout(() => endCall(`You missed a call from ${name}.`), (RING_SECONDS + 2) * 1000);
-    showPopup(`📞 ${name} is calling your bedroom phone!`, [["Answer", answer], ["Decline", decline]]);
+    showPopup(`${name} is calling your bedroom phone!`, [["Answer", answer], ["Decline", decline]]);
     return;
   }
 

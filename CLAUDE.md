@@ -20,6 +20,7 @@ The user is creative, smart, and a psychologist by trade, but has no coding know
 10. **Comment the code in plain English** so the user can follow along.
 11. **No em dashes** in anything written for the user, including docs, chat replies, and on-screen text.
 12. **Be honest about uncertainty.** If something might not work (for example voice on a strict network), say so early rather than hiding it.
+13. **No emoji as icons (decided 2026-09-27).** Emoji look generic and give the game an "AI vibe". Icons, pictures and badges in the interface are drawn in the house's own style instead: the small SVG icons at the top of `index.html` (used with `uiIcon()` from `ui-icons.js`), or canvas drawings (`icons.js`, and the house's own furniture and character drawings). Chat notices are plain words. Emoji only appear where friends type them in chat.
 
 ## The goal
 

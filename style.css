@@ -1192,23 +1192,52 @@ canvas {
 #asleep-list li {
   display: flex;
   align-items: center;
-  padding: 1px 0;
+  padding: 1px 0 1px 2px; /* (room on the left for the dot's ring) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
 }
 
+/* A little crescent moon after each sleeper's name. */
 #asleep-list li::after {
-  content: "💤";
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
   margin-left: 5px;
-  font-size: 0.85em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M20 4 A12 12 0 1 0 28 22 A10 10 0 0 1 20 4 Z' fill='%23f1d77a' stroke='%23c9a23c' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 #asleep-list .peer-dot {
   width: 8px;
   height: 8px;
   margin-right: 6px;
+  flex: none;
+}
+
+/* The interface's drawn icons (ui-icons.js): sized to the text around
+   them, sitting on its baseline. */
+.ui-icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+  vertical-align: -0.28em;
+}
+
+/* The round header buttons' pictures. */
+.header-icon {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+#room-label .ui-icon {
+  margin-right: 4px;
+}
+
+h3 .ui-icon {
+  margin-right: 4px;
 }
 
 hr {
@@ -1639,6 +1668,12 @@ input[type="range"]::-moz-range-thumb {
 
 .app-icon {
   font-size: 38px;
+  line-height: 1;
+}
+
+.app-icon .ui-icon {
+  width: 40px;
+  height: 40px;
 }
 
 .app-badge {

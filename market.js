@@ -53,7 +53,7 @@ export async function openTradingPost() {
   await refreshMarket();
   openNpc({
     name: "Trading post",
-    icon: "🤝",
+    portrait: { f: "tradingPost", w: 1.9, h: 0.6 },
     color: "#c98f3c",
     pitch: 380,
     hello: ["Swap, sell, or just have a look.", "One friend's pond boot is another friend's treasure.", "Everything here waits for the right person."],
@@ -247,7 +247,7 @@ export async function talkToJuniper() {
   if (!market.merchant.here) return;
   openNpc({
     name: CONFIG.merchant.name,
-    icon: "🦊",
+    portrait: { f: "juniper", w: 0.55, h: 0.4 },
     color: "#d9702e",
     pitch: 460,
     hello: ["Fresh off the bus! Have a look, have a look.", "I've been all over. Brought a few things back.", "Only here today, then off down the road again.", "Rare seeds, strange bait... and a recipe or two."],

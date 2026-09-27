@@ -92,10 +92,10 @@ async function act(body) {
     apply(next);
     sendKanbanPing();
     const result = next.result ?? {};
-    if (result.added) hooks.post(`📝 ${accountName()} added "${result.added}" to ${result.board}.`, { kind: "added", title: result.added, board: result.board });
+    if (result.added) hooks.post(`${accountName()} added "${result.added}" to ${result.board}.`, { kind: "added", title: result.added, board: result.board });
     if (result.finished) {
       playCardDoneSound();
-      hooks.post(`✅ ${result.claimedBy || accountName()} finished "${result.finished}"!`, { kind: "done", title: result.finished, who: result.claimedBy || accountName() });
+      hooks.post(`${result.claimedBy || accountName()} finished "${result.finished}"!`, { kind: "done", title: result.finished, who: result.claimedBy || accountName() });
     }
     return next;
   } catch (err) {

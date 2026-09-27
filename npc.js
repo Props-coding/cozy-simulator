@@ -8,6 +8,7 @@
 // its tabs, and this file does the rest.
 import { playBabble, playClickSound } from "./audio.js";
 import { crumbBalance } from "./shop.js";
+import { portraitCanvas } from "./icons.js";
 
 const panel = document.getElementById("npc-panel");
 const face = document.getElementById("npc-face");
@@ -18,7 +19,7 @@ const list = document.getElementById("npc-items");
 const crumbs = document.getElementById("npc-crumbs");
 const heartsRow = document.getElementById("npc-hearts");
 
-let npc = null; // who's open: { name, icon, color, pitch, hello, bye, tabs: [{ id, label, items() }], hearts() (residents only) }
+let npc = null; // who's open: { name, portrait, color, pitch, hello, bye, tabs: [{ id, label, items() }], hearts() (residents only) }
 let tab = null;
 let typing = null;
 
@@ -60,7 +61,10 @@ const pick = (lines) => (Array.isArray(lines) ? lines[Math.floor(Math.random() *
 export function openNpc(who) {
   npc = who;
   tab = who.tabs[0].id;
-  face.textContent = who.icon;
+  // Their portrait: a drawing in the house's style (who.portrait, see
+  // portraitCanvas in icons.js).
+  face.textContent = "";
+  if (who.portrait) face.appendChild(portraitCanvas(who.portrait, 50));
   face.style.setProperty("--npc", who.color);
   nameTag.textContent = who.name;
   nameTag.style.setProperty("--npc", who.color);
@@ -116,7 +120,9 @@ export function refreshNpc() {
     const row = document.createElement("div");
     row.className = "npc-item" + (item.locked ? " locked" : "");
     row.innerHTML = `<span class="npc-icon"></span><span class="npc-words"><b></b><small></small></span><span class="shop-price"><svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg><span></span></span>`;
-    row.querySelector(".npc-icon").textContent = item.icon;
+    // (A picture on the left, if the row has one.)
+    if (item.icon) row.querySelector(".npc-icon").textContent = item.icon;
+    else row.querySelector(".npc-icon").remove();
     row.querySelector("b").textContent = item.name;
     row.querySelector("small").textContent = item.note ?? "";
     row.querySelector(".shop-price span").textContent = item.price ?? "";

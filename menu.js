@@ -5,6 +5,7 @@
 // - on furniture: Sit, Inspect, and in your own room Move or Store;
 // - on empty floor: nothing.
 // It closes when you click somewhere else or press Escape.
+import { uiIcon } from "./ui-icons.js";
 import { playClickSound } from "./audio.js";
 
 const menu = document.getElementById("house-menu");
@@ -21,7 +22,8 @@ export function closeMenu() {
 }
 
 // Opens at `at` ({ x, y } inside the house view), kept on screen.
-// items: [{ label, run, danger, disabled, title }]; or `lines` for an
+// items: [{ label, icon, run, danger, disabled, title }] (icon: one of the
+// drawn interface icons, see ui-icons.js); or `lines` for an
 // Inspect card (a few lines of text instead of buttons).
 export function openMenu(at, heading, items = [], lines = []) {
   title.textContent = heading;
@@ -31,6 +33,7 @@ export function openMenu(at, heading, items = [], lines = []) {
     b.type = "button";
     b.className = "house-menu-item" + (item.danger ? " danger" : "");
     b.textContent = item.label;
+    if (item.icon) b.insertAdjacentHTML("afterbegin", uiIcon(item.icon) + " ");
     b.disabled = !!item.disabled;
     if (item.title) b.title = item.title;
     b.addEventListener("click", () => {

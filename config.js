@@ -434,14 +434,14 @@ const CONFIG = {
     // resident's story at `hearts` hearts.
     stories: {
       clover: [
-        { hearts: 2, name: "Tell me about Doug", icon: "🫙", line: "doug is my sourdough starter. my gran gave him to me the day i left home. 'feed him, talk to him, and he'll never let you down.' twelve years, and he never has. well. once he ate a spoon. we don't talk about it." },
-        { hearts: 5, name: "Why did you come here?", icon: "🚌", line: "honest truth? my old bakery closed. i sat at a bus stop with doug and a suitcase, and gus said, 'there's a house up the road that smells like it needs bread.' he was right. it did." },
-        { hearts: 8, name: "What do you dream about?", icon: "💭", line: "a little shop window. a bell over the door. warm loaves stacked up, and everyone in the house stopping by in the morning. oh. wait. that's... that's kind of just this. huh." },
+        { hearts: 2, name: "Tell me about Doug", line: "doug is my sourdough starter. my gran gave him to me the day i left home. 'feed him, talk to him, and he'll never let you down.' twelve years, and he never has. well. once he ate a spoon. we don't talk about it." },
+        { hearts: 5, name: "Why did you come here?", line: "honest truth? my old bakery closed. i sat at a bus stop with doug and a suitcase, and gus said, 'there's a house up the road that smells like it needs bread.' he was right. it did." },
+        { hearts: 8, name: "What do you dream about?", line: "a little shop window. a bell over the door. warm loaves stacked up, and everyone in the house stopping by in the morning. oh. wait. that's... that's kind of just this. huh." },
       ],
       mortimer: [
-        { hearts: 2, name: "Why the spectacles?", icon: "👓", line: "i don't need them. owls see perfectly well. but a librarian without spectacles is simply an owl in a room full of books, and that's a different thing altogether." },
-        { hearts: 5, name: "How long have you been here?", icon: "⏳", line: "before the house had a hallway, there was a library. before the library, a shelf. before the shelf, there was me, and a book i hadn't finished. i still haven't. it's very long." },
-        { hearts: 8, name: "The tapping at the window", icon: "🪟", line: "i'll tell you, because you're a friend. the tapping. it's a moth. a very large, very polite moth. it never comes in. it just looks at the lamp. and at me. i think it's lonely. so i leave the lamp on." },
+        { hearts: 2, name: "Why the spectacles?", line: "i don't need them. owls see perfectly well. but a librarian without spectacles is simply an owl in a room full of books, and that's a different thing altogether." },
+        { hearts: 5, name: "How long have you been here?", line: "before the house had a hallway, there was a library. before the library, a shelf. before the shelf, there was me, and a book i hadn't finished. i still haven't. it's very long." },
+        { hearts: 8, name: "The tapping at the window", line: "i'll tell you, because you're a friend. the tapping. it's a moth. a very large, very polite moth. it never comes in. it just looks at the lamp. and at me. i think it's lonely. so i leave the lamp on." },
       ],
     },
     requests: {

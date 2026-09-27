@@ -18,6 +18,7 @@
 // have the ingredients, and knows every recipe. All the lists are in
 // config.js (CONFIG.kitchen).
 import { bank, myWallet } from "./bank.js";
+import { uiIcon } from "./ui-icons.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
 import { openNpc } from "./npc.js";
 import { crumbBalance } from "./shop.js";
@@ -88,7 +89,7 @@ export function openFridge() {
       });
   openNpc({
     name: "Fridge & pantry",
-    icon: "🧊",
+    portrait: { f: "fridge", w: 0.8, h: 0.6 },
     color: "#5a8aa8",
     pitch: 520,
     hello: ["*hmmmm* (the fridge hums)", "Everything you can't grow yourself.", "Mind the door, it sticks."],
@@ -105,7 +106,7 @@ let pot = []; // what's in the pot for an experiment (basket ids)
 export function openStove() {
   openNpc({
     name: "The stove",
-    icon: "🍳",
+    portrait: { f: "stove", w: 1.7, h: 0.6 },
     color: "#c0554a",
     pitch: 240,
     hello: ["*sizzle*", "What's cooking?", "The pan's warm. Let's make something.", "Pick a recipe, or throw things in and see."],
@@ -302,7 +303,9 @@ export function isGiftOpen() {
 
 async function openGift(id) {
   giftId = id;
-  document.getElementById("gift-title").textContent = `🎁 Give ${itemInfo(id).name}`;
+  const giftTitle = document.getElementById("gift-title");
+  giftTitle.innerHTML = uiIcon("gift");
+  giftTitle.append(` Give ${itemInfo(id).name}`);
   giftNote.hidden = true;
   giftTo.innerHTML = "";
   giftPanel.hidden = false;

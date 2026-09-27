@@ -45,7 +45,7 @@ export function nearWaitingBus(player) {
 export function talkToDriver() {
   openNpc({
     name: CONFIG.bus.driver,
-    icon: "🐻",
+    portrait: { glyph: "gus" },
     color: "#3f6f9f",
     pitch: 200,
     hello: trips.length ? "all aboard! where to today?" : ["howdy! no trips yet, i'm afraid. still planning the routes.", "trips coming soon! i'm just doing laps for now.", "hop on any time. well. soon."],

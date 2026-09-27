@@ -466,7 +466,7 @@ function drawDoorTags(ctx, me) {
     const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
     signFade[id] = fade;
     if (fade === 0) continue;
-    const label = inYard ? "🏠 Front door (elevator)" : "🌳 Out to the yard";
+    const label = inYard ? "Front door (elevator)" : "Out to the yard";
     const c = toScreen(dx + 0.8, dy);
     const w = ctx.measureText(label).width + 14, h = 17;
     // (In the house the doorway is in the bottom wall, so the tag sits beside it.)
@@ -493,7 +493,7 @@ function drawDoorTags(ctx, me) {
     signFade[id] = fade;
     if (fade === 0) continue;
     const status = { open: "Open", knock: "Knock first", private: "Private", party: "Party!" }[f.door.privacy] ?? "Open";
-    const lines = [`${f.door.owner}'s room · ${status}${f.door.online ? "" : " · 🌙 asleep"}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
+    const lines = [`${f.door.owner}'s room · ${status}${f.door.online ? "" : " · asleep"}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
     const c = toScreen(f.x + f.w / 2, f.y);
     const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14, h = 6 + lines.length * 13;
     const x = c.x - w / 2, y = c.y + 4;

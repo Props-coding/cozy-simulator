@@ -280,7 +280,7 @@ function giftables() {
     ...CONFIG.kitchen.pantry.map((f) => `food:${f.id}`),
     ...CONFIG.kitchen.recipes.map((r) => `dish:${r.id}`),
   ].map((id) => [id, `${itemInfo(id).icon} ${itemInfo(id).name}`]);
-  const shop = SHOP_CATALOG.map((i) => [i.id, `🦝 ${i.name}`]);
+  const shop = SHOP_CATALOG.map((i) => [i.id, i.name]);
   return [...ids.sort((a, b) => a[1].localeCompare(b[1])), ...shop];
 }
 
@@ -291,7 +291,7 @@ function playersTab() {
   for (const p of [...state.players].sort((a, b) => b.online - a.online || a.name.localeCompare(b.name))) {
     const chip = make("button", "admin-chip" + (picked === p.name ? " picked" : ""));
     chip.type = "button";
-    chip.append(make("span", "dot" + (p.online ? " on" : "")), `${p.name}${p.admin ? " 🛠️" : ""}${p.muted ? " 🔇" : ""}${p.kicked ? " 🚪" : ""}`);
+    chip.append(make("span", "dot" + (p.online ? " on" : "")), `${p.name}${p.admin ? " (admin)" : ""}${p.muted ? " (muted)" : ""}${p.kicked ? " (sent out)" : ""}`);
     chip.title = p.online ? "In the house now" : "Away";
     chip.addEventListener("click", () => {
       playClickSound();
@@ -425,7 +425,7 @@ function serverTab() {
     li.append(make("span", "when", when(e.at)), make("span", "what", `${e.where}${e.who ? ` (${e.who})` : ""}: ${e.message}`));
     errors.appendChild(li);
   }
-  if (!state.errors.length) errors.appendChild(make("li", "", "No problems since the server last started. 🎉"));
+  if (!state.errors.length) errors.appendChild(make("li", "", "No problems since the server last started."));
   const log = make("ul", "admin-list");
   for (const l of state.log) {
     const li = make("li");
@@ -490,14 +490,14 @@ export function adminActionsFor(name, muted) {
     hooks.sendOrder(o);
   };
   return [
-    { label: "🛠️ Teleport to", run: () => tell(hooks.goTo(name) ? `Went to ${name}.` : `Couldn't get to ${name}.`) },
-    { label: "🛠️ Bring here", disabled: here.inBedroom, title: here.inBedroom ? "Not from inside a bedroom" : "", run: run(async () => (await order("summon", { x: here.x, y: here.y }), `Bringing ${name} over.`)) },
-    { label: "🛠️ Unstick", run: run(async () => (await order("unstick"), `${name} goes back to the hallway.`)) },
+    { icon: "tools", label: "Teleport to", run: () => tell(hooks.goTo(name) ? `Went to ${name}.` : `Couldn't get to ${name}.`) },
+    { icon: "tools", label: "Bring here", disabled: here.inBedroom, title: here.inBedroom ? "Not from inside a bedroom" : "", run: run(async () => (await order("summon", { x: here.x, y: here.y }), `Bringing ${name} over.`)) },
+    { icon: "tools", label: "Unstick", run: run(async () => (await order("unstick"), `${name} goes back to the hallway.`)) },
     muted
-      ? { label: "🛠️ Unmute", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 0 }), `${name} can talk again.`)) }
-      : { label: "🛠️ Mute (10 min)", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 10 }), `${name} is muted for everyone for 10 minutes.`)) },
+      ? { icon: "tools", label: "Unmute", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 0 }), `${name} can talk again.`)) }
+      : { icon: "tools", label: "Mute (10 min)", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 10 }), `${name} is muted for everyone for 10 minutes.`)) },
     {
-      label: "🛠️ Send out (10 min)",
+      icon: "tools", label: "Send out (10 min)",
       danger: true,
       run: run(async () => {
         if (!(await hooks.confirm({ title: `Send ${name} out of the house?`, text: `${name} is logged out and can't come back for 10 minutes. Everyone stops seeing and hearing them.`, yes: "Send out", no: "Cancel" }))) return "";
@@ -554,7 +554,7 @@ function showBanner() {
   const names = { clear: "sun", cloudy: "clouds" };
   const parts = [seasonPreview, now.sky && (names[now.sky] ?? now.sky), now.time].filter(Boolean);
   banner.hidden = !parts.length;
-  document.getElementById("override-text").textContent = `👀 Trying out: ${parts.join(", ")} (only you see this)`;
+  document.getElementById("override-text").textContent = `Trying out: ${parts.join(", ")} (only you see this)`;
 }
 document.getElementById("override-reset").addEventListener("click", () => {
   playClickSound();

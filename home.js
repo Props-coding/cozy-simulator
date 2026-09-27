@@ -7,6 +7,7 @@
 // the house server whenever it changes (so friends can visit your room
 // even while you're away), and it only keeps furniture you own.
 import { serverApi } from "./account.js";
+import { uiIcon } from "./ui-icons.js";
 import { sendRoomsPing } from "./network.js";
 import { crumbBalance } from "./shop.js";
 import { playCrumbSound, playClickSound } from "./audio.js";
@@ -369,7 +370,7 @@ export function renderStore(page, onTab = tellTab) {
   // The search bar. Typing only redraws the results below it, so the box
   // keeps its place and you can keep typing.
   const search = make("label", "nook-search");
-  search.appendChild(make("span", "nook-search-icon", "🔍"));
+  search.appendChild(make("span", "nook-search-icon")).innerHTML = uiIcon("magnifier");
   const input = make("input", "nook-search-input");
   input.type = "text";
   input.placeholder = "Search Nest & Nook (try \"pink\", \"lamp\" or \"hoya\")";
@@ -418,7 +419,7 @@ export function renderStore(page, onTab = tellTab) {
     input.focus();
   });
 
-  const footer = make("footer", "nook-footer", "Nest & Nook · free delivery to your bedroom · est. 2026 · 🪺");
+  const footer = make("footer", "nook-footer", "Nest & Nook · free delivery to your bedroom · est. 2026");
   page.append(front, wren, search, tabs, section, footer);
   page.scrollTop = scroll;
   if (hadFocus) {
@@ -487,7 +488,7 @@ async function buy(page, id, item, button) {
   renderStore(page);
   const heart = document.createElement("span");
   heart.className = "nook-heart";
-  heart.textContent = "💖";
+  heart.textContent = "♥";
   heart.style.left = `${rect.left - box.left + rect.width / 2}px`;
   heart.style.top = `${rect.top - box.top + page.scrollTop}px`;
   page.appendChild(heart);
@@ -514,7 +515,7 @@ function basketButton(page, id, item) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "nook-buy";
-  button.textContent = "🧺 Add to basket";
+  button.innerHTML = `${uiIcon("basket")} Add to basket`;
   button.addEventListener("click", () => buy(page, id, item, button));
   return button;
 }
@@ -530,7 +531,7 @@ function pickCard(page, id, item) {
   info.className = "nook-pick-info";
   const label = document.createElement("span");
   label.className = "nook-pick-label";
-  label.textContent = "✨ Wren's pick of the day";
+  label.textContent = "Wren's pick of the day";
   const name = document.createElement("h4");
   name.textContent = item.name;
   const line = document.createElement("p");

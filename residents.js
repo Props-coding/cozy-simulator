@@ -72,7 +72,6 @@ function partOfDay() {
 const WHO = {
   clover: {
     name: "Clover",
-    icon: "🐰",
     color: "#c9574a",
     pitch: 560,
     hello: {
@@ -83,7 +82,6 @@ const WHO = {
     topics: [
       {
         name: "How's your day?",
-        icon: "☀️",
         say: () => {
           if (OUTDOORS.raining) return pick(["rain's lovely for baking. the kitchen gets all cozy and the windows fog up.", "rainy days are bread days. that's a rule. i made it up, but it's a rule."]);
           if (OUTDOORS.snow > 0) return "snow! i'm making cinnamon everything. don't try to stop me.";
@@ -96,7 +94,6 @@ const WHO = {
       },
       {
         name: "What are you baking?",
-        icon: "🍞",
         say: () => pick([
           "sourdough, mostly. my starter's name is doug. he's twelve years old and very moody.",
           "honey oat loaves! the honey's from the pantry. the oats are from... also the pantry.",
@@ -107,7 +104,6 @@ const WHO = {
       },
       {
         name: "Any cooking tips?",
-        icon: "🥄",
         say: () => pick([
           "try things in the pot! most mixes turn out wonderful. some turn out... crunchy. that's how you learn.",
           "hazel and otis both know a few family recipes. ask nicely. bring snacks.",
@@ -118,7 +114,6 @@ const WHO = {
       },
       {
         name: "Tell me about yourself",
-        icon: "🐰",
         say: () => pick([
           "i came on gus's bus one spring with a suitcase, a rolling pin and doug. the house needed a baker. i needed a house.",
           "my gran taught me to bake. she said bread is just patience you can eat.",
@@ -130,7 +125,6 @@ const WHO = {
 
   mortimer: {
     name: "Mortimer",
-    icon: "🦉",
     color: "#6a4e36",
     pitch: 230,
     hello: {
@@ -139,7 +133,6 @@ const WHO = {
     topics: [
       {
         name: "How's your night?",
-        icon: "🌙",
         say: () => {
           if (OUTDOORS.raining) return "rain on the windows and a good book. i ask for nothing more. well. perhaps a biscuit.";
           const h = hometownHour();
@@ -149,7 +142,6 @@ const WHO = {
       },
       {
         name: "What are you reading?",
-        icon: "📖",
         say: () => pick([
           "a history of spoons. volume two. volume one was frankly overrated.",
           "'the collected letters of a lighthouse keeper.' he mostly writes about fog. i find it very relatable.",
@@ -159,7 +151,6 @@ const WHO = {
       },
       {
         name: "Recommend a book?",
-        icon: "📚",
         say: () => pick([
           "anything with a map at the front. books with maps are never boring.",
           "try the green one on the left shelf. no, the other green one. yes, that one.",
@@ -168,7 +159,6 @@ const WHO = {
       },
       {
         name: "Tell me about yourself",
-        icon: "🦉",
         say: () => pick([
           "i've kept this library for longer than i'd care to count. owls are terrible at birthdays.",
           "i sleep on my perch through the day. do not wake me. i am, reliably, a grump before seven.",
@@ -284,7 +274,7 @@ export function talkToResident(id) {
   if (state.asleep) {
     openNpc({
       name: who.name,
-      icon: who.icon,
+      portrait: { resident: id },
       color: who.color,
       pitch: 120,
       hearts,
@@ -301,7 +291,7 @@ export function talkToResident(id) {
   };
   openNpc({
     name: who.name,
-    icon: who.icon,
+    portrait: { resident: id },
     color: who.color,
     pitch: who.pitch,
     hearts,
@@ -312,7 +302,6 @@ export function talkToResident(id) {
         label: "Chat",
         items: () => [
           ...who.topics.map((topic) => ({
-            icon: topic.icon,
             name: topic.name,
             actions: [{ label: "Ask", soft: true, run: async () => (await chatted(), topic.say()) }],
           })),
@@ -320,7 +309,6 @@ export function talkToResident(id) {
           ...(CONFIG.residents.stories[id] ?? []).map((story) => {
             const open = friendOf(id).hearts >= story.hearts;
             return {
-              icon: open ? story.icon : "🔒",
               name: open ? story.name : "Something more personal",
               note: open ? "" : `Opens at ${story.hearts} hearts.`,
               locked: !open,

@@ -52,8 +52,9 @@ const CODES = {
 };
 
 // Little pictures for the header chip.
-const ICONS = { clear: "☀️", partly: "⛅", cloudy: "☁️", fog: "🌫️", drizzle: "🌦️", rain: "🌧️", snow: "🌨️", storm: "⛈️" };
-const NIGHT_ICONS = { clear: "🌙", partly: "☁️" };
+// The chip's little drawing for each sky (the "ic-" pictures in index.html).
+const ICONS = { clear: "sun", partly: "partly", cloudy: "cloud", fog: "fog", drizzle: "rain", rain: "rain", snow: "snow", storm: "storm" };
+const NIGHT_ICONS = { clear: "night", partly: "night-cloud" };
 
 // Try-outs from the admin panel ("rain", "snow", "night" and so on). They
 // only change this computer, until you pick "Real weather" or reload.
@@ -85,10 +86,10 @@ function temperature(celsius) {
 
 function showChip() {
   if (!chip) return;
-  const icon = (OUTDOORS.night && NIGHT_ICONS[OUTDOORS.sky]) || ICONS[OUTDOORS.sky] || "☀️";
+  const icon = (OUTDOORS.night && NIGHT_ICONS[OUTDOORS.sky]) || ICONS[OUTDOORS.sky] || "sun";
   const temp = temperature(OUTDOORS.temp);
   chip.hidden = !real && !preview.sky && preview.night === null;
-  chip.querySelector(".weather-icon").textContent = icon;
+  chip.querySelector(".weather-icon use").setAttribute("href", "#ic-" + icon);
   chip.querySelector(".weather-temp").textContent = temp;
   const place = CONFIG.weather.hometown.name;
   chip.dataset.tip = `Weather in ${place}: ${OUTDOORS.words || "Clear"}${temp ? ", " + temp : ""}${OUTDOORS.night ? ", night" : ""}. It shows in the yard and through the windows. Weather data by Open-Meteo.com (CC BY 4.0).`;

@@ -300,7 +300,7 @@ export function talkToHazel() {
   const first = !basketItems("seed:").length && !basketItems("crop:").length;
   openNpc({
     name: "Hazel",
-    icon: "🦔",
+    portrait: { f: "hazel", w: 0.55, h: 0.4 },
     color: "#6a9a5a",
     pitch: 440,
     hello: first ? "oh! a new gardener! i'm hazel. seeds are on the counter, and i'll buy whatever you grow." : HAZEL_HELLO,

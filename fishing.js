@@ -298,7 +298,7 @@ async function land() {
   } else {
     const fish = FISH[caught.fish];
     playHarvestSound();
-    const extra = caught.houseRecord ? " A new house record! 🏆" : caught.first ? " New in your fish log!" : caught.record ? " Your biggest yet!" : caught.houseBest ? ` (Your best: ${caught.best} cm. House best: ${caught.houseBest.size} cm, ${caught.houseBest.name}.)` : "";
+    const extra = caught.houseRecord ? " A new house record!" : caught.first ? " New in your fish log!" : caught.record ? " Your biggest yet!" : caught.houseBest ? ` (Your best: ${caught.best} cm. House best: ${caught.houseBest.size} cm, ${caught.houseBest.name}.)` : "";
     hooks.notice(`You caught a ${fish.name} (${caught.size} cm, ${RARITY[fish.rarity].toLowerCase()})!${extra}`, 7000);
     // Epic and legendary catches, and house records, go in the house chat.
     if (fish.rarity >= 4 || caught.houseRecord) hooks.post?.(`${fish.name} (${caught.size} cm)${caught.houseRecord ? ", a new house record" : ""}`, { id: fish.id, size: caught.size, record: caught.houseRecord === true });
@@ -348,7 +348,7 @@ const OTIS_HELLO = [
 export function talkToOtis() {
   openNpc({
     name: "Otis",
-    icon: "🦦",
+    portrait: { f: "otis", w: 0.55, h: 0.4 },
     color: "#5a7aa0",
     pitch: 280,
     hello: Object.keys(mine().log).length === 0 ? "oh, a new face! i'm otis. here's a twig rod, on the house. grab some worms and give it a go!" : OTIS_HELLO,
@@ -484,7 +484,7 @@ export function openFishTank(tank) {
   const index = tank.decor.index;
   openNpc({
     name: "Your fish tank",
-    icon: "🐠",
+    portrait: { f: "fishTank", w: 1.0, h: 0.5 },
     color: "#3f8ab0",
     pitch: 600,
     hello: ["blub.", "blub blub.", "the fish look happy to see you."],
