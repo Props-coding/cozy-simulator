@@ -692,6 +692,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
     }
   }
   for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
+  sprites.push(...residentSprites(floor)); // Clover and Mortimer (render-residents.js)
   sprites.sort((a, b) => a.sortY - b.sortY);
   for (const sprite of sprites) sprite.draw(ctx);
 

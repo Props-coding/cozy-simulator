@@ -93,6 +93,7 @@ import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
 import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank, castAt } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
+import { talkToResident, residentHint } from "./residents.js";
 import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
@@ -663,6 +664,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "cookieJar") return "Press E for today's fortune cookie.";
   if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
+  if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint();
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
@@ -793,6 +795,13 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     stopFishing(null);
     talkToOtis();
+    return;
+  }
+
+  // Residents (Update 6): Clover and Mortimer.
+  if (key === "e" && nearestInteraction(player)?.startsWith("resident:")) {
+    for (const k in keysDown) keysDown[k] = false;
+    talkToResident(nearestInteraction(player).slice(9));
     return;
   }
 

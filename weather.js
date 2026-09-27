@@ -58,7 +58,7 @@ const NIGHT_ICONS = { clear: "🌙", partly: "☁️" };
 // Try-outs from the admin panel ("rain", "snow", "night" and so on). They
 // only change this computer, until you pick "Real weather" or reload.
 let preview = { sky: null, night: null, dusk: false };
-let real = null; // the last real reading: { sky, rain, snow, clouds, temp, night, words, sunrise, sunset }
+let real = null; // the last real reading: { sky, rain, snow, clouds, temp, night, words, sunrise, sunset, utcOffset (the hometown's clock, for residents' hours) }
 
 const chip = document.getElementById("weather-chip");
 
@@ -108,7 +108,7 @@ async function fetchWeather() {
     // using its offset from UTC). Used for the dusk glow in windows.
     const offset = (data.utc_offset_seconds ?? 0) * 1000;
     const moment = (text) => (typeof text === "string" ? Date.parse(text + "Z") - offset : null);
-    real = { sky, rain, snow, clouds: Number.isFinite(c.cloud_cover) ? Math.max(clouds, c.cloud_cover / 100) : clouds, temp: c.temperature_2m, night: c.is_day === 0, words, sunrise: moment(data.daily?.sunrise?.[0]), sunset: moment(data.daily?.sunset?.[0]) };
+    real = { sky, rain, snow, clouds: Number.isFinite(c.cloud_cover) ? Math.max(clouds, c.cloud_cover / 100) : clouds, temp: c.temperature_2m, night: c.is_day === 0, words, sunrise: moment(data.daily?.sunrise?.[0]), sunset: moment(data.daily?.sunset?.[0]), utcOffset: offset };
     apply();
   } catch (err) {
     // No weather (offline, or the service is down): keep whatever we had.
