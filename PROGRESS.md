@@ -364,7 +364,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Otis's lesson: new fishers find Otis by the pond. He gives you his twig rod and 3 worms, then talks you through each step (cast, wait, don't strike on a nibble, reel), and your first fish can't get away (the line can't snap or go slack, Escape won't let it go, and the bite waits for you). Your first catch is always a common fish. Then he says goodbye and moves to the lake, and a little bait box with his note stands by the pond (worms, crickets, and a slot to sell fish). Anyone who has already caught a fish counts as done. Admin panel (Me tab): "Redo Otis's lesson", for testing.
   - Long messages under the house now wrap instead of stretching the page.
   - Tested on the local test copy: the lesson start to finish, the bait box, Otis's shop at the lake, lake catches (sturgeon) against pond catches (perch), and a cast onto dry land being refused.
-  - **Needs the server deployed** (server.mjs, plus the new config.js, catalog.js and world.js in the server's game folder). Until then, the old server refuses casts into the lake ("That's not on the pond"), the pond isn't capped, and Otis's lesson doesn't start (everyone counts as done, so Otis just stays at the lake). So deploy the server at the same time as this build.
+  - Server deployed 2026-09-27 (with 0.69 and 0.72; backup first, in /home/props).
   - Next: the Farm trip, with Hazel teaching new gardeners, and the garden beds moving out of the backyard.
 - Build 0.72, the back alley (a hidden door, and the raccoons' new home):
   - The hills painting at the ground floor hallway's east end (by the elevator) now hangs a little crooked. Walk up to it and the hint says so; press E to straighten it and the wall panel under it clicks and creaks open onto the alley's night (a hint of pink neon), and you slip through. From the alley, the way back is a plain door with no handle on the house's side wall, with a caged bulb over it and a concrete step (press E by it). The door swings shut behind you. (Only your own screen shows the door moving; friends just see you leave or arrive.)
@@ -385,7 +385,6 @@ Friend test night waits until these are in.
 - **Update 10, Mini Games.** A framework every game plugs into (portal, lobby, loading, results, crumbs payout, back to the house). Games: Snowball Arena, Crumb Rush, Treasure Dive, The Scarecrow, Ghost Hunt, Night Meadow, Kitchen Rush (uses your real recipes), Cellar Crawl (loot comes home). Bus trips take you to mini game places.
 
 ## Next
-- **Update the house server** for builds 0.69 to 0.72 (the site is live, the server isn't yet). Steps in `SERVER-TODO.md`, for Claude Code on Brandon's PC.
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog: seasonal decorations, distance voice, a guestbook. (Weather station, porch, fireplace room, music room and leaderboards were scrapped for now, 0.40.)
