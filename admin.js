@@ -279,7 +279,7 @@ function giftables() {
     ...CONFIG.bait.filter((b) => b.price).map((b) => `bait:${b.id}`),
     ...CONFIG.kitchen.pantry.map((f) => `food:${f.id}`),
     ...CONFIG.kitchen.recipes.map((r) => `dish:${r.id}`),
-  ].map((id) => [id, `${itemInfo(id).icon} ${itemInfo(id).name}`]);
+  ].map((id) => [id, itemInfo(id).name]);
   const shop = SHOP_CATALOG.map((i) => [i.id, i.name]);
   return [...ids.sort((a, b) => a[1].localeCompare(b[1])), ...shop];
 }

@@ -6,6 +6,7 @@
 // your crumbs, tabs (like "Buy" and "Sell"), and a list of things with a
 // button each. Each shopkeeper (garden.js, fishing.js) describes itself and
 // its tabs, and this file does the rest.
+import { setPicture } from "./pictures.js";
 import { playBabble, playClickSound } from "./audio.js";
 import { crumbBalance } from "./shop.js";
 import { portraitCanvas } from "./icons.js";
@@ -121,7 +122,7 @@ export function refreshNpc() {
     row.className = "npc-item" + (item.locked ? " locked" : "");
     row.innerHTML = `<span class="npc-icon"></span><span class="npc-words"><b></b><small></small></span><span class="shop-price"><svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg><span></span></span>`;
     // (A picture on the left, if the row has one.)
-    if (item.icon) row.querySelector(".npc-icon").textContent = item.icon;
+    if (item.icon) setPicture(row.querySelector(".npc-icon"), item.icon, 28);
     else row.querySelector(".npc-icon").remove();
     row.querySelector("b").textContent = item.name;
     row.querySelector("small").textContent = item.note ?? "";

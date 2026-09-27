@@ -230,9 +230,9 @@ function recipeRows(id) {
     const price = cheaper ? Math.round(entry.price * (1 - H().discount)) : entry.price;
     const boost = CONFIG.kitchen.boosts[r.boost];
     return {
-      icon: have ? r.icon : "📜",
+      icon: have ? `dish:${r.id}` : "scroll",
       name: r.name + (have ? " (in your book)" : ""),
-      note: `${r.ingredients.map((i) => (i === "fish" ? "any fish" : itemInfo(i).name)).join(" + ")}.${boost ? ` ${boost.icon} ${boost.name}.` : ""}${cheaper && !have ? " (A friend's price!)" : ""}`,
+      note: `${r.ingredients.map((i) => (i === "fish" ? "any fish" : itemInfo(i).name)).join(" + ")}.${boost ? ` ${boost.name}.` : ""}${cheaper && !have ? " (A friend's price!)" : ""}`,
       price: have ? undefined : price,
       actions: have
         ? []

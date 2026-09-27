@@ -17,6 +17,7 @@
 // The house server does the cooking (the bank, see bank.js): it checks you
 // have the ingredients, and knows every recipe. All the lists are in
 // config.js (CONFIG.kitchen).
+import { setPicture } from "./pictures.js";
 import { bank, myWallet } from "./bank.js";
 import { uiIcon } from "./ui-icons.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
@@ -37,13 +38,13 @@ export function initKitchen(options) {
 // Tell the basket what ingredients and dishes are (dishes can be eaten or
 // given away from the basket).
 registerItems({
-  ...Object.fromEntries(K.pantry.map((f) => [`food:${f.id}`, { name: f.name, icon: f.icon, sell: 0, group: "Kitchen" }])),
+  ...Object.fromEntries(K.pantry.map((f) => [`food:${f.id}`, { name: f.name, icon: `food:${f.id}`, sell: 0, group: "Kitchen" }])),
   ...Object.fromEntries(
     K.recipes.map((r) => [
       `dish:${r.id}`,
       {
         name: r.name,
-        icon: r.icon,
+        icon: `dish:${r.id}`,
         sell: r.sell,
         group: "Dishes",
         actions: (id) => [
@@ -53,7 +54,7 @@ registerItems({
       },
     ])
   ),
-  [`junk:${K.burnt.id}`]: { name: K.burnt.name, icon: K.burnt.icon, sell: 0, group: "Junk" },
+  [`junk:${K.burnt.id}`]: { name: K.burnt.name, icon: `junk:${K.burnt.id}`, sell: 0, group: "Junk" },
 });
 
 // "Eggs", "Carrot", "any fish".
@@ -77,7 +78,7 @@ export function openFridge() {
         };
         const have = basketCount(`food:${f.id}`);
         return {
-          icon: f.icon,
+          icon: `food:${f.id}`,
           name: f.name + (have ? ` × ${have}` : ""),
           note: `${f.price} crumbs each`,
           price: f.price,
@@ -148,7 +149,7 @@ async function cook(items) {
   }
   const r = RECIPES[done.dish];
   playHarvestSound();
-  return `${r.icon} ${r.name}! It's in your basket.` + (done.learned ? " A new recipe for your book!" : "");
+  return `${r.name}! It's in your basket.` + (done.learned ? " A new recipe for your book!" : "");
 }
 
 function cookRows() {
@@ -158,9 +159,9 @@ function cookRows() {
     .map((r) => {
       const chosen = pickIngredients(r);
       return {
-        icon: r.icon,
+        icon: `dish:${r.id}`,
         name: r.name + (basketCount(`dish:${r.id}`) ? ` (you have ${basketCount(`dish:${r.id}`)})` : ""),
-        note: `${r.ingredients.map(ingredientName).join(" + ")}. Eat for ${K.boosts[r.boost].icon} ${K.boosts[r.boost].name}.`,
+        note: `${r.ingredients.map(ingredientName).join(" + ")}. Eat for ${K.boosts[r.boost].name}.`,
         actions: [{ label: "Cook", disabled: !chosen, run: () => cook(chosen) }],
       };
     });
@@ -185,7 +186,7 @@ function experimentRows() {
       { label: "Empty", soft: true, disabled: !pot.length, run: () => ((pot = []), null) },
     ],
   };
-  if (!cookable.length) return [potRow, { icon: "🧺", name: "Nothing to cook with", note: "Grow something, catch a fish, or stock up at the fridge.", locked: true }];
+  if (!cookable.length) return [potRow, { icon: "basket", name: "Nothing to cook with", note: "Grow something, catch a fish, or stock up at the fridge.", locked: true }];
   return [
     potRow,
     ...cookable.map(([id]) => ({
@@ -200,11 +201,11 @@ function experimentRows() {
 function bookRows() {
   const have = known();
   return [
-    { icon: "📖", name: `Your recipe book: ${have.length} of ${K.recipes.length}`, note: "Find recipes by experimenting at the stove. Hazel and Otis sell a few, and the traveling merchant brings rare ones." },
+    { icon: "book", name: `Your recipe book: ${have.length} of ${K.recipes.length}`, note: "Find recipes by experimenting at the stove. Hazel and Otis sell a few, and the traveling merchant brings rare ones." },
     ...K.recipes.map((r) =>
       have.includes(r.id)
-        ? { icon: r.icon, name: r.name, note: `${r.ingredients.map(ingredientName).join(" + ")}. ${K.boosts[r.boost].icon} ${K.boosts[r.boost].name}. Hazel pays ${r.sell}.` }
-        : { icon: "❔", name: "???", note: r.hint + (r.learn === "merchant" ? " (Only from the traveling merchant.)" : ""), locked: true }
+        ? { icon: `dish:${r.id}`, name: r.name, note: `${r.ingredients.map(ingredientName).join(" + ")}. ${K.boosts[r.boost].name}. Hazel pays ${r.sell}.` }
+        : { icon: "unknown", name: "???", note: r.hint + (r.learn === "merchant" ? " (Only from the traveling merchant.)" : ""), locked: true }
     ),
   ];
 }
@@ -216,9 +217,9 @@ export function recipeShopRows(from, sayThanks) {
     .map((r) => {
       const have = known().includes(r.id);
       return {
-        icon: have ? r.icon : "📜",
+        icon: have ? `dish:${r.id}` : "scroll",
         name: r.name + (have ? " (in your book)" : ""),
-        note: `${r.ingredients.map(ingredientName).join(" + ")}. ${K.boosts[r.boost].icon} ${K.boosts[r.boost].name}.`,
+        note: `${r.ingredients.map(ingredientName).join(" + ")}. ${K.boosts[r.boost].name}.`,
         price: have ? undefined : r.price,
         actions: have
           ? []
@@ -267,7 +268,7 @@ async function eat(id) {
   if (!done) return;
   const boost = K.boosts[done.boost];
   playHarvestSound();
-  hooks.notice(`Mmm, ${r.name.toLowerCase()}! ${boost.icon} ${boost.name} for ${K.boostMinutes} minutes: ${boost.desc}`, 6000);
+  hooks.notice(`Mmm, ${r.name.toLowerCase()}! ${boost.name} for ${K.boostMinutes} minutes: ${boost.desc}`, 6000);
 }
 
 const boostBar = document.getElementById("boost-bar");
@@ -283,7 +284,7 @@ function showBoost() {
   boostBar.tabIndex = 0;
   boostBar.setAttribute("aria-label", `${boost.name}: ${boost.desc} ${left} minutes left.`);
   boostBar.innerHTML = `<span class="boost-icon"></span><span class="boost-left"></span><span class="boost-tip"><b></b><span></span></span>`;
-  boostBar.querySelector(".boost-icon").textContent = boost.icon;
+  setPicture(boostBar.querySelector(".boost-icon"), `boost:${b.id}`, 18);
   boostBar.querySelector(".boost-left").textContent = `${left}m`;
   boostBar.querySelector(".boost-tip b").textContent = boost.name;
   boostBar.querySelector(".boost-tip span").textContent = `${boost.desc} ${left} minute${left === 1 ? "" : "s"} left.`;

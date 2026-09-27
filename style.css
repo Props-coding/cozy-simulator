@@ -4652,7 +4652,19 @@ canvas.house-icon {
 .npc-icon {
   font-size: 24px;
   width: 30px;
-  text-align: center;
+  flex: none;
+  display: flex;
+  justify-content: center;
+}
+
+/* Item pictures (pictures.js): drawn canvases in place of emoji (without
+   the frame the house view's canvas has). */
+canvas.item-picture {
+  display: block;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .npc-words {
@@ -4751,7 +4763,9 @@ canvas.house-icon {
 .seed-icon {
   grid-row: span 2;
   font-size: 22px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .seed-choice small {
@@ -4778,7 +4792,9 @@ canvas.house-icon {
 .basket-icon {
   font-size: 20px;
   width: 26px;
-  text-align: center;
+  flex: none;
+  display: flex;
+  justify-content: center;
 }
 
 .basket-name {
@@ -4899,6 +4915,7 @@ canvas.house-icon {
 
 #boost-bar .boost-icon {
   font-size: 16px;
+  display: inline-flex;
 }
 
 #boost-bar .boost-tip {
