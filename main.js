@@ -64,11 +64,12 @@ import {
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
-import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType, ownedCount, ownedValue, crumbBalance, itemName, checkShopAchievements, addCrumbs, startEarningCrumbs, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
-import { ACHIEVEMENTS, initAchievements, unlock, count, collect, setStat, myStats, checkTiers } from "./achievements.js";
+import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType, crumbBalance, itemName, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
+import { ACHIEVEMENTS, initAchievements, unlock, count, collect, showBankEvents } from "./achievements.js";
+import { initBank, bank, startTicking } from "./bank.js";
 import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
-import { addRoomTime, roomLevels } from "./reputation.js";
+import { roomLevelKey } from "./reputation.js";
 import { titleText, titleList, checkNewTitles } from "./titles.js";
 import { initWardrobe, openWardrobe, isWardrobeOpen, myAura, cleanAura, myDance, mountOutfitPicker, renderOutfitPicker, randomOutfit } from "./wardrobe.js";
 import { startKanban, openKanban, isKanbanOpen, busyBuilders } from "./kanban.js";
@@ -218,12 +219,25 @@ if (savedProfile) {
   nameInput.value = savedProfile.name || "";
   if (/^#[0-9a-fA-F]{6}$/.test(savedProfile.color)) myColor = savedProfile.color;
 }
-myHat = ownedOr(hatChoices(), savedProfile?.hat);
-myShoes = ownedOr(shoeChoices(), savedProfile?.shoes);
-myPet = ownedOr(petChoices(), savedProfile?.pet);
-myGlasses = ownedOr(glassesChoices(), savedProfile?.glasses);
+// What you're wearing, from your saved look (only things you own). Done
+// again once the bank says what you own (it arrives after logging in).
+function wearSavedLook() {
+  myHat = ownedOr(hatChoices(), savedProfile?.hat);
+  myShoes = ownedOr(shoeChoices(), savedProfile?.shoes);
+  myPet = ownedOr(petChoices(), savedProfile?.pet);
+  myGlasses = ownedOr(glassesChoices(), savedProfile?.glasses);
+  for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, savedProfile?.[slot]);
+}
+wearSavedLook();
+window.addEventListener(
+  "bank-changed",
+  () => {
+    wearSavedLook();
+    renderOutfitPicker(joinPicker);
+  },
+  { once: true }
+);
 myFace = cleanFace(savedProfile?.face);
-for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, savedProfile?.[slot]);
 myTitle = typeof savedProfile?.title === "string" ? savedProfile.title : "none";
 
 function saveProfile() {
@@ -334,10 +348,7 @@ joinButton.addEventListener("click", async () => {
   for (const slot of ACCESSORY_SLOTS) myAccessories[slot] = ownedAccessory(slot, myAccessories[slot]);
   if (!titleList().some((t) => t.id === myTitle && t.earned)) myTitle = "none"; // (only titles you've earned)
   saveProfile();
-  // Crumbs earned so far, for the Crumb Collector tiers. From before it was
-  // counted, the best guess is what you have plus what you've bought.
-  if (!Number.isFinite(myStats().crumbsEarned)) setStat("crumbsEarned", crumbBalance() + ownedValue());
-  startEarningCrumbs();
+  startTicking(); // time in the house, and a crumb a minute (bank.js)
   applyMyLofi(); // your Study station (it may have come with your cloud save)
   loadSavedBoard(); // the Conference Room whiteboard, as it was left
   // Everyone's bedroom door on the suite floor, from the house server.
@@ -380,8 +391,6 @@ joinButton.addEventListener("click", async () => {
   fitHouse();
   requestAnimationFrame(tick);
   unlock("welcome");
-  checkShopAchievements();
-  checkTiers(); // (the first time, this hands out tiers you'd already earned)
   setInterval(checkTimeAchievements, 5000);
 
   try {
@@ -578,10 +587,9 @@ function updateFocusTimer(roomId) {
   if (focusTimer.phase === "focus") {
     focusTimer = { phase: "break", endsAt: focusTimer.endsAt + CONFIG.breakMinutes * 60 * 1000 };
     // A crumb bonus for anyone who stuck it out in the Study.
+    // (The house server gives it, at most once a session.)
     if (roomId === "study") {
-      addCrumbs(CONFIG.focusBonusCrumbs);
-      showNotice(`Focus session done! +${CONFIG.focusBonusCrumbs} crumbs. Time for a break.`);
-      count("focusSessions"); // (for the Deep Focus tiers)
+      bank("focus").then((got) => got && showNotice(`Focus session done! +${got.crumbs} crumbs. Time for a break.`));
     }
   } else {
     focusTimer = null;
@@ -1959,16 +1967,21 @@ document.getElementById("trophy-button").addEventListener("click", (e) => {
   openProfile(myName, "achievements");
 });
 
+// The bank (bank.js): what the server says you earned shows as pop-ups; if
+// it says no, why; and once a minute it hears which room you're in.
+initBank({
+  events: showBankEvents,
+  error: (message) => showNotice(message),
+  state: () => ({ room: roomLevelKey(getCurrentRoom(player)), asleep: amAsleep }),
+});
+
 initAchievements({
-  reward: (crumbs) => addCrumbs(crumbs),
   announce: (id) => {
     const a = ACHIEVEMENTS.find((x) => x.id === id);
     sendChat({ achievement: id });
     addChatLine({ channel: "house", system: true, text: `🏆 You earned "${a.name}" (+${a.crumbs} crumbs)` });
   },
-  // Tiered achievements: counts kept outside achievements.js, and telling
-  // friends when you reach a tier.
-  values: () => ({ items: ownedCount(), pets: ownedPets().length, roomLevels: roomLevels(myStats()).reduce((sum, r) => sum + r.level, 0) }),
+  // Telling friends when you reach a tier.
   announceTier: (id, level) => {
     const t = tierInfo(id, level);
     if (!t) return;
@@ -1992,14 +2005,6 @@ const TOUR_ROOMS = ["hallway", "theater", "study", "dinner", "conference", "libr
 function checkTimeAchievements() {
   const room = getCurrentRoom(player).id;
   const peers = getPeers();
-  count("seconds", 5); // (for the Homebody tiers)
-  // A new day in the house (your own calendar), for the Frequent Visitor tiers.
-  const now = new Date();
-  const today = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-  if (myStats().lastDay !== today) {
-    setStat("lastDay", today);
-    count("daysVisited");
-  }
   if (room === "library" && count("librarySeconds", 5) >= 15 * 60) unlock("bookworm");
   if (room === "dinner" && count("dinnerSeconds", 5) >= 10 * 60) unlock("snack");
   const hour = new Date().getHours();
@@ -2007,10 +2012,7 @@ function checkTimeAchievements() {
   if (hour >= 5 && hour < 7) unlock("earlyBird");
   if (peers.length >= 3) unlock("fullHouse");
   if (peers.some((p) => p.room === room)) unlock("roommates");
-  if (amAsleep) count("sleepSeconds", 5); // (for the Well Rested tiers)
   if (room.startsWith("bedroom-") && peers.some((p) => p.room === room)) unlock("sleepover");
-  addRoomTime(getCurrentRoom(player), 5); // room reputation (reputation.js)
-  checkTiers();
   checkNewTitles();
 }
 

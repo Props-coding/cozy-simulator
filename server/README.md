@@ -4,7 +4,8 @@ A small program on the DigitalOcean droplet that handles what the static site ca
 
 - **Accounts:** names and passwords (passwords are stored scrambled, never as plain text).
 - **The house phrase:** friends say it once and their account is in the house. The server then gives the page the room name, the room password and the relay login, so those aren't in the public code.
-- **Cloud saves:** crumbs, what you own, achievements, your bedroom and your look, kept on your account.
+- **The bank:** everyone's crumbs and everything they own (the raccoons' items, the basket, fishing progress, Nest & Nook furniture, achievements). Every earn and spend is checked here against the game's own prices, and the dice are rolled here (which fish bites, how many carrots a bed gives), so nobody can give themselves crumbs by changing their browser.
+- **Cloud saves:** your look, your bedroom layout and a few settings, kept on your account.
 - **Mail and profiles:** each account's inbox (letters wait there even when you're offline), and the bio and stats friends see on your profile card.
 - **The voice relay (coturn):** when two friends' home networks can't connect directly, their voices and movement go through it. The server hands each logged-in friend a relay login that only lasts a day.
 
@@ -16,7 +17,8 @@ It's plain Node.js with no extra packages, behind Caddy (which handles HTTPS) at
 |---|---|
 | The program | `/opt/cozy-server/server.mjs` (runs as the locked-down `cozy` user) |
 | Secrets (house phrase, room, relay login, admin token) | `/etc/cozy-server.env` (only root can read it; never put these in the repo) |
-| Accounts and saves | `/var/lib/cozy-server/db.json`, with a copy each day in `backups/` (the last 14 are kept) |
+| Accounts, saves and the bank | `/var/lib/cozy-server/db.json`, with a full copy each day in `backups/daily-DATE/` (the last 14 are kept) |
+| The game's prices and lists | `/opt/cozy-server/game/` (copies of the site's `config.js`, `catalog.js` and `world.js`, read when the server starts) |
 | Service | `cozy-server` (systemd): `sudo systemctl status cozy-server` |
 | Web server settings | `/etc/caddy/Caddyfile` |
 | Voice relay | service `coturn`, settings in `/etc/turnserver.conf` (made from `turnserver.conf` here, with the secret filled in). Ports 3478 (UDP/TCP), 5349 (TLS) and 50000 to 50500 (UDP) are open in the firewall |
@@ -43,3 +45,5 @@ Log in with `ssh props@142.93.3.149`, then:
 ## Updating the program
 
 Copy the changed files from this folder to `/opt/cozy-server/` and restart it with `sudo systemctl restart cozy-server`. (Claude Code does this for you.)
+
+**Changed a price, an item, an achievement or the crops, fish or bait?** Those live in the site's `config.js`, `catalog.js` and `world.js`, and the server uses its own copies (in `/opt/cozy-server/game/`) to check purchases. So whenever one of those three files changes, copy it there too and restart the server, at the same time as the site goes live. Otherwise the page shows the new price but the server still charges the old one.

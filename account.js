@@ -5,14 +5,21 @@
 // this page how to reach the house (the room name, its password and the
 // relay login), so none of that is in the public code any more.
 //
-// Cloud saves: crumbs, what you own, achievements, your bedroom, letters
-// and your look are copied to your account on the server every so often,
-// and brought back when you log in on any computer.
+// Cloud saves: your look, your bedroom layout, letters and a few
+// settings are copied to your account on the server every so often, and
+// brought back when you log in on any computer. (Crumbs and everything you
+// own live on the server itself: the bank, see bank.js.)
+import { loadBank } from "./bank.js";
+
 const SERVER = CONFIG.serverUrl;
 const ACCOUNT_KEY = "cozy-house-account"; // { token, name }
 const SYNCED_KEY = "cozy-house-synced-at"; // when the cloud save we have was made
 // Everything that's saved in the browser and should follow your account.
-const SAVE_KEYS = ["cozy-house-profile", "cozy-house-crumbs", "cozy-house-achievements", "cozy-house-home", "cozy-house-mail", "cozy-house-office", "cozy-house-lofi", "cozy-house-aura", "cozy-house-dance", "cozy-house-basket", "cozy-house-fishing"];
+const SAVE_KEYS = ["cozy-house-profile", "cozy-house-achievements", "cozy-house-home", "cozy-house-mail", "cozy-house-office", "cozy-house-lofi", "cozy-house-aura", "cozy-house-dance"];
+// Crumbs, the basket and fishing used to be saved in the browser too. Now
+// the house server keeps them (the bank, see bank.js); the first time it
+// needs them, it starts from the account's cloud save.
+const OLD_BANK_KEYS = ["cozy-house-crumbs", "cozy-house-basket", "cozy-house-fishing"];
 
 const storage = {
   get(key) {
@@ -224,9 +231,9 @@ export function onPasswordChange(callback) {
 }
 
 // --- Cloud saves ---
-function collectSave() {
+function collectSave(keys = SAVE_KEYS) {
   const data = {};
-  for (const key of SAVE_KEYS) {
+  for (const key of keys) {
     const value = storage.get(key);
     if (value !== null) data[key] = value;
   }
@@ -274,9 +281,9 @@ async function downloadSave() {
   if (!save) {
     // No cloud save yet: the progress already in this browser becomes the
     // account's. (That's how everyone's progress from before accounts
-    // carries over. Logging out clears the browser, so the next person
-    // never inherits someone else's.)
-    await uploadSave();
+    // carries over, crumbs and all. Logging out clears the browser, so the
+    // next person never inherits someone else's.)
+    await api("PUT", "/api/save", { data: collectSave([...SAVE_KEYS, ...OLD_BANK_KEYS]) }).catch(() => {});
     return false;
   }
   const syncedAt = Number(storage.get(SYNCED_KEY) || 0);
@@ -412,6 +419,9 @@ async function afterLogin(user) {
     location.reload(); // start again with your cloud save
     return;
   }
+  // Your crumbs and everything you own, from the house server.
+  await loadBank();
+  for (const key of OLD_BANK_KEYS) storage.remove(key);
   const house = await api("GET", "/api/house");
   CONFIG.trysteroRoomId = house.roomId;
   CONFIG.trysteroPassword = house.password;
@@ -432,7 +442,7 @@ async function logOut(saveFirst = true) {
   account = null;
   storage.remove(ACCOUNT_KEY);
   storage.remove(SYNCED_KEY);
-  for (const key of SAVE_KEYS) storage.remove(key); // the next person here starts clean
+  for (const key of [...SAVE_KEYS, ...OLD_BANK_KEYS]) storage.remove(key); // the next person here starts clean
   storage.remove("cozy-house-journal-key"); // (and can't open your journal)
   location.reload();
 }

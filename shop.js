@@ -7,12 +7,13 @@
 // type out letter by letter with a babbling voice. Then the coat swings
 // open to show the wares.
 //
-// Crumbs and what you own are saved in this browser only (there's no
-// server), so they don't follow you to another computer.
+// Crumbs and what you own are kept by the house server (the bank, see
+// bank.js), which checks every purchase.
 import { playCoatWhoosh, playCrumbSound, playClickSound } from "./audio.js";
 import { typeWithBabble } from "./npc.js";
-import { unlock, count } from "./achievements.js";
-import { basketItems, takeFromBasket } from "./basket.js";
+import { unlock } from "./achievements.js";
+import { basketItems } from "./basket.js";
+import { myWallet, bank } from "./bank.js";
 
 // --- The raccoons ---
 // Three voices: `pitch` is how high their babble sounds.
@@ -23,132 +24,14 @@ const RACCOONS = {
 };
 
 // --- What's for sale ---
-// Hats everyone has for free (they're on the Join screen from the start):
-// [id, name, height]. A hat's height is how many pixels it reaches above
-// the top of your head, so name tags can sit just above it (0 for none).
-export const FREE_HATS = [
-  ["none", "No hat", 0],
-  ["beanie", "Beanie", 5],
-  ["cap", "Cap", 2],
-  ["bow", "Bow", 4],
-  ["headphones", "Headphones", 3],
-  ["flower", "Flower", 2],
-];
+// The free hats and the raccoons' stock live in catalog.js (shared with
+// the house server, which checks prices).
+export const FREE_HATS = SHOP_FREE_HATS;
+const CATALOG = SHOP_CATALOG;
 
-// The raccoons' stock. `line` is what they say when you buy it. A hat's
-// `height` is how far it reaches above your head, in pixels (see FREE_HATS).
-const CATALOG = [
-  { id: "partyHat", type: "hat", name: "Party Hat", price: 15, height: 18, line: "it's always somebody's birthday. probably." },
-  { id: "chefHat", type: "hat", name: "Chef Hat", price: 25, height: 17, line: "we found it. near a kitchen. unrelated." },
-  { id: "topHat", type: "hat", name: "Top Hat", price: 40, height: 14, line: "very fancy. very legal. extremely legal." },
-  { id: "cowboyHat", type: "hat", name: "Cowboy Hat", price: 40, height: 9, line: "yeehaw, as the humans say." },
-  { id: "witchHat", type: "hat", name: "Witch Hat", price: 50, height: 20, line: "only slightly cursed. no refunds." },
-  { id: "frogHat", type: "hat", name: "Frog Hat", price: 60, height: 6, line: "ribbit. that's the whole sales pitch." },
-  { id: "crown", type: "hat", name: "Crown", price: 120, height: 7, line: "fell off a king. we think. don't ask." },
-  { id: "halo", type: "hat", name: "Halo", price: 200, height: 22, line: "for when you've been good. very rare." },
-  { id: "beret", type: "hat", name: "Beret", price: 20, height: 7, line: "ooh la la. we don't know what that means." },
-  { id: "bucketHat", type: "hat", name: "Bucket Hat", price: 20, height: 6, line: "holds a hat's worth of stuff. which is your head." },
-  { id: "sproutHat", type: "hat", name: "Head Sprout", price: 25, height: 11, line: "water daily. or don't. it's fake. probably." },
-  { id: "catEars", type: "hat", name: "Cat Ears", price: 30, height: 8, line: "meow. that's free. the ears are 30." },
-  { id: "flowerCrown", type: "hat", name: "Flower Crown", price: 35, height: 3, line: "picked fresh from someone's garden. not yours. don't check." },
-  { id: "strawHat", type: "hat", name: "Straw Hat", price: 35, height: 7, line: "for summer. or for pretending it's summer." },
-  { id: "propellerCap", type: "hat", name: "Propeller Cap", price: 40, height: 12, line: "doesn't fly. we tried. bean tried. twice." },
-  { id: "mushroomCap", type: "hat", name: "Mushroom Cap", price: 45, height: 5, line: "not the eating kind. please don't eat it." },
-  { id: "bunnyEars", type: "hat", name: "Bunny Ears", price: 50, height: 20, line: "one ear's floppy. it's a feature. a cute one." },
-  { id: "gradCap", type: "hat", name: "Graduation Cap", price: 55, height: 9, line: "congratulations on graduating. from what? who knows." },
-  { id: "santaHat", type: "hat", name: "Santa Hat", price: 60, height: 12, line: "ho ho... we're not allowed to finish that." },
-  { id: "pirateHat", type: "hat", name: "Pirate Hat", price: 70, height: 11, line: "arr. we traded a map for it. the map was fake too." },
-  { id: "vikingHelmet", type: "hat", name: "Viking Helmet", price: 80, height: 10, line: "horns sold separately. kidding. horns included." },
-  { id: "tiara", type: "hat", name: "Tiara", price: 120, height: 9, line: "real diamonds. fake diamonds. same sparkle." },
-  { id: "sneakers", type: "shoes", name: "Sneakers", price: 15, line: "zoom zoom. that's a feature." },
-  { id: "rainBoots", type: "shoes", name: "Rain Boots", price: 25, line: "puddles fear you now." },
-  { id: "bunnySlippers", type: "shoes", name: "Bunny Slippers", price: 30, line: "they're not real bunnies. we checked." },
-  { id: "cowboyBoots", type: "shoes", name: "Cowboy Boots", price: 40, line: "pairs well with a hat. we sell hats." },
-  { id: "rollerSkates", type: "shoes", name: "Roller Skates", price: 75, line: "wheeee. sorry. professional voice. wheee." },
-  { id: "flipFlops", type: "shoes", name: "Flip-Flops", price: 10, line: "flip. flop. that's the sound. that's the name." },
-  { id: "balletFlats", type: "shoes", name: "Ballet Flats", price: 25, line: "twirl twice before wearing. house rules." },
-  { id: "sockSandals", type: "shoes", name: "Socks & Sandals", price: 25, line: "bold. fearless. a little crunchy." },
-  { id: "clogs", type: "shoes", name: "Clogs", price: 30, line: "clip clop. very sturdy. very loud on stairs." },
-  { id: "hikingBoots", type: "shoes", name: "Hiking Boots", price: 45, line: "for adventures. or the walk to the kitchen." },
-  { id: "moonBoots", type: "shoes", name: "Moon Boots", price: 55, line: "one small step. very puffy." },
-  { id: "glowSneakers", type: "shoes", name: "Light-Up Sneakers", price: 65, line: "they blink when you walk. like us when we see crumbs." },
-  { id: "rubySlippers", type: "shoes", name: "Ruby Slippers", price: 150, line: "click your heels. results not guaranteed." },
-  // Glasses go on your face.
-  { id: "roundGlasses", type: "glasses", name: "Round Glasses", price: 20, line: "you look very smart. smarter than us. low bar." },
-  { id: "sunglasses", type: "glasses", name: "Sunglasses", price: 25, line: "too cool for the house. but stay anyway." },
-  { id: "catEyeGlasses", type: "glasses", name: "Cat-Eye Glasses", price: 35, line: "fancy. a little mysterious. like us." },
-  { id: "heartGlasses", type: "glasses", name: "Heart Glasses", price: 40, line: "everything looks lovelier. even bean." },
-  { id: "glasses3d", type: "glasses", name: "3D Glasses", price: 40, line: "for the theater. or for everything. your call." },
-  { id: "starGlasses", type: "glasses", name: "Star Glasses", price: 50, line: "you're a star. the glasses say so." },
-  { id: "goggles", type: "glasses", name: "Goggles", price: 60, line: "for the workshop. safety first. second: style." },
-  { id: "monocle", type: "glasses", name: "Monocle", price: 90, line: "one eye fancy. the other eye regular. balance." },
-  { id: "squareFrames", type: "glasses", name: "Square Frames", price: 30, line: "for reading. or for looking like you read." },
-  { id: "roseGlasses", type: "glasses", name: "Rose-Tinted Glasses", price: 45, line: "everything's fine now. forever. probably." },
-  { id: "aviators", type: "glasses", name: "Aviators", price: 55, line: "we can't fly. but you'll look like you can." },
-  // Scarves wrap around you, under your face (Update 3).
-  { id: "bandana", type: "scarf", name: "Bandana", price: 15, line: "very cowboy. very mysterious. very washable." },
-  { id: "knitScarf", type: "scarf", name: "Red Knit Scarf", price: 25, line: "hand knitted. by paws. don't look too close." },
-  { id: "stripedScarf", type: "scarf", name: "Striped Scarf", price: 30, line: "stripes are faster. that's science." },
-  { id: "plaidScarf", type: "scarf", name: "Plaid Scarf", price: 35, line: "smells faintly of pine. we don't know why." },
-  { id: "chunkyScarf", type: "scarf", name: "Chunky Scarf", price: 45, line: "like a hug. but it never wants to talk about it." },
-  { id: "featherBoa", type: "scarf", name: "Feather Boa", price: 70, line: "fabulous. a few feathers are ours. don't ask." },
-  // Backpacks ride on your back (Update 3).
-  { id: "schoolBag", type: "backpack", name: "School Backpack", price: 30, line: "comes with a free half-eaten sandwich. kidding. mostly." },
-  { id: "hikingPack", type: "backpack", name: "Hiking Pack", price: 50, line: "for long walks. like to the fridge." },
-  { id: "bunnyBag", type: "backpack", name: "Bunny Backpack", price: 60, line: "it's not a real bunny. we asked it." },
-  { id: "guitarCase", type: "backpack", name: "Guitar Case", price: 80, line: "there's no guitar in it. just vibes." },
-  { id: "jetpack", type: "backpack", name: "Jetpack", price: 150, line: "doesn't fly. does make flames. indoors. careful." },
-  // Earrings hang by your face (Update 3).
-  { id: "pearlStuds", type: "earrings", name: "Pearl Studs", price: 25, line: "real pearls. from a real... shell. somewhere." },
-  { id: "goldHoops", type: "earrings", name: "Gold Hoops", price: 30, line: "shiny. we almost kept them." },
-  { id: "cherryEarrings", type: "earrings", name: "Cherry Earrings", price: 35, line: "not for eating. bean tried." },
-  { id: "starDangles", type: "earrings", name: "Star Dangles", price: 45, line: "caught two stars. hung them on hooks. easy." },
-  { id: "featherEarrings", type: "earrings", name: "Feather Earrings", price: 40, line: "matches the boa. we planned that. we did not."  },
-  // Pets follow you around the house (one at a time).
-  { id: "duck", type: "pet", name: "Duckling", price: 50, line: "it imprinted on us first. awkward. it's yours now." },
-  { id: "frog", type: "pet", name: "Frog", price: 50, line: "ribbit. same pitch as the hat. we're consistent." },
-  { id: "cat", type: "pet", name: "Cat", price: 60, line: "technically it adopted you. we just did the paperwork." },
-  { id: "dog", type: "pet", name: "Pup", price: 60, line: "good boy. very good boy. best boy. okay bye boy." },
-  { id: "bunny", type: "pet", name: "Bunny", price: 70, line: "hop hop. mind the cables." },
-  { id: "hedgehog", type: "pet", name: "Hedgehog", price: 80, line: "pointy but polite." },
-  { id: "fox", type: "pet", name: "Fox", price: 100, line: "what does it say? nobody knows. not even us." },
-  { id: "penguin", type: "pet", name: "Penguin", price: 110, line: "formal wear included. no extra charge." },
-  { id: "ghost", type: "pet", name: "Ghost", price: 150, line: "found it in the library. it followed us out. boo." },
-  { id: "dragon", type: "pet", name: "Baby Dragon", price: 250, line: "small now. keep it away from the curtains." },
-  { id: "raccoonKit", type: "pet", name: "Raccoon Kit", price: 300, line: "our cousin. very trustworthy. unlike us." },
-  { id: "snail", type: "pet", name: "Snail", price: 40, line: "slow. steady. will get there eventually." },
-  { id: "hamster", type: "pet", name: "Hamster", price: 55, line: "cheeks full of snacks. respect." },
-  { id: "turtle", type: "pet", name: "Turtle", price: 65, line: "brings its own house. very efficient." },
-  { id: "sheep", type: "pet", name: "Sheep", price: 75, line: "fluffy. counts itself to sleep." },
-  { id: "owl", type: "pet", name: "Owl", price: 90, line: "wise. or it just looks wise. same thing, really." },
-  { id: "bat", type: "pet", name: "Bat", price: 95, line: "spooky season, all season." },
-  { id: "capybara", type: "pet", name: "Capybara", price: 120, line: "the calmest creature alive. the orange is included." },
-  { id: "axolotl", type: "pet", name: "Axolotl", price: 140, line: "smiles all the time. we're a bit jealous." },
-];
-
-// --- Saved progress ---
-const STORAGE_KEY = "cozy-house-crumbs";
-let save = { crumbs: 0, owned: [], met: false };
-try {
-  const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (loaded && Number.isFinite(loaded.crumbs)) {
-    save = {
-      crumbs: Math.max(0, Math.floor(loaded.crumbs)),
-      owned: Array.isArray(loaded.owned) ? loaded.owned.filter((id) => CATALOG.some((item) => item.id === id)) : [],
-      met: loaded.met === true,
-    };
-  }
-} catch {
-  // Nothing saved yet, or storage is blocked: start from zero.
-}
-
-function store() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
-  } catch {
-    // Storage blocked (e.g. a private window): crumbs just won't be remembered.
-  }
-}
+// --- What you own ---
+// Your crumbs and what you own live in the bank (bank.js); myWallet() is
+// the server's latest copy.
 
 // Every hat's height, for drawing name tags above hats (render.js).
 globalThis.hatHeights = Object.fromEntries([
@@ -158,11 +41,11 @@ globalThis.hatHeights = Object.fromEntries([
 
 // The hats and shoes you own, as [id, name] lists (for the Join screen).
 export function ownedHats() {
-  return CATALOG.filter((item) => item.type === "hat" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+  return CATALOG.filter((item) => item.type === "hat" && myWallet().owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 export function ownedShoes() {
-  return CATALOG.filter((item) => item.type === "shoes" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+  return CATALOG.filter((item) => item.type === "shoes" && myWallet().owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 // An item's name, like "Baby Dragon" for "dragon".
@@ -171,13 +54,13 @@ export function itemName(id) {
 }
 
 export function ownedGlasses() {
-  return CATALOG.filter((item) => item.type === "glasses" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+  return CATALOG.filter((item) => item.type === "glasses" && myWallet().owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 // What you own of any one kind ("scarf", "backpack", "earrings", ...), as
 // [id, name] pairs.
 export function ownedOfType(type) {
-  return CATALOG.filter((item) => item.type === type && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+  return CATALOG.filter((item) => item.type === type && myWallet().owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 // How many of a list of item ids (like a friend's) are pets.
@@ -187,15 +70,15 @@ export function petsAmong(ids) {
 
 // How many things you own from the raccoons, and what they cost in all.
 export function ownedCount() {
-  return save.owned.length;
+  return myWallet().owned.length;
 }
 
 export function ownedValue() {
-  return CATALOG.filter((item) => save.owned.includes(item.id)).reduce((sum, item) => sum + item.price, 0);
+  return CATALOG.filter((item) => myWallet().owned.includes(item.id)).reduce((sum, item) => sum + item.price, 0);
 }
 
 export function ownedPets() {
-  return CATALOG.filter((item) => item.type === "pet" && save.owned.includes(item.id)).map((item) => [item.id, item.name]);
+  return CATALOG.filter((item) => item.type === "pet" && myWallet().owned.includes(item.id)).map((item) => [item.id, item.name]);
 }
 
 // --- Crumbs ---
@@ -204,62 +87,24 @@ const crumbCount = document.getElementById("crumb-count");
 const shopCrumbs = document.getElementById("shop-crumbs");
 
 function showCrumbs() {
-  crumbCount.textContent = save.crumbs;
-  shopCrumbs.textContent = save.crumbs;
+  crumbCount.textContent = myWallet().crumbs;
+  shopCrumbs.textContent = myWallet().crumbs;
   // Anything else showing crumbs (like Nest & Nook) listens for this.
   window.dispatchEvent(new Event("crumbs-changed"));
 }
 showCrumbs();
 
-// Adds crumbs, with a little bounce on the counter.
-export function addCrumbs(amount) {
-  save.crumbs += amount;
-  store();
-  count("crumbsEarned", amount); // (for the Crumb Collector tiers)
+// Whenever the bank changes: the new count, with a little bounce if it went up.
+window.addEventListener("bank-changed", (e) => {
   showCrumbs();
-  if (save.crumbs >= 500) unlock("hoarder");
+  if (!e.detail?.gained) return;
   crumbPill.classList.remove("bump");
   void crumbPill.offsetWidth; // restart the bounce animation
   crumbPill.classList.add("bump");
-}
-
-// Spends crumbs if you have enough (for Nest & Nook). Returns true if it
-// went through.
-export function spendCrumbs(amount) {
-  if (save.crumbs < amount) return false;
-  save.crumbs -= amount;
-  store();
-  showCrumbs();
-  return true;
-}
-
-// Admin panel helpers (for testing).
-export function setCrumbs(amount) {
-  save.crumbs = Math.max(0, Math.floor(amount));
-  store();
-  showCrumbs();
-}
-
-export function grantAllShopItems() {
-  save.owned = CATALOG.map((item) => item.id);
-  store();
-}
+});
 
 export function crumbBalance() {
-  return save.crumbs;
-}
-
-// Starts earning crumbs for time spent in the house. Call once, on joining.
-// A minute only counts while you're really here: the tab is showing, and
-// you've done something (a key, a click, the mouse) recently.
-let earning = null;
-let lastActive = Date.now();
-for (const type of ["keydown", "pointerdown", "pointermove", "wheel"]) window.addEventListener(type, () => (lastActive = Date.now()), { capture: true, passive: true });
-export function startEarningCrumbs() {
-  earning ??= setInterval(() => {
-    const here = document.visibilityState === "visible" && Date.now() - lastActive < CONFIG.crumbsActiveMinutes * 60_000;
-    if (here) addCrumbs(CONFIG.crumbsPerMinute);
-  }, 60 * 1000);
+  return myWallet().crumbs;
 }
 
 // --- Connecting to main.js ---
@@ -396,32 +241,26 @@ function mainChoices() {
 
 // Junk from the pond (old boots, tin cans...): the raccoons love it, and
 // pay CONFIG.junkPrice crumbs a piece (Update 4).
-function sellJunk() {
-  const junk = basketItems("junk:");
-  const n = junk.reduce((sum, [, k]) => sum + k, 0);
-  if (n === 0) {
+async function sellJunk() {
+  if (basketItems("junk:").length === 0) {
     say([["pip", "junk? JUNK?? you have no junk!"], ["reginald", "come back when you've fished up something... unwanted."], ["bean", "boots."]], mainChoices);
     return;
   }
-  for (const [id, k] of junk) takeFromBasket(id, k);
-  const price = CONFIG.junkPrice ?? 3;
-  addCrumbs(n * price);
+  const sold = await bank("sellJunk");
+  if (!sold?.sold) return;
   playCrumbSound();
-  unlock("junkDealer");
   say([
-    ["pip", n > 1 ? `ooh ooh ooh! ${n} treasures!` : "ooh! a treasure!"],
-    ["reginald", `we'll take it all. ${n * price} crumbs, and no questions asked.`],
-    ["bean", junk.some(([id]) => id === "junk:duck") ? "...duck. mine." : "nice."],
+    ["pip", sold.sold > 1 ? `ooh ooh ooh! ${sold.sold} treasures!` : "ooh! a treasure!"],
+    ["reginald", `we'll take it all. ${sold.crumbs} crumbs, and no questions asked.`],
+    ["bean", sold.ids.includes("junk:duck") ? "...duck. mine." : "nice."],
   ], mainChoices);
 }
 
 // Start a conversation (main.js calls this when you press E by them).
 export function talkToRaccoons() {
   if (isShopBusy()) return;
-  const intro = save.met ? pick(INTROS) : FIRST_MEETING;
-  unlock("raccoons");
-  save.met = true;
-  store();
+  const intro = myWallet().met ? pick(INTROS) : FIRST_MEETING;
+  if (!myWallet().met) bank("meet");
   say(intro, mainChoices);
 }
 
@@ -462,7 +301,7 @@ function renderShop() {
   shopItems.innerHTML = "";
   const current = look.get();
   for (const item of CATALOG.filter((i) => i.type === shopTab).sort((a, b) => a.price - b.price)) {
-    const owned = save.owned.includes(item.id);
+    const owned = myWallet().owned.includes(item.id);
     const wearing = current[item.type] === item.id;
     const tag = document.createElement("div");
     tag.className = "shop-item" + (wearing ? " wearing" : "");
@@ -506,32 +345,21 @@ function renderShop() {
   }
 }
 
-function buy(item) {
-  if (save.owned.includes(item.id)) return;
-  if (save.crumbs < item.price) {
+let buying = false;
+async function buy(item) {
+  if (myWallet().owned.includes(item.id) || buying) return;
+  if (myWallet().crumbs < item.price) {
     playClickSound();
-    quip("pip", `ooh, ${item.price - save.crumbs} crumbs short, pal. come back later!`);
+    quip("pip", `ooh, ${item.price - myWallet().crumbs} crumbs short, pal. come back later!`);
     return;
   }
-  save.crumbs -= item.price;
-  save.owned.push(item.id);
-  store();
-  showCrumbs();
+  buying = true;
+  const bought = await bank("buy", { id: item.id });
+  buying = false;
+  if (!bought) return;
   playCrumbSound();
   wearItem(item, true, false);
   quip(pick(["reginald", "pip", "bean"]), item.line);
-  checkShopAchievements();
-}
-
-// Achievements for what you own. Also run on joining, so things bought
-// before achievements existed still count.
-export function checkShopAchievements() {
-  const ownsAll = (type) => CATALOG.filter((i) => i.type === type).every((i) => save.owned.includes(i.id));
-  if (save.owned.length > 0) unlock("firstBuy");
-  if (ownsAll("hat")) unlock("allHats");
-  if (ownsAll("shoes")) unlock("allShoes");
-  if (save.met) unlock("raccoons");
-  if (save.crumbs >= 500) unlock("hoarder");
 }
 
 function wearItem(item, on, withSound = true) {

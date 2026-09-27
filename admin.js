@@ -3,17 +3,15 @@
 // unlocking things, achievements, jumping to any room, and the accounts
 // list with password reset codes.
 //
-// The crumb and unlock tools only change your own save (like everything
-// else in your browser). The accounts tools ask the server, which checks
-// that you really are an admin.
+// Every tool asks the house server, which checks that you really are an
+// admin. The crumb and unlock tools only change your own account.
 import { serverApi, isAdmin } from "./account.js";
-import { addCrumbs, setCrumbs, grantAllShopItems } from "./shop.js";
+import { bank } from "./bank.js";
 import { unlockAllQuietly, resetAchievements } from "./achievements.js";
 import { grantAllDecor, grantRoomy } from "./home.js";
 import { playClickSound, playCrumbSound } from "./audio.js";
 import { previewWeather } from "./weather.js";
 import { ripenGardenPreview } from "./garden.js";
-import { stockBasket } from "./basket.js";
 import { addFishingXp } from "./fishing.js";
 
 const button = document.getElementById("admin-button");
@@ -61,10 +59,10 @@ function say(text) {
 
 // Each tool button says what it does in data-tool.
 const TOOLS = {
-  "crumbs-100": () => (addCrumbs(100), "Added 100 crumbs."),
-  "crumbs-1000": () => (addCrumbs(1000), "Added 1,000 crumbs."),
-  "crumbs-zero": () => (setCrumbs(0), "Crumbs set to 0."),
-  "shop-all": () => (grantAllShopItems(), hooks.refreshLook(), "You own every hat, pair of shoes and pet."),
+  "crumbs-100": () => (bank("adminCrumbs", { n: 100 }), "Added 100 crumbs."),
+  "crumbs-1000": () => (bank("adminCrumbs", { n: 1000 }), "Added 1,000 crumbs."),
+  "crumbs-zero": () => (bank("adminSetCrumbs", { n: 0 }), "Crumbs set to 0."),
+  "shop-all": () => (bank("adminAllItems").then(() => hooks.refreshLook()), "You own every hat, pair of shoes and pet."),
   "decor-all": () => (grantAllDecor(), "You own one of every Nest & Nook item. Place them with Decorate."),
   roomy: () => (grantRoomy(), "Your bedroom is Roomy now."),
   "achievements-all": () => (unlockAllQuietly(), "Every achievement unlocked (quietly: no pop-ups or crumbs)."),
@@ -104,11 +102,13 @@ for (const button of panel.querySelectorAll("[data-weather]")) {
 }
 
 // --- Garden ---
-// Ripen all: shows every bed as ripe on this computer (so you can try
-// harvesting without waiting). Fill my basket: 5 of every seed and crop.
+// Ripen all: your own beds really ripen (so you can try harvesting
+// without waiting), and everyone's look ripe on this computer. Fill my
+// basket: 5 of every seed, crop, fish, bait and junk.
 document.getElementById("admin-ripen").addEventListener("click", (e) => {
+  bank("adminRipen");
   ripenGardenPreview();
-  say("Every garden bed looks ripe on this computer until the garden next refreshes (about 30 seconds).");
+  say("Your own beds are ripe now. Everyone else's only look ripe on this computer, until the garden next refreshes (about 30 seconds).");
   playClickSound();
   e.currentTarget.blur();
 });
@@ -119,7 +119,7 @@ document.getElementById("admin-fishxp").addEventListener("click", (e) => {
   e.currentTarget.blur();
 });
 document.getElementById("admin-basket").addEventListener("click", (e) => {
-  stockBasket();
+  bank("adminStock");
   say("Your basket now has at least 5 of everything.");
   playCrumbSound();
   e.currentTarget.blur();

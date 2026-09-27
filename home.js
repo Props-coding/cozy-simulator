@@ -2,48 +2,54 @@
 // and where you've put it. Also the Nest & Nook store (shown on the
 // laptop) and decorating (moving pieces around your room).
 //
-// Like crumbs, what you own is saved in your own browser (and your cloud
-// save). What's placed, and the room's size, also go to the house server
-// whenever they change, so friends can visit your room even while you're
-// away.
+// What you own and your room's size are kept by the house server (the
+// bank, see bank.js), which checks every purchase. What's placed goes to
+// the house server whenever it changes (so friends can visit your room
+// even while you're away), and it only keeps furniture you own.
 import { serverApi } from "./account.js";
 import { sendRoomsPing } from "./network.js";
-import { spendCrumbs, crumbBalance } from "./shop.js";
-import { unlock } from "./achievements.js";
+import { crumbBalance } from "./shop.js";
 import { playCrumbSound, playClickSound } from "./audio.js";
-import { addToBasket } from "./basket.js";
+import { bank, myWallet, applyBank } from "./bank.js";
+import { unlock } from "./achievements.js";
 
-// --- Saved home ---
-// size: "cozy" or "roomy". owned: item id -> how many you've bought.
-// placed: [{ item, x, y }], x and y from your room's top-left corner.
+// --- Your home ---
+// size: "cozy" or "roomy", and owned: item id -> how many you've bought
+// (both from the bank). placed: [{ item, x, y }], x and y from your room's
+// top-left corner (saved in this browser, and shared with the house).
 const STORAGE_KEY = "cozy-house-home";
-let home = { size: "cozy", owned: { starterDesk: 1, starterMattress: 1, starterNightstand: 1, starterPhone: 1 }, placed: [] };
+const home = {
+  get size() {
+    return myWallet().home.size;
+  },
+  get owned() {
+    return myWallet().home.owned;
+  },
+  placed: [],
+};
 try {
   const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (loaded && typeof loaded === "object") {
-    home.size = Object.hasOwn(BEDROOM_SIZES, loaded.size) ? loaded.size : "cozy";
-    for (const [id, count] of Object.entries(loaded.owned ?? {})) {
-      if (Object.hasOwn(DECOR, id) && Number.isInteger(count) && count > 0) home.owned[id] = Math.min(count, 99);
-    }
-    // Only keep placed pieces you own (and that fit).
-    const counts = {};
-    const mine = (Array.isArray(loaded.placed) ? loaded.placed : []).filter((p) => {
-      counts[p?.item] = (counts[p?.item] || 0) + 1;
-      return counts[p?.item] <= (home.owned[p?.item] || 0);
-    });
-    home.placed = mine;
-  }
+  if (Array.isArray(loaded?.placed)) home.placed = loaded.placed;
 } catch {
   // Nothing saved yet, or storage is blocked: start with a bare room.
 }
-// Every bedroom comes with a laptop desk and a plain mattress (they can be
-// moved like anything else). Rooms from before they could be moved get them
-// in their old spots.
-home.placed = tidyDecor(home.size, home.placed);
+
+// Only pieces you own (as many as you own) and that fit. Every bedroom
+// comes with a laptop desk and a plain mattress (they can be moved like
+// anything else); rooms from before they could be moved get them in their
+// old spots.
+function tidyHome() {
+  const counts = {};
+  const mine = home.placed.filter((p) => {
+    counts[p?.item] = (counts[p?.item] || 0) + 1;
+    return counts[p?.item] <= (home.owned[p?.item] || 0);
+  });
+  home.placed = tidyDecor(home.size, mine);
+}
 
 function store() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(home));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ placed: home.placed }));
   } catch {
     // Storage blocked (e.g. a private window): just won't be remembered.
   }
@@ -54,8 +60,12 @@ function store() {
 // Sends your room (what's placed, and its size) to the house server.
 // Also called once when you join, so it's up to date.
 export function shareMyRoom() {
+  tidyHome();
   serverApi("PUT", "/api/room/home", { placed: home.placed, size: home.size })
-    .then(() => sendRoomsPing()) // friends fetch it right away
+    .then((answer) => {
+      applyBank(answer); // (fish moved in or out of a tank come from or go to your basket)
+      sendRoomsPing(); // friends fetch it right away
+    })
     .catch(() => {
       // Offline for a moment: it goes up with your next change.
     });
@@ -63,13 +73,13 @@ export function shareMyRoom() {
 
 // Admin panel helpers (for testing): one of every Nest & Nook item, and
 // the Roomy upgrade.
-export function grantAllDecor() {
-  for (const id of Object.keys(DECOR)) if (DECOR[id].tab) home.owned[id] = Math.max(home.owned[id] || 0, 1);
+export async function grantAllDecor() {
+  await bank("adminAllDecor");
   store();
 }
 
-export function grantRoomy() {
-  home.size = "roomy";
+export async function grantRoomy() {
+  await bank("adminRoomy");
   store();
 }
 
@@ -441,18 +451,21 @@ function storeSection(page, make) {
 
 // Buying something: pay, add it to your home, a heart pops up, and Wren
 // says thanks.
-function buy(page, id, item, button) {
+async function buy(page, id, item, button) {
   // Where the button is, for the heart pop (measured first: spending
   // crumbs redraws the store).
   const rect = button.getBoundingClientRect(), box = page.getBoundingClientRect();
-  if (!spendCrumbs(item.price)) {
+  if (crumbBalance() < item.price) {
     playClickSound();
     button.textContent = `${item.price - crumbBalance()} crumbs short`;
     button.classList.add("short");
     return;
   }
-  home.owned[id] = Math.min(99, (home.owned[id] || 0) + 1);
-  store();
+  button.disabled = true;
+  if (!(await bank("buyDecor", { id }))) {
+    button.disabled = false;
+    return;
+  }
   playCrumbSound();
   wrenSays = pickLine(WREN_THANKS);
   hooks.notice(`${item.name} is yours! Open Decorate on the laptop to place it.`);
@@ -570,17 +583,20 @@ function upgradeCard(page) {
   button.className = "nook-buy";
   button.textContent = roomy ? "Yours! 🎉" : "🔨 Upgrade my room";
   button.disabled = roomy;
-  button.addEventListener("click", () => {
-    if (!spendCrumbs(ROOMY_PRICE)) {
+  button.addEventListener("click", async () => {
+    if (crumbBalance() < ROOMY_PRICE) {
       playClickSound();
       button.textContent = `${ROOMY_PRICE - crumbBalance()} crumbs short`;
       button.classList.add("short");
       return;
     }
-    home.size = "roomy";
+    button.disabled = true;
+    if (!(await bank("buyRoomy"))) {
+      button.disabled = false;
+      return;
+    }
     store();
     playCrumbSound();
-    unlock("roomy");
     wrenSays = "Down comes the wall! Enjoy all that space.";
     hooks.notice("Down comes the wall! Your bedroom is roomy now.");
     renderStore(page);
@@ -748,8 +764,7 @@ function putAwayHeld() {
     return;
   }
   const wasPlaced = !!held.from;
-  // A fish tank put away: its fish go back in your basket.
-  for (const id of held.fish ?? []) addToBasket(`fish:${id}`);
+  // (A fish tank put away: the house server puts its fish back in your basket.)
   held = null;
   if (wasPlaced) store();
   playClickSound();

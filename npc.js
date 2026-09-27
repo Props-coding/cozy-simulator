@@ -119,8 +119,11 @@ export function refreshNpc() {
       button.className = action.soft ? "soft-button" : "warm-button";
       button.textContent = action.label;
       button.disabled = !!action.disabled;
-      button.addEventListener("click", () => {
-        const line = action.run();
+      // (Buying and selling ask the house server, so wait for its answer,
+      // with the buttons off meanwhile so nothing's bought twice.)
+      button.addEventListener("click", async () => {
+        for (const b of list.querySelectorAll("button")) b.disabled = true;
+        const line = await action.run();
         if (line) npcSay(line);
         refreshNpc();
       });

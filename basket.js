@@ -1,37 +1,20 @@
 // Your basket (Update 4): where seeds, harvested crops, fish, bait and
 // anything else you pick up outdoors are kept.
 //
-// It's a simple list of "how many of each thing", saved in this browser
-// and in your cloud save (so it follows you when you log in elsewhere).
+// It's a simple list of "how many of each thing", kept by the house
+// server (the bank, see bank.js): only it adds or takes things out.
 // Things are named like "seed:carrot", "crop:carrot" or "fish:perch", and
 // whoever makes a kind of thing (garden.js, fishing.js) tells the basket
 // its name, picture and price with registerItems.
 //
 // The 🧺 button in the header opens the basket, to see what you have.
 import { playClickSound } from "./audio.js";
+import { myWallet } from "./bank.js";
 
-const STORAGE_KEY = "cozy-house-basket";
-const MAX_STACK = 9999;
-
-let items = {}; // id -> how many
-try {
-  const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (loaded?.items && typeof loaded.items === "object") {
-    for (const [id, n] of Object.entries(loaded.items)) if (typeof id === "string" && Number.isFinite(n) && n > 0) items[id] = Math.min(MAX_STACK, Math.floor(n));
-  }
-} catch {
-  // Nothing saved yet, or storage is blocked: start with an empty basket.
-}
-
-function store() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ items }));
-  } catch {
-    // Storage blocked: the basket just won't be remembered.
-  }
-  window.dispatchEvent(new Event("basket-changed"));
+const items = () => myWallet().basket; // id -> how many (the bank's latest copy)
+window.addEventListener("basket-changed", () => {
   if (!panel.hidden) renderBasket();
-}
+});
 
 // What each kind of thing is called and looks like:
 // id -> { name, icon, sell (crumbs, or 0 if it can't be sold), group }.
@@ -45,33 +28,13 @@ export function itemInfo(id) {
 }
 
 export function basketCount(id) {
-  return items[id] ?? 0;
-}
-
-export function addToBasket(id, n = 1) {
-  items[id] = Math.min(MAX_STACK, (items[id] ?? 0) + n);
-  store();
-}
-
-// Takes n of something out, if you have that many. True if it went.
-export function takeFromBasket(id, n = 1) {
-  if ((items[id] ?? 0) < n) return false;
-  items[id] -= n;
-  if (items[id] <= 0) delete items[id];
-  store();
-  return true;
+  return items()[id] ?? 0;
 }
 
 // Everything you have whose id starts with `prefix` (like "seed:"), as
 // [id, count] pairs.
 export function basketItems(prefix = "") {
-  return Object.entries(items).filter(([id, n]) => id.startsWith(prefix) && n > 0);
-}
-
-// Admin panel helper: fills the basket with some of everything known.
-export function stockBasket() {
-  for (const id of Object.keys(KNOWN)) items[id] = Math.max(items[id] ?? 0, 5);
-  store();
+  return Object.entries(items()).filter(([id, n]) => id.startsWith(prefix) && n > 0);
 }
 
 // --- The basket panel ---

@@ -7,72 +7,16 @@
 // Gold and up, with crumbs for every tier (they're listed in config.js,
 // CONFIG.tieredAchievements, so it's easy to add more or change goals).
 //
-// Like crumbs, achievements are saved in this browser only (there's no
-// server), so they don't follow you to another computer.
+// Which ones you have, your tiers and the counters tiers are counted in
+// are kept by the house server (the bank, see bank.js), which pays the
+// crumbs. The server gives the ones it sees happen itself (buying,
+// fishing, gardening: `server` in catalog.js); the page claims the rest.
 import { playAchievementSound } from "./audio.js";
+import { bank, myWallet, noteStat } from "./bank.js";
 
-// Every moment (one-time achievement). `secret` ones show as "???" until
-// you find them.
-// To add one: give it an id here, then call unlock("thatId") from the
-// place in the code where it happens.
-export const ACHIEVEMENTS = [
-  // Settling in
-  { id: "welcome", icon: "🏡", name: "Home Sweet Home", desc: "Join the house for the first time.", crumbs: 5 },
-  { id: "tour", icon: "🗺️", name: "Grand Tour", desc: "Visit every room, including an office.", crumbs: 20 },
-  { id: "office", icon: "🪴", name: "Corner Office", desc: "Build your own office.", crumbs: 10 },
-  { id: "lock", icon: "🔒", name: "Do Not Disturb", desc: "Lock your office door.", crumbs: 5 },
-  { id: "knock", icon: "🚪", name: "Knock Knock", desc: "Knock on a friend's locked office.", crumbs: 5 },
-  { id: "doodle", icon: "🖍️", name: "Doodler", desc: "Draw on the Conference Room whiteboard.", crumbs: 5 },
-  { id: "movie", icon: "🍿", name: "Movie Night", desc: "Play a video in the Theater.", crumbs: 10 },
-  { id: "bookworm", icon: "📚", name: "Bookworm", desc: "Spend 15 minutes in the Library.", crumbs: 15 },
-  { id: "snack", icon: "🍝", name: "Snack Break", desc: "Spend 10 minutes in the Dinner room.", crumbs: 10 },
-  { id: "bedroomMade", icon: "🛏️", name: "A Room of One's Own", desc: "Step into your own bedroom.", crumbs: 10 },
-  { id: "goodnight", icon: "🌙", name: "Goodnight", desc: "Get into bed.", crumbs: 5 },
-  { id: "sleepover", icon: "🧸", name: "Sleepover", desc: "Hang out in a bedroom with a friend.", crumbs: 15 },
-  { id: "decorator", icon: "🪴", name: "Making It Home", desc: "Place something in your bedroom.", crumbs: 10 },
-  { id: "designer", icon: "🛋️", name: "Interior Designer", desc: "Have 10 pieces placed in your bedroom.", crumbs: 40 },
-  { id: "roomy", icon: "🔨", name: "Moving On Up", desc: "Buy the Roomy upgrade at Nest & Nook.", crumbs: 30 },
-  { id: "penPal", icon: "✉️", name: "Pen Pal", desc: "Write a letter on your laptop.", crumbs: 10 },
-  { id: "gotMail", icon: "📬", name: "You've Got Mail", desc: "Receive a letter.", crumbs: 10 },
-  { id: "newsReader", icon: "📰", name: "Well Informed", desc: "Read the news on your laptop.", crumbs: 5 },
-
-  // Friends
-  { id: "hello", icon: "💬", name: "Hello There", desc: "Send your first chat message.", crumbs: 5 },
-  { id: "roommates", icon: "🤝", name: "Roommates", desc: "Be in the same room as a friend.", crumbs: 5 },
-  { id: "fullHouse", icon: "🎉", name: "Full House", desc: "Hang out with 3 friends at once.", crumbs: 25 },
-  { id: "expressive", icon: "🎭", name: "Expressive", desc: "Use all five emotes.", crumbs: 10 },
-  { id: "jigParty", icon: "🪩", name: "Dance Party", desc: "Dance at the same time as a friend.", crumbs: 20 },
-
-  // Time in the house
-  { id: "nightOwl", icon: "🦉", name: "Night Owl", desc: "Be in the house between 1 and 4 in the morning.", crumbs: 15 },
-  { id: "earlyBird", icon: "🐦", name: "Early Bird", desc: "Be in the house between 5 and 7 in the morning.", crumbs: 15 },
-
-  // The raccoons, and pets
-  { id: "raccoons", icon: "🦝", name: "Shady Dealings", desc: "Talk to the raccoons in the trenchcoat.", crumbs: 5 },
-  { id: "firstBuy", icon: "🛍️", name: "Retail Therapy", desc: "Buy something from the raccoons.", crumbs: 10 },
-  { id: "allHats", icon: "🎩", name: "Mad Hatter", desc: "Own every hat the raccoons sell.", crumbs: 100 },
-  { id: "allShoes", icon: "👢", name: "Well Heeled", desc: "Own every pair of shoes.", crumbs: 60 },
-  { id: "patPat", icon: "🤲", name: "Pat Pat", desc: "Pet a pet (walk up to one and press E).", crumbs: 5 },
-  { id: "pettingZoo", icon: "💞", name: "Petting Zoo", desc: "Pet a friend's pet.", crumbs: 10 },
-  { id: "hoarder", icon: "🍪", name: "Crumb Hoarder", desc: "Have 500 crumbs at once.", crumbs: 25 },
-
-  // Outdoors (Update 4)
-  { id: "firstSeed", icon: "🌱", name: "Seed of an Idea", desc: "Plant your first seed in the garden.", crumbs: 5 },
-  { id: "rainCheck", icon: "🌧️", name: "Rain Check", desc: "Let the rain water the garden.", crumbs: 10 },
-  { id: "farmStand", icon: "🧺", name: "Farm Stand", desc: "Sell your harvest to Hazel.", crumbs: 10 },
-  { id: "greatPumpkin", icon: "🎃", name: "The Great Pumpkin", desc: "Harvest a pumpkin.", crumbs: 25 },
-  { id: "firstCatch", icon: "🐟", name: "Hooked", desc: "Catch your first fish.", crumbs: 5 },
-  { id: "bigOne", icon: "🐡", name: "The Big One", desc: "Catch an epic fish.", crumbs: 25 },
-  { id: "legendCatch", icon: "🐋", name: "Legend of the Pond", desc: "Catch a legendary fish.", crumbs: 50 },
-  { id: "pondScholar", icon: "📖", name: "Pond Scholar", desc: "Catch 10 different kinds of fish.", crumbs: 25 },
-  { id: "fullTank", icon: "🐠", name: "Full Tank", desc: "Fill a fish tank in your bedroom.", crumbs: 15 },
-  { id: "junkDealer", icon: "👢", name: "One Raccoon's Trash", desc: "Sell pond junk to the raccoons.", crumbs: 10 },
-
-  // Secrets
-  { id: "whoAreYou", icon: "🧥", name: "Three Raccoons?", desc: "Ask the raccoons who they really are.", crumbs: 10, secret: true },
-  { id: "foodComa", icon: "😴", name: "Food Coma", desc: "Get sleepy in the Dinner room.", crumbs: 10, secret: true },
-  { id: "danceFloor", icon: "🎬", name: "Dance Floor", desc: "Dance in the Theater.", crumbs: 10, secret: true },
-];
+// Every moment (one-time achievement) is listed in catalog.js (shared
+// with the house server, which pays the rewards).
+export const ACHIEVEMENTS = ACHIEVEMENT_LIST;
 
 const byId = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -87,10 +31,6 @@ export const MOMENT_GROUPS = [
   ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
 ];
 
-// One-time achievements that became tiers (see `was` in config.js). They
-// stay in your save, so the tiers know you were already paid for them.
-const RETIRED = new Set(tracks().flatMap((t) => t.was ?? []).filter(Boolean));
-
 function tracks() {
   return CONFIG.tieredAchievements ?? [];
 }
@@ -98,23 +38,23 @@ function tiers() {
   return CONFIG.achievementTiers ?? [];
 }
 
-// --- Saved progress ---
-// unlocked: id -> when. stats: counters for the "do X times" ones.
-// tiers: tiered achievement id -> how many tiers reached (1 is Bronze).
-// caughtUp: true once tiers existing progress earned have been given out.
-const STORAGE_KEY = "cozy-house-achievements";
+// --- Saved in this browser ---
+// stats: this browser's own counters (like minutes in the Library, for
+// Bookworm); the ones tiers are counted in live on the server.
 // pinned: up to 5 achievement ids (moments or tiered) shown on your profile.
+const STORAGE_KEY = "cozy-house-achievements";
 const MAX_PINS = 5;
-let save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false, pinned: [] };
+// Counters the server keeps (chats, emotes and dances are sent along with
+// the once-a-minute check-in; the rest it counts itself).
+const SERVER_STATS = new Set(["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "lastDay"]);
+const serverStat = (stat) => SERVER_STATS.has(stat) || stat.startsWith("room_");
+let save = { stats: {}, pinned: [] };
 try {
   const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if (loaded && typeof loaded === "object") {
-    for (const id of Object.keys(loaded.unlocked ?? {})) if (byId[id] || RETIRED.has(id)) save.unlocked[id] = loaded.unlocked[id];
-    for (const [id, n] of Object.entries(loaded.tiers ?? {})) if (tracks().some((t) => t.id === id) && Number.isInteger(n) && n > 0) save.tiers[id] = n;
-    save.caughtUp = loaded.caughtUp === true;
     save.pinned = (Array.isArray(loaded.pinned) ? loaded.pinned : []).filter((id) => byId[id] || tracks().some((t) => t.id === id)).slice(0, MAX_PINS);
     for (const [key, value] of Object.entries(loaded.stats ?? {})) {
-      if (Number.isFinite(value) || Array.isArray(value)) save.stats[key] = value;
+      if (!serverStat(key) && (Number.isFinite(value) || Array.isArray(value))) save.stats[key] = value;
     }
   }
 } catch {
@@ -130,41 +70,58 @@ function store() {
 }
 
 // --- Connecting to main.js ---
-// main.js passes in how to give crumbs and how to tell friends.
-// For tiered ones it also passes `values` (counts kept elsewhere, like
-// { items, pets, roomLevels }) and `announceTier`. (Your achievements are
-// shown on your profile card: the 🏆 button opens it.)
-let hooks = { reward: () => {}, announce: () => {}, announceTier: () => {}, values: () => ({}) };
+// main.js passes in how to tell friends.
+let hooks = { announce: () => {}, announceTier: () => {} };
 export function initAchievements(options) {
   hooks = { ...hooks, ...options };
 }
 
 export function hasAchievement(id) {
-  return Object.hasOwn(save.unlocked, id);
+  return Object.hasOwn(myWallet().unlocked, id);
 }
 
-// Unlocks an achievement (does nothing if you already have it).
+// Claims an achievement the page saw happen (does nothing if you already
+// have it, or if it's one the server gives itself). The pop-up comes when
+// the server says yes (see showBankEvents).
+const claiming = new Set();
 export function unlock(id) {
-  if (!byId[id] || hasAchievement(id)) return;
-  save.unlocked[id] = Date.now();
-  store();
-  showToast({ ...byId[id], label: "Achievement!" });
-  hooks.reward(byId[id].crumbs);
-  hooks.announce(id);
+  if (!byId[id] || byId[id].server || hasAchievement(id) || claiming.has(id)) return;
+  claiming.add(id);
+  bank("achieve", { id }).finally(() => claiming.delete(id));
+}
+
+// What the server says you just earned: pop-ups, and a line for friends.
+// (Lots of tiers at once, like the first time, get one pop-up.)
+export function showBankEvents(events) {
+  for (const e of events) {
+    if (e.type !== "achievement" || !byId[e.id]) continue;
+    showToast({ ...byId[e.id], label: "Achievement!" });
+    hooks.announce(e.id);
+  }
+  const reached = events.filter((e) => e.type === "tier" && tracks().some((t) => t.id === e.id) && tiers()[e.level - 1]);
+  if (reached.length > 3) {
+    const crumbs = reached.reduce((sum, e) => sum + e.crumbs, 0);
+    showToast({ kind: "tier", icon: "🏅", label: "Tiered achievements!", name: `You're already at ${reached.length} tiers`, desc: "See them on your profile (the 🏆 button).", crumbs });
+    return;
+  }
+  for (const e of reached) {
+    const track = tracks().find((t) => t.id === e.id);
+    const tier = tiers()[e.level - 1];
+    showToast({ kind: "tier", icon: track.icon, label: `${tier.name} tier!`, name: `${track.name} ${tier.icon}`, desc: goalText(track, e.level - 1), crumbs: e.crumbs });
+    hooks.announceTier(e.id, e.level);
+  }
 }
 
 // Admin panel helpers (for testing): unlock everything quietly (no
 // pop-ups, crumbs or chat lines), or start over from nothing.
 export function unlockAllQuietly() {
-  for (const a of ACHIEVEMENTS) save.unlocked[a.id] ??= Date.now();
-  for (const t of tracks()) save.tiers[t.id] = t.goals.length;
-  save.caughtUp = true;
-  store();
+  bank("adminUnlockAll");
 }
 
 export function resetAchievements() {
-  save = { unlocked: {}, stats: {}, tiers: {}, caughtUp: false, pinned: [] };
+  save = { stats: {}, pinned: [] };
   store();
+  bank("adminResetAchievements");
 }
 
 // --- Pins: the achievements you show off on your profile ---
@@ -182,31 +139,32 @@ export function togglePin(id) {
 }
 export { MAX_PINS };
 
-// Your counters, like { seconds, chats, room_study, ... } (read only).
+// Your counters, like { seconds, chats, room_study, ... } (read only):
+// the server's, plus this browser's own.
 export function myStats() {
-  return save.stats;
+  return { ...save.stats, ...myWallet().stats };
 }
 
-// Adds to a counter, and returns the new total.
+// Adds to a counter, and returns the new total. (Chats, emotes and dances
+// go to the server with the next check-in; it counts the others itself.)
 export function count(stat, amount = 1) {
+  if (serverStat(stat)) {
+    noteStat(stat, amount);
+    return myStats()[stat] ?? 0;
+  }
   save.stats[stat] = (Number.isFinite(save.stats[stat]) ? save.stats[stat] : 0) + amount;
   store();
   return save.stats[stat];
 }
 
-// Sets a counter to a value (for things like "the last day you visited").
+// Sets one of this browser's counters to a value.
 export function setStat(stat, value) {
   save.stats[stat] = value;
   store();
 }
 
 // --- Tiered achievements ---
-// How far along you are on one: the number its goals are counted in.
-function trackValue(track) {
-  return trackValueFrom(track, save.stats, hooks.values());
-}
-
-// The same for anyone: from their saved counters (`s`), plus `values`
+// How far along someone is on one: from their counters (`s`), plus `values`
 // for the counts kept elsewhere ({ items, pets, roomLevels }).
 export function trackValueFrom(track, s = {}, values = {}) {
   const n = (v) => (Number.isFinite(v) ? v : 0);
@@ -229,49 +187,12 @@ export function trackValueFrom(track, s = {}, values = {}) {
 
 // How many tiers you've reached on a tiered achievement (0 for none yet).
 export function tierOf(id) {
-  return save.tiers[id] ?? 0;
+  return myWallet().tiers[id] ?? 0;
 }
 
 // All your tiers, as { id: count } (for titles and your profile).
 export function myTiers() {
-  return save.tiers;
-}
-
-// Checks every tiered achievement for new tiers (main.js calls this every
-// few seconds, and right after you join). The very first time, tiers your
-// progress already earned are given all at once, with one pop-up.
-export function checkTiers() {
-  const reached = [];
-  let crumbs = 0;
-  for (const track of tracks()) {
-    const value = trackValue(track);
-    let have = tierOf(track.id);
-    while (have < track.goals.length && have < tiers().length && value >= track.goals[have]) {
-      const tier = tiers()[have];
-      const paidBefore = track.was?.[have] && hasAchievement(track.was[have]); // an old one-time achievement already paid for this
-      const reward = paidBefore ? 0 : tier.crumbs;
-      have++;
-      save.tiers[track.id] = have;
-      reached.push({ track, have, tier, reward });
-      crumbs += reward;
-    }
-  }
-  if (!reached.length && save.caughtUp) return;
-  const catchingUp = !save.caughtUp;
-  save.caughtUp = true;
-  store();
-  if (catchingUp) {
-    if (reached.length) {
-      showToast({ kind: "tier", icon: "🏅", label: "Tiered achievements!", name: `You're already at ${reached.length} tier${reached.length === 1 ? "" : "s"}`, desc: "See them on your profile (the 🏆 button).", crumbs });
-      if (crumbs) hooks.reward(crumbs);
-    }
-  } else {
-    for (const { track, have, tier, reward } of reached) {
-      showToast({ kind: "tier", icon: track.icon, label: `${tier.name} tier!`, name: `${track.name} ${tier.icon}`, desc: goalText(track, have - 1), crumbs: reward });
-      if (reward) hooks.reward(reward);
-      hooks.announceTier(track.id, have);
-    }
-  }
+  return myWallet().tiers;
 }
 
 // A goal written out, like "Spend 10 hours in the house."

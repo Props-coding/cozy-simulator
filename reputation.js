@@ -4,9 +4,10 @@
 // (and on friends' cards, for theirs).
 //
 // Which rooms have levels, and how many minutes each level takes, are in
-// config.js (CONFIG.roomLevels). The time is saved with your achievements
-// (as "room_study" and so on), so it's backed up in your cloud save.
-import { count, showToast } from "./achievements.js";
+// config.js (CONFIG.roomLevels). The time is counted by the house server
+// (as "room_study" and so on, see bank.js: the page says which room you're
+// in once a minute).
+import { myStats, showToast } from "./achievements.js";
 
 const settings = () => CONFIG.roomLevels ?? { rooms: {}, minutesForLevel: [] };
 
@@ -41,16 +42,18 @@ export function roomLevels(stats = {}) {
   });
 }
 
-// Adds time to the room you're in (main.js calls this every few seconds),
-// and pops up a card if that was enough for a new level.
-export function addRoomTime(room, seconds) {
-  const key = roomLevelKey(room);
-  if (!key) return;
-  const before = levelFor(count("room_" + key, 0));
-  const after = levelFor(count("room_" + key, seconds));
-  if (after > before) {
+// Whenever the server's counts come in: a card for any room that just
+// reached a new level. (Not the first time: that's just where you are.)
+let lastLevels = null;
+window.addEventListener("bank-changed", () => {
+  const levels = Object.fromEntries(roomLevels(myStats()).map((r) => [r.key, r.level]));
+  const before = lastLevels;
+  lastLevels = levels;
+  if (!before) return;
+  for (const [key, level] of Object.entries(levels)) {
+    if (level <= (before[key] ?? 0)) continue;
     const { name, icon } = settings().rooms[key];
-    showToast({ kind: "level", icon, label: "Level up!", name: `${name} Lv. ${after}`, desc: after === settings().minutesForLevel.length ? "The top level. This room is yours." : "You've been spending time here.", crumbs: 0 });
-    window.dispatchEvent(new CustomEvent("room-level", { detail: { key, level: after } }));
+    showToast({ kind: "level", icon, label: "Level up!", name: `${name} Lv. ${level}`, desc: level === settings().minutesForLevel.length ? "The top level. This room is yours." : "You've been spending time here.", crumbs: 0 });
+    window.dispatchEvent(new CustomEvent("room-level", { detail: { key, level } }));
   }
-}
+});

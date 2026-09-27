@@ -12,7 +12,9 @@
 import http from "node:http";
 import { scrypt as scryptCallback, randomBytes, timingSafeEqual, createHash, createHmac, generateKeyPairSync, createPrivateKey, createPublicKey, sign } from "node:crypto";
 import { readFile, writeFile, rename, mkdir, readdir, unlink, copyFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import vm from "node:vm";
 import { promisify } from "node:util";
 
 const scrypt = promisify(scryptCallback);
@@ -108,6 +110,7 @@ async function backup() {
 // login). Admins are left alone (the admin panel hands things out for
 // testing). It's not airtight: someone patient could still creep their
 // numbers up slowly.
+const BANK_KEYS = ["cozy-house-crumbs", "cozy-house-basket", "cozy-house-fishing"];
 const SAVE_LIMITS = { crumbsBurst: 4000, crumbsPerMinute: 100, newItems: 10, newAchievements: 10, tierSteps: 3 };
 
 function parseSaved(data, key) {
@@ -303,16 +306,17 @@ function waterPlot(plot, when, by) {
   return true;
 }
 
-// One gardening action: { action, bed, crop }. "plant" (an empty bed),
-// "water" (anyone's bed), "rain" (every bed), "harvest" or "clear" (your
-// own bed: it's emptied, and the page adds the harvest to your basket).
-function applyGarden(body, user) {
+// One gardening action: { action, bed, crop }. "plant" (an empty bed,
+// with a seed from your basket), "water" (anyone's bed), "rain" (every
+// bed, only while it's really raining), "harvest" (your own ripe bed: the
+// crop goes in your basket) or "clear" (your own bed, dug up).
+function applyGarden(body, user, w, ev) {
   gardenState();
   const plots = db.garden.plots;
   const now = Date.now();
   if (body.action === "rain") {
     let watered = 0;
-    for (const plot of Object.values(plots)) if (waterPlot(plot, now, "rain")) watered++;
+    if (sky.raining) for (const plot of Object.values(plots)) if (waterPlot(plot, now, "rain")) watered++;
     return { watered };
   }
   const bed = Number(body.bed);
@@ -322,18 +326,37 @@ function applyGarden(body, user) {
   if (body.action === "plant") {
     if (plot) throw new Oops(409, `${plot.owner} is already growing something there.`);
     const crop = String(body.crop ?? "");
-    if (!/^[a-zA-Z]{1,20}$/.test(crop)) throw new Oops(400, "That's not a seed.");
+    if (!Object.hasOwn(GAME.CROPS, crop)) throw new Oops(400, "That's not a seed.");
     const count = Object.values(plots).filter((p) => p.owner.toLowerCase() === user.name.toLowerCase()).length;
-    if (count >= GARDEN_MAX_PER_PERSON) throw new Oops(409, "You're already growing plenty!");
+    if (count >= Math.min(GARDEN_MAX_PER_PERSON, GAME.CONFIG.garden.maxPlotsPerPlayer)) throw new Oops(409, "You're already growing plenty!");
+    if (w) {
+      takeOut(w, `seed:${crop}`, 1);
+      grant(w, "firstSeed", ev);
+    }
     // Your color (for the little name stake), as the page sends it.
     const color = /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : "#999999";
     plots[bed] = { owner: user.name, color, crop, plantedAt: now, waters: [now], wateredBy: user.name };
     return { planted: crop };
   }
   if (!plot) throw new Oops(404, "Nothing's growing there.");
-  if (body.action === "water") return { watered: waterPlot(plot, now, user.name) };
+  if (body.action === "water") {
+    const watered = waterPlot(plot, now, user.name);
+    if (w && watered && !mine) addStat(w, "friendsWatered", 1);
+    return { watered };
+  }
   if (body.action === "harvest" || body.action === "clear") {
     if (!mine) throw new Oops(403, `That's ${plot.owner}'s bed.`);
+    const crop = GAME.CROPS[plot.crop];
+    if (body.action === "harvest" && w) {
+      if (!crop || growthOf(plot, now) < 1) throw new Oops(409, "That's not ripe yet.");
+      const [low, high] = crop.yield;
+      const n = low + Math.floor(Math.random() * (high - low + 1));
+      delete plots[bed];
+      putIn(w, `crop:${crop.id}`, n);
+      addStat(w, "harvests", n);
+      if (crop.id === "pumpkin") grant(w, "greatPumpkin", ev);
+      return { crop: plot.crop, n };
+    }
     delete plots[bed];
     return { crop: plot.crop };
   }
@@ -592,6 +615,621 @@ function doorInfo(key, user, viewerKey = key) {
   };
 }
 
+// --- The bank (build 0.63) ---
+// The server keeps everyone's crumbs and everything they own: the
+// raccoons' items, their basket (seeds, crops, fish, bait, junk), fishing
+// progress, Nest & Nook furniture and achievements. The page only shows
+// what the server says. Every way of earning or spending is one small
+// action (buy this, sell that, reel this in), checked here against the
+// server's own records and prices, so changing things in your own browser
+// changes nothing. Dice are rolled here too (which fish bites, how big it
+// is, how many carrots a bed gives).
+//
+// user.wallet = { crumbs, owned: [raccoon item ids], met, basket: { id: n },
+//   fishing: { rods, rod, bait, xp, log, castAt, pending },
+//   home: { owned: { decor id: n }, size }, unlocked: { id: when },
+//   tiers: { id: n }, stats: { seconds, chats, room_study, ... },
+//   activeMs, lastTick, lastFocus, movedAt }
+//
+// The prices and lists come from the site's own files (config.js,
+// catalog.js and world.js), read once when the server starts, so there's
+// only one copy of every price. They live in GAME_DIR (see README.md).
+const GAME_DIR = env.GAME_DIR || join(dirname(fileURLToPath(import.meta.url)), "game");
+let GAME = null;
+
+async function loadGame() {
+  const files = ["config.js", "catalog.js", "world.js"];
+  const code = (await Promise.all(files.map((f) => readFile(join(GAME_DIR, f), "utf8")))).join("\n;\n");
+  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST })", {}, { timeout: 5000 });
+  const byId = (list) => Object.fromEntries(list.map((x) => [x.id, x]));
+  GAME = {
+    CONFIG: g.CONFIG,
+    DECOR: g.DECOR,
+    ROOMY_PRICE: g.ROOMY_PRICE,
+    SHOP: byId(g.SHOP_CATALOG),
+    ACH: byId(g.ACHIEVEMENT_LIST),
+    FISH: byId(g.CONFIG.fish),
+    RODS: g.CONFIG.rods,
+    BAIT: byId(g.CONFIG.bait),
+    CROPS: byId(g.CONFIG.crops),
+    JUNK: byId(g.CONFIG.junk),
+    TRACKS: g.CONFIG.tieredAchievements ?? [],
+    TIERS: g.CONFIG.achievementTiers ?? [],
+  };
+  // One-time achievements that became tiers (kept, so tiers know they were paid).
+  GAME.RETIRED = new Set(GAME.TRACKS.flatMap((t) => t.was ?? []).filter(Boolean));
+  console.log(`Game data: ${Object.keys(GAME.SHOP).length} raccoon items, ${Object.keys(GAME.DECOR).length} decor, ${Object.keys(GAME.ACH).length} achievements`);
+}
+
+const MAX_STACK = 9999;
+const STARTERS = { starterDesk: 1, starterMattress: 1, starterNightstand: 1, starterPhone: 1 };
+// Counters the server keeps (the tiered achievements are counted in these).
+const SERVER_STATS = ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught"];
+
+const whole = (v, max = 1e9) => (Number.isFinite(v) ? Math.max(0, Math.min(max, Math.floor(v))) : 0);
+
+// Whether a basket id is a real thing ("fish:perch", "seed:carrot"...).
+function knownItem(id) {
+  const [kind, name] = String(id).split(":");
+  if (kind === "fish") return Object.hasOwn(GAME.FISH, name);
+  if (kind === "junk") return Object.hasOwn(GAME.JUNK, name);
+  if (kind === "bait") return Object.hasOwn(GAME.BAIT, name) && GAME.BAIT[name].price > 0;
+  if (kind === "seed" || kind === "crop") return Object.hasOwn(GAME.CROPS, name);
+  return false;
+}
+
+// A wallet, made the first time it's needed from that person's cloud save
+// (everything they had before the bank), so nothing is lost.
+function ensureWallet(user, key) {
+  if (user.wallet) return user.wallet;
+  const shop = savedData(user, "cozy-house-crumbs") ?? {};
+  const basket = savedData(user, "cozy-house-basket")?.items ?? {};
+  const fishing = savedData(user, "cozy-house-fishing") ?? {};
+  const home = savedData(user, "cozy-house-home") ?? {};
+  const progress = savedData(user, "cozy-house-achievements") ?? {};
+  const room = db.rooms?.[key];
+  const w = {
+    crumbs: whole(shop.crumbs),
+    owned: [...new Set(Array.isArray(shop.owned) ? shop.owned : [])].filter((id) => Object.hasOwn(GAME.SHOP, id)),
+    met: shop.met === true,
+    basket: {},
+    fishing: { rods: ["twig"], rod: "twig", bait: "worm", xp: whole(fishing.xp), log: {}, castAt: 0, pending: null },
+    home: { owned: { ...STARTERS }, size: room?.size === "roomy" || home.size === "roomy" ? "roomy" : "cozy" },
+    unlocked: {},
+    tiers: {},
+    stats: {},
+    activeMs: 0,
+    lastTick: 0,
+    lastFocus: 0,
+    movedAt: Date.now(),
+  };
+  for (const [id, n] of Object.entries(basket && typeof basket === "object" ? basket : {})) if (knownItem(id) && whole(n) > 0) w.basket[id] = whole(n, MAX_STACK);
+  const f = w.fishing;
+  for (const id of Array.isArray(fishing.rods) ? fishing.rods : []) if (GAME.RODS.some((r) => r.id === id) && !f.rods.includes(id)) f.rods.push(id);
+  if (f.rods.includes(fishing.rod)) f.rod = fishing.rod;
+  if (Object.hasOwn(GAME.BAIT, fishing.bait)) f.bait = fishing.bait;
+  for (const [id, e] of Object.entries(fishing.log ?? {})) if (Object.hasOwn(GAME.FISH, id) && whole(e?.n) > 0) f.log[id] = { n: whole(e.n), best: whole(e.best) };
+  for (const [id, n] of Object.entries(home.owned ?? {})) if (Object.hasOwn(GAME.DECOR, id) && whole(n) > 0) w.home.owned[id] = Math.max(w.home.owned[id] ?? 0, whole(n, 99));
+  // Anything already placed in their bedroom counts as owned (so nothing
+  // placed ever disappears when the bank starts checking).
+  const placedCounts = {};
+  for (const p of room?.placed ?? []) placedCounts[p.item] = (placedCounts[p.item] ?? 0) + 1;
+  for (const [id, n] of Object.entries(placedCounts)) if (Object.hasOwn(GAME.DECOR, id)) w.home.owned[id] = Math.max(w.home.owned[id] ?? 0, Math.min(n, 99));
+  for (const [id, when] of Object.entries(progress.unlocked ?? {})) if (Object.hasOwn(GAME.ACH, id) || GAME.RETIRED.has(id)) w.unlocked[id] = Number.isFinite(when) ? when : Date.now();
+  for (const [id, n] of Object.entries(progress.tiers ?? {})) {
+    const track = GAME.TRACKS.find((t) => t.id === id);
+    if (track && Number.isInteger(n) && n > 0) w.tiers[id] = Math.min(n, track.goals.length);
+  }
+  for (const [stat, v] of Object.entries(progress.stats ?? {})) {
+    if ((SERVER_STATS.includes(stat) || /^room_[a-z]{1,20}$/.test(stat)) && Number.isFinite(v)) w.stats[stat] = whole(v);
+  }
+  if (Number.isFinite(progress.stats?.lastDay)) w.stats.lastDay = progress.stats.lastDay;
+  user.wallet = w;
+  return w;
+}
+
+// What the page gets to see (the server's own bookkeeping left out).
+function publicWallet(w) {
+  const { rods, rod, bait, xp, log } = w.fishing;
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats };
+}
+
+const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
+
+// Gives an achievement (and its crumbs) once. `ev` collects what happened,
+// so the page can show the pop-ups.
+function grant(w, id, ev) {
+  const a = GAME.ACH[id];
+  if (!a || w.unlocked[id]) return;
+  w.unlocked[id] = Date.now();
+  ev.push({ type: "achievement", id, crumbs: a.crumbs });
+  earn(w, a.crumbs, ev);
+}
+
+function earn(w, n, ev) {
+  if (!(n > 0)) return;
+  w.crumbs = whole(w.crumbs + n);
+  addStat(w, "crumbsEarned", n);
+  if (w.crumbs >= 500) grant(w, "hoarder", ev);
+}
+
+function spend(w, n) {
+  if (w.crumbs < n) throw new Oops(409, `That's ${n} crumbs, and you have ${w.crumbs}.`);
+  w.crumbs -= n;
+}
+
+const have = (w, id) => w.basket[id] ?? 0;
+function putIn(w, id, n) {
+  w.basket[id] = Math.min(MAX_STACK, have(w, id) + n);
+}
+function takeOut(w, id, n) {
+  if (have(w, id) < n) throw new Oops(409, "You don't have that many.");
+  w.basket[id] -= n;
+  if (w.basket[id] <= 0) delete w.basket[id];
+}
+
+// A whole number from the page, within limits (or a 400).
+function amount(v, min, max) {
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < min || n > max) throw new Oops(400, "That's not a number that works here.");
+  return n;
+}
+
+// --- Tiered achievements, counted from the server's own numbers ---
+function levelFor(seconds) {
+  const steps = GAME.CONFIG.roomLevels?.minutesForLevel ?? [];
+  let level = 0;
+  while (level < steps.length && seconds >= steps[level] * 60) level++;
+  return level;
+}
+
+function trackValue(track, w) {
+  const s = w.stats;
+  const n = (v) => (Number.isFinite(v) ? v : 0);
+  const values = {
+    hours: n(s.seconds) / 3600,
+    sleepHours: n(s.sleepSeconds) / 3600,
+    items: w.owned.length,
+    pets: w.owned.filter((id) => GAME.SHOP[id]?.type === "pet").length,
+    roomLevels: Object.keys(GAME.CONFIG.roomLevels?.rooms ?? {}).reduce((sum, key) => sum + levelFor(n(s["room_" + key])), 0),
+  };
+  return n(Object.hasOwn(values, track.stat) ? values[track.stat] : s[track.stat]);
+}
+
+function checkTiers(w, ev) {
+  // (Crumbs from one tier can reach a Crumb Collector tier, so look again.)
+  for (let pass = 0; pass < 3; pass++) {
+    let changed = false;
+    for (const track of GAME.TRACKS) {
+      const value = trackValue(track, w);
+      let got = w.tiers[track.id] ?? 0;
+      while (got < track.goals.length && got < GAME.TIERS.length && value >= track.goals[got]) {
+        const paidBefore = track.was?.[got] && w.unlocked[track.was[got]];
+        const reward = paidBefore ? 0 : GAME.TIERS[got].crumbs;
+        got++;
+        w.tiers[track.id] = got;
+        ev.push({ type: "tier", id: track.id, level: got, crumbs: reward });
+        earn(w, reward, ev);
+        changed = true;
+      }
+    }
+    if (!changed) return;
+  }
+}
+
+// --- The sky over the hometown (for which fish bite, and rain in the garden) ---
+const sky = { raining: false, night: null, offset: 0 };
+async function checkSky() {
+  const { latitude, longitude } = GAME.CONFIG.weather.hometown;
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=weather_code,is_day&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const code = data.current?.weather_code;
+    sky.raining = (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
+    sky.night = data.current?.is_day === 0;
+    sky.offset = (data.utc_offset_seconds ?? 0) * 1000;
+    // Real rain waters every bed in the garden.
+    if (sky.raining && db.garden) {
+      let watered = 0;
+      for (const plot of Object.values(db.garden.plots)) if (waterPlot(plot, Date.now(), "rain")) watered++;
+      if (watered) {
+        db.garden.version++;
+        await saveDb();
+      }
+    }
+  } catch (err) {
+    console.warn("Couldn't get the weather:", err.message);
+  }
+}
+
+// The hometown's clock: its date (as 20260926) and hour.
+const hometown = () => new Date(Date.now() + sky.offset);
+const hometownDay = () => {
+  const d = hometown();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+};
+function isNight() {
+  if (sky.night !== null) return sky.night;
+  const hour = hometown().getUTCHours();
+  const { nightFrom, nightTo } = GAME.CONFIG.outdoors;
+  return hour >= nightFrom || hour < nightTo;
+}
+function season() {
+  if (["spring", "summer", "autumn", "winter"].includes(GAME.CONFIG.season)) return GAME.CONFIG.season;
+  const month = hometown().getUTCMonth();
+  return month === 11 || month <= 1 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn";
+}
+
+// --- Fishing ---
+function fishingLevel(xp) {
+  let level = 1;
+  GAME.CONFIG.fishing.levels.forEach((need, i) => {
+    if (xp >= need) level = i + 1;
+  });
+  return level;
+}
+const rodOf = (w) => GAME.RODS.find((r) => r.id === w.fishing.rod) ?? GAME.RODS[0];
+function baitInUse(w) {
+  const bait = GAME.BAIT[w.fishing.bait];
+  return bait && (bait.price === 0 || have(w, `bait:${bait.id}`) > 0) ? bait : GAME.BAIT.none;
+}
+function fishBiting(fish) {
+  const when = fish.when ?? {};
+  if (when.night === true && !isNight()) return false;
+  if (when.night === false && isNight()) return false;
+  if (when.rain && !sky.raining) return false;
+  if (when.season && !when.season.includes(season())) return false;
+  return true;
+}
+function pickCatch(bait, rod) {
+  const junk = GAME.CONFIG.junk;
+  if (Math.random() < GAME.CONFIG.fishing.junkChance) return { junk: junk[Math.floor(Math.random() * junk.length)].id };
+  const tiers = [...bait.catches].sort((a, b) => a - b);
+  const weights = tiers.map((_, i) => (i === 0 ? 1 : 0.35 + rod.luck));
+  let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+  let tier = tiers[0];
+  for (let i = 0; i < tiers.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) {
+      tier = tiers[i];
+      break;
+    }
+  }
+  for (const t of [tier, ...tiers.filter((x) => x !== tier).reverse()]) {
+    const pool = GAME.CONFIG.fish.filter((f) => f.rarity === t && fishBiting(f));
+    if (pool.length) return { fish: pool[Math.floor(Math.random() * pool.length)].id };
+  }
+  return { junk: junk[0].id };
+}
+
+// --- The garden: how grown a crop is (the same sums the page does) ---
+function growthOf(plot, now = Date.now()) {
+  const crop = GAME.CROPS[plot.crop];
+  if (!crop) return 0;
+  const HOUR = 3_600_000;
+  const wetFor = GAME.CONFIG.garden.waterHours * HOUR;
+  const start = plot.plantedAt;
+  let wet = 0, until = start;
+  for (const t of [...plot.waters].sort((a, b) => a - b)) {
+    const from = Math.max(t, until, start), to = Math.min(t + wetFor, now);
+    if (to > from) wet += to - from;
+    until = Math.max(until, Math.min(t + wetFor, now));
+  }
+  const total = Math.max(0, now - start);
+  return Math.min(1, (wet + (total - wet) * GAME.CONFIG.garden.dryGrowth) / (crop.hours * HOUR));
+}
+
+// --- Every bank action: (wallet, what the page sent, events, who) ---
+const BANK = {
+  // Once a minute while you're in the house: time in the house (and in
+  // the room you're in), and a crumb a minute while you're really here.
+  // Time only counts at the speed of the clock, however often it's asked.
+  tick(w, b, ev) {
+    const now = Date.now();
+    const gap = w.lastTick ? now - w.lastTick : 60_000;
+    if (gap < 20_000) return { early: true };
+    w.lastTick = now;
+    const counted = Math.min(gap, 60_000);
+    const secs = Math.round(counted / 1000);
+    addStat(w, "seconds", secs);
+    if (Object.hasOwn(GAME.CONFIG.roomLevels?.rooms ?? {}, b.room)) addStat(w, "room_" + b.room, secs);
+    if (b.asleep === true) addStat(w, "sleepSeconds", secs);
+    // Chats, emotes and dances since the last tick (only so many a minute).
+    for (const [stat, most] of [["chats", 30], ["emotesUsed", 30], ["dances", 10]]) {
+      const n = Math.floor(Number(b[stat]));
+      if (n > 0) addStat(w, stat, Math.min(n, most));
+    }
+    const day = hometownDay();
+    if (w.stats.lastDay !== day) {
+      w.stats.lastDay = day;
+      addStat(w, "daysVisited", 1);
+    }
+    if (b.active === true) {
+      w.activeMs = Math.min((w.activeMs ?? 0) + counted, 120_000);
+      while (w.activeMs >= 60_000) {
+        w.activeMs -= 60_000;
+        earn(w, GAME.CONFIG.crumbsPerMinute, ev);
+      }
+    }
+    return {};
+  },
+
+  // The Study's focus timer: a bonus, at most once per session length.
+  focus(w, b, ev) {
+    const now = Date.now();
+    if (now - (w.lastFocus ?? 0) < GAME.CONFIG.focusMinutes * 60_000 * 0.9) throw new Oops(409, "It's too soon for another focus bonus.");
+    w.lastFocus = now;
+    addStat(w, "focusSessions", 1);
+    earn(w, GAME.CONFIG.focusBonusCrumbs, ev);
+    return { crumbs: GAME.CONFIG.focusBonusCrumbs };
+  },
+
+  // A one-time achievement the page saw happen (not the ones the server
+  // gives itself).
+  achieve(w, b, ev) {
+    const a = GAME.ACH[b.id];
+    if (!a || a.server) throw new Oops(400, "That's not an achievement you can claim.");
+    grant(w, a.id, ev);
+    return {};
+  },
+
+  // --- The raccoons ---
+  meet(w, b, ev) {
+    w.met = true;
+    grant(w, "raccoons", ev);
+    return {};
+  },
+  buy(w, b, ev) {
+    const item = GAME.SHOP[b.id];
+    if (!item) throw new Oops(400, "The raccoons don't sell that.");
+    if (w.owned.includes(item.id)) throw new Oops(409, "You already have that one.");
+    spend(w, item.price);
+    w.owned.push(item.id);
+    grant(w, "firstBuy", ev);
+    const ownsAll = (type) => Object.values(GAME.SHOP).filter((i) => i.type === type).every((i) => w.owned.includes(i.id));
+    if (ownsAll("hat")) grant(w, "allHats", ev);
+    if (ownsAll("shoes")) grant(w, "allShoes", ev);
+    return {};
+  },
+  sellJunk(w, b, ev) {
+    const junk = Object.keys(w.basket).filter((id) => id.startsWith("junk:"));
+    const n = junk.reduce((sum, id) => sum + have(w, id), 0);
+    if (!n) return { sold: 0, crumbs: 0, ids: [] };
+    for (const id of junk) delete w.basket[id];
+    const crumbs = n * (GAME.CONFIG.junkPrice ?? 3);
+    earn(w, crumbs, ev);
+    grant(w, "junkDealer", ev);
+    return { sold: n, crumbs, ids: junk };
+  },
+
+  // --- Otis and the pond ---
+  useRod(w, b) {
+    if (!w.fishing.rods.includes(b.id)) throw new Oops(409, "You don't have that rod.");
+    w.fishing.rod = b.id;
+    return {};
+  },
+  buyRod(w, b) {
+    const rod = GAME.RODS.find((r) => r.id === b.id);
+    if (!rod) throw new Oops(400, "Otis doesn't have that rod.");
+    if (w.fishing.rods.includes(rod.id)) throw new Oops(409, "You already have that rod.");
+    if (fishingLevel(w.fishing.xp) < rod.level) throw new Oops(409, `That rod needs fishing level ${rod.level}.`);
+    spend(w, rod.price);
+    w.fishing.rods.push(rod.id);
+    w.fishing.rod = rod.id;
+    return {};
+  },
+  useBait(w, b) {
+    const bait = GAME.BAIT[b.id];
+    if (!bait || fishingLevel(w.fishing.xp) < bait.level) throw new Oops(409, "You can't use that bait yet.");
+    w.fishing.bait = bait.id;
+    return {};
+  },
+  buyBait(w, b) {
+    const bait = GAME.BAIT[b.id];
+    const n = amount(b.n, 1, 50);
+    if (!bait || !bait.price) throw new Oops(400, "Otis doesn't sell that.");
+    if (fishingLevel(w.fishing.xp) < bait.level) throw new Oops(409, `That bait needs fishing level ${bait.level}.`);
+    spend(w, bait.price * n);
+    putIn(w, `bait:${bait.id}`, n);
+    w.fishing.bait = bait.id;
+    return {};
+  },
+  // Casting, then (after a bite) hooking, then landing it. A bite can't
+  // come sooner than the quickest bite the rod allows, so nobody can
+  // fish faster than the pond does.
+  cast(w) {
+    w.fishing.castAt = Date.now();
+    w.fishing.pending = null;
+    return {};
+  },
+  hook(w) {
+    const f = w.fishing;
+    const now = Date.now();
+    const soonest = GAME.CONFIG.fishing.biteSeconds[0] * rodOf(w).bite * 1000 - 1000;
+    if (!f.castAt || now - f.castAt < soonest) throw new Oops(409, "Nothing's biting yet.");
+    f.castAt = 0;
+    const bait = baitInUse(w);
+    if (bait.price) takeOut(w, `bait:${bait.id}`, 1);
+    const caught = pickCatch(bait, rodOf(w));
+    f.pending = { ...caught, at: now };
+    return { rarity: caught.fish ? GAME.FISH[caught.fish].rarity : 1, junk: !!caught.junk };
+  },
+  land(w, b, ev) {
+    const f = w.fishing;
+    const p = f.pending;
+    if (!p || Date.now() - p.at > 60_000) throw new Oops(409, "It got away.");
+    f.pending = null;
+    const levelBefore = fishingLevel(f.xp);
+    if (p.junk) {
+      putIn(w, `junk:${p.junk}`, 1);
+      f.xp += 1;
+      return { junk: p.junk, levelBefore, level: fishingLevel(f.xp) };
+    }
+    const fish = GAME.FISH[p.fish];
+    const [small, big] = fish.size;
+    const size = Math.round(small + Math.random() ** 1.6 * (big - small));
+    const first = !f.log[fish.id];
+    const entry = (f.log[fish.id] ??= { n: 0, best: 0 });
+    entry.n++;
+    const record = size > entry.best && !first;
+    entry.best = Math.max(entry.best, size);
+    f.xp += GAME.CONFIG.fishing.xp[fish.rarity - 1] ?? 5;
+    putIn(w, `fish:${fish.id}`, 1);
+    addStat(w, "fishCaught", 1);
+    grant(w, "firstCatch", ev);
+    if (fish.rarity >= 4) grant(w, "bigOne", ev);
+    if (fish.rarity >= 5) grant(w, "legendCatch", ev);
+    if (Object.keys(f.log).length >= 10) grant(w, "pondScholar", ev);
+    return { fish: fish.id, size, first, record, levelBefore, level: fishingLevel(f.xp) };
+  },
+  lose(w) {
+    w.fishing.pending = null;
+    w.fishing.castAt = 0;
+    return {};
+  },
+
+  // --- Selling fish (to Otis) and crops (to Hazel) ---
+  sell(w, b, ev) {
+    const id = String(b.id ?? "");
+    const [kind, name] = id.split(":");
+    const price = kind === "fish" ? GAME.FISH[name]?.sell : kind === "crop" ? GAME.CROPS[name]?.sell : null;
+    if (!price) throw new Oops(400, "Nobody buys that.");
+    const n = amount(b.n, 1, MAX_STACK);
+    takeOut(w, id, n);
+    earn(w, price * n, ev);
+    if (kind === "crop") grant(w, "farmStand", ev);
+    return { crumbs: price * n };
+  },
+
+  // --- Hazel's seeds ---
+  buySeed(w, b) {
+    const crop = GAME.CROPS[b.id];
+    const n = amount(b.n, 1, 20);
+    if (!crop) throw new Oops(400, "Hazel doesn't have those seeds.");
+    spend(w, crop.seed * n);
+    putIn(w, `seed:${crop.id}`, n);
+    return {};
+  },
+
+  // --- Nest & Nook ---
+  buyDecor(w, b) {
+    const item = Object.hasOwn(GAME.DECOR, b.id) ? GAME.DECOR[b.id] : null;
+    if (!item || !item.tab || !(item.price > 0)) throw new Oops(400, "Nest & Nook doesn't sell that.");
+    if ((w.home.owned[b.id] ?? 0) >= 99) throw new Oops(409, "That's plenty of those.");
+    spend(w, item.price);
+    w.home.owned[b.id] = (w.home.owned[b.id] ?? 0) + 1;
+    return {};
+  },
+  buyRoomy(w, b, ev, { user, key }) {
+    if (w.home.size === "roomy") throw new Oops(409, "Your room is already roomy.");
+    spend(w, GAME.ROOMY_PRICE);
+    w.home.size = "roomy";
+    ensureRoom(key, user).size = "roomy";
+    grant(w, "roomy", ev);
+    return {};
+  },
+
+  // --- The admin panel's helpers (admins only, for testing) ---
+  adminCrumbs(w, b) {
+    w.crumbs = whole(w.crumbs + amount(b.n, -1e6, 1e6));
+    return {};
+  },
+  adminSetCrumbs(w, b) {
+    w.crumbs = amount(b.n, 0, 1e6);
+    return {};
+  },
+  adminAllItems(w) {
+    w.owned = Object.keys(GAME.SHOP);
+    return {};
+  },
+  adminAllDecor(w) {
+    for (const [id, item] of Object.entries(GAME.DECOR)) if (item.tab) w.home.owned[id] = Math.max(w.home.owned[id] ?? 0, 1);
+    return {};
+  },
+  adminRoomy(w, b, ev, { user, key }) {
+    w.home.size = "roomy";
+    ensureRoom(key, user).size = "roomy";
+    return {};
+  },
+  adminStock(w) {
+    const ids = [
+      ...Object.keys(GAME.FISH).map((id) => `fish:${id}`),
+      ...Object.keys(GAME.JUNK).map((id) => `junk:${id}`),
+      ...Object.keys(GAME.BAIT).map((id) => `bait:${id}`),
+      ...Object.keys(GAME.CROPS).flatMap((id) => [`seed:${id}`, `crop:${id}`]),
+    ].filter(knownItem);
+    for (const id of ids) w.basket[id] = Math.max(have(w, id), 5);
+    return {};
+  },
+  // Your own garden beds, ripe right now.
+  adminRipen(w, b, ev, { user }) {
+    for (const plot of Object.values(db.garden?.plots ?? {})) {
+      const crop = GAME.CROPS[plot.crop];
+      if (!crop || plot.owner.toLowerCase() !== user.name.toLowerCase()) continue;
+      const back = crop.hours * 3_600_000 * 3;
+      plot.plantedAt -= back;
+      plot.waters = plot.waters.map((t) => t - back);
+    }
+    if (db.garden) db.garden.version++;
+    return {};
+  },
+  adminFishXp(w, b) {
+    w.fishing.xp = whole(w.fishing.xp + amount(b.n, 0, 100_000));
+    return {};
+  },
+  // Every achievement and tier, quietly (no crumbs).
+  adminUnlockAll(w) {
+    for (const id of Object.keys(GAME.ACH)) w.unlocked[id] ??= Date.now();
+    for (const t of GAME.TRACKS) w.tiers[t.id] = Math.min(t.goals.length, GAME.TIERS.length);
+    return {};
+  },
+  adminResetAchievements(w) {
+    w.unlocked = {};
+    w.tiers = {};
+    w.stats = {};
+    return {};
+  },
+};
+
+// A bedroom layout from the page, checked against the wallet: only
+// furniture you own (as many as you own). Fish going into a tank come out
+// of your basket; fish taken out (or in a tank that's put away) go back.
+function checkPlaced(w, before, after, ev) {
+  const counts = {};
+  const kept = after.filter((p) => {
+    if (!Object.hasOwn(GAME.DECOR, p.item)) return false;
+    counts[p.item] = (counts[p.item] ?? 0) + 1;
+    return counts[p.item] <= (w.home.owned[p.item] ?? 0);
+  });
+  const old = {};
+  for (const p of before) for (const id of p.fish ?? []) old[id] = (old[id] ?? 0) + 1;
+  const stayed = {};
+  const size = GAME.CONFIG.fishing.tankSize;
+  for (const p of kept) {
+    if (!p.fish) continue;
+    if (GAME.DECOR[p.item].kind !== "fishTank") {
+      delete p.fish;
+      continue;
+    }
+    p.fish = p.fish.filter((id) => Object.hasOwn(GAME.FISH, id)).slice(0, size).filter((id) => {
+      if ((stayed[id] ?? 0) < (old[id] ?? 0)) {
+        stayed[id] = (stayed[id] ?? 0) + 1;
+        return true;
+      }
+      if (have(w, `fish:${id}`) > 0) {
+        takeOut(w, `fish:${id}`, 1);
+        return true;
+      }
+      return false;
+    });
+    if (!p.fish.length) delete p.fish;
+    else if (p.fish.length >= size) grant(w, "fullTank", ev);
+  }
+  for (const [id, n] of Object.entries(old)) if (n > (stayed[id] ?? 0) && Object.hasOwn(GAME.FISH, id)) putIn(w, `fish:${id}`, n - (stayed[id] ?? 0));
+  return kept;
+}
+
 const routes = {
   "GET /api/health": async () => ({ ok: true }),
 
@@ -787,6 +1425,34 @@ const routes = {
     return { ...kanbanState(), result };
   },
 
+  // --- The bank: your crumbs and everything you own ---
+  "GET /api/bank": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const w = ensureWallet(user, key);
+    const ev = [];
+    checkTiers(w, ev); // (tiers already reached when the bank started are paid out here)
+    await saveDb();
+    return { wallet: publicWallet(w), events: ev };
+  },
+
+  "POST /api/bank": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    if (!allowed("bank:" + key, 900)) throw new Oops(429, "That's a lot of shopping! Please wait a few minutes.");
+    const body = await readJson(req, 4_000);
+    const action = String(body.action ?? "");
+    if (!Object.hasOwn(BANK, action)) throw new Oops(400, "The bank doesn't know how to do that.");
+    if (action.startsWith("admin") && !user.admin) throw new Oops(403, "Admins only.");
+    if (action === "achieve" && !allowed("achieve:" + key, 60)) throw new Oops(429, "Lots of achievements! Please wait a few minutes.");
+    const w = ensureWallet(user, key);
+    const ev = [];
+    const result = BANK[action](w, body, ev, { user, key });
+    checkTiers(w, ev);
+    await saveDb();
+    return { wallet: publicWallet(w), events: ev, result };
+  },
+
   // --- The shared garden (Update 4) ---
   // db.garden.plots: bed number -> { owner (their name), color, crop,
   // plantedAt, waters: [times], wateredBy }. How fast crops grow is worked
@@ -803,10 +1469,14 @@ const routes = {
     if (!user.member) throw new Oops(403, "Enter the house phrase first.");
     if (!allowed("garden:" + key, 600)) throw new Oops(429, "Lots of gardening! Please wait a few minutes.");
     const body = await readJson(req, 2_000);
-    const result = applyGarden(body, user);
+    // (A page from before the bank, with no wallet yet, gardens the old way.)
+    const w = user.wallet ?? null;
+    const ev = [];
+    const result = applyGarden(body, user, w, ev);
+    if (w) checkTiers(w, ev);
     db.garden.version++;
     await saveDb();
-    return { ...gardenState(), result };
+    return { ...gardenState(), result, ...(w ? { wallet: publicWallet(w), events: ev } : {}) };
   },
 
   // --- Bedrooms: everyone's door (for the bedroom hallway) ---
@@ -913,10 +1583,21 @@ const routes = {
     const body = await readJson(req, 20_000);
     const room = ensureRoom(key, user);
     if (!Array.isArray(body.placed) || !ROOM_SIZES.includes(body.size)) throw new Oops(400, "That doesn't look like a room.");
-    room.placed = body.placed.slice(0, 80).map(cleanPiece).filter(Boolean);
-    room.size = body.size;
+    const placed = body.placed.slice(0, 80).map(cleanPiece).filter(Boolean);
+    const w = user.wallet;
+    if (!w) {
+      // (A page from before the bank: the old way.)
+      room.placed = placed;
+      room.size = body.size;
+      await saveDb();
+      return { ok: true };
+    }
+    const ev = [];
+    room.placed = checkPlaced(w, room.placed, placed, ev);
+    room.size = w.home.size;
+    checkTiers(w, ev);
     await saveDb();
-    return { ok: true };
+    return { ok: true, wallet: publicWallet(w), events: ev };
   },
 
   // --- The bedroom journal ---
@@ -977,7 +1658,10 @@ const routes = {
       }
     };
     const look = saved("cozy-house-profile") ?? {};
-    const progress = saved("cozy-house-achievements") ?? {};
+    // Achievements, counters and what they own: from the bank (or, for
+    // someone who hasn't been in since the bank opened, their old save).
+    const progress = user.wallet ?? saved("cozy-house-achievements") ?? {};
+    const owned = user.wallet?.owned ?? saved("cozy-house-crumbs")?.owned;
     const text = (v, max) => (typeof v === "string" ? v.slice(0, max) : null);
     return {
       name: user.name,
@@ -1001,7 +1685,7 @@ const routes = {
       tiers: Object.fromEntries(Object.entries(progress.tiers ?? {}).filter(([k, v]) => /^[a-zA-Z]{1,30}$/.test(k) && Number.isInteger(v) && v > 0 && v <= 20).slice(0, 50)),
       rooms: Object.fromEntries(Object.entries(progress.stats ?? {}).filter(([k, v]) => /^room_[a-z]{1,20}$/.test(k) && Number.isFinite(v)).slice(0, 30)),
       // The achievements they pinned to show off (up to 5).
-      pinned: (Array.isArray(progress.pinned) ? progress.pinned : []).filter((id) => typeof id === "string" && /^[a-zA-Z]{1,30}$/.test(id)).slice(0, 5),
+      pinned: (Array.isArray(saved("cozy-house-achievements")?.pinned) ? saved("cozy-house-achievements").pinned : []).filter((id) => typeof id === "string" && /^[a-zA-Z]{1,30}$/.test(id)).slice(0, 5),
       // The counters their tiers are counted in, for "progress to the next tier".
       stats: Object.fromEntries(
         ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught"]
@@ -1009,7 +1693,7 @@ const routes = {
           .map((k) => [k, progress.stats[k]])
       ),
       // What they own from the raccoons (the page counts items and pets from it).
-      owned: (Array.isArray(saved("cozy-house-crumbs")?.owned) ? saved("cozy-house-crumbs").owned : []).filter((id) => typeof id === "string" && /^[a-zA-Z0-9]{1,30}$/.test(id)).slice(0, 300),
+      owned: (Array.isArray(owned) ? owned : []).filter((id) => typeof id === "string" && /^[a-zA-Z0-9]{1,30}$/.test(id)).slice(0, 300),
     };
   },
 
@@ -1056,7 +1740,16 @@ const routes = {
     // save has come in since (from another computer), this one would undo
     // it, so it's refused and the page stops saving and says why.
     if (Number.isFinite(body.base) && user.save && user.save.updatedAt > body.base) throw new Oops(409, "Your account saved newer progress somewhere else.");
-    if (!user.admin && user.save) keepSaveBelievable(user.save, body.data);
+    // Once the bank has someone's wallet, crumbs, the basket and fishing
+    // live there, not in the save (a page from before the bank still
+    // sends them; they're dropped). Before that, the old checks apply.
+    if (user.wallet) for (const k of BANK_KEYS) delete body.data[k];
+    else if (user.save) {
+      // (A page from after the bank doesn't send them: the last ones are
+      // kept, so the bank can start from them.)
+      for (const k of BANK_KEYS) if (!Object.hasOwn(body.data, k) && Object.hasOwn(user.save.data ?? {}, k)) body.data[k] = user.save.data[k];
+      if (!user.admin) keepSaveBelievable(user.save, body.data);
+    }
     user.save = { data: body.data, updatedAt: Date.now() };
     await saveDb();
     return { updatedAt: user.save.updatedAt };
@@ -1193,6 +1886,9 @@ const server = http.createServer(async (req, res) => {
 
 await loadDb();
 await loadBadgeKey();
+await loadGame();
+checkSky();
+setInterval(checkSky, 15 * 60_000).unref();
 await backup();
 setInterval(backup, 24 * 3600_000).unref();
 server.listen(PORT, "127.0.0.1", () => console.log(`Cozy House server listening on 127.0.0.1:${PORT}`));

@@ -18,9 +18,10 @@
 import { serverApi, accountName } from "./account.js";
 import { sendGardenPing, onGardenPing } from "./network.js";
 import { playClickSound, playCrumbSound, playWaterSound, playPlantSound, playHarvestSound } from "./audio.js";
-import { unlock, count } from "./achievements.js";
-import { addCrumbs, spendCrumbs, crumbBalance } from "./shop.js";
-import { registerItems, basketCount, addToBasket, takeFromBasket, basketItems, itemInfo } from "./basket.js";
+import { unlock } from "./achievements.js";
+import { crumbBalance } from "./shop.js";
+import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
+import { bank, applyBank } from "./bank.js";
 import { openNpc } from "./npc.js";
 import { isReallyRaining } from "./weather.js";
 
@@ -135,6 +136,7 @@ async function act(body) {
   try {
     const next = await serverApi("POST", "/api/garden", body);
     apply(next);
+    applyBank(next); // (seeds out of your basket, a harvest in)
     sendGardenPing();
     return next.result ?? {};
   } catch (err) {
@@ -188,21 +190,17 @@ async function water(bed, plot) {
   const result = await act({ action: "water", bed });
   if (!result?.watered) return;
   if (!isMine(plot)) {
-    count("friendsWatered");
     hooks.notice(`You watered ${plot.owner}'s ${CROPS[plot.crop]?.name.toLowerCase() ?? "crop"}. Neighborly!`);
   }
 }
 
 async function harvest(bed, plot) {
   const crop = CROPS[plot.crop];
+  // The server checks it's ripe, and puts the harvest in your basket.
   const result = await act({ action: "harvest", bed });
   if (!result?.crop || !crop) return;
-  const [low, high] = crop.yield;
-  const n = low + Math.floor(Math.random() * (high - low + 1));
-  addToBasket(`crop:${crop.id}`, n);
+  const n = result.n;
   playHarvestSound();
-  count("harvests", n);
-  if (crop.id === "pumpkin") unlock("greatPumpkin");
   hooks.notice(`You harvested ${n} ${n === 1 ? crop.name.toLowerCase() : plural(crop)}! They're in your basket.`);
 }
 
@@ -262,14 +260,10 @@ function closeSeedPicker() {
 async function plant(crop) {
   const bed = pickerBed;
   closeSeedPicker();
-  if (!takeFromBasket(`seed:${crop.id}`)) return;
-  const result = await act({ action: "plant", bed, crop: crop.id, color: hooks.color() });
-  if (!result?.planted) {
-    addToBasket(`seed:${crop.id}`); // it didn't go in: give the seed back
-    return;
-  }
+  if (!basketCount(`seed:${crop.id}`)) return;
+  const result = await act({ action: "plant", bed, crop: crop.id, color: hooks.color() }); // (the seed comes out of your basket)
+  if (!result?.planted) return;
   playPlantSound();
-  unlock("firstSeed");
   hooks.notice(`You planted ${crop.name.toLowerCase()}. It's watered for now. Come back to check on it!`);
 }
 
@@ -319,9 +313,9 @@ export function talkToHazel() {
 function seedsForSale() {
   return CONFIG.crops.map((crop) => {
     const have = basketCount(`seed:${crop.id}`);
-    const buy = (n) => () => {
-      if (!spendCrumbs(crop.seed * n)) return `hmm, that's ${crop.seed * n} crumbs, dear. you have ${crumbBalance()}.`;
-      addToBasket(`seed:${crop.id}`, n);
+    const buy = (n) => async () => {
+      if (crumbBalance() < crop.seed * n) return `hmm, that's ${crop.seed * n} crumbs, dear. you have ${crumbBalance()}.`;
+      if (!(await bank("buySeed", { id: crop.id, n }))) return null;
       playCrumbSound();
       return HAZEL_THANKS[Math.floor(Math.random() * HAZEL_THANKS.length)];
     };
@@ -341,12 +335,10 @@ function seedsForSale() {
 function cropsToSell() {
   return basketItems("crop:").map(([id, n]) => {
     const info = itemInfo(id);
-    const sell = (many) => () => {
+    const sell = (many) => async () => {
       const k = many ? basketCount(id) : 1;
-      if (!takeFromBasket(id, k)) return null;
-      addCrumbs(info.sell * k);
+      if (!(await bank("sell", { id, n: k }))) return null;
       playCrumbSound();
-      unlock("farmStand");
       return HAZEL_BUY_CROP[Math.floor(Math.random() * HAZEL_BUY_CROP.length)] + ` that's ${info.sell * k} crumbs.`;
     };
     return {
