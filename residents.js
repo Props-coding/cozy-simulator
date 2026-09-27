@@ -270,7 +270,11 @@ export function talkToResident(id) {
   const who = WHO[id];
   const state = r && residentState(r);
   if (!who || !state) return;
-  const hearts = () => ({ have: friendOf(id).hearts, max: H().maxHearts });
+  // Requests, gifts, recipes and hearts need the house server's side of
+  // them (Update 6). Until the server has it, the residents just chat,
+  // and the rest shows up by itself once it does.
+  const ready = !!myWallet().friends;
+  const hearts = ready ? () => ({ have: friendOf(id).hearts, max: H().maxHearts }) : undefined;
   if (state.asleep) {
     openNpc({
       name: who.name,
@@ -287,7 +291,7 @@ export function talkToResident(id) {
   // The first chat of the day is a little friendship (the server counts
   // it once a day).
   const chatted = async () => {
-    if (!friendOf(id).chatted) await bank("residentChat", { id });
+    if (ready && !friendOf(id).chatted) await bank("residentChat", { id });
   };
   openNpc({
     name: who.name,
@@ -306,7 +310,7 @@ export function talkToResident(id) {
             actions: [{ label: "Ask", soft: true, run: async () => (await chatted(), topic.say()) }],
           })),
           // Their stories, opening with friendship.
-          ...(CONFIG.residents.stories[id] ?? []).map((story) => {
+          ...(ready ? CONFIG.residents.stories[id] ?? [] : []).map((story) => {
             const open = friendOf(id).hearts >= story.hearts;
             return {
               name: open ? story.name : "Something more personal",
@@ -317,34 +321,41 @@ export function talkToResident(id) {
           }),
         ],
       },
-      {
-        id: "request",
-        label: "Today's request",
-        onOpen: () => npcSay(requestLine(id)),
-        items: () => requestRows(id),
-        empty: "No request today.",
-      },
-      {
-        id: "gift",
-        label: "Give a gift",
-        onOpen: () => npcSay(friendOf(id).gifted ? (id === "clover" ? "you already spoiled me today! come back tomorrow." : "one gift a day is more than generous. tomorrow, perhaps.") : id === "clover" ? "a present? for me? you don't have to! ...what is it?" : "a gift? how civilized. let's see."),
-        items: () => giftRows(id),
-        get empty() {
-          return friendOf(id).gifted ? `You've given ${who.name} a gift today. One a day: come back tomorrow!` : "Nothing to give yet. Grow, fish or cook something first!";
-        },
-      },
-      {
-        id: "recipes",
-        label: "Recipes",
-        onOpen: () => npcSay(friendOf(id).hearts >= H().recipesAt ? (id === "clover" ? "my favorites! well, some of them. the rest are secret." : "recipes from my collection. mostly from cookbooks. some from memory.") : id === "clover" ? "my recipes? oh, maybe once we know each other a little better!" : "my recipes are for friends of the library. give it time."),
-        items: () => recipeRows(id),
-        empty: `${who.name} teaches recipes to good friends (${H().recipesAt} hearts).`,
-      },
+      ...(ready ? friendshipTabs(id, who) : []),
     ],
   });
   // Today's request and friendship come with your wallet: fetch it fresh,
   // in case the day turned over since it last came.
   loadBank().then(refreshNpc).catch(() => {});
+}
+
+// The tabs that need the house server: today's request, gifts and recipes.
+function friendshipTabs(id, who) {
+  return [
+    {
+      id: "request",
+      label: "Today's request",
+      onOpen: () => npcSay(requestLine(id)),
+      items: () => requestRows(id),
+      empty: "No request today.",
+    },
+    {
+      id: "gift",
+      label: "Give a gift",
+      onOpen: () => npcSay(friendOf(id).gifted ? (id === "clover" ? "you already spoiled me today! come back tomorrow." : "one gift a day is more than generous. tomorrow, perhaps.") : id === "clover" ? "a present? for me? you don't have to! ...what is it?" : "a gift? how civilized. let's see."),
+      items: () => giftRows(id),
+      get empty() {
+        return friendOf(id).gifted ? `You've given ${who.name} a gift today. One a day: come back tomorrow!` : "Nothing to give yet. Grow, fish or cook something first!";
+      },
+    },
+    {
+      id: "recipes",
+      label: "Recipes",
+      onOpen: () => npcSay(friendOf(id).hearts >= H().recipesAt ? (id === "clover" ? "my favorites! well, some of them. the rest are secret." : "recipes from my collection. mostly from cookbooks. some from memory.") : id === "clover" ? "my recipes? oh, maybe once we know each other a little better!" : "my recipes are for friends of the library. give it time."),
+      items: () => recipeRows(id),
+      empty: `${who.name} teaches recipes to good friends (${H().recipesAt} hearts).`,
+    },
+  ];
 }
 
 // What the hint under the house says when you're next to a resident.
