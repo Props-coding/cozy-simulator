@@ -395,7 +395,11 @@ joinButton.addEventListener("click", async () => {
     arrive: (spot) => {
       if (mySeat) standUp();
       if (isFishing()) stopFishing(null);
-      Object.assign(player, spot);
+      // (If something's in the way there, the nearest free spot instead,
+      // so nobody ever lands stuck inside a fence or a wall.)
+      const box = { x: spot.x, y: spot.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
+      if (isInsideARoom(box) && !SOLIDS.some((s) => rectsOverlap(box, s))) Object.assign(player, spot);
+      else placeNear(spot.x, spot.y);
       for (const k in keysDown) keysDown[k] = false;
     },
   });

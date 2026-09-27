@@ -143,7 +143,9 @@ const TRIPS = {
     scene: () => svgFrom(document.querySelector(".porch-scene").outerHTML.replaceAll("night-sky", "trip-night-sky").replaceAll("porch-glow", "trip-porch-glow")),
     drifters: "moths",
     light: [293, 124],
-    spot: () => ({ x: BUS_STOP_X + 1.6, y: YARD + 8.7 }),
+    // Just inside the fence gate, on the path up from the bus stop (clear of
+    // the fence, whichever spot the bus parks at).
+    spot: () => ({ x: 17.7, y: YARD + 8.2 }),
   },
 };
 
