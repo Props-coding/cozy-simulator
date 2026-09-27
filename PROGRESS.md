@@ -385,6 +385,7 @@ Friend test night waits until these are in.
 - **Update 10, Mini Games.** A framework every game plugs into (portal, lobby, loading, results, crumbs payout, back to the house). Games: Snowball Arena, Crumb Rush, Treasure Dive, The Scarecrow, Ghost Hunt, Night Meadow, Kitchen Rush (uses your real recipes), Cellar Crawl (loot comes home). Bus trips take you to mini game places.
 
 ## Next
+- **Update the house server** for builds 0.69 to 0.72 (the site is live, the server isn't yet). Steps in `SERVER-TODO.md`, for Claude Code on Brandon's PC.
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
 - Still in the backlog: seasonal decorations, distance voice, a guestbook. (Weather station, porch, fireplace room, music room and leaderboards were scrapped for now, 0.40.)
