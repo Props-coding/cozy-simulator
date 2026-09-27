@@ -8,7 +8,10 @@
 name: Checks
 
 on:
+  # (Changes going live on main, and every pull request. A branch with a
+  # pull request open is checked once, through the pull request.)
   push:
+    branches: [main]
   pull_request:
 
 permissions:
