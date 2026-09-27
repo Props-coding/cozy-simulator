@@ -287,7 +287,9 @@ async function downloadSave() {
     return false;
   }
   const syncedAt = Number(storage.get(SYNCED_KEY) || 0);
-  const same = JSON.stringify(save.data) === JSON.stringify(collectSave());
+  // (Only the parts this page keeps are compared: anything else in the
+  // cloud save, like things that moved to the bank, is left out.)
+  const same = SAVE_KEYS.every((key) => (save.data[key] ?? null) === storage.get(key));
   if (same) storage.set(SYNCED_KEY, String(save.updatedAt));
   if (same || save.updatedAt <= syncedAt) return false;
   for (const key of SAVE_KEYS) {
@@ -300,8 +302,9 @@ async function downloadSave() {
 
 // Every 30 seconds while you're here, and when you leave the page.
 setInterval(uploadSave, 30_000);
+let reloading = false; // (reloading to use the cloud save: nothing new to save)
 window.addEventListener("pagehide", () => {
-  if (!account) return;
+  if (!account || reloading) return;
   const data = collectSave();
   const text = JSON.stringify({ data });
   if (saveConflict || JSON.stringify(data) === lastUploaded) return;
@@ -416,6 +419,7 @@ async function afterLogin(user) {
     return;
   }
   if (await downloadSave()) {
+    reloading = true;
     location.reload(); // start again with your cloud save
     return;
   }

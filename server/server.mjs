@@ -2003,7 +2003,13 @@ const routes = {
   // Cloud saves: crumbs, what you own, achievements, your bedroom, letters.
   "GET /api/save": async (req) => {
     const { user } = currentUser(req);
-    return { save: user.save };
+    // (Crumbs, the basket and fishing live in the bank now: pages don't
+    // keep them, so they aren't sent back. Otherwise the page's copy never
+    // matches and it keeps reloading to catch up.)
+    if (!user.save) return { save: null };
+    const data = { ...user.save.data };
+    for (const k of BANK_KEYS) delete data[k];
+    return { save: { ...user.save, data } };
   },
 
   "PUT /api/save": async (req) => {
