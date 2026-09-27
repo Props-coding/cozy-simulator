@@ -7,7 +7,7 @@
 // they are, each trip plugs in with registerTrip (a destination or a mini
 // game), and shows up in Gus's list with a "Go" button. For example:
 //
-//   registerTrip({ id: "beach", name: "The Beach", icon: "🏖️",
+//   registerTrip({ id: "beach", name: "The Beach", icon: "bus",
 //     note: "Sand, waves and a shell hunt.", start: () => { ... } });
 import { playBusHorn } from "./audio.js";
 import { openNpc } from "./npc.js";

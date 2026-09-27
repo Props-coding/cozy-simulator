@@ -1596,12 +1596,11 @@ function drawPetHearts(ctx, pet) {
   const at = toScreen(pet.x, pet.y);
   ctx.save();
   ctx.textAlign = "center";
-  ctx.font = "11px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
   for (let i = 0; i < 2; i++) {
     const tt = pet.petted - i * 0.35;
     if (tt <= 0 || tt >= 1.2) continue;
     ctx.globalAlpha = 1 - tt / 1.2;
-    ctx.fillText("💕", at.x + (i ? 6 : -5) + Math.sin(tt * 6) * 3, at.y - 32 - tt * 18);
+    fxHeart(ctx, at.x + (i ? 6 : -5) + Math.sin(tt * 6) * 3, at.y - 36 - tt * 18, 10, i ? "#f08aa8" : "#e0506a");
   }
   ctx.restore();
 }
@@ -2677,26 +2676,306 @@ const DANCE_MOVES = {
 const HAPPY_DANCES = new Set(["disco", "rave", "mosh", "pop", "twostep", "reggaeton", "swing"]);
 
 // The little things floating above someone doing an emote: hearts, notes,
-// Z's, or an emoji. Drawn with the name tags, so they're never hidden.
+// --- Little drawn effects (no emoji): hearts, a waving hand, lightning,
+// a speaker, a microphone, a cowboy hat, flames and a saxophone, each
+// centered on x, y and about `size` pixels tall, lit from above.
+function fxHeart(ctx, x, y, size, color = "#e0506a") {
+  const k = size / 12;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.beginPath();
+  ctx.moveTo(0, 5);
+  ctx.bezierCurveTo(-7, 0, -7, -6, -3, -6);
+  ctx.bezierCurveTo(-1, -6, 0, -4, 0, -3);
+  ctx.bezierCurveTo(0, -4, 1, -6, 3, -6);
+  ctx.bezierCurveTo(7, -6, 7, 0, 0, 5);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = shadeColor(color, -60);
+  ctx.lineWidth = 0.9;
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.beginPath();
+  ctx.ellipse(-3, -3.2, 1.4, 0.9, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+function fxHand(ctx, x, y, size, tilt = 0) {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+  ctx.scale(k, k);
+  ctx.fillStyle = "#f2c9a0";
+  ctx.strokeStyle = "#b8845a";
+  ctx.lineWidth = 1;
+  for (const [fx, len] of [[-4.5, 7], [-1.5, 9], [1.5, 9], [4.5, 7.5]]) {
+    ctx.beginPath();
+    ctx.roundRect(fx - 1.4, -4 - len, 2.8, len + 2, 1.4);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.ellipse(6.5, 1, 1.6, 4, -0.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.roundRect(-6, -5, 12, 11, 4);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.fillRect(-4, -4, 5, 1.5);
+  ctx.restore();
+}
+function fxBolt(ctx, x, y, size, color = "#f2c94e") {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.beginPath();
+  ctx.moveTo(2, -8);
+  ctx.lineTo(-5, 1);
+  ctx.lineTo(-0.5, 1);
+  ctx.lineTo(-3, 8);
+  ctx.lineTo(5, -2);
+  ctx.lineTo(0.5, -2);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = shadeColor(color, -80);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+function fxSpeaker(ctx, x, y, size) {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.beginPath();
+  ctx.roundRect(-5, -7, 10, 14, 2);
+  ctx.fillStyle = "#4a4458";
+  ctx.fill();
+  for (const [cy, r] of [[-3.2, 2], [2.4, 3.2]]) {
+    ctx.beginPath();
+    ctx.arc(0, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#8a82a0";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, cy, r * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = "#2a2434";
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function fxMic(ctx, x, y, size) {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(0.35);
+  ctx.scale(k, k);
+  ctx.fillStyle = "#3a3a40";
+  ctx.fillRect(-1.6, -1, 3.2, 9);
+  ctx.beginPath();
+  ctx.arc(0, -4, 4.2, 0, Math.PI * 2);
+  ctx.fillStyle = "#b8bec6";
+  ctx.fill();
+  ctx.strokeStyle = "#6a7078";
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-3.6, -4);
+  ctx.lineTo(3.6, -4);
+  ctx.moveTo(0, -8);
+  ctx.lineTo(0, -0.2);
+  ctx.stroke();
+  ctx.restore();
+}
+function fxCowboyHat(ctx, x, y, size) {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.fillStyle = "#a0703e";
+  ctx.strokeStyle = "#6a4424";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-9, 2);
+  ctx.quadraticCurveTo(0, 7, 9, 2);
+  ctx.quadraticCurveTo(0, 4, -9, 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-5, 3);
+  ctx.lineTo(-4, -5);
+  ctx.quadraticCurveTo(0, -3, 4, -5);
+  ctx.lineTo(5, 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#6a4424";
+  ctx.fillRect(-4.8, 0, 9.6, 1.6);
+  ctx.restore();
+}
+function fxFlame(ctx, x, y, size) {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.beginPath();
+  ctx.moveTo(0, 8);
+  ctx.bezierCurveTo(-7, 7, -7, -1, -2, -8);
+  ctx.bezierCurveTo(-2, -3, 1, -3, 1, -5);
+  ctx.bezierCurveTo(6, -1, 7, 7, 0, 8);
+  ctx.fillStyle = "#f07a2a";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, 7);
+  ctx.bezierCurveTo(-3.5, 6, -3, 1, 0, -2);
+  ctx.bezierCurveTo(3, 1, 3.5, 6, 0, 7);
+  ctx.fillStyle = "#f8d25a";
+  ctx.fill();
+  ctx.restore();
+}
+function fxSax(ctx, x, y, size) {
+  const k = size / 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.strokeStyle = "#c9962e";
+  ctx.lineWidth = 3.2;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-2, -8);
+  ctx.lineTo(-1, 3);
+  ctx.quadraticCurveTo(0, 8, 4, 5);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(4.5, 3.5, 2.8, 1.6, -0.6, 0, Math.PI * 2);
+  ctx.fillStyle = "#e8b84a";
+  ctx.fill();
+  ctx.strokeStyle = "#8a6420";
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.fillStyle = "#8a6420";
+  for (const dy of [-4, -1, 2]) {
+    ctx.beginPath();
+    ctx.arc(-1.5, dy, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#3a3a40";
+  ctx.fillRect(-3.2, -10, 2.2, 2.4);
+  ctx.restore();
+}
+
+// A dance style's little picture for the wardrobe (no emoji), drawn in a
+// 24 by 24 box.
+function drawDanceIcon(ctx, id) {
+  const note = (x, y, color, glyph = "♫") => {
+    ctx.fillStyle = color;
+    ctx.font = "700 14px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(glyph, x, y);
+  };
+  if (id === "jig") {
+    note(8, 17, "#c0554a");
+    note(17, 12, "#3f6f9f", "♪");
+  } else if (id === "headbang") fxSpeaker(ctx, 12, 12, 18);
+  else if (id === "glitch") {
+    const blocks = [[3, 5, 9, 3, "#00d8f0"], [11, 10, 10, 3, "#ff28c8"], [5, 15, 7, 3, "#ff28c8"], [13, 18, 8, 2.5, "#00d8f0"]];
+    for (const [x, y, w, h, c] of blocks) {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, w, h);
+    }
+  } else if (id === "sway") {
+    for (const [x, y, c] of [[8, 14, "170, 200, 255"], [15, 9, "220, 180, 255"], [16, 17, "180, 240, 220"]]) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 6);
+      g.addColorStop(0, `rgba(${c}, 1)`);
+      g.addColorStop(1, `rgba(${c}, 0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (id === "disco") {
+    ctx.strokeStyle = "rgba(90, 80, 70, 0.7)";
+    ctx.beginPath();
+    ctx.moveTo(12, 1);
+    ctx.lineTo(12, 5);
+    ctx.stroke();
+    ctx.fillStyle = "#cfd6de";
+    ctx.beginPath();
+    ctx.arc(12, 12, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8a929a";
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    for (let k = 0; k < 9; k++) ctx.fillRect(7.5 + (k % 3) * 3.3, 7.5 + Math.floor(k / 3) * 3.3, 1.8, 1.8);
+  } else if (id === "rave") {
+    ctx.lineWidth = 2;
+    ["rgb(80, 220, 150)", "rgb(255, 60, 200)", "rgb(80, 170, 255)"].forEach((c, i) => {
+      ctx.strokeStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(12, 21);
+      ctx.lineTo(4 + i * 8, 3);
+      ctx.stroke();
+    });
+  } else if (id === "boombap") fxMic(ctx, 12, 12, 20);
+  else if (id === "mosh") fxBolt(ctx, 12, 12, 20);
+  else if (id === "pop") fxHeart(ctx, 12, 13, 18, "#ff8fb8");
+  else if (id === "twostep") fxCowboyHat(ctx, 12, 12, 20);
+  else if (id === "reggaeton") fxFlame(ctx, 12, 12, 20);
+  else if (id === "swing") fxSax(ctx, 12, 13, 20);
+  else if (id === "synthwave") {
+    const sun = ctx.createLinearGradient(0, 4, 0, 16);
+    sun.addColorStop(0, "#ffd36f");
+    sun.addColorStop(1, "#ff4f9a");
+    ctx.fillStyle = sun;
+    ctx.beginPath();
+    ctx.arc(12, 16, 9, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#fffaf3";
+    for (let k = 0; k < 3; k++) ctx.fillRect(3, 11 + k * 2, 18, 0.9 + k * 0.4);
+    ctx.strokeStyle = "#5ad8ff";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(1, 18);
+    ctx.lineTo(23, 18);
+    ctx.stroke();
+  }
+}
+
+// Z's, hearts, notes and other little drawings. Drawn with the name tags,
+// so they're never hidden.
 function drawEmoteFloaters(ctx, p, cx, headTop) {
   const { id, t } = p.emote;
   ctx.save();
   ctx.textAlign = "center";
-  const emojiFont = (size) => `${size}px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif`;
   if (id === "heart") {
-    ctx.font = emojiFont(14);
     for (let i = 0; i < 3; i++) {
       const tt = t - i * 0.5;
       if (tt <= 0 || tt >= 2) continue;
       ctx.globalAlpha = 1 - tt / 2;
-      ctx.fillText("❤️", cx + Math.sin(tt * 3 + i * 2) * 9, headTop - 26 - tt * 16);
+      fxHeart(ctx, cx + Math.sin(tt * 3 + i * 2) * 9, headTop - 30 - tt * 16, 13);
     }
   } else if (id === "wave") {
-    ctx.font = emojiFont(16);
-    ctx.fillText("👋", cx + 18, headTop - 4 + Math.sin(t * 10) * 2);
+    fxHand(ctx, cx + 19, headTop - 8, 15, Math.sin(t * 10) * 0.35);
   } else if (id === "laugh") {
-    ctx.font = emojiFont(16);
-    ctx.fillText("😂", cx, headTop - 28 + Math.sin(t * 12) * 2);
+    // "ha ha", bouncing, with tears of joy flying off.
+    ctx.fillStyle = "#c9794a";
+    ctx.font = "700 11px 'Quicksand', sans-serif";
+    ctx.fillText("ha ha", cx, headTop - 26 + Math.sin(t * 12) * 2);
+    ctx.fillStyle = "#7ab4e0";
+    for (let i = 0; i < 2; i++) {
+      const tt = (t * 1.6 + i / 2) % 1;
+      ctx.globalAlpha = 1 - tt;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(cx + side * (10 + tt * 10), headTop + 6 - tt * 6 + tt * tt * 12, 1.6, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   } else if (id === "sleepy") {
     ctx.fillStyle = "#5f6b7a";
     for (let i = 0; i < 3; i++) {
@@ -2713,9 +2992,8 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
     ctx.beginPath();
     ctx.ellipse(cx, headTop + 44, 12 + beat * 20, 4 + beat * 7, 0, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.font = emojiFont(14);
-    if (Math.floor(t * (140 / 60)) % 2 === 0) ctx.fillText("⚡", cx + 22, headTop + 20);
-    ctx.fillText("🔊", cx - 22, headTop + 22 + Math.sin(t * 15) * 1.5);
+    if (Math.floor(t * (140 / 60)) % 2 === 0) fxBolt(ctx, cx + 22, headTop + 16, 14);
+    fxSpeaker(ctx, cx - 22, headTop + 18 + Math.sin(t * 15) * 1.5, 14);
   } else if (id === "glitch") {
     // Flickering cyan and magenta glitch blocks around their head.
     const n = Math.floor(t * 14);
@@ -2786,17 +3064,16 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
       ctx.stroke();
     }
   } else if (id === "boombap") {
-    ctx.font = emojiFont(14);
-    ctx.fillText("🎤", cx + 22, headTop + 18);
+    fxMic(ctx, cx + 22, headTop + 14, 14);
     ctx.fillStyle = "#d9a441";
     ctx.font = "700 14px 'Quicksand', sans-serif";
     const tt = (t * 0.6) % 1;
     ctx.globalAlpha = 1 - tt;
     ctx.fillText("♪", cx - 20, headTop + 10 - tt * 22);
   } else if (id === "mosh") {
-    ctx.font = emojiFont(15);
+    // Lightning flashing on either side, in time.
     const flip = Math.floor(t * 3) % 2;
-    ctx.fillText("🤘", cx + (flip ? 22 : -22), headTop + 14 + Math.sin(t * 18) * 2);
+    fxBolt(ctx, cx + (flip ? 22 : -22), headTop + 10 + Math.sin(t * 18) * 2, 15, "#e0e4ec");
   } else if (id === "pop") {
     // Hearts and stars bubbling up in pastel colors.
     const shapes = ["♥", "★", "♥", "★", "✦"];
@@ -2809,23 +3086,20 @@ function drawEmoteFloaters(ctx, p, cx, headTop) {
       ctx.fillText(shapes[i], cx + Math.sin(t * 2 + i * 1.7) * 22, headTop + 16 - tt * 30);
     }
   } else if (id === "twostep") {
-    ctx.font = emojiFont(14);
-    ctx.fillText("🤠", cx - 22, headTop + 16);
+    fxCowboyHat(ctx, cx - 22, headTop + 12, 15);
     ctx.fillStyle = "#a0703e";
     ctx.font = "700 14px 'Quicksand', sans-serif";
     const tt = (t * 0.8) % 1;
     ctx.globalAlpha = 1 - tt;
     ctx.fillText("♫", cx + 20, headTop + 10 - tt * 22);
   } else if (id === "reggaeton") {
-    ctx.font = emojiFont(14);
     for (let i = 0; i < 2; i++) {
       const tt = (t * 0.7 + i / 2) % 1;
       ctx.globalAlpha = 1 - tt;
-      ctx.fillText("🔥", cx + (i ? 20 : -20), headTop + 20 - tt * 20);
+      fxFlame(ctx, cx + (i ? 20 : -20), headTop + 16 - tt * 20, 14);
     }
   } else if (id === "swing") {
-    ctx.font = emojiFont(14);
-    ctx.fillText("🎷", cx + 22, headTop + 16 + Math.sin(t * 6) * 2);
+    fxSax(ctx, cx + 22, headTop + 12 + Math.sin(t * 6) * 2, 16);
     ctx.fillStyle = "#d9a441";
     ctx.font = "700 14px 'Quicksand', sans-serif";
     for (let i = 0; i < 2; i++) {

@@ -13,6 +13,7 @@
 // Accounts listed in CONFIG.exaltedNames also get an Exalted tab: a
 // hooded robe, a sigil circle, floating candles and rune footsteps, each
 // switched on or off separately (drawn in render.js, seen by friends).
+import { uiIcon } from "./ui-icons.js";
 import { playClickSound } from "./audio.js";
 
 const panel = document.getElementById("wardrobe-panel");
@@ -89,20 +90,20 @@ export function cleanAura(aura, name) {
 // so everyone picks their own style here. "Shuffle" picks one at random
 // each time.
 export const DANCES = [
-  ["jig", "🎻", "Jig", "Folk fiddle, bouncy hops"],
-  ["headbang", "🔊", "Headbang", "Trap and dubstep, heavy bass"],
-  ["glitch", "⚡", "Glitch", "Breakcore, twitchy and chopped"],
-  ["sway", "🌙", "Sway", "Ambient, floating slow"],
-  ["disco", "🪩", "Disco", "Disco and funk, side-stepping"],
-  ["rave", "💚", "Rave", "House and techno, jumping to the beat"],
-  ["boombap", "🎤", "Boom Bap", "Hip-hop, a cool head nod"],
-  ["mosh", "🤘", "Mosh", "Metal and rock, going wild"],
-  ["pop", "💖", "Pop", "Pop and K-pop, bouncy and bright"],
-  ["twostep", "🤠", "Two-Step", "Country, stepping side to side"],
-  ["reggaeton", "🔥", "Reggaeton", "Latin, hips on the dembow"],
-  ["swing", "🎷", "Swing", "Jazz, springy and swung"],
-  ["synthwave", "🌆", "Synthwave", "80s neon, a slow cool lean"],
-  ["shuffle", "🎲", "Shuffle", "A different one each time"],
+  ["jig", "Jig", "Folk fiddle, bouncy hops"],
+  ["headbang", "Headbang", "Trap and dubstep, heavy bass"],
+  ["glitch", "Glitch", "Breakcore, twitchy and chopped"],
+  ["sway", "Sway", "Ambient, floating slow"],
+  ["disco", "Disco", "Disco and funk, side-stepping"],
+  ["rave", "Rave", "House and techno, jumping to the beat"],
+  ["boombap", "Boom Bap", "Hip-hop, a cool head nod"],
+  ["mosh", "Mosh", "Metal and rock, going wild"],
+  ["pop", "Pop", "Pop and K-pop, bouncy and bright"],
+  ["twostep", "Two-Step", "Country, stepping side to side"],
+  ["reggaeton", "Reggaeton", "Latin, hips on the dembow"],
+  ["swing", "Swing", "Jazz, springy and swung"],
+  ["synthwave", "Synthwave", "80s neon, a slow cool lean"],
+  ["shuffle", "Shuffle", "A different one each time"],
 ];
 const DANCE_KEY = "cozy-house-dance";
 
@@ -214,8 +215,8 @@ function drawRuneTrail(ctx) {
 const TAB_TYPES = Object.fromEntries(CONFIG.outfitSlots.map((s) => [s.tab, s.slot]));
 
 function tabsFor() {
-  const list = [["face", "🙂 Face"], ...CONFIG.outfitSlots.map((s) => [s.tab, s.label]), ["dances", "🕺 Dances"], ["titles", "🎀 Titles"]];
-  if (myAura()) list.push(["exalted", "✦ Exalted"]);
+  const list = [["face", "Face"], ...CONFIG.outfitSlots.map((s) => [s.tab, s.label]), ["dances", "Dances"], ["titles", "Titles"]];
+  if (myAura()) list.push(["exalted", "Exalted"]);
   return list;
 }
 
@@ -392,10 +393,20 @@ function renderItems() {
   if (tab === "titles") return renderTitles();
   if (tab === "dances") {
     const chosen = savedDance();
-    for (const [id, icon, name, blurb] of DANCES) {
+    for (const [id, name, blurb] of DANCES) {
+      // Its little picture (drawDanceIcon in render-characters.js; Shuffle
+      // gets the dice).
       const picture = document.createElement("span");
       picture.className = "wardrobe-dance-icon";
-      picture.textContent = icon;
+      if (id === "shuffle") picture.innerHTML = uiIcon("dice");
+      else {
+        const c = Object.assign(document.createElement("canvas"), { width: 48, height: 48, className: "item-picture" });
+        c.style.width = c.style.height = "24px";
+        const ctx = c.getContext("2d");
+        ctx.scale(2, 2);
+        drawDanceIcon(ctx, id);
+        picture.appendChild(c);
+      }
       const onClick = () => {
         try {
           localStorage.setItem(DANCE_KEY, JSON.stringify(id));

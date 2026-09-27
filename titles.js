@@ -52,6 +52,6 @@ export function checkNewTitles() {
   for (const t of allTitles()) {
     if (!hasTitle(t) || myStats().titlesSeen.includes(t.id)) continue;
     collect("titlesSeen", t.id);
-    if (!firstTime) showToast({ kind: "tier", icon: "🎀", label: "New title!", name: `"${t.text}"`, desc: "Wear it from your wardrobe's Titles tab.", crumbs: 0 });
+    if (!firstTime) showToast({ kind: "tier", picture: "ribbon", label: "New title!", name: `"${t.text}"`, desc: "Wear it from your wardrobe's Titles tab.", crumbs: 0 });
   }
 }

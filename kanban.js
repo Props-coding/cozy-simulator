@@ -12,6 +12,7 @@
 // cards you can click to claim (your face pins on as a thumbtack) and drag
 // between columns. Finished cards drop a paper star into the done jar on
 // the workbench, and the house chat hears about new and finished cards.
+import { uiIcon } from "./ui-icons.js";
 import { serverApi, accountName } from "./account.js";
 import { sendKanbanPing, onKanbanPing } from "./network.js";
 import { playClickSound, playCardDoneSound } from "./audio.js";
@@ -192,7 +193,8 @@ function renderTabs(board) {
     rename.type = "button";
     rename.title = "Rename this board";
     rename.addEventListener("click", startRename);
-    const archive = el("button", "kanban-icon", board.archived ? "📤" : "🗄️");
+    const archive = el("button", "kanban-icon");
+    archive.innerHTML = uiIcon("box");
     archive.type = "button";
     archive.title = board.archived ? "Bring this board back" : "Archive this board (it's kept, just tucked away)";
     archive.addEventListener("click", async () => {
@@ -254,10 +256,10 @@ function cardElement(card) {
   const meta = el("div", "kanban-card-meta");
   if (card.due) {
     const { text, late } = dueText(card.due);
-    meta.appendChild(el("span", "kanban-chip" + (late && card.column !== "done" ? " late" : ""), `📅 ${text}`));
+    meta.appendChild(el("span", "kanban-chip" + (late && card.column !== "done" ? " late" : ""), `Due ${text}`));
   }
   if (card.link) {
-    const link = el("a", "kanban-chip link", "🔗 link");
+    const link = el("a", "kanban-chip link", "link");
     link.href = card.link;
     link.target = "_blank";
     link.rel = "noopener noreferrer";

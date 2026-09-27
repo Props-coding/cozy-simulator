@@ -1212,6 +1212,91 @@ const OTHER = {
   },
 };
 
+// A few more pictures, for achievements and pop-ups.
+Object.assign(OTHER, {
+  raincloud(ctx) {
+    ctx.beginPath();
+    ctx.arc(-6, -2, 6, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.arc(1, -6, 7.5, Math.PI, Math.PI * 1.9);
+    ctx.arc(8, -1, 5.5, Math.PI * 1.4, Math.PI * 0.5);
+    ctx.closePath();
+    paint(ctx, "#dfe4ea");
+    for (const x of [-6, 0, 6]) line(ctx, "#5a8ac0", 2, x, 7, x - 2, 13);
+  },
+  fortune(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(-13, 3);
+    ctx.bezierCurveTo(-12, -12, 12, -12, 13, 3);
+    ctx.quadraticCurveTo(6, 0, 0, 8);
+    ctx.quadraticCurveTo(-6, 0, -13, 3);
+    paint(ctx, "#e8b464");
+    rrect(ctx, -2, 3, 12, 4, 0.8);
+    paint(ctx, "#fbf8f0", { width: 0.8 });
+    line(ctx, "#c9574a", 0.9, 1, 5, 7, 5);
+    shine(ctx, -5, -5);
+  },
+  gift(ctx) {
+    rrect(ctx, -11, -3, 22, 16, 2);
+    paint(ctx, "#6a9ab4");
+    rrect(ctx, -12, -8, 24, 6, 2);
+    paint(ctx, "#80b0c8");
+    ctx.fillStyle = "#e8938a";
+    ctx.fillRect(-2, -8, 4, 21);
+    for (const side of [-1, 1]) {
+      ellipse(ctx, side * 5, -11, 5, 3, side * 0.5);
+      paint(ctx, "#e8938a", { width: 1 });
+    }
+  },
+  watering(ctx) {
+    ctx.beginPath();
+    ctx.arc(-2, -6, 6, Math.PI, 0);
+    ctx.strokeStyle = "#5a7a8a";
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+    line(ctx, "#5a7a8a", 3, 7, 3, 14, -5);
+    rrect(ctx, -11, -4, 18, 16, 3);
+    paint(ctx, "#7aa0b8");
+    ctx.fillStyle = "#7ab4e0";
+    for (const [x, y] of [[15, -1], [13, 3], [16, 4]]) {
+      ellipse(ctx, x, y, 1, 1.5);
+      ctx.fill();
+    }
+    shine(ctx, -6, 0);
+  },
+  heart(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(0, 12);
+    ctx.bezierCurveTo(-15, 2, -13, -12, -5, -11);
+    ctx.bezierCurveTo(-2, -11, 0, -8, 0, -6);
+    ctx.bezierCurveTo(0, -8, 2, -11, 5, -11);
+    ctx.bezierCurveTo(13, -12, 15, 2, 0, 12);
+    paint(ctx, "#e0506a");
+    shine(ctx, -6, -6);
+  },
+  ribbon(ctx) {
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * 2, 2);
+      ctx.lineTo(side * 8, 15);
+      ctx.lineTo(side * 4, 13);
+      ctx.lineTo(side * 2, 16);
+      ctx.lineTo(side * -1, 3);
+      paint(ctx, "#c9574a", { width: 1 });
+    }
+    for (let i = 0; i < 12; i++) {
+      ctx.save();
+      ctx.rotate((i * Math.PI) / 6);
+      ellipse(ctx, 0, -8.5, 3, 4);
+      paint(ctx, "#e8b84a", { top: -13, bottom: -4, width: 0.8 });
+      ctx.restore();
+    }
+    circle(ctx, 0, -2, 7);
+    paint(ctx, "#f2d06a");
+    circle(ctx, 0, -2, 4.5);
+    flat(ctx, "#fbe8a8");
+  },
+});
+
 // --- Putting it together ---
 function drawPicture(ctx, key) {
   const [kind, id] = key.includes(":") ? key.split(":") : [null, key];

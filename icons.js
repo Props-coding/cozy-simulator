@@ -10,6 +10,8 @@
 // furniture (with its footprint w and h, and `wall` for things that hang
 // on a wall), { pet }, { hat } or { shoes } a pet or something worn, and
 // { glyph } one of the little drawings below.
+import { pictureCanvas } from "./pictures.js";
+
 const ICONS = {
   // Settling in
   welcome: { f: "umbrellaStand", w: 0.5, h: 0.4 },
@@ -51,6 +53,34 @@ const ICONS = {
   whoAreYou: { pet: "raccoonKit" },
   foodComa: { glyph: "zzz" },
   danceFloor: { f: "theaterSeat", w: 0.9, h: 0.7 },
+
+  // Outdoors, the kitchen and trade, and the residents (drawn with the
+  // item pictures, see pictures.js)
+  firstSeed: { pic: "seed:carrot" },
+  rainCheck: { pic: "raincloud" },
+  farmStand: { pic: "basket" },
+  greatPumpkin: { pic: "crop:pumpkin" },
+  firstCatch: { pic: "fish:bluegill" },
+  bigOne: { pic: "fish:bass" },
+  legendCatch: { pic: "fish:rainbowKoi" },
+  pondScholar: { pic: "book" },
+  fullTank: { f: "fishTank", w: 1.0, h: 0.5 },
+  junkDealer: { pic: "junk:boot" },
+  firstDish: { pic: "dish:omelette" },
+  burntOffering: { pic: "junk:burnt" },
+  wellFed: { pic: "dish:pancakes" },
+  sharing: { pic: "gift" },
+  fortuneTold: { pic: "fortune" },
+  cookbook: { pic: "book" },
+  firstTrade: { f: "tradingPost", w: 1.9, h: 0.6 },
+  wellTraveled: { f: "juniper", w: 0.55, h: 0.4 },
+  happyToHelp: { pic: "gift" },
+  cloverFriend: { resident: "clover" },
+  mortimerFriend: { resident: "mortimer" },
+  harvester: { pic: "crop:carrot" },
+  angler: { pic: "rod:bamboo" },
+  chef: { pic: "pot" },
+  goodNeighbor: { pic: "watering" },
 
   // Tiered achievements
   homebody: { f: "armchair", w: 1.1, h: 0.8 },
@@ -474,7 +504,11 @@ const cache = new Map(); // key -> a finished canvas
 
 function drawSpec(big, spec) {
   const ctx = big.getContext("2d");
-  if (spec.resident) {
+  if (spec.pic) {
+    // One of the item pictures (pictures.js), drawn big.
+    const c = pictureCanvas(spec.pic, 100);
+    if (c) ctx.drawImage(c, (big.width - c.width) / 2, (big.height - c.height) / 2);
+  } else if (spec.resident) {
     // Clover or Mortimer (render-residents.js).
     ctx.save();
     // From the waist up (their feet fall below the canvas), so the face

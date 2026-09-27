@@ -4287,6 +4287,20 @@ canvas.house-icon {
   cursor: pointer;
 }
 
+.door-choice-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* A door light: a small glowing bulb in the choice's color. */
+.door-choice-icon.light {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 18%, var(--light) 40%);
+  box-shadow: 0 0 0 1.5px rgba(74, 58, 44, 0.35), 0 0 6px var(--light);
+}
+
 .door-choice.chosen {
   background: #f3e6d0;
   border-color: #c98a3a;

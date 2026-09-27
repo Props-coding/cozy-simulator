@@ -1558,18 +1558,18 @@ onEmote((id, peerId) => {
 // keys 1 to 5 still work too.) Escape closes it without choosing.
 const wheel = document.getElementById("emote-wheel");
 const WHEEL_EMOTES = [
-  { id: "wave", icon: "👋", title: "Wave (press 1)" },
-  { id: "heart", icon: "❤️", title: "Heart (press 2)" },
-  { id: "laugh", icon: "😂", title: "Laugh (press 3)" },
-  { id: "dance", icon: "🕺", title: "Dance! Pick your style in your wardrobe (press 4)" },
-  { id: "sleepy", icon: "💤", title: "Sleepy (press 5)" },
+  { id: "wave", icon: "wave", title: "Wave (press 1)" },
+  { id: "heart", icon: "heart", title: "Heart (press 2)" },
+  { id: "laugh", icon: "laugh", title: "Laugh (press 3)" },
+  { id: "dance", icon: "dance", title: "Dance! Pick your style in your wardrobe (press 4)" },
+  { id: "sleepy", icon: "moon", title: "Sleepy (press 5)" },
 ];
 let wheelChoice = null;
 let wheelCenter = { x: 0, y: 0 };
 const wheelSlots = WHEEL_EMOTES.map(({ id, icon, title }, i) => {
   const slot = document.createElement("div");
   slot.className = "emote-slot" + (id === "dance" ? " dance-slot" : "");
-  slot.textContent = icon;
+  slot.innerHTML = uiIcon(icon);
   slot.title = title;
   const angle = (i / WHEEL_EMOTES.length) * Math.PI * 2 - Math.PI / 2;
   slot.style.left = `${Math.cos(angle) * CONFIG.emoteWheel.radius}px`;
@@ -1906,14 +1906,14 @@ function renderChat({ toBottom = false, newMessage = false } = {}) {
       const crown = document.createElement("img");
       crown.className = "owner-crown";
       crown.src = creatorCrownURL();
-      crown.alt = "👑";
+      crown.alt = "Crown";
       crown.title = "Creator of Porchlight";
       name.classList.add("owner-name");
       name.prepend(crown);
     } else if (line.admin) {
       const badge = document.createElement("span");
       badge.className = "admin-badge";
-      badge.textContent = CONFIG.adminBadge;
+      badge.innerHTML = uiIcon("shield");
       badge.title = "House admin";
       name.prepend(badge);
     }
@@ -2056,7 +2056,7 @@ onChat((message, peerId) => {
   // A friend reached a new tier.
   const reached = message?.tier !== undefined && tierInfo(message.tier, message.level);
   if (reached) {
-    addChatLine({ channel: "house", system: true, text: `${reached.tier.icon} ${peerName} reached ${reached.tier.name} in "${reached.track.name}"` });
+    addChatLine({ channel: "house", system: true, text: `${peerName} reached ${reached.tier.name} in "${reached.track.name}"` });
     return;
   }
   // A friend added or finished a card on the Workshop boards.
@@ -2258,7 +2258,7 @@ initAchievements({
     const t = tierInfo(id, level);
     if (!t) return;
     sendChat({ tier: id, level });
-    addChatLine({ channel: "house", system: true, text: `${t.tier.icon} You reached ${t.tier.name} in "${t.track.name}" (+${t.tier.crumbs} crumbs)` });
+    addChatLine({ channel: "house", system: true, text: `You reached ${t.tier.name} in "${t.track.name}" (+${t.tier.crumbs} crumbs)` });
   },
 });
 
@@ -2648,13 +2648,13 @@ function tick(now) {
     const bed = peer.seat ? null : bedAt(shown);
     const seat = peer.seat ? seatByKey(peer.seat.key, floorOf(peer.y)) : undefined;
     const at = bed ? tuckedIn(bed) : seat ? { x: seat.x - PLAYER_SIZE / 2, y: seat.y - PLAYER_SIZE + (onSwing(seat.key) ? swingY : 0) } : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: seat?.face ?? (SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null), seatLift: seat?.lift ?? 0, sortY: seat?.sortY, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null, fishing: cleanFishing(peer.fishing, shown) };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "on the phone" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: seat?.face ?? (SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null), seatLift: seat?.lift ?? 0, sortY: seat?.sortY, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null, fishing: cleanFishing(peer.fishing, shown) };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : onSwing(mySeat?.key) ? { x: player.x, y: player.y + swingY } : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "on the phone" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
   // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.

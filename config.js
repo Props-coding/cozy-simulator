@@ -95,18 +95,18 @@ const CONFIG = {
   // look: how it's drawn ("root", "leafy", "berry", "vine", "flower",
   // "stalk" or "pumpkin"). color: the crop's own color.
   crops: [
-    { id: "radish", name: "Radish", icon: "🌱", hours: 1, seed: 4, sell: 6, yield: [2, 3], look: "root", color: "#d9485a" },
-    { id: "lettuce", name: "Lettuce", icon: "🥬", hours: 2, seed: 5, sell: 5, yield: [3, 4], look: "leafy", color: "#8fc06a" },
-    { id: "carrot", name: "Carrot", icon: "🥕", hours: 3, seed: 6, sell: 8, yield: [2, 4], look: "root", color: "#e8883a" },
-    { id: "strawberry", name: "Strawberry", icon: "🍓", hours: 6, seed: 12, sell: 6, yield: [4, 7], look: "berry", color: "#e0404a" },
-    { id: "tomato", name: "Tomato", icon: "🍅", hours: 10, seed: 15, sell: 8, yield: [4, 7], look: "vine", color: "#e0503a" },
-    { id: "sunflower", name: "Sunflower", icon: "🌻", hours: 12, seed: 10, sell: 30, yield: [1, 1], look: "flower", color: "#f2c230" },
-    { id: "corn", name: "Corn", icon: "🌽", hours: 16, seed: 14, sell: 12, yield: [3, 5], look: "stalk", color: "#f0d25a" },
-    { id: "pumpkin", name: "Pumpkin", icon: "🎃", hours: 24, seed: 25, sell: 90, yield: [1, 1], look: "pumpkin", color: "#e8883a" },
-    { id: "blueberry", name: "Blueberries", icon: "🫐", hours: 48, seed: 30, sell: 10, yield: [9, 13], look: "berry", color: "#4a5ab8" },
+    { id: "radish", name: "Radish", hours: 1, seed: 4, sell: 6, yield: [2, 3], look: "root", color: "#d9485a" },
+    { id: "lettuce", name: "Lettuce", hours: 2, seed: 5, sell: 5, yield: [3, 4], look: "leafy", color: "#8fc06a" },
+    { id: "carrot", name: "Carrot", hours: 3, seed: 6, sell: 8, yield: [2, 4], look: "root", color: "#e8883a" },
+    { id: "strawberry", name: "Strawberry", hours: 6, seed: 12, sell: 6, yield: [4, 7], look: "berry", color: "#e0404a" },
+    { id: "tomato", name: "Tomato", hours: 10, seed: 15, sell: 8, yield: [4, 7], look: "vine", color: "#e0503a" },
+    { id: "sunflower", name: "Sunflower", hours: 12, seed: 10, sell: 30, yield: [1, 1], look: "flower", color: "#f2c230" },
+    { id: "corn", name: "Corn", hours: 16, seed: 14, sell: 12, yield: [3, 5], look: "stalk", color: "#f0d25a" },
+    { id: "pumpkin", name: "Pumpkin", hours: 24, seed: 25, sell: 90, yield: [1, 1], look: "pumpkin", color: "#e8883a" },
+    { id: "blueberry", name: "Blueberries", hours: 48, seed: 30, sell: 10, yield: [9, 13], look: "berry", color: "#4a5ab8" },
     // Only from the traveling merchant (Update 5): `merchant` seeds aren't at Hazel's.
-    { id: "starfruit", name: "Starfruit", icon: "⭐", hours: 20, seed: 45, sell: 40, yield: [2, 3], look: "vine", color: "#f2d24a", merchant: true },
-    { id: "moonflower", name: "Moonflower", icon: "🌙", hours: 18, seed: 40, sell: 55, yield: [1, 1], look: "flower", color: "#dfe4ff", merchant: true },
+    { id: "starfruit", name: "Starfruit", hours: 20, seed: 45, sell: 40, yield: [2, 3], look: "vine", color: "#f2d24a", merchant: true },
+    { id: "moonflower", name: "Moonflower", hours: 18, seed: 40, sell: 55, yield: [1, 1], look: "flower", color: "#dfe4ff", merchant: true },
   ],
 
   // --- Fishing at the pond (Update 4) ---
@@ -179,24 +179,24 @@ const CONFIG = {
   // bite: how long bites take (0.6 is 40% quicker). luck: how often you
   // catch the rarer of the fish your bait can find (0 is never extra).
   rods: [
-    { id: "twig", name: "Twig Rod", icon: "🎣", level: 1, price: 0, zone: 0.2, bite: 1, luck: 0 },
-    { id: "bamboo", name: "Bamboo Rod", icon: "🎋", level: 3, price: 150, zone: 0.25, bite: 0.9, luck: 0.1 },
-    { id: "fiberglass", name: "Fiberglass Rod", icon: "🎣", level: 6, price: 500, zone: 0.3, bite: 0.8, luck: 0.2 },
-    { id: "carbon", name: "Carbon Rod", icon: "🎣", level: 10, price: 1500, zone: 0.35, bite: 0.7, luck: 0.3 },
-    { id: "golden", name: "Golden Rod", icon: "✨", level: 14, price: 4000, zone: 0.4, bite: 0.6, luck: 0.4 },
+    { id: "twig", name: "Twig Rod", level: 1, price: 0, zone: 0.2, bite: 1, luck: 0 },
+    { id: "bamboo", name: "Bamboo Rod", level: 3, price: 150, zone: 0.25, bite: 0.9, luck: 0.1 },
+    { id: "fiberglass", name: "Fiberglass Rod", level: 6, price: 500, zone: 0.3, bite: 0.8, luck: 0.2 },
+    { id: "carbon", name: "Carbon Rod", level: 10, price: 1500, zone: 0.35, bite: 0.7, luck: 0.3 },
+    { id: "golden", name: "Golden Rod", level: 14, price: 4000, zone: 0.4, bite: 0.6, luck: 0.4 },
   ],
 
   // Bait decides which fish you can catch: `catches` lists the rarities
   // (1 common, 2 uncommon, 3 rare, 4 epic, 5 legendary). Pricier bait
   // finds pricier fish. price: crumbs for one. level: fishing level needed.
   bait: [
-    { id: "none", name: "No bait", icon: "🪝", price: 0, level: 1, catches: [1] },
-    { id: "worm", name: "Worms", icon: "🪱", price: 2, level: 1, catches: [1, 2] },
-    { id: "cricket", name: "Crickets", icon: "🦗", price: 5, level: 2, catches: [2, 3] },
-    { id: "minnow", name: "Minnows", icon: "🐟", price: 12, level: 5, catches: [3, 4] },
-    { id: "lure", name: "Golden Lure", icon: "🌟", price: 30, level: 9, catches: [4, 5] },
+    { id: "none", name: "No bait", price: 0, level: 1, catches: [1] },
+    { id: "worm", name: "Worms", price: 2, level: 1, catches: [1, 2] },
+    { id: "cricket", name: "Crickets", price: 5, level: 2, catches: [2, 3] },
+    { id: "minnow", name: "Minnows", price: 12, level: 5, catches: [3, 4] },
+    { id: "lure", name: "Golden Lure", price: 30, level: 9, catches: [4, 5] },
     // Only from the traveling merchant (Update 5): finds rare to legendary fish at any level.
-    { id: "glowworm", name: "Glow Worms", icon: "🐛", price: 35, level: 1, catches: [3, 4, 5], merchant: true },
+    { id: "glowworm", name: "Glow Worms", price: 35, level: 1, catches: [3, 4, 5], merchant: true },
   ],
 
   // The fish. rarity: 1 (common) to 5 (legendary). sell: crumbs from Otis.
@@ -207,37 +207,37 @@ const CONFIG = {
   // night, false: only by day), rain (only while it rains), season (only in
   // these seasons). color: for fish tanks.
   fish: [
-    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 3, size: [8, 20], pull: "steady", color: "#6a8ab8" },
-    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 3, size: [10, 25], pull: "darting", color: "#c8b050" },
-    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 4, size: [8, 18], pull: "steady", color: "#f0a040", when: { night: false } },
-    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 4, size: [6, 14], pull: "darting", color: "#c8d0e0", when: { night: true } },
-    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 6, size: [25, 60], pull: "heavy", color: "#a08050" },
-    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 6, size: [7, 15], pull: "darting", color: "#d05a3a" },
-    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 8, size: [20, 50], pull: "darting", color: "#e08aa0", when: { season: ["spring", "autumn"] } },
-    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 8, size: [30, 80], pull: "heavy", color: "#6a6058", when: { night: true } },
-    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 12, size: [25, 60], pull: "darting", color: "#5a8a4a" },
-    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 14, size: [40, 100], pull: "darting", color: "#7a9a5a" },
-    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 18, size: [30, 70], pull: "steady", color: "#f07a3a", when: { night: false } },
-    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 16, size: [40, 110], pull: "darting", color: "#4a4a3a", when: { rain: true } },
-    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 30, size: [80, 180], pull: "heavy", color: "#7a7a80" },
-    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 35, size: [25, 45], pull: "heavy", color: "#5a6a3a", when: { season: ["summer"] } },
-    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 38, size: [30, 60], pull: "steady", color: "#f2c230", when: { season: ["spring", "summer"] } },
-    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 40, size: [20, 40], pull: "darting", color: "#d8d0f0", when: { night: true } },
-    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 75, size: [40, 80], pull: "steady", color: "#f4f4f8" },
-    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 90, size: [40, 80], pull: "darting", color: "#c86bb0", when: { rain: true } },
-    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 90, size: [60, 120], pull: "darting", color: "#a8d8f0", when: { season: ["winter"] } },
-    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 125, size: [120, 200], pull: "heavy", color: "#4a4a44", when: { night: true, rain: true } },
+    { id: "bluegill", name: "Bluegill", rarity: 1, sell: 3, size: [8, 20], pull: "steady", color: "#6a8ab8" },
+    { id: "perch", name: "Perch", rarity: 1, sell: 3, size: [10, 25], pull: "darting", color: "#c8b050" },
+    { id: "sunfish", name: "Sunfish", rarity: 1, sell: 4, size: [8, 18], pull: "steady", color: "#f0a040", when: { night: false } },
+    { id: "shiner", name: "Moon Shiner", rarity: 1, sell: 4, size: [6, 14], pull: "darting", color: "#c8d0e0", when: { night: true } },
+    { id: "carp", name: "Carp", rarity: 2, sell: 6, size: [25, 60], pull: "heavy", color: "#a08050" },
+    { id: "crayfish", name: "Crayfish", rarity: 2, sell: 6, size: [7, 15], pull: "darting", color: "#d05a3a" },
+    { id: "trout", name: "Rainbow Trout", rarity: 2, sell: 8, size: [20, 50], pull: "darting", color: "#e08aa0", when: { season: ["spring", "autumn"] } },
+    { id: "catfish", name: "Catfish", rarity: 2, sell: 8, size: [30, 80], pull: "heavy", color: "#6a6058", when: { night: true } },
+    { id: "bass", name: "Largemouth Bass", rarity: 3, sell: 12, size: [25, 60], pull: "darting", color: "#5a8a4a" },
+    { id: "pike", name: "Pike", rarity: 3, sell: 14, size: [40, 100], pull: "darting", color: "#7a9a5a" },
+    { id: "koi", name: "Koi", rarity: 3, sell: 18, size: [30, 70], pull: "steady", color: "#f07a3a", when: { night: false } },
+    { id: "eel", name: "Eel", rarity: 3, sell: 16, size: [40, 110], pull: "darting", color: "#4a4a3a", when: { rain: true } },
+    { id: "sturgeon", name: "Sturgeon", rarity: 4, sell: 30, size: [80, 180], pull: "heavy", color: "#7a7a80" },
+    { id: "turtle", name: "Snapping Turtle", rarity: 4, sell: 35, size: [25, 45], pull: "heavy", color: "#5a6a3a", when: { season: ["summer"] } },
+    { id: "goldenCarp", name: "Golden Carp", rarity: 4, sell: 38, size: [30, 60], pull: "steady", color: "#f2c230", when: { season: ["spring", "summer"] } },
+    { id: "moonfish", name: "Moonfish", rarity: 4, sell: 40, size: [20, 40], pull: "darting", color: "#d8d0f0", when: { night: true } },
+    { id: "ghostKoi", name: "Ghost Koi", rarity: 5, sell: 75, size: [40, 80], pull: "steady", color: "#f4f4f8" },
+    { id: "rainbowKoi", name: "Rainbow Koi", rarity: 5, sell: 90, size: [40, 80], pull: "darting", color: "#c86bb0", when: { rain: true } },
+    { id: "icePike", name: "Ice Pike", rarity: 5, sell: 90, size: [60, 120], pull: "darting", color: "#a8d8f0", when: { season: ["winter"] } },
+    { id: "whiskers", name: "Old Whiskers", rarity: 5, sell: 125, size: [120, 200], pull: "heavy", color: "#4a4a44", when: { night: true, rain: true } },
   ],
 
   // Junk you might reel in instead. The raccoons buy it for `junkPrice`
   // crumbs a piece (talk to them by the bins).
   junkPrice: 3,
   junk: [
-    { id: "boot", name: "Old Boot", icon: "👢" },
-    { id: "can", name: "Tin Can", icon: "🥫" },
-    { id: "weeds", name: "Pond Weeds", icon: "🌿" },
-    { id: "letter", name: "Soggy Letter", icon: "✉️" },
-    { id: "duck", name: "Rubber Duck", icon: "🦆" },
+    { id: "boot", name: "Old Boot" },
+    { id: "can", name: "Tin Can" },
+    { id: "weeds", name: "Pond Weeds" },
+    { id: "letter", name: "Soggy Letter" },
+    { id: "duck", name: "Rubber Duck" },
   ],
 
   // --- The kitchen (Update 5) ---
@@ -249,26 +249,26 @@ const CONFIG = {
   // Mystery (the raccoons will buy it, as junk).
   kitchen: {
     pantry: [
-      { id: "flour", name: "Flour", icon: "🌾", price: 3, shelf: "pantry" },
-      { id: "sugar", name: "Sugar", icon: "🍬", price: 3, shelf: "pantry" },
-      { id: "rice", name: "Rice", icon: "🍚", price: 4, shelf: "pantry" },
-      { id: "honey", name: "Honey", icon: "🍯", price: 6, shelf: "pantry" },
-      { id: "salt", name: "Salt & Spices", icon: "🧂", price: 2, shelf: "pantry" },
-      { id: "egg", name: "Eggs", icon: "🥚", price: 3, shelf: "fridge" },
-      { id: "milk", name: "Milk", icon: "🥛", price: 3, shelf: "fridge" },
-      { id: "butter", name: "Butter", icon: "🧈", price: 4, shelf: "fridge" },
-      { id: "cheese", name: "Cheese", icon: "🧀", price: 6, shelf: "fridge" },
+      { id: "flour", name: "Flour", price: 3, shelf: "pantry" },
+      { id: "sugar", name: "Sugar", price: 3, shelf: "pantry" },
+      { id: "rice", name: "Rice", price: 4, shelf: "pantry" },
+      { id: "honey", name: "Honey", price: 6, shelf: "pantry" },
+      { id: "salt", name: "Salt & Spices", price: 2, shelf: "pantry" },
+      { id: "egg", name: "Eggs", price: 3, shelf: "fridge" },
+      { id: "milk", name: "Milk", price: 3, shelf: "fridge" },
+      { id: "butter", name: "Butter", price: 4, shelf: "fridge" },
+      { id: "cheese", name: "Cheese", price: 6, shelf: "fridge" },
     ],
-    burnt: { id: "burnt", name: "Burnt Mystery", icon: "🫠" },
+    burnt: { id: "burnt", name: "Burnt Mystery" },
 
     // Eating a dish gives its boost for `boostMinutes` (one boost at a
     // time: a new one replaces the old). The boosts:
     boostMinutes: 30,
     boosts: {
-      cozy: { name: "Cozy", icon: "☕", desc: "An extra crumb every minute you're in the house." },
-      quickBite: { name: "Quick Bites", icon: "🎣", desc: "Fish bite sooner (about 30% quicker)." },
-      lucky: { name: "Lucky", icon: "🍀", desc: "Rarer fish bite more often." },
-      greenThumb: { name: "Green Thumb", icon: "🌱", desc: "One extra crop from every harvest." },
+      cozy: { name: "Cozy", desc: "An extra crumb every minute you're in the house." },
+      quickBite: { name: "Quick Bites", desc: "Fish bite sooner (about 30% quicker)." },
+      lucky: { name: "Lucky", desc: "Rarer fish bite more often." },
+      greenThumb: { name: "Green Thumb", desc: "One extra crop from every harvest." },
     },
 
     // The recipes. ingredients: "crop:tomato" (from the garden),
@@ -279,30 +279,30 @@ const CONFIG = {
     // `price`), or "merchant" (only from the traveling merchant, and it
     // can't be found by chance). hint: shown before you know it.
     recipes: [
-      { id: "pancakes", name: "Pancakes", icon: "🥞", ingredients: ["food:flour", "food:egg", "food:milk"], sell: 18, boost: "cozy", hint: "A breakfast stack: from the pantry and fridge." },
-      { id: "honeyToast", name: "Honey Toast", icon: "🍞", ingredients: ["food:flour", "food:butter", "food:honey"], sell: 20, boost: "cozy", hint: "Golden and sticky." },
-      { id: "omelette", name: "Cheese Omelette", icon: "🍳", ingredients: ["food:egg", "food:egg", "food:cheese"], sell: 18, boost: "quickBite", hint: "Two of one thing, and something from the fridge." },
-      { id: "pickles", name: "Radish Pickles", icon: "🫙", ingredients: ["crop:radish", "crop:radish", "food:salt"], sell: 20, boost: "greenThumb", hint: "Something quick-growing, in a jar." },
-      { id: "salad", name: "Garden Salad", icon: "🥗", ingredients: ["crop:lettuce", "crop:tomato", "crop:carrot"], sell: 40, boost: "greenThumb", hint: "Three things from the garden, nothing else.", learn: "hazel", price: 40 },
-      { id: "carrotCake", name: "Carrot Cake", icon: "🍰", ingredients: ["crop:carrot", "food:flour", "food:sugar", "food:egg"], sell: 45, boost: "cozy", hint: "A cake with a vegetable in it.", learn: "hazel", price: 50 },
-      { id: "jam", name: "Strawberry Jam", icon: "🍓", ingredients: ["crop:strawberry", "crop:strawberry", "food:sugar"], sell: 32, boost: "cozy", hint: "Berries, twice, and something sweet." },
-      { id: "smoothie", name: "Berry Smoothie", icon: "🥤", ingredients: ["crop:strawberry", "crop:blueberry", "food:milk"], sell: 30, boost: "lucky", hint: "Two kinds of berry, blended." },
-      { id: "blueberryPancakes", name: "Blueberry Pancakes", icon: "🫐", ingredients: ["food:flour", "food:egg", "food:milk", "crop:blueberry"], sell: 36, boost: "lucky", hint: "A breakfast stack, with something blue." },
-      { id: "tomatoSoup", name: "Tomato Soup", icon: "🥣", ingredients: ["crop:tomato", "crop:tomato", "food:butter"], sell: 30, boost: "quickBite", hint: "Red, warm, and buttery." },
-      { id: "chowder", name: "Corn Chowder", icon: "🍲", ingredients: ["crop:corn", "food:milk", "food:butter"], sell: 36, boost: "cozy", hint: "Something yellow from the garden, made creamy." },
-      { id: "popcorn", name: "Popcorn", icon: "🍿", ingredients: ["crop:corn", "food:butter", "food:salt"], sell: 26, boost: "cozy", hint: "The Theater's favorite." },
-      { id: "sunflowerSeeds", name: "Roasted Sunflower Seeds", icon: "🌻", ingredients: ["crop:sunflower", "food:salt"], sell: 40, boost: "lucky", hint: "A tall flower, salted." },
-      { id: "pumpkinPie", name: "Pumpkin Pie", icon: "🥧", ingredients: ["crop:pumpkin", "food:flour", "food:sugar", "food:egg"], sell: 130, boost: "greenThumb", hint: "The biggest thing in the garden, baked.", learn: "hazel", price: 90 },
-      { id: "pumpkinSoup", name: "Pumpkin Soup", icon: "🎃", ingredients: ["crop:pumpkin", "food:milk", "food:butter"], sell: 115, boost: "cozy", hint: "The biggest thing in the garden, as soup." },
-      { id: "risotto", name: "Veggie Risotto", icon: "🍚", ingredients: ["food:rice", "crop:carrot", "food:cheese", "food:butter"], sell: 40, boost: "greenThumb", hint: "Creamy rice, with something orange." },
-      { id: "grilledFish", name: "Grilled Fish", icon: "🍢", ingredients: ["fish", "food:salt"], sell: 18, boost: "quickBite", hint: "Any fish, simply done.", learn: "otis", price: 25 },
-      { id: "sushi", name: "Sushi", icon: "🍣", ingredients: ["fish", "food:rice"], sell: 26, boost: "lucky", hint: "Any fish, with something from the pantry.", learn: "otis", price: 35 },
-      { id: "fishTacos", name: "Fish Tacos", icon: "🌮", ingredients: ["fish", "crop:corn", "crop:tomato"], sell: 45, boost: "lucky", hint: "Any fish, and two things from the garden." },
-      { id: "fishStew", name: "Fisherman's Stew", icon: "🍲", ingredients: ["fish", "fish", "crop:carrot", "food:salt"], sell: 50, boost: "quickBite", hint: "Two fish, and something orange.", learn: "otis", price: 45 },
+      { id: "pancakes", name: "Pancakes", ingredients: ["food:flour", "food:egg", "food:milk"], sell: 18, boost: "cozy", hint: "A breakfast stack: from the pantry and fridge." },
+      { id: "honeyToast", name: "Honey Toast", ingredients: ["food:flour", "food:butter", "food:honey"], sell: 20, boost: "cozy", hint: "Golden and sticky." },
+      { id: "omelette", name: "Cheese Omelette", ingredients: ["food:egg", "food:egg", "food:cheese"], sell: 18, boost: "quickBite", hint: "Two of one thing, and something from the fridge." },
+      { id: "pickles", name: "Radish Pickles", ingredients: ["crop:radish", "crop:radish", "food:salt"], sell: 20, boost: "greenThumb", hint: "Something quick-growing, in a jar." },
+      { id: "salad", name: "Garden Salad", ingredients: ["crop:lettuce", "crop:tomato", "crop:carrot"], sell: 40, boost: "greenThumb", hint: "Three things from the garden, nothing else.", learn: "hazel", price: 40 },
+      { id: "carrotCake", name: "Carrot Cake", ingredients: ["crop:carrot", "food:flour", "food:sugar", "food:egg"], sell: 45, boost: "cozy", hint: "A cake with a vegetable in it.", learn: "hazel", price: 50 },
+      { id: "jam", name: "Strawberry Jam", ingredients: ["crop:strawberry", "crop:strawberry", "food:sugar"], sell: 32, boost: "cozy", hint: "Berries, twice, and something sweet." },
+      { id: "smoothie", name: "Berry Smoothie", ingredients: ["crop:strawberry", "crop:blueberry", "food:milk"], sell: 30, boost: "lucky", hint: "Two kinds of berry, blended." },
+      { id: "blueberryPancakes", name: "Blueberry Pancakes", ingredients: ["food:flour", "food:egg", "food:milk", "crop:blueberry"], sell: 36, boost: "lucky", hint: "A breakfast stack, with something blue." },
+      { id: "tomatoSoup", name: "Tomato Soup", ingredients: ["crop:tomato", "crop:tomato", "food:butter"], sell: 30, boost: "quickBite", hint: "Red, warm, and buttery." },
+      { id: "chowder", name: "Corn Chowder", ingredients: ["crop:corn", "food:milk", "food:butter"], sell: 36, boost: "cozy", hint: "Something yellow from the garden, made creamy." },
+      { id: "popcorn", name: "Popcorn", ingredients: ["crop:corn", "food:butter", "food:salt"], sell: 26, boost: "cozy", hint: "The Theater's favorite." },
+      { id: "sunflowerSeeds", name: "Roasted Sunflower Seeds", ingredients: ["crop:sunflower", "food:salt"], sell: 40, boost: "lucky", hint: "A tall flower, salted." },
+      { id: "pumpkinPie", name: "Pumpkin Pie", ingredients: ["crop:pumpkin", "food:flour", "food:sugar", "food:egg"], sell: 130, boost: "greenThumb", hint: "The biggest thing in the garden, baked.", learn: "hazel", price: 90 },
+      { id: "pumpkinSoup", name: "Pumpkin Soup", ingredients: ["crop:pumpkin", "food:milk", "food:butter"], sell: 115, boost: "cozy", hint: "The biggest thing in the garden, as soup." },
+      { id: "risotto", name: "Veggie Risotto", ingredients: ["food:rice", "crop:carrot", "food:cheese", "food:butter"], sell: 40, boost: "greenThumb", hint: "Creamy rice, with something orange." },
+      { id: "grilledFish", name: "Grilled Fish", ingredients: ["fish", "food:salt"], sell: 18, boost: "quickBite", hint: "Any fish, simply done.", learn: "otis", price: 25 },
+      { id: "sushi", name: "Sushi", ingredients: ["fish", "food:rice"], sell: 26, boost: "lucky", hint: "Any fish, with something from the pantry.", learn: "otis", price: 35 },
+      { id: "fishTacos", name: "Fish Tacos", ingredients: ["fish", "crop:corn", "crop:tomato"], sell: 45, boost: "lucky", hint: "Any fish, and two things from the garden." },
+      { id: "fishStew", name: "Fisherman's Stew", ingredients: ["fish", "fish", "crop:carrot", "food:salt"], sell: 50, boost: "quickBite", hint: "Two fish, and something orange.", learn: "otis", price: 45 },
       // Only from the traveling merchant:
-      { id: "carpCurry", name: "Golden Carp Curry", icon: "🍛", ingredients: ["fish:goldenCarp", "food:rice", "food:salt"], sell: 90, boost: "lucky", hint: "A traveler's recipe.", learn: "merchant", price: 80 },
-      { id: "starfruitTart", name: "Starfruit Tart", icon: "⭐", ingredients: ["crop:starfruit", "food:flour", "food:sugar", "food:butter"], sell: 110, boost: "cozy", hint: "A traveler's recipe.", learn: "merchant", price: 80 },
-      { id: "moonTea", name: "Moonflower Tea", icon: "🍵", ingredients: ["crop:moonflower", "food:honey"], sell: 95, boost: "quickBite", hint: "A traveler's recipe.", learn: "merchant", price: 70 },
+      { id: "carpCurry", name: "Golden Carp Curry", ingredients: ["fish:goldenCarp", "food:rice", "food:salt"], sell: 90, boost: "lucky", hint: "A traveler's recipe.", learn: "merchant", price: 80 },
+      { id: "starfruitTart", name: "Starfruit Tart", ingredients: ["crop:starfruit", "food:flour", "food:sugar", "food:butter"], sell: 110, boost: "cozy", hint: "A traveler's recipe.", learn: "merchant", price: 80 },
+      { id: "moonTea", name: "Moonflower Tea", ingredients: ["crop:moonflower", "food:honey"], sell: 95, boost: "quickBite", hint: "A traveler's recipe.", learn: "merchant", price: 70 },
     ],
 
     // Fortune cookies: one a day each from the jar on the kitchen counter
@@ -504,13 +504,13 @@ const CONFIG = {
   // none: what "nothing" is called. (A brand new slot also needs its
   // drawing in render.js and items in the raccoons' shop.)
   outfitSlots: [
-    { tab: "hats", slot: "hat", label: "🎩 Hats", none: "No hat" },
-    { tab: "shoes", slot: "shoes", label: "👟 Shoes", none: "Plain feet" },
-    { tab: "glasses", slot: "glasses", label: "👓 Glasses", none: "No glasses" },
-    { tab: "scarves", slot: "scarf", label: "🧣 Scarves", none: "None" },
-    { tab: "backpacks", slot: "backpack", label: "🎒 Backpacks", none: "None" },
-    { tab: "earrings", slot: "earrings", label: "💎 Earrings", none: "None" },
-    { tab: "pets", slot: "pet", label: "🐾 Pets", none: "No pet" },
+    { tab: "hats", slot: "hat", label: "Hats", none: "No hat" },
+    { tab: "shoes", slot: "shoes", label: "Shoes", none: "Plain feet" },
+    { tab: "glasses", slot: "glasses", label: "Glasses", none: "No glasses" },
+    { tab: "scarves", slot: "scarf", label: "Scarves", none: "None" },
+    { tab: "backpacks", slot: "backpack", label: "Backpacks", none: "None" },
+    { tab: "earrings", slot: "earrings", label: "Earrings", none: "None" },
+    { tab: "pets", slot: "pet", label: "Pets", none: "No pet" },
   ],
 
   wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],
@@ -566,9 +566,6 @@ const CONFIG = {
   // characters do a gentler one.
   idle: { afterSeconds: 25, gapMin: 3, gapMax: 8 },
 
-  // The little badge shown before an admin's name in chat and on their name
-  // tag. (Who's an admin is decided by the house server, not here.)
-  adminBadge: "🛡️",
 
   // The house owner and creator of the game. When this account is also an
   // admin (checked by the server, so nobody can fake it by picking the
@@ -588,8 +585,8 @@ const CONFIG = {
   // The little wooden sign over each room's doorway shows an icon. Keyed
   // by room id. Built-in icons (drawn to match the house): "film",
   // "pencil", "books", "openBook", "lamp", "forkKnife", "elevator", "stairs", "hammer",
-  // "gamepad", "music", "heart", "leaf", "moon", "door". Anything else is
-  // shown as written (an emoji works). A new room without one gets a door.
+  // "gamepad", "music", "heart", "leaf", "moon", "door". (Please use one of
+  // these, not an emoji.) A new room without one gets a door.
   // Offices and bedrooms show their owner's name instead of an icon.
   roomIcons: {
     theater: "film",
@@ -718,26 +715,27 @@ const CONFIG = {
 
   // --- Room reputation (Update 3) ---
   // Rooms level up (Lv. 1 to 10) the more time you spend in them. Each
-  // room has a name and an icon for the level-up card and profile cards.
+  // room has a name (its picture for the level-up card and profile cards
+  // is drawn in icons.js).
   // Offices count together, and so do bedrooms. `minutesForLevel` is the
   // total minutes in a room needed for Lv. 1, Lv. 2, ... Lv. 10 (so Lv. 10
   // takes 20 hours in that room). Add or remove numbers to change how
   // many levels there are.
   roomLevels: {
     rooms: {
-      study: { name: "Study", icon: "📖" },
-      library: { name: "Library", icon: "📚" },
-      theater: { name: "Theater", icon: "🍿" },
-      conference: { name: "Conference Room", icon: "🖍️" },
-      dinner: { name: "Dinner", icon: "🍝" },
-      workshop: { name: "Workshop", icon: "🔨" },
-      office: { name: "Office", icon: "💼" },
-      bedroom: { name: "Bedroom", icon: "🛏️" },
+      study: { name: "Study" },
+      library: { name: "Library" },
+      theater: { name: "Theater" },
+      conference: { name: "Conference Room" },
+      dinner: { name: "Dinner" },
+      workshop: { name: "Workshop" },
+      office: { name: "Office" },
+      bedroom: { name: "Bedroom" },
       // Outside (Update 4)
-      garden: { name: "Garden", icon: "🌱" },
-      pond: { name: "Pond", icon: "🎣" },
-      campfire: { name: "Campfire", icon: "🔥" },
-      porch: { name: "Porch", icon: "🪑" },
+      garden: { name: "Garden" },
+      pond: { name: "Pond" },
+      campfire: { name: "Campfire" },
+      porch: { name: "Porch" },
     },
     minutesForLevel: [10, 30, 60, 120, 210, 330, 480, 660, 900, 1200],
   },
@@ -747,12 +745,12 @@ const CONFIG = {
   // Legend, and every tier you reach pays crumbs. `crumbs` is the reward
   // for reaching that tier.
   achievementTiers: [
-    { name: "Bronze", icon: "🥉", color: "#b87a4a", crumbs: 10 },
-    { name: "Silver", icon: "🥈", color: "#9aa4ae", crumbs: 25 },
-    { name: "Gold", icon: "🥇", color: "#d9a441", crumbs: 50 },
-    { name: "Platinum", icon: "💠", color: "#5aa0b8", crumbs: 100 },
-    { name: "Diamond", icon: "💎", color: "#6a8ad8", crumbs: 200 },
-    { name: "Legend", icon: "🌟", color: "#c86bb0", crumbs: 400 },
+    { name: "Bronze", color: "#b87a4a", crumbs: 10 },
+    { name: "Silver", color: "#9aa4ae", crumbs: 25 },
+    { name: "Gold", color: "#d9a441", crumbs: 50 },
+    { name: "Platinum", color: "#5aa0b8", crumbs: 100 },
+    { name: "Diamond", color: "#6a8ad8", crumbs: 200 },
+    { name: "Legend", color: "#c86bb0", crumbs: 400 },
   ],
 
   // Each tiered achievement: `goals` is what you need for each tier, in
@@ -768,22 +766,22 @@ const CONFIG = {
   // (`was` lists older one-time achievements that turned into a tier, so
   // nobody is paid twice for the same thing. Leave it alone.)
   tieredAchievements: [
-    { id: "homebody", icon: "🛋️", name: "Homebody", stat: "hours", desc: "Spend {n} hour{s} in the house.", goals: [1, 10, 25, 50, 100, 250], was: ["hour", "homebody", null, "resident"] },
-    { id: "visitor", icon: "📅", name: "Frequent Visitor", stat: "daysVisited", desc: "Visit the house on {n} different day{s}.", goals: [3, 7, 30, 100, 200, 365] },
-    { id: "wellRounded", icon: "🏘️", name: "Well-Rounded", stat: "roomLevels", desc: "Reach {n} room level{s} in total.", goals: [5, 15, 30, 50, 65, 80] },
-    { id: "crumbs", icon: "🍪", name: "Crumb Collector", stat: "crumbsEarned", desc: "Earn {n} crumb{s}.", goals: [100, 500, 1500, 5000, 15000, 50000] },
-    { id: "collector", icon: "🛍️", name: "Collector", stat: "items", desc: "Own {n} thing{s} from the raccoons.", goals: [3, 10, 20, 35, 55, 80] },
-    { id: "menagerie", icon: "🐾", name: "Menagerie", stat: "pets", desc: "Adopt {n} pet{s}.", goals: [1, 3, 5, 10, 15, 19], was: ["firstPet", null, "menagerie"] },
-    { id: "chatterbox", icon: "💬", name: "Chatterbox", stat: "chats", desc: "Send {n} chat message{s}.", goals: [10, 100, 500, 1500, 5000, 15000], was: [null, "chatterbox"] },
-    { id: "emotes", icon: "🎭", name: "Emote-ional", stat: "emotesUsed", desc: "Use emotes {n} time{s}.", goals: [10, 50, 200, 500, 1500, 5000] },
-    { id: "dancer", icon: "🕺", name: "Dance Machine", stat: "dances", desc: "Dance {n} time{s}.", goals: [1, 25, 100, 300, 1000, 3000], was: ["jig"] },
-    { id: "focus", icon: "⏳", name: "Deep Focus", stat: "focusSessions", desc: "Finish {n} Study focus session{s}.", goals: [1, 5, 15, 40, 100, 250], was: ["focus", "scholar"] },
-    { id: "rested", icon: "😴", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hour{s} in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
+    { id: "homebody", name: "Homebody", stat: "hours", desc: "Spend {n} hour{s} in the house.", goals: [1, 10, 25, 50, 100, 250], was: ["hour", "homebody", null, "resident"] },
+    { id: "visitor", name: "Frequent Visitor", stat: "daysVisited", desc: "Visit the house on {n} different day{s}.", goals: [3, 7, 30, 100, 200, 365] },
+    { id: "wellRounded", name: "Well-Rounded", stat: "roomLevels", desc: "Reach {n} room level{s} in total.", goals: [5, 15, 30, 50, 65, 80] },
+    { id: "crumbs", name: "Crumb Collector", stat: "crumbsEarned", desc: "Earn {n} crumb{s}.", goals: [100, 500, 1500, 5000, 15000, 50000] },
+    { id: "collector", name: "Collector", stat: "items", desc: "Own {n} thing{s} from the raccoons.", goals: [3, 10, 20, 35, 55, 80] },
+    { id: "menagerie", name: "Menagerie", stat: "pets", desc: "Adopt {n} pet{s}.", goals: [1, 3, 5, 10, 15, 19], was: ["firstPet", null, "menagerie"] },
+    { id: "chatterbox", name: "Chatterbox", stat: "chats", desc: "Send {n} chat message{s}.", goals: [10, 100, 500, 1500, 5000, 15000], was: [null, "chatterbox"] },
+    { id: "emotes", name: "Emote-ional", stat: "emotesUsed", desc: "Use emotes {n} time{s}.", goals: [10, 50, 200, 500, 1500, 5000] },
+    { id: "dancer", name: "Dance Machine", stat: "dances", desc: "Dance {n} time{s}.", goals: [1, 25, 100, 300, 1000, 3000], was: ["jig"] },
+    { id: "focus", name: "Deep Focus", stat: "focusSessions", desc: "Finish {n} Study focus session{s}.", goals: [1, 5, 15, 40, 100, 250], was: ["focus", "scholar"] },
+    { id: "rested", name: "Well Rested", stat: "sleepHours", desc: "Sleep {n} hour{s} in bed.", goals: [0.5, 3, 10, 30, 100, 250], was: ["wellRested"] },
     // Outdoors (Update 4)
-    { id: "harvester", icon: "🥕", name: "Green Thumb", stat: "harvests", desc: "Harvest {n} crop{s} from the garden.", goals: [1, 10, 40, 120, 300, 750] },
-    { id: "angler", icon: "🎣", name: "Angler", stat: "fishCaught", desc: "Catch {n} fish at the pond.", goals: [1, 10, 40, 120, 300, 750] },
-    { id: "chef", icon: "🍳", name: "Chef", stat: "dishesCooked", desc: "Cook {n} meal{s} at the stove.", goals: [1, 10, 30, 80, 200, 500] },
-    { id: "goodNeighbor", icon: "💧", name: "Good Neighbor", stat: "friendsWatered", desc: "Water a friend's garden bed {n} time{s}.", goals: [1, 10, 30, 80, 200, 500] },
+    { id: "harvester", name: "Green Thumb", stat: "harvests", desc: "Harvest {n} crop{s} from the garden.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "angler", name: "Angler", stat: "fishCaught", desc: "Catch {n} fish at the pond.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "chef", name: "Chef", stat: "dishesCooked", desc: "Cook {n} meal{s} at the stove.", goals: [1, 10, 30, 80, 200, 500] },
+    { id: "goodNeighbor", name: "Good Neighbor", stat: "friendsWatered", desc: "Water a friend's garden bed {n} time{s}.", goals: [1, 10, 30, 80, 200, 500] },
   ],
 
   // --- Titles (Update 3) ---

@@ -170,7 +170,7 @@ function cookRows() {
 function experimentRows() {
   const cookable = basketItems().filter(([id]) => /^(crop|food|fish):/.test(id));
   const potRow = {
-    icon: "🥘",
+    icon: "pot",
     name: pot.length ? `In the pot: ${pot.map((id) => itemInfo(id).name).join(", ")}` : "The pot is empty",
     note: pot.length < 2 ? "Add 2 to 4 things, then cook." : "Ready when you are!",
     actions: [
@@ -353,7 +353,7 @@ export async function openCookieJar() {
   if (!got) return;
   playClickSound();
   const extra = got.crumbs ? "There was something else in there!" : got.seed ? `There was a ${itemInfo(`seed:${got.seed}`).name.toLowerCase()} packet inside too!` : "See you tomorrow for another.";
-  showToast({ icon: "🥠", label: "Fortune cookie", name: `"${got.text}"`, desc: extra, crumbs: got.crumbs ?? 0 });
+  showToast({ picture: "fortune", label: "Fortune cookie", name: `"${got.text}"`, desc: extra, crumbs: got.crumbs ?? 0 });
 }
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)];

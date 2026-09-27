@@ -52,8 +52,8 @@ window.addEventListener("bank-changed", () => {
   if (!before) return;
   for (const [key, level] of Object.entries(levels)) {
     if (level <= (before[key] ?? 0)) continue;
-    const { name, icon } = settings().rooms[key];
-    showToast({ kind: "level", icon, label: "Level up!", name: `${name} Lv. ${level}`, desc: level === settings().minutesForLevel.length ? "The top level. This room is yours." : "You've been spending time here.", crumbs: 0 });
+    const { name } = settings().rooms[key];
+    showToast({ kind: "level", iconKey: "room:" + key, label: "Level up!", name: `${name} Lv. ${level}`, desc: level === settings().minutesForLevel.length ? "The top level. This room is yours." : "You've been spending time here.", crumbs: 0 });
     window.dispatchEvent(new CustomEvent("room-level", { detail: { key, level } }));
   }
 });

@@ -6,6 +6,7 @@
 // bank, see bank.js), which checks every purchase. What's placed goes to
 // the house server whenever it changes (so friends can visit your room
 // even while you're away), and it only keeps furniture you own.
+import { setPicture } from "./pictures.js";
 import { serverApi } from "./account.js";
 import { uiIcon } from "./ui-icons.js";
 import { sendRoomsPing } from "./network.js";
@@ -145,11 +146,11 @@ window.addEventListener("crumbs-changed", () => {
 // shopkeeper bird (who picks something special each day and thanks you
 // when you buy), a tab for each part of the shop, and item cards.
 const STORE_TABS = [
-  ["furniture", "🛋️", "Furniture", "Beds, sofas, chairs and tables to fill your room."],
-  ["plants", "🪴", "Plants", "Leafy friends, flowers in vases and plants that trail from shelves."],
-  ["shelves", "📚", "Shelves", "Somewhere to put books, candles, crystals and mugs."],
-  ["decor", "🕯️", "Decor", "Rugs, lamps, mirrors, lights and things for your walls."],
-  ["upgrades", "✨", "Upgrades", "Make your room itself a little bigger."],
+  ["furniture", "decor:loveseatRose", "Furniture", "Beds, sofas, chairs and tables to fill your room."],
+  ["plants", "decor:monstera", "Plants", "Leafy friends, flowers in vases and plants that trail from shelves."],
+  ["shelves", "decor:bookshelf", "Shelves", "Somewhere to put books, candles, crystals and mugs."],
+  ["decor", "decor:candles", "Decor", "Rugs, lamps, mirrors, lights and things for your walls."],
+  ["upgrades", "tools", "Upgrades", "Make your room itself a little bigger."],
 ];
 // Items added in builds 0.42 and 0.44 get a "New!" ribbon.
 const NEW_ITEMS = new Set([
@@ -386,7 +387,11 @@ export function renderStore(page, onTab = tellTab) {
   for (const [id, icon, label] of STORE_TABS) {
     const tab = make("button", "nook-tab-" + id);
     tab.type = "button";
-    tab.append(make("span", "nook-tab-icon", icon), label);
+    // Its picture: a real piece from the shop (or the tools, for upgrades).
+    const pic = make("span", "nook-tab-icon");
+    if (icon.startsWith("decor:")) setPicture(pic, icon, 22);
+    else pic.innerHTML = uiIcon(icon);
+    tab.append(pic, label);
     tab.classList.toggle("active", !storeQuery && id === storeTab);
     tab.addEventListener("click", () => {
       storeTab = id;
@@ -583,7 +588,7 @@ function upgradeCard(page) {
   el.className = "nook-pick nook-upgrade";
   const art = document.createElement("div");
   art.className = "nook-pick-art";
-  art.textContent = roomy ? "🏡" : "🔨";
+  art.innerHTML = uiIcon(roomy ? "house" : "hammer");
   const info = document.createElement("div");
   info.className = "nook-pick-info";
   const name = document.createElement("h4");
@@ -597,7 +602,7 @@ function upgradeCard(page) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "nook-buy";
-  button.textContent = roomy ? "Yours! 🎉" : "🔨 Upgrade my room";
+  button.textContent = roomy ? "Yours!" : "Upgrade my room";
   button.disabled = roomy;
   button.addEventListener("click", async () => {
     if (crumbBalance() < ROOMY_PRICE) {

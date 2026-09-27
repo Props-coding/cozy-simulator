@@ -261,7 +261,7 @@ export function heartToast(e) {
     : e.hearts === H().discountAt ? `${name}'s recipes are cheaper for you now.`
     : story ? `${name} has something new to tell you: "${story.name}"`
     : "Keep visiting to become better friends.";
-  return { kind: "tier", icon: "💗", label: "Friendship!", name: `${name}: ${e.hearts} ${e.hearts === 1 ? "heart" : "hearts"}`, desc, crumbs: 0 };
+  return { kind: "tier", picture: "heart", label: "Friendship!", name: `${name}: ${e.hearts} ${e.hearts === 1 ? "heart" : "hearts"}`, desc, crumbs: 0 };
 }
 
 // Opens a resident's window (main.js calls this when you press E by one).
