@@ -669,7 +669,7 @@ async function loadGame() {
 const MAX_STACK = 9999;
 const STARTERS = { starterDesk: 1, starterMattress: 1, starterNightstand: 1, starterPhone: 1 };
 // Counters the server keeps (the tiered achievements are counted in these).
-const SERVER_STATS = ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "dishesCooked"];
+const SERVER_STATS = ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "dishesCooked", "requestsDone"];
 
 const whole = (v, max = 1e9) => (Number.isFinite(v) ? Math.max(0, Math.min(max, Math.floor(v))) : 0);
 
@@ -743,13 +743,31 @@ function fillWallet(w) {
   w.boost ??= null;
   w.cookieDay ??= 0;
   w.merchant ??= { week: 0, bought: {} };
+  w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   return w;
+}
+
+// --- Residents' requests (Update 6) ---
+// Each day, each resident asks each person for one thing from their list
+// in config.js (residents.requests). Which one comes from the day, the
+// resident and a number kept in the person's wallet, so everyone gets a
+// different mix. Returns { clover: { index, done }, ... } for today.
+function todaysRequests(w) {
+  const day = hometownDay();
+  const out = {};
+  for (const [id, list] of Object.entries(GAME.CONFIG.residents?.requests ?? {})) {
+    let h = (w.residents.seed ^ Math.imul(day, 2654435761)) >>> 0;
+    for (const ch of id) h = (Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0);
+    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+    out[id] = { index: h % list.length, done: w.residents.day === day && !!w.residents.done[id] };
+  }
+  return out;
 }
 
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -1324,6 +1342,23 @@ const BANK = {
     if (w.recipes.length >= 10) grant(w, "cookbook", ev);
     return {};
   },
+  // Bringing a resident what they asked for today (Update 6).
+  residentRequest(w, b, ev) {
+    const id = String(b.id ?? "");
+    const list = GAME.CONFIG.residents?.requests?.[id];
+    if (!list) throw new Oops(400, "Nobody by that name is asking for anything.");
+    const today = todaysRequests(w)[id];
+    if (today.done) throw new Oops(409, "You've already helped with today's request. Come back tomorrow!");
+    const want = list[today.index];
+    takeOut(w, want.item, want.n);
+    const day = hometownDay();
+    if (w.residents.day !== day) w.residents = { ...w.residents, day, done: {} };
+    w.residents.done[id] = true;
+    earn(w, want.crumbs, ev);
+    addStat(w, "requestsDone", 1);
+    grant(w, "happyToHelp", ev);
+    return { crumbs: want.crumbs };
+  },
   // A fortune cookie: one a day (the hometown's day), now and then with a
   // little something inside.
   fortune(w, b, ev) {
@@ -1730,6 +1765,7 @@ const adminTools = {
     w.cookieDay = 0;
     w.lastFocus = 0;
     w.merchant = { week: 0, bought: {} };
+    w.residents.done = {};
     adminLog(me, "reset daily limits for", user.name);
     await saveDb();
     return { ok: true };

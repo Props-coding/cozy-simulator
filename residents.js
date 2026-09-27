@@ -3,10 +3,64 @@
 // RESIDENTS in world.js; how they look is in render-residents.js. Walk up
 // to one and press E: their window (the same one the shopkeepers use, see
 // npc.js) opens on a Chat tab with a few things to ask. What they say
-// depends on the time of day, what they're doing and the weather.
-import { openNpc } from "./npc.js";
+// depends on the time of day, what they're doing and the weather. A
+// second tab has today's request: one thing each resident would love (a
+// crop, a fish, a dish...), paid for in crumbs by the house server (the
+// bank), from the lists in config.js (residents.requests).
+import { openNpc, npcSay, refreshNpc } from "./npc.js";
+import { bank, myWallet, loadBank } from "./bank.js";
+import { itemInfo, basketCount } from "./basket.js";
+import { playCrumbSound } from "./audio.js";
 
 const pick = (lines) => lines[Math.floor(Math.random() * lines.length)];
+
+const THANKS = {
+  clover: ["oh, you're a treasure! thank you thank you!", "perfect! these are perfect. i could hug you. i'm floury, so i won't.", "wonderful! come by later, there might be a spare roll with your name on it."],
+  mortimer: ["most kind. most kind indeed. hoo.", "splendid. i shall note your generosity in the ledger.", "thank you. you have the makings of a fine library patron."],
+};
+const DONE = {
+  clover: "that's all i needed today, sweetpea. ask me again tomorrow!",
+  mortimer: "you've been most helpful today. tomorrow, perhaps, another small favor.",
+};
+
+// Today's request from a resident, as a row for their window: what they
+// want, how many you have, and a Give button.
+function requestRows(id) {
+  const today = myWallet().requests?.[id];
+  const want = today && CONFIG.residents.requests[id]?.[today.index];
+  if (!want) return [];
+  const info = itemInfo(want.item);
+  const have = basketCount(want.item);
+  return [
+    {
+      icon: info.icon,
+      name: `${want.n > 1 ? want.n + " " : ""}${info.name}`,
+      note: today.done ? "Done for today. A new request tomorrow!" : `You have ${have}.${have < want.n ? " (Not enough yet.)" : ""}`,
+      price: want.crumbs,
+      actions: today.done
+        ? []
+        : [
+            {
+              label: "Give",
+              disabled: have < want.n,
+              run: async () => {
+                if (!(await bank("residentRequest", { id }))) return null;
+                playCrumbSound();
+                return pick(THANKS[id]);
+              },
+            },
+          ],
+    },
+  ];
+}
+
+// What they say when you open the request tab.
+function requestLine(id) {
+  const today = myWallet().requests?.[id];
+  const want = today && CONFIG.residents.requests[id]?.[today.index];
+  if (!want) return "";
+  return today.done ? DONE[id] : want.line;
+}
 
 // The hometown's time of day, in words.
 function partOfDay() {
@@ -159,8 +213,18 @@ export function talkToResident(id) {
             actions: [{ label: "Ask", soft: true, run: async () => topic.say() }],
           })),
       },
+      {
+        id: "request",
+        label: "Today's request",
+        onOpen: () => npcSay(requestLine(id)),
+        items: () => requestRows(id),
+        empty: "No request today.",
+      },
     ],
   });
+  // Today's request comes with your wallet: fetch it fresh, in case the
+  // day turned over since it last came.
+  loadBank().then(refreshNpc).catch(() => {});
 }
 
 // What the hint under the house says when you're next to a resident.

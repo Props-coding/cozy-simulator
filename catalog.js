@@ -176,6 +176,7 @@ const ACHIEVEMENT_LIST = [
   { id: "wellFed", icon: "☕", name: "Well Fed", desc: "Eat a dish for a boost.", crumbs: 5, server: true },
   { id: "sharing", icon: "🎁", name: "Sharing Is Caring", desc: "Give a dish to a friend.", crumbs: 15, server: true },
   { id: "fortuneTold", icon: "🥠", name: "Fortune Told", desc: "Open a fortune cookie.", crumbs: 5, server: true },
+  { id: "happyToHelp", icon: "🤝", name: "Happy to Help", desc: "Bring Clover or Mortimer what they asked for.", crumbs: 10, server: true },
   { id: "firstTrade", icon: "🤝", name: "Open for Business", desc: "Sell something at the trading post.", crumbs: 15, server: true },
   { id: "wellTraveled", icon: "🦊", name: "Well Traveled", desc: "Buy something from the traveling merchant.", crumbs: 15, server: true },
   { id: "cookbook", icon: "📖", name: "Cookbook", desc: "Know 10 recipes.", crumbs: 40, server: true },

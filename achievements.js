@@ -29,6 +29,7 @@ export const MOMENT_GROUPS = [
   ["Raccoons and pets", ["raccoons", "firstBuy", "allHats", "allShoes", "patPat", "pettingZoo", "hoarder"]],
   ["Outdoors", ["firstSeed", "rainCheck", "farmStand", "greatPumpkin", "firstCatch", "bigOne", "legendCatch", "pondScholar", "fullTank", "junkDealer"]],
   ["Kitchen and trade", ["firstDish", "burntOffering", "wellFed", "sharing", "fortuneTold", "cookbook", "firstTrade", "wellTraveled"]],
+  ["Residents", ["happyToHelp"]],
   ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
 ];
 

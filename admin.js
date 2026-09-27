@@ -251,7 +251,7 @@ function meTab() {
       btn("Unlock all", () => (unlockAllQuietly(), "Every achievement unlocked (quietly: no pop-ups or crumbs).")),
       btn("Reset all", () => (resetAchievements(), "Achievements and their counters reset."), { danger: true, confirm: { title: "Reset all your achievements?", text: "Every achievement, tier and counter (hours, chats, fish...) goes back to nothing. There's no undo.", yes: "Reset all" } }),
     ]),
-    row("Daily limits", [btn("Reset mine", async () => (await admin("/api/admin/reset-limits", { name: accountName() }), "Today's fortune cookie, the focus bonus and this week's merchant limits are fresh again."))], "fortune cookie, focus bonus, merchant"),
+    row("Daily limits", [btn("Reset mine", async () => (await admin("/api/admin/reset-limits", { name: accountName() }), "Today's fortune cookie, the focus bonus, this week's merchant limits and today's resident requests are fresh again."))], "fortune cookie, focus bonus, merchant, residents' requests"),
     section("Go"),
     row("Jump to", [picker]),
     section("You"),
@@ -324,7 +324,7 @@ function playersTab() {
         p.online ? "in the house now" : "away right now"
       ),
       row("Voice", p.muted ? [btn("Unmute", async () => (await admin("/api/admin/mute", { name: p.name, minutes: 0 }), `${p.name} can talk again.`))] : [muteFor, btn("Mute", async () => (await admin("/api/admin/mute", { name: p.name, minutes: Number(muteFor.value) }), `${p.name} is muted for everyone.`), { disabled: isMe })]),
-      row("Daily limits", [btn("Reset", async () => (await admin("/api/admin/reset-limits", { name: p.name }), `${p.name}'s daily limits are fresh again.`))], "fortune cookie, focus bonus, merchant"),
+      row("Daily limits", [btn("Reset", async () => (await admin("/api/admin/reset-limits", { name: p.name }), `${p.name}'s daily limits are fresh again.`))], "fortune cookie, focus bonus, merchant, residents' requests"),
       row("Password", [
         btn("Reset code", async () => {
           const r = await serverApi("POST", "/api/admin/reset", { name: p.name });

@@ -372,6 +372,39 @@ const CONFIG = {
     ],
   },
 
+  // --- Residents' requests (Update 6) ---
+  // Each day (the hometown's day), Clover and Mortimer each ask everyone
+  // for one thing from this list (a different pick for each person, and
+  // each day). Bring it and they pay `crumbs` (a bit more than selling it
+  // would). item: a basket item, like "crop:carrot", "fish:trout",
+  // "dish:jam" or "junk:letter"; n: how many; line: how they ask.
+  residents: {
+    requests: {
+      clover: [
+        { item: "crop:carrot", n: 3, crumbs: 45, line: "i'm making carrot muffins. well, i'm trying to. could you spare three carrots?" },
+        { item: "crop:strawberry", n: 4, crumbs: 45, line: "strawberry tarts need strawberries. it's the law. four, please?" },
+        { item: "crop:blueberry", n: 2, crumbs: 40, line: "blueberry muffins! i dream of them. two handfuls of blueberries would make my week." },
+        { item: "crop:radish", n: 5, crumbs: 50, line: "five radishes, for a spring salad to go with the bread. crunchy!" },
+        { item: "crop:tomato", n: 3, crumbs: 45, line: "tomato and herb loaf today. i just need three nice tomatoes." },
+        { item: "crop:corn", n: 3, crumbs: 65, line: "cornbread! three ears of corn and i'm in business." },
+        { item: "crop:sunflower", n: 1, crumbs: 55, line: "a sunflower for the kitchen window? the seeds go on the rolls after. nothing wasted!" },
+        { item: "crop:pumpkin", n: 1, crumbs: 150, line: "i have a very ambitious pumpkin bread planned. i need a whole pumpkin. a big one, ideally." },
+        { item: "fish:trout", n: 1, crumbs: 22, line: "otis says trout and bread go together. i'm skeptical. bring me one and i'll find out." },
+      ],
+      mortimer: [
+        { item: "fish:bluegill", n: 2, crumbs: 18, line: "i find a small supper helps the reading. two bluegill, if you'd be so kind." },
+        { item: "fish:perch", n: 2, crumbs: 18, line: "perch. two. for a light midnight snack. don't look at me like that." },
+        { item: "fish:trout", n: 1, crumbs: 22, line: "a trout would be most welcome. a well-read owl is a well-fed owl." },
+        { item: "fish:catfish", n: 1, crumbs: 22, line: "a catfish, please. the irony of an owl eating a catfish is not lost on me." },
+        { item: "fish:eel", n: 1, crumbs: 35, line: "an eel. i know. it's a delicacy where i'm from. which is here." },
+        { item: "dish:sushi", n: 1, crumbs: 45, line: "i've read about sushi in four different books. i'd like to try it, finally." },
+        { item: "junk:letter", n: 1, crumbs: 25, line: "the pond keeps swallowing letters. if you fish one up, bring it. i keep them in the archive, unread. mostly." },
+        { item: "junk:duck", n: 1, crumbs: 20, line: "a rubber duck floated past my window once. i think about it often. if you find one..." },
+        { item: "crop:sunflower", n: 1, crumbs: 55, line: "a sunflower for the reading table. it faces the lamp all night. very loyal." },
+      ],
+    },
+  },
+
   // --- The bus stop (Update 4) ---
   // A little bus pulls up at the stop by the road every `everyMinutes`
   // (on the same clock for everyone), waits `waitSeconds`, and drives off.
