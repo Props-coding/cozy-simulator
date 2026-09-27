@@ -441,7 +441,9 @@ async function afterLogin(user) {
   account.admin = !!user.admin;
   account.badge = user.badge ?? null; // an admin's signed badge pass (see checkBadge)
   storage.set(ACCOUNT_KEY, JSON.stringify(account));
+  Loading.step("door");
   if (!user.member) {
+    Loading.finish(); // (the next thing needs you: the house phrase)
     phraseHello.textContent = `Hi ${user.name}! Enter the house phrase a friend gave you. You only need to do this once.`;
     phraseNote.textContent = "";
     phraseNote.classList.remove("error");
@@ -457,10 +459,12 @@ async function afterLogin(user) {
   // Your crumbs and everything you own, from the house server.
   await loadBank();
   for (const key of OLD_BANK_KEYS) storage.remove(key);
+  Loading.step("save");
   const house = await api("GET", "/api/house");
   CONFIG.trysteroRoomId = house.roomId;
   CONFIG.trysteroPassword = house.password;
   CONFIG.turnServers = house.turn;
+  Loading.step("voice"); // (the voice relay's login)
   houseReady = true;
   document.getElementById("name-input").value = user.name;
   document.getElementById("account-who").textContent = user.name;
@@ -487,24 +491,33 @@ async function start() {
   setMode("login");
   if (!account?.token) {
     showCard(loginCard);
+    Loading.finish(); // (the next thing needs you: logging in)
     return;
   }
   try {
     const { user } = await api("GET", "/api/me");
     await afterLogin(user);
+    Loading.finish();
   } catch (err) {
     if (err.status === 401) {
       account = null;
       storage.remove(ACCOUNT_KEY);
       showCard(loginCard);
       showError(note, "Please log in again.");
-    } else {
+      Loading.finish();
+    } else if (err.status === 403 || err.status === 503) {
+      // Sent out for a while, or the house is closed: say why on the login card.
       showCard(loginCard);
       nameInput.value = account.name;
       showError(note, err.message);
+      Loading.finish();
+    } else {
+      // Couldn't reach the house server (or it had a problem): try again.
+      Loading.fail(err.message || "Couldn't reach the house. Check your internet, then try again.", start);
     }
   }
 }
+
 start().then(() => {
   // Sent out by an admin (main.js): say so on the login card.
   const sentOut = sessionStorage.getItem("cozy-house-sent-out");

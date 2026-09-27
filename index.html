@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cozy House</title>
+  <title>Porchlight</title>
+  <!-- The browser tab's little icon: a porch light, glowing. -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='35' cy='35' r='24' fill='%23f6c65b' opacity='.35'/%3E%3Crect x='7' y='12' width='7' height='40' rx='2' fill='%235a3d2b'/%3E%3Crect x='13' y='21' width='12' height='4' fill='%235a3d2b'/%3E%3Cpath d='M23 16h24l-4 7H27z' fill='%233b2a20'/%3E%3Crect x='26' y='23' width='18' height='22' rx='2' fill='%23ffe08a' stroke='%233b2a20' stroke-width='3'/%3E%3Cpath d='M35 23v22M26 34h18' stroke='%233b2a20' stroke-width='2' opacity='.5'/%3E%3Cpath d='M26 45h18l-3 5H29z' fill='%233b2a20'/%3E%3C/svg%3E">
   <!-- Where this page may load things from (a "content security policy"):
        code only from this site, esm.sh (the multiplayer library) and
        YouTube (the Theater and lo-fi players); fonts from Google Fonts;
@@ -18,10 +20,165 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.64" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.64">
+       build, change every "v=0.65" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.65">
 </head>
 <body>
+  <!-- The loading screen: a dark front porch at night. The porch light
+       flickers on as the house finishes loading, and a few moths drift
+       toward it. The bar follows the real steps (see Loading, just below). -->
+  <div id="loading-screen">
+    <svg class="porch-scene" viewBox="0 0 400 300" aria-hidden="true">
+      <defs>
+        <linearGradient id="night-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#141a2e"/>
+          <stop offset="1" stop-color="#27304a"/>
+        </linearGradient>
+        <radialGradient id="porch-glow">
+          <stop offset="0" stop-color="#ffd98a" stop-opacity="0.85"/>
+          <stop offset="0.45" stop-color="#f6b95b" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="#f6b95b" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="400" height="300" fill="url(#night-sky)"/>
+      <g fill="#fdf6e0" opacity="0.7">
+        <circle cx="40" cy="30" r="1.2"/><circle cx="110" cy="18" r="0.9"/><circle cx="330" cy="26" r="1.3"/><circle cx="372" cy="60" r="0.8"/><circle cx="250" cy="14" r="1"/><circle cx="20" cy="84" r="0.8"/>
+      </g>
+      <!-- The house's front: siding, a roof edge, the door, a window. -->
+      <rect x="0" y="56" width="400" height="190" fill="#3a2e2a"/>
+      <g stroke="#2e2420" stroke-width="2">
+        <line x1="0" y1="80" x2="400" y2="80"/><line x1="0" y1="104" x2="400" y2="104"/><line x1="0" y1="128" x2="400" y2="128"/><line x1="0" y1="152" x2="400" y2="152"/><line x1="0" y1="176" x2="400" y2="176"/><line x1="0" y1="200" x2="400" y2="200"/><line x1="0" y1="224" x2="400" y2="224"/>
+      </g>
+      <rect x="0" y="48" width="400" height="12" fill="#241b18"/>
+      <rect x="60" y="100" width="70" height="56" rx="3" fill="#1c2236" stroke="#241b18" stroke-width="5"/>
+      <line x1="95" y1="100" x2="95" y2="156" stroke="#241b18" stroke-width="3"/>
+      <line x1="60" y1="128" x2="130" y2="128" stroke="#241b18" stroke-width="3"/>
+      <rect x="175" y="96" width="62" height="150" rx="3" fill="#4a2f22" stroke="#241b18" stroke-width="5"/>
+      <rect x="187" y="110" width="38" height="44" rx="2" fill="#352219"/>
+      <rect x="187" y="166" width="38" height="62" rx="2" fill="#352219"/>
+      <circle cx="227" cy="176" r="3" fill="#c9a24a"/>
+      <!-- The porch floor and steps. -->
+      <rect x="0" y="244" width="400" height="18" fill="#5a4034"/>
+      <rect x="0" y="262" width="400" height="38" fill="#2a201c"/>
+      <rect x="150" y="262" width="112" height="12" fill="#4a352b"/>
+      <!-- The porch light, by the door. -->
+      <g class="porch-light">
+        <circle class="glow" cx="290" cy="128" r="120" fill="url(#porch-glow)"/>
+        <rect x="272" y="112" width="6" height="30" rx="2" fill="#241b18"/>
+        <rect x="276" y="118" width="10" height="4" fill="#241b18"/>
+        <path d="M282 106 h22 l-4 7 h-14 z" fill="#1a1412"/>
+        <rect class="lamp" x="284" y="113" width="18" height="22" rx="2" stroke="#1a1412" stroke-width="3"/>
+        <path d="M284 135 h18 l-3 5 h-12 z" fill="#1a1412"/>
+      </g>
+      <!-- Moths, drifting closer to the light as the house loads. -->
+      <g id="moths"></g>
+    </svg>
+    <div class="loading-panel">
+      <h1 class="loading-title">Porchlight</h1>
+      <div class="loading-bar" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+      <p class="loading-step" role="status" aria-live="polite">Opening the gate...</p>
+      <p class="loading-tip"></p>
+      <div class="loading-error" hidden>
+        <p></p>
+        <button type="button" class="warm-button">Retry</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // The loading screen's steps. Other parts of the page call
+    // Loading.step("art"), and so on, as each one really finishes; the bar
+    // and label follow. Loading.finish() fades into whatever's next (the
+    // login card, the Join screen or the house); Loading.fail(message,
+    // retry) shows the problem with a Retry button.
+    const Loading = (() => {
+      const STEPS = [
+        ["code", "Opening the gate"],
+        ["art", "Lighting the lamps"],
+        ["door", "Unlocking the door"],
+        ["save", "Waking the raccoons"],
+        ["voice", "Warming up the mic"],
+      ];
+      const FALLBACK_TIPS = ["Press E near things to use them."];
+      const screen = document.getElementById("loading-screen");
+      const bar = screen.querySelector(".loading-bar");
+      const label = screen.querySelector(".loading-step");
+      const tip = screen.querySelector(".loading-tip");
+      const errorBox = screen.querySelector(".loading-error");
+      const done = new Set();
+      let finished = false;
+
+      // Four moths, each drifting from far away toward the lamp (at 293, 124).
+      const MOTHS = [[30, 60], [380, 40], [360, 230], [60, 210]];
+      const mothGroup = document.getElementById("moths");
+      for (const [i, [x, y]] of MOTHS.entries()) {
+        mothGroup.insertAdjacentHTML(
+          "beforeend",
+          `<g class="moth-spot" data-x="${x}" data-y="${y}" style="transform: translate(${x}px, ${y}px)"><g class="moth" style="animation-delay:-${i * 0.7}s"><ellipse cx="-3" cy="0" rx="4" ry="2.6" fill="#d9ccb4"/><ellipse cx="3" cy="0" rx="4" ry="2.6" fill="#d9ccb4"/><ellipse cx="0" cy="0" rx="1.2" ry="3" fill="#8a7a64"/></g></g>`
+        );
+      }
+
+      function show() {
+        const p = done.size / STEPS.length;
+        bar.firstElementChild.style.width = `${Math.round(p * 100)}%`;
+        bar.setAttribute("aria-valuenow", String(Math.round(p * 100)));
+        const next = STEPS.find(([id]) => !done.has(id));
+        label.textContent = next ? `${next[1]}...` : "Welcome home!";
+        // The moths come closer as it loads (most of the way; the rest when the light comes on).
+        for (const moth of mothGroup.children) {
+          const k = finished ? 0.86 : p * 0.6;
+          const x = +moth.dataset.x + (293 - moth.dataset.x) * k, y = +moth.dataset.y + (124 - moth.dataset.y) * k;
+          moth.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+        }
+      }
+
+      function step(id) {
+        if (finished) return;
+        done.add(id);
+        show();
+      }
+
+      // Everything's ready (or the next thing needs you, like logging in):
+      // the light flickers on, then the screen fades away.
+      function finish() {
+        if (finished) return;
+        finished = true;
+        for (const [id] of STEPS) done.add(id);
+        errorBox.hidden = true;
+        show();
+        screen.classList.add("lit");
+        setTimeout(() => screen.classList.add("gone"), 1100);
+        setTimeout(() => (screen.hidden = true), 1800);
+      }
+
+      function fail(message, retry) {
+        errorBox.hidden = false;
+        errorBox.querySelector("p").textContent = message;
+        label.textContent = "Hmm, something's stuck.";
+        errorBox.querySelector("button").onclick = () => {
+          errorBox.hidden = true;
+          show();
+          (retry ?? (() => location.reload()))();
+        };
+      }
+
+      // Tips and fun lines (config.js: loadingTips), a new one every few seconds.
+      let tipIndex = Math.floor(Math.random() * 100);
+      function nextTip() {
+        const tips = typeof CONFIG !== "undefined" && CONFIG.loadingTips?.length ? CONFIG.loadingTips : FALLBACK_TIPS;
+        tip.textContent = tips[tipIndex++ % tips.length];
+      }
+      nextTip();
+      const tipTimer = setInterval(() => (finished ? clearInterval(tipTimer) : nextTip()), 4000);
+
+      // If the page's code hasn't arrived in a while, say so.
+      setTimeout(() => {
+        if (!done.has("art") && !finished) fail("The house's code is taking a long time to arrive. Your internet may be slow, or a part of it didn't load.");
+      }, 25000);
+
+      show();
+      return { step, finish, fail, nextTip };
+    })();
+  </script>
   <!-- The crumb icon: a happy little cookie crumb with chocolate chips,
        drawn once here and reused wherever crumbs are shown. -->
   <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -73,7 +230,7 @@
     </symbol>
   </svg>
   <!-- Title for the Join screen (the house view has its own header). -->
-  <h1 id="join-title">Cozy House</h1>
+  <h1 id="join-title">Porchlight</h1>
 
   <!-- Accounts (account.js): log in or create an account, and the first
        time, enter the house phrase. Then the Join screen appears. -->
@@ -177,7 +334,7 @@
          sidebar side by side (the sidebar drops below on narrow windows). -->
     <div id="game-container">
       <header id="game-header">
-        <h1>Cozy House</h1>
+        <h1>Porchlight</h1>
         <div class="header-right">
           <span id="crumb-pill" title="Crumbs: you earn them by hanging out, and spend them at the raccoons' shop out in the yard (by the bins)">
             <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
@@ -247,6 +404,12 @@
           <div id="override-banner" hidden>
             <span id="override-text"></span>
             <button id="override-reset" type="button" class="warm-button">Back to real</button>
+          </div>
+          <!-- The right-click menu over the house (menu.js). -->
+          <div id="house-menu" hidden>
+            <p id="house-menu-title"></p>
+            <div id="house-menu-info" hidden></div>
+            <div id="house-menu-items"></div>
           </div>
           <!-- The house is closing for maintenance (main.js). -->
           <div id="maintenance-banner" hidden></div>
@@ -336,6 +499,7 @@
           <!-- Putting something out at the trading post (market.js). -->
           <div id="trade-dialog" class="small-dialog" hidden>
             <h3 id="trade-title">Put it out at the stall</h3>
+            <label id="trade-item-row" class="dialog-row" hidden>What <select id="trade-item"></select></label>
             <label class="dialog-row">How many <input id="trade-n" type="number" min="1" value="1"></label>
             <div class="dialog-row trade-kinds">
               <label><input type="radio" name="trade-kind" value="crumbs" checked> For crumbs</label>
@@ -646,58 +810,67 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.64</p>
+  <p id="version-tag">build 0.65</p>
 
-  <script src="config.js?v=0.64"></script>
-  <script src="catalog.js?v=0.64"></script>
-  <script src="world.js?v=0.64"></script>
-  <script src="render.js?v=0.64"></script>
-  <script src="render-furniture.js?v=0.64"></script>
-  <script src="render-rooms.js?v=0.64"></script>
-  <script src="render-extras.js?v=0.64"></script>
-  <script src="render-characters.js?v=0.64"></script>
-  <script src="render-scene.js?v=0.64"></script>
-  <script src="outdoors.js?v=0.64"></script>
+  <script src="config.js?v=0.65"></script>
+  <script src="catalog.js?v=0.65"></script>
+  <script src="world.js?v=0.65"></script>
+  <script src="render.js?v=0.65"></script>
+  <script src="render-furniture.js?v=0.65"></script>
+  <script src="render-rooms.js?v=0.65"></script>
+  <script src="render-extras.js?v=0.65"></script>
+  <script src="render-characters.js?v=0.65"></script>
+  <script src="render-scene.js?v=0.65"></script>
+  <script src="outdoors.js?v=0.65"></script>
+  <script>
+    // The page's code is here (the loading screen's first step).
+    Loading.step("code");
+    Loading.nextTip();
+    // Keep the game's files on this computer, so coming back is quicker
+    // (sw.js). Each build keeps its own copy, so an update always loads fresh.
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.65").catch(() => {});
+  </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.64",
-        "./network.js": "./network.js?v=0.64",
-        "./audio.js": "./audio.js?v=0.64",
-        "./theater.js": "./theater.js?v=0.64",
-        "./whiteboard.js": "./whiteboard.js?v=0.64",
-        "./shop.js": "./shop.js?v=0.64",
-        "./emoji.js": "./emoji.js?v=0.64",
-        "./achievements.js": "./achievements.js?v=0.64",
-        "./home.js": "./home.js?v=0.64",
-        "./turntable.js": "./turntable.js?v=0.64",
-        "./wardrobe.js": "./wardrobe.js?v=0.64",
-        "./kanban.js": "./kanban.js?v=0.64",
-        "./rooms.js": "./rooms.js?v=0.64",
-        "./journal.js": "./journal.js?v=0.64",
-        "./phone.js": "./phone.js?v=0.64",
-        "./laptop.js": "./laptop.js?v=0.64",
-        "./news.js": "./news.js?v=0.64",
-        "./account.js": "./account.js?v=0.64",
-        "./profile.js": "./profile.js?v=0.64",
-        "./icons.js": "./icons.js?v=0.64",
-        "./reputation.js": "./reputation.js?v=0.64",
-        "./titles.js": "./titles.js?v=0.64",
-        "./admin.js": "./admin.js?v=0.64",
-        "./updater.js": "./updater.js?v=0.64",
-        "./weather.js": "./weather.js?v=0.64",
-        "./basket.js": "./basket.js?v=0.64",
-        "./npc.js": "./npc.js?v=0.64",
-        "./bank.js": "./bank.js?v=0.64",
-        "./kitchen.js": "./kitchen.js?v=0.64",
-        "./market.js": "./market.js?v=0.64",
-        "./garden.js": "./garden.js?v=0.64",
-        "./fishing.js": "./fishing.js?v=0.64",
-        "./bus.js": "./bus.js?v=0.64"
+        "./main.js": "./main.js?v=0.65",
+        "./network.js": "./network.js?v=0.65",
+        "./audio.js": "./audio.js?v=0.65",
+        "./theater.js": "./theater.js?v=0.65",
+        "./whiteboard.js": "./whiteboard.js?v=0.65",
+        "./shop.js": "./shop.js?v=0.65",
+        "./emoji.js": "./emoji.js?v=0.65",
+        "./achievements.js": "./achievements.js?v=0.65",
+        "./home.js": "./home.js?v=0.65",
+        "./turntable.js": "./turntable.js?v=0.65",
+        "./wardrobe.js": "./wardrobe.js?v=0.65",
+        "./kanban.js": "./kanban.js?v=0.65",
+        "./rooms.js": "./rooms.js?v=0.65",
+        "./journal.js": "./journal.js?v=0.65",
+        "./phone.js": "./phone.js?v=0.65",
+        "./laptop.js": "./laptop.js?v=0.65",
+        "./news.js": "./news.js?v=0.65",
+        "./account.js": "./account.js?v=0.65",
+        "./profile.js": "./profile.js?v=0.65",
+        "./icons.js": "./icons.js?v=0.65",
+        "./reputation.js": "./reputation.js?v=0.65",
+        "./titles.js": "./titles.js?v=0.65",
+        "./admin.js": "./admin.js?v=0.65",
+        "./updater.js": "./updater.js?v=0.65",
+        "./weather.js": "./weather.js?v=0.65",
+        "./basket.js": "./basket.js?v=0.65",
+        "./npc.js": "./npc.js?v=0.65",
+        "./bank.js": "./bank.js?v=0.65",
+        "./kitchen.js": "./kitchen.js?v=0.65",
+        "./market.js": "./market.js?v=0.65",
+        "./menu.js": "./menu.js?v=0.65",
+        "./garden.js": "./garden.js?v=0.65",
+        "./fishing.js": "./fishing.js?v=0.65",
+        "./bus.js": "./bus.js?v=0.65"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.64"></script>
+  <script type="module" src="main.js?v=0.65"></script>
 </body>
 </html>

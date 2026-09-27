@@ -1445,7 +1445,7 @@ function decorPiece(piece, x0, top, owner, index) {
     color: ownerColor ? owner.color : look.color,
     solid: wall ? false : look.solid,
     mine: owner.mine, // (the laptop desk opens only for its owner)
-    decor: { index, mine: owner.mine }, // so its owner can pick it back up
+    decor: { index, mine: owner.mine, item: piece.item }, // so its owner can pick it back up (and anyone can see what it is)
     ...(piece.fish ? { fish: piece.fish } : {}), // (the fish in a fish tank)
   };
 }

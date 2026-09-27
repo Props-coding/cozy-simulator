@@ -786,6 +786,33 @@ function putAwayHeld() {
   renderBar();
 }
 
+// The right-click menu's Move and Store (main.js), for a piece in your
+// room by its index: Move picks it up (decorating starts), Store puts it
+// away (you still own it).
+export function movePiece(index) {
+  if (!home.placed[index]) return false;
+  if (!decorating) startDecorating();
+  if (!decorating) return false;
+  if (held) cancelHeld();
+  pickUpPlaced(index);
+  return true;
+}
+
+export function storePiece(index) {
+  const piece = home.placed[index];
+  if (!piece) return false;
+  if (DECOR[piece.item].keep) {
+    hooks.notice(`Your ${DECOR[piece.item].name.toLowerCase()} has to stay in your room, but you can move it anywhere.`);
+    return false;
+  }
+  home.placed.splice(index, 1);
+  store();
+  playClickSound();
+  if (decorating) renderBar();
+  hooks.notice(`${DECOR[piece.item].name} is put away. Place it again any time with Decorate.`);
+  return true;
+}
+
 // For drawing: the held piece where it would go, and whether it fits.
 export function heldPiece() {
   const room = decorating && held ? hooks.myRoom() : null;

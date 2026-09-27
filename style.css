@@ -4945,3 +4945,235 @@ canvas.house-icon {
   background: rgba(168, 57, 47, 0.92);
 }
 
+/* --- The right-click menu over the house (menu.js) --- */
+#house {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#house-menu:not([hidden]) {
+  position: absolute;
+  z-index: 30;
+  min-width: 170px;
+  max-width: 250px;
+  padding: 6px;
+  background: #fffaf3;
+  border: 2px solid var(--wood);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(60, 40, 20, 0.3);
+  animation: pop-in 0.12s ease-out;
+}
+
+#house-menu-title {
+  margin: 2px 8px 6px;
+  font-weight: 800;
+  font-size: 0.9em;
+  color: var(--wood-dark);
+}
+
+#house-menu-info p {
+  margin: 0 8px 6px;
+  font-size: 0.85em;
+  line-height: 1.35;
+  color: #6b5540;
+}
+
+.house-menu-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.88em;
+  font-weight: 700;
+  text-align: left;
+  color: var(--wood-dark);
+  cursor: pointer;
+}
+
+.house-menu-item:hover:not(:disabled),
+.house-menu-item:focus-visible {
+  outline: none;
+  background: #f3e6d0;
+}
+
+.house-menu-item:disabled {
+  color: #b8a890;
+  cursor: default;
+}
+
+.house-menu-item.danger {
+  color: #a8392f;
+}
+
+.house-menu-item.danger:hover {
+  background: #fbe9e6;
+}
+
+/* --- The loading screen: a dark front porch at night --- */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 20px;
+  background: #141a2e;
+  transition: opacity 0.7s ease;
+}
+
+#loading-screen.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.porch-scene {
+  width: min(520px, 92vw);
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* The lamp: dark, with a faint try-to-light shimmer while loading; it
+   flickers on when the house is ready. */
+.porch-light .lamp {
+  fill: #3a3028;
+  transition: fill 0.2s;
+}
+
+.porch-light .glow {
+  opacity: 0.08;
+  animation: porch-shimmer 3.2s ease-in-out infinite;
+}
+
+#loading-screen.lit .porch-light .lamp {
+  fill: #ffe08a;
+  animation: porch-flicker 0.9s steps(1) forwards;
+}
+
+#loading-screen.lit .porch-light .glow {
+  animation: porch-flicker-glow 0.9s steps(1) forwards;
+}
+
+@keyframes porch-shimmer {
+  0%, 100% { opacity: 0.05; }
+  50% { opacity: 0.14; }
+}
+
+@keyframes porch-flicker {
+  0% { fill: #ffe08a; }
+  15% { fill: #3a3028; }
+  25% { fill: #ffe08a; }
+  40% { fill: #5a4a38; }
+  55%, 100% { fill: #ffe08a; }
+}
+
+@keyframes porch-flicker-glow {
+  0% { opacity: 0.9; }
+  15% { opacity: 0.05; }
+  25% { opacity: 0.8; }
+  40% { opacity: 0.2; }
+  55%, 100% { opacity: 1; }
+}
+
+/* Each moth moves toward the light (its spot changes as loading goes on)
+   and flutters in little loops. */
+.moth-spot {
+  transition: transform 1.4s ease-in-out;
+}
+
+.moth {
+  animation: moth-flutter 2.6s ease-in-out infinite;
+}
+
+.moth ellipse:nth-child(-n + 2) {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: moth-wings 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes moth-flutter {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(6px, -5px); }
+  50% { transform: translate(-3px, -9px); }
+  75% { transform: translate(-7px, -2px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes moth-wings {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0.35); }
+}
+
+.loading-panel {
+  width: min(420px, 92vw);
+  text-align: center;
+  color: #efe4cf;
+}
+
+.loading-title {
+  margin: 0 0 12px;
+  font-size: 1.8em;
+  color: #f6d38a;
+  letter-spacing: 0.02em;
+}
+
+.loading-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.loading-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d9a441, #ffe08a);
+  transition: width 0.5s ease;
+}
+
+.loading-step {
+  margin: 10px 0 4px;
+  font-weight: 700;
+}
+
+.loading-tip {
+  min-height: 2.6em;
+  margin: 0;
+  font-size: 0.9em;
+  color: #b8b0a4;
+}
+
+.loading-error:not([hidden]) {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(192, 85, 74, 0.2);
+}
+
+.loading-error p {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moth,
+  .moth ellipse,
+  .porch-light .glow,
+  #loading-screen.lit .porch-light .lamp,
+  #loading-screen.lit .porch-light .glow {
+    animation: none;
+  }
+  #loading-screen.lit .porch-light .glow {
+    opacity: 1;
+  }
+}
+

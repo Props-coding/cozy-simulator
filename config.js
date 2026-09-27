@@ -5,6 +5,31 @@ const CONFIG = {
   // unit" is roughly one floor tile; each room is about 6 units wide).
   playerSpeed: 5,
 
+  // Tips and fun lines on the loading screen (a new one every few
+  // seconds). Add as many as you like.
+  loadingTips: [
+    "Tip: the room you stand in decides who you hear.",
+    "Tip: press E near almost anything to use it.",
+    "Tip: step into bed to sleep. Friends see a little moon.",
+    "Tip: rain in the hometown waters everyone's garden.",
+    "Tip: the big fish come out at night. Bring good bait.",
+    "Tip: experiment at the stove. Burnt things still sell (to raccoons).",
+    "Tip: Juniper the fox comes on the bus every Friday.",
+    "Tip: the fortune cookie jar in the Dinner room has one for you every day.",
+    "Tip: hold 1 to 5 for a quick emote.",
+    "Tip: knock before walking into a friend's room.",
+    "Tip: eat a dish for a 30-minute boost. Hover the bubble by your crumbs to see it.",
+    "Tip: put things out at the trading post, even while you're away.",
+    "The raccoons would like you to know they are three raccoons. (They are.)",
+    "Otis says the fish are biting. Otis always says that.",
+    "Hazel has watered 4,000 plants. None of them have said thank you.",
+    "The moths are regulars here. They come for the light.",
+    "Someone left the porch light on for you.",
+    "Fluffing the pillows...",
+    "Sweeping the porch...",
+    "Checking under the bed for dust bunnies...",
+  ],
+
   // Room names shown on screen. Change these if you want different labels.
   roomNames: {
     hallway: "Hallway",

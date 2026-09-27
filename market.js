@@ -9,6 +9,10 @@
 //   (on her day, in the hometown) with rare seeds, bait, recipes and decor.
 //   What she brings changes each week; each person can buy a few of each.
 //
+// - A direct offer to one friend (right-click them, then Trade): it waits
+//   at the stall under "For you", only they can take it, and a note in
+//   their mailbox tells them.
+//
 // The house server keeps the stall and does every trade (the bank, see
 // bank.js). Settings are in config.js (tradingPost, merchant).
 import { serverApi } from "./account.js";
@@ -17,6 +21,11 @@ import { basketCount, basketItems, itemInfo } from "./basket.js";
 import { openNpc, refreshNpc } from "./npc.js";
 import { crumbBalance } from "./shop.js";
 import { playClickSound, playCrumbSound } from "./audio.js";
+
+let hooks = { notice: () => {} };
+export function initMarket(options) {
+  hooks = { ...hooks, ...options };
+}
 
 // The stall and Juniper's pack, from the house server (refreshed now and then).
 let market = { listings: [], mine: [], merchant: { here: false, week: 0, stock: [] } };
@@ -59,6 +68,7 @@ export async function openTradingPost() {
 function browseRows() {
   return market.listings
     .filter((l) => !market.mine.includes(l.id))
+    .sort((a, b) => b.forMe - a.forMe) // (offers made just for you first)
     .map((l) => {
       const info = itemInfo(l.item);
       const forText = l.price !== null ? `${l.price} crumbs` : label(l.want.item, l.want.n);
@@ -66,7 +76,7 @@ function browseRows() {
       return {
         icon: info.icon,
         name: label(l.item, l.n),
-        note: `From ${l.sellerName}, for ${forText}.`,
+        note: `${l.forMe ? "For you! " : ""}From ${l.sellerName}, for ${forText}.`,
         price: l.price ?? undefined,
         actions: [
           {
@@ -91,7 +101,7 @@ function myRows() {
     .map((l) => ({
       icon: itemInfo(l.item).icon,
       name: label(l.item, l.n),
-      note: `For ${l.price !== null ? `${l.price} crumbs` : label(l.want.item, l.want.n)}. Put out ${daysAgo(l.at)}; it comes home after ${CONFIG.tradingPost.listingDays} days.`,
+      note: `${l.forName ? `Offered to ${l.forName}, f` : "F"}or ${l.price !== null ? `${l.price} crumbs` : label(l.want.item, l.want.n)}. Put out ${daysAgo(l.at)}; it comes home after ${CONFIG.tradingPost.listingDays} days.`,
       actions: [
         {
           label: "Take back",
@@ -128,15 +138,38 @@ const priceInput = document.getElementById("trade-price");
 const wantSelect = document.getElementById("trade-want");
 const wantN = document.getElementById("trade-want-n");
 const note = document.getElementById("trade-note");
+const itemRow = document.getElementById("trade-item-row");
+const itemSelect = document.getElementById("trade-item");
 let listing = null;
+let offerTo = null; // a friend's name, for a direct offer (or null for the stall)
 
 export function isTradeDialogOpen() {
   return !dialog.hidden;
 }
 
-function openTradeDialog(id) {
+// A direct offer to one friend (the right-click menu's Trade): pick what
+// to offer, then crumbs or a swap, like at the stall.
+export function offerTradeTo(name) {
+  const things = basketItems();
+  if (!things.length) return false;
+  offerTo = name;
+  itemSelect.innerHTML = "";
+  for (const [id, n] of things) itemSelect.add(new Option(`${itemInfo(id).icon} ${itemInfo(id).name} (you have ${n})`, id));
+  itemSelect.onchange = () => {
+    listing = itemSelect.value;
+    nInput.max = basketCount(listing);
+    nInput.value = 1;
+    priceInput.value = Math.max(1, itemInfo(listing).sell || 10);
+  };
+  openTradeDialog(things[0][0], name);
+  return true;
+}
+
+function openTradeDialog(id, forName = null) {
   listing = id;
-  document.getElementById("trade-title").textContent = `Put out ${itemInfo(id).name}`;
+  offerTo = forName;
+  itemRow.hidden = !forName;
+  document.getElementById("trade-title").textContent = forName ? `Offer something to ${forName}` : `Put out ${itemInfo(id).name}`;
   nInput.max = basketCount(id);
   nInput.value = 1;
   priceInput.value = Math.max(1, itemInfo(id).sell || 10);
@@ -184,9 +217,10 @@ document.getElementById("trade-list").addEventListener("click", async () => {
   if (!(n >= 1 && n <= basketCount(listing))) return fail(`You have ${basketCount(listing)} of those.`);
   const extra = swap ? { want: { item: wantSelect.value, n: Math.floor(Number(wantN.value)) } } : { price: Math.floor(Number(priceInput.value)) };
   if (swap ? !(extra.want.n >= 1) : !(extra.price >= 1)) return fail(swap ? "Ask for at least 1." : "Ask for at least 1 crumb.");
-  const done = await bank("tradeList", { item: listing, n, ...extra });
+  const done = await bank("tradeList", { item: listing, n, ...extra, ...(offerTo ? { for: offerTo } : {}) });
   if (!done) return;
   playCrumbSound();
+  if (offerTo) hooks.notice(`Offered to ${offerTo}. It's waiting at the trading post, and a note tells them.`);
   closeTradeDialog();
   await refreshMarket();
 });

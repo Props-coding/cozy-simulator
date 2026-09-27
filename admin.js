@@ -40,7 +40,7 @@ const search = document.getElementById("admin-search");
 // main.js tells us how to move you, which rooms there are, how to refresh
 // the Join screen's outfit lists, how to ask "are you sure?", where you
 // are, how to go to a friend, and how to send an admin order.
-let hooks = { teleport: () => false, rooms: () => [], refreshLook: () => {}, confirm: async () => false, here: () => ({}), goTo: () => false, sendOrder: () => {} };
+let hooks = { teleport: () => false, rooms: () => [], refreshLook: () => {}, confirm: async () => false, here: () => ({}), goTo: () => false, sendOrder: () => {}, notice: () => {} };
 
 // Called once you've joined: shows the 🛠️ button if you're an admin.
 export function initAdmin(options) {
@@ -464,6 +464,44 @@ function debugTab() {
     row("Seats", [toggle("seats", "Seat spots (where you sit)")]),
     row("Collision", [toggle("solids", "Walls and furniture you bump into")]),
     row("Rooms", [toggle("rooms", "Room edges and names")]),
+  ];
+}
+
+// The admin tools for one friend, for the right-click menu (main.js):
+// [{ label, run, danger, disabled }]. Empty unless you're an admin (and
+// not viewing as a player). `muted` says whether they're muted now.
+export function adminActionsFor(name, muted) {
+  if (!isAdmin() || viewingAsPlayer()) return [];
+  const here = hooks.here();
+  const tell = (text) => hooks.notice(text, 5000);
+  const run = (work) => async () => {
+    try {
+      tell(await work());
+    } catch (err) {
+      tell(err.message);
+    }
+  };
+  const order = async (kind, extra = {}) => {
+    const { order: o } = await serverApi("POST", "/api/admin/order", { kind, name, ...extra });
+    hooks.sendOrder(o);
+  };
+  return [
+    { label: "🛠️ Teleport to", run: () => tell(hooks.goTo(name) ? `Went to ${name}.` : `Couldn't get to ${name}.`) },
+    { label: "🛠️ Bring here", disabled: here.inBedroom, title: here.inBedroom ? "Not from inside a bedroom" : "", run: run(async () => (await order("summon", { x: here.x, y: here.y }), `Bringing ${name} over.`)) },
+    { label: "🛠️ Unstick", run: run(async () => (await order("unstick"), `${name} goes back to the hallway.`)) },
+    muted
+      ? { label: "🛠️ Unmute", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 0 }), `${name} can talk again.`)) }
+      : { label: "🛠️ Mute (10 min)", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 10 }), `${name} is muted for everyone for 10 minutes.`)) },
+    {
+      label: "🛠️ Send out (10 min)",
+      danger: true,
+      run: run(async () => {
+        if (!(await hooks.confirm({ title: `Send ${name} out of the house?`, text: `${name} is logged out and can't come back for 10 minutes. Everyone stops seeing and hearing them.`, yes: "Send out", no: "Cancel" }))) return "";
+        const { order: o } = await serverApi("POST", "/api/admin/kick", { name, minutes: 10 });
+        hooks.sendOrder(o);
+        return `${name} was sent out of the house.`;
+      }),
+    },
   ];
 }
 

@@ -71,7 +71,7 @@ import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType, crumbBalance, itemName, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect, showBankEvents } from "./achievements.js";
 import { initBank, bank, startTicking } from "./bank.js";
-import { initHome, myHome, shareMyRoom, isDecorating, heldPiece, checkRoomReset } from "./home.js";
+import { initHome, myHome, shareMyRoom, isDecorating, heldPiece, checkRoomReset, movePiece, storePiece } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { roomLevelKey } from "./reputation.js";
 import { titleText, titleList, checkNewTitles } from "./titles.js";
@@ -82,7 +82,8 @@ import { initLaptop, openLaptop, isLaptopOpen, startMail } from "./laptop.js";
 import { openJournal, isJournalOpen } from "./journal.js";
 import { initPhone, openPhonePanel, closePhonePanel, isPhonePanelOpen, hangUp, inCall, phoneBusy, checkCall } from "./phone.js";
 import { openProfile, isProfileOpen } from "./profile.js";
-import { initAdmin } from "./admin.js";
+import { initAdmin, adminActionsFor } from "./admin.js";
+import { openMenu, closeMenu, isMenuOpen } from "./menu.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass, initAccountHooks, checkAdminOrder, serverApi } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
@@ -92,7 +93,7 @@ import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
 import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
-import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen } from "./market.js";
+import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -406,7 +407,9 @@ joinButton.addEventListener("click", async () => {
       sendAdminOrder(order);
       obeyOrder(order); // (orders about someone else still matter here: a sent-out friend disappears)
     },
+    notice: (text, ms) => text && showNotice(text, ms),
   });
+  initMarket({ notice: (text) => showNotice(text, 6000) });
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
@@ -1017,6 +1020,103 @@ canvas.addEventListener("click", (e) => {
   if (hit) openProfile(hit.name);
 });
 
+// --- The right-click menu (menu.js) ---
+// The browser's own menu is off on the house (chat and text boxes keep
+// theirs, for copy and paste), and so is dragging the picture around.
+// Instead: on a friend, Trade (plus the admin tools, for admins); on
+// furniture, Sit, Inspect, and in your own room Move or Store.
+canvas.addEventListener("dragstart", (e) => e.preventDefault());
+canvas.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  closeMenu();
+  if (!inHouse || isDecorating() || uiBusy()) return;
+  const r = canvas.getBoundingClientRect(), wrap = houseWrap.getBoundingClientRect();
+  const g = screenToGrid(canvas, e.clientX - r.left, e.clientY - r.top);
+  const at = { x: e.clientX - wrap.left + 4, y: e.clientY - wrap.top + 4 };
+  const person = lastScenePlayers.find((p) => !isMe(p.name) && Math.hypot(g.x - (p.x + PLAYER_SIZE / 2), g.y - (p.y + PLAYER_SIZE - 0.45)) < 0.5);
+  if (person) {
+    const items = [
+      { label: "🤝 Trade", run: () => offerTradeTo(person.name) || showNotice("Your basket is empty, so there's nothing to offer yet.") },
+      ...adminActionsFor(person.name, mutedNames.has(person.name.toLowerCase())),
+    ];
+    openMenu(at, person.name, items);
+    return;
+  }
+  const piece = furnitureAt(g);
+  if (piece) openMenu(at, pieceName(piece), furnitureMenu(piece, at));
+});
+
+// What furniture is under the pointer. Something whose footprint is right
+// there wins; otherwise something standing up, whose top half reaches over
+// the spot (the front-most). Flat things (rugs, mats) only count in your
+// own room, where you can move them: elsewhere they're just floor.
+const FLAT_KINDS = new Set(["rug", "doormat", "merchantWares", "pondStones", "wildflowers", "reeds", "flowerBed"]);
+function furnitureAt(g) {
+  const floor = floorOf(player.y);
+  let under = null, above = null;
+  for (const f of FURNITURE) {
+    if (f.h === undefined || floorOf(f.y) !== floor) continue;
+    if ((f.kind === "juniper" || f.kind === "merchantWares") && !MERCHANT.here) continue;
+    const flat = FLAT_KINDS.has(f.kind);
+    if (flat && !f.decor?.mine) continue;
+    if (g.x < f.x || g.x > f.x + f.w) continue;
+    const front = f.y + f.h - (flat ? 100 : 0); // (a rug loses to anything standing on it)
+    if (g.y >= f.y && g.y <= f.y + f.h) {
+      if (!under || front > under.front) under = { f, front };
+    } else if (!flat && g.y >= f.y - 1.0 && g.y < f.y) {
+      if (!above || front > above.front) above = { f, front };
+    }
+  }
+  return (under ?? above)?.f ?? null;
+}
+
+const NPC_NAMES = { hazel: "Hazel the hedgehog", otis: "Otis the otter", raccoons: "The raccoons", juniper: "Juniper the fox" };
+function pieceName(f) {
+  if (f.decor?.item && DECOR[f.decor.item]) return DECOR[f.decor.item].name;
+  if (NPC_NAMES[f.kind]) return NPC_NAMES[f.kind];
+  const words = f.kind.replace(/Side$/, "").replace(/([A-Z])/g, " $1").toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function pieceLines(f) {
+  const seats = seatSpots(f).length;
+  const sits = seats ? ` Seats ${seats === 1 ? "one" : seats}.` : "";
+  if (f.decor?.item) {
+    const item = DECOR[f.decor.item];
+    const from = !item.tab ? "It came with the room." : item.tab === "traveler" ? "From Juniper, the traveling merchant." : "From Nest & Nook.";
+    const room = getCurrentRoom(player);
+    return [(f.decor.mine ? "In your room. " : room.owned ? `In ${room.owned.ownerName}'s room. ` : "") + from + sits];
+  }
+  if (NPC_NAMES[f.kind]) return ["Walk up and press E to talk."];
+  return ["Part of the house." + sits];
+}
+
+function furnitureMenu(f, at) {
+  const items = [];
+  const seats = seatSpots(f);
+  if (seats.length) {
+    items.push({
+      label: "🪑 Sit",
+      run: () => {
+        const taken = takenSeats();
+        const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+        const free = seats.filter((s) => !taken.has(s.key)).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
+        if (!free) return showNotice("Someone's already sitting there.");
+        if (Math.hypot(free.x - cx, free.y - cy) > 2.5) return showNotice("Walk a little closer to sit there.");
+        if (mySeat) standUp();
+        sitDown(free);
+      },
+    });
+  }
+  items.push({ label: "🔍 Inspect", run: () => openMenu(at, pieceName(f), [], pieceLines(f)) });
+  const room = getCurrentRoom(player);
+  if (f.decor?.mine && room.owned?.mine && room.owned.kind === "bedroom") {
+    items.push({ label: "✋ Move", run: () => movePiece(f.decor.index) });
+    items.push({ label: "📦 Store", run: () => storePiece(f.decor.index) });
+  }
+  return items;
+}
+
 // Admin panel: jump to the middle of any room (the nearest free spot).
 function teleport(roomId) {
   const room = ROOMS.find((r) => r.id === roomId);
@@ -1122,6 +1222,10 @@ async function obeyOrder(order) {
   }
 }
 onAdminOrder(obeyOrder);
+
+// The loading screen (index.html): the page's code has run, and once the
+// fonts are in, the lamps are lit.
+document.fonts.ready.then(() => Loading.step("art"));
 
 // From the house server every 20 seconds (with the bedroom doors): who's
 // muted or sent out, an announcement, and whether the house is closing.
@@ -1549,7 +1653,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || !elevatorPanel.hidden || !!ride;
+  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again
@@ -1789,7 +1893,7 @@ function renderChat({ toBottom = false, newMessage = false } = {}) {
       crown.className = "owner-crown";
       crown.src = creatorCrownURL();
       crown.alt = "👑";
-      crown.title = "Creator of the Cozy House";
+      crown.title = "Creator of Porchlight";
       name.classList.add("owner-name");
       name.prepend(crown);
     } else if (line.admin) {

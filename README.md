@@ -1,4 +1,4 @@
-# Cozy House
+# Porchlight
 
 A small browser hangout for a few friends. Everyone opens a link, picks a name and color, and walks around a shared house. The room you're standing in decides what you hear (voice chat, music, or silence).
 

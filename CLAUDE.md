@@ -1,4 +1,4 @@
-# Cozy House: Project Guide for Claude Code
+# Porchlight (formerly Cozy House): Project Guide for Claude Code
 
 A cozy browser hangout for a few friends. Read this whole file before doing anything. Then start at Milestone 1.
 

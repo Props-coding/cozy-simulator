@@ -1324,8 +1324,20 @@ const BANK = {
       want = { item: String(b.want.item ?? ""), n: amount(b.want.n, 1, MAX_STACK) };
       if (!knownItem(want.item)) throw new Oops(400, "You can't ask for that.");
     } else price = amount(b.price, 1, 100_000);
+    // A direct offer to one friend (from the right-click menu): only they
+    // can take it, and a note tells them about it.
+    let forKey = null;
+    if (b.for) {
+      const friend = memberNamed(b.for);
+      if (friend.key === key) throw new Oops(400, "That's you!");
+      forKey = friend.key;
+    }
     takeOut(w, item, n);
-    market.listings.push({ id: newId(), seller: key, sellerName: user.name, item, n, price, want, at: Date.now() });
+    market.listings.push({ id: newId(), seller: key, sellerName: user.name, item, n, price, want, at: Date.now(), ...(forKey ? { for: forKey, forName: db.users[forKey].name } : {}) });
+    if (forKey) {
+      const ask = price !== null ? `${price} crumbs` : `${want.n} × ${itemLabel(want.item)}`;
+      sendLetter(db.users[forKey], { from: user.name, subject: `A trade offer: ${n} × ${itemLabel(item)}`, body: `${user.name} offered you ${n} × ${itemLabel(item)} for ${ask}. It's waiting for you at the trading post (the orange-striped stall in the yard), under "For you".` });
+    }
     return {};
   },
   tradeCancel(w, b, ev, { key }) {
@@ -1341,6 +1353,7 @@ const BANK = {
     const listing = market.listings.find((l) => l.id === b.id);
     if (!listing) throw new Oops(404, "Someone got there first.");
     if (listing.seller === key) throw new Oops(400, "That's yours! Take it back from Your stall instead.");
+    if (listing.for && listing.for !== key) throw new Oops(403, "That offer is for someone else.");
     const sellerUser = db.users[listing.seller];
     if (!sellerUser) throw new Oops(404, "Whoever listed that has left the house.");
     const seller = ensureWallet(sellerUser, listing.seller);
@@ -2017,7 +2030,9 @@ const routes = {
     const market = marketState();
     if (market.listings.length !== before) await saveDb(); // (some went home)
     const { here, week, stock } = merchantState();
-    return { listings: market.listings.map(({ seller, ...l }) => l), mine: market.listings.filter((l) => l.seller === key).map((l) => l.id), merchant: { here, week, stock } };
+    // (Offers for one friend only show to them, and to whoever made them.)
+    const visible = market.listings.filter((l) => !l.for || l.for === key || l.seller === key);
+    return { listings: visible.map(({ seller, for: forKey, ...l }) => ({ ...l, forMe: forKey === key })), mine: visible.filter((l) => l.seller === key).map((l) => l.id), merchant: { here, week, stock } };
   },
 
   // --- The shared garden (Update 4) ---
