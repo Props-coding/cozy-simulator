@@ -532,10 +532,65 @@ function fitBounds(rect, below) {
   return { left: cx - (W * k) / 2, right: cx + (W * k) / 2, top: cy - (H * k) / 2, bottom: cy + (H * k) / 2 };
 }
 
-// The whole house's size, in the house's own pixels (before scaling).
-// main.js uses this to size the view to fit the window.
+// --- The camera ---
+// houseBounds() is the whole floor. The view (what's on screen) is a
+// window onto it, CONFIG.camera.zoom times closer than the whole ground
+// floor, that follows you (gliding, and stopping at the floor's edges).
+// Press M for the map: the whole floor at once, like before. Bedrooms
+// (and anything smaller than the window) are shown whole, as they were.
+let mapView = false;
+const camera = { x: null, y: null, floor: null };
+
+function setMapView(on) {
+  mapView = on;
+}
+function isMapView() {
+  return mapView;
+}
+
+// The ground floor's whole size (the window's shape comes from it).
+let groundSizeCache = null;
+function groundSize() {
+  if (!groundSizeCache || groundSizeCache.version !== houseVersion) {
+    const floor = viewFloor;
+    viewFloor = 0;
+    const b = measureHouseBounds();
+    viewFloor = floor;
+    groundSizeCache = { version: houseVersion, w: b.right - b.left, h: b.bottom - b.top };
+  }
+  return groundSizeCache;
+}
+
+// Moves the camera toward a point (in the house's pixels; main.js passes
+// where you stand, every frame). It jumps straight there on a new floor.
+function followWithCamera(x, y) {
+  const far = camera.x === null || camera.floor !== viewFloor || Math.hypot(x - camera.x, y - camera.y) > 600;
+  const k = far ? 1 : CONFIG.camera?.follow ?? 0.12;
+  camera.x = far ? x : camera.x + (x - camera.x) * k;
+  camera.y = far ? y : camera.y + (y - camera.y) * k;
+  camera.floor = viewFloor;
+}
+
+// What's on screen right now: { left, right, top, bottom } in the house's
+// pixels.
+function viewBounds() {
+  const world = houseBounds();
+  const zoom = CONFIG.camera?.zoom ?? 1;
+  const ground = groundSize();
+  const vw = ground.w / zoom, vh = ground.h / zoom;
+  const ww = world.right - world.left, wh = world.bottom - world.top;
+  if (mapView || zoom <= 1 || (ww <= vw + 1 && wh <= vh + 1) || camera.x === null) return world;
+  const clamp = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
+  const cx = clamp(camera.x, world.left + vw / 2, world.right - vw / 2);
+  const cy = clamp(camera.y, world.top + vh / 2, world.bottom - vh / 2);
+  return { left: cx - vw / 2, right: cx + vw / 2, top: cy - vh / 2, bottom: cy + vh / 2 };
+}
+
+// The view's size, in the house's own pixels (before scaling). main.js
+// uses this to size the view to fit the window (it only changes between
+// the map, a bedroom and the rest).
 function houseViewSize() {
-  const b = houseBounds();
+  const b = viewBounds();
   return { w: b.right - b.left, h: b.bottom - b.top };
 }
 
@@ -550,6 +605,7 @@ function setViewScale(scale) {
 }
 
 let floorCanvas = null;
+let floorScale = 1; // the resolution the saved floor picture was painted at
 let floorVersion = -1; // which house version (and floor) the saved picture shows
 
 // The doormats have writing on them, so repaint the floor once the cozy
@@ -564,18 +620,22 @@ function drawFloors(ctx) {
   const version = houseVersion + "/" + viewFloor;
   if (floorVersion !== version) {
     // Painted at full screen resolution, so copying it in is pixel-for-pixel.
+    // (Zoomed in, the whole floor at screen resolution could be huge, so
+    // it's kept under about 16 million pixels; past that it's scaled up a
+    // little when copied in.)
     const { left, right, top, bottom } = houseBounds();
+    floorScale = Math.min(viewScale, Math.sqrt(16e6 / ((right - left) * (bottom - top))));
     floorCanvas = document.createElement("canvas");
-    floorCanvas.width = Math.ceil((right - left) * viewScale);
-    floorCanvas.height = Math.ceil((bottom - top) * viewScale);
+    floorCanvas.width = Math.ceil((right - left) * floorScale);
+    floorCanvas.height = Math.ceil((bottom - top) * floorScale);
     const fctx = floorCanvas.getContext("2d");
-    fctx.scale(viewScale, viewScale);
+    fctx.scale(floorScale, floorScale);
     fctx.translate(-left, -top);
     paintFloors(fctx);
     floorVersion = version;
   }
   const { left, top } = houseBounds();
-  ctx.drawImage(floorCanvas, left, top, floorCanvas.width / viewScale, floorCanvas.height / viewScale);
+  ctx.drawImage(floorCanvas, left, top, floorCanvas.width / floorScale, floorCanvas.height / floorScale);
 }
 
 // --- Walls ---

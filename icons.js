@@ -575,6 +575,21 @@ function fitInto(big, out) {
 export function portraitCanvas(spec, size = 58) {
   const id = JSON.stringify(spec) + "|" + size;
   let done = cache.get(id);
+  if (!done && spec.resident) {
+    // Clover and Mortimer: framed on their face (not trimmed to their
+    // outline, which Clover's floppy ear would pull to one side).
+    done = Object.assign(document.createElement("canvas"), { width: size * 2, height: size * 2 });
+    const ctx = done.getContext("2d");
+    const face = spec.resident === "clover" ? { y: -36, span: 42 } : { y: -22, span: 34 };
+    const k = (size * 2) / face.span;
+    ctx.translate(size, size);
+    ctx.scale(k, k);
+    ctx.translate(0, -face.y);
+    const pose = { facing: 0, moving: false, act: "chat", asleep: false, y: 0 };
+    if (spec.resident === "clover") drawClover(ctx, pose, 1);
+    else drawMortimer(ctx, pose, 1);
+    cache.set(id, done);
+  }
   if (!done) {
     const big = Object.assign(document.createElement("canvas"), { width: 240, height: 240 });
     drawSpec(big, spec);

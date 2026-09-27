@@ -881,6 +881,14 @@ window.addEventListener("keydown", (e) => {
   // Number keys 1 to 5: emotes.
   if (Object.hasOwn(EMOTE_KEYS, key)) startEmote(EMOTE_KEYS[key]);
 
+  // M: the map (the whole floor at once), and back to the close-up view.
+  if (key === CONFIG.camera.mapKey && !e.repeat) {
+    setMapView(!isMapView());
+    playClickSound();
+    showNotice(isMapView() ? "The map: the whole floor. Press M to go back." : "", isMapView() ? 2500 : 0);
+    fitHouse();
+  }
+
   // Open or close the whiteboard in the Conference Room.
   if (key === "b" && getCurrentRoom(player).id === "conference") {
     if (isWhiteboardOpen()) closeWhiteboard();
@@ -985,6 +993,7 @@ const SIDEBAR_SPACE = 230 + 20; // sidebar width plus the gap
 const FRAME = 8; // the house frame's border, both sides together
 
 let lastDrawnFloor = 0;
+let lastView = { w: 0, h: 0 }; // the view's size when it was last fitted
 function fitHouse() {
   if (gameScreen.hidden) return;
   const { w, h } = houseViewSize();
@@ -2553,7 +2562,21 @@ let lastSidebar = "";
 let visiblePeers = []; // friends you're allowed to see (see peerAllowed), updated each frame
 let lofiPlaying = false;
 
+// One frame of the game. If anything in a frame goes wrong, the problem
+// is reported (the admin panel's Server tab lists it) and the next frame
+// carries on, so one bad moment can't freeze the whole house.
+let frameErrors = 0;
 function tick(now) {
+  try {
+    frame(now);
+  } catch (err) {
+    if (frameErrors++ < 3) reportError(err?.message ?? err, "frame: " + String(err?.stack ?? "").split("\n")[1]?.trim());
+    console.error(err);
+  }
+  requestAnimationFrame(tick);
+}
+
+function frame(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05); // cap so a tab-switch pause doesn't teleport the player
   lastTime = now;
 
@@ -2657,15 +2680,16 @@ function tick(now) {
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "on the phone" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
-  // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.
-  if (floorOf(player.y) !== lastDrawnFloor) {
+  // The view changed size (the map, a bedroom, another floor): fit it to
+  // the window again.
+  const view = houseViewSize();
+  if (floorOf(player.y) !== lastDrawnFloor || Math.abs(view.w - lastView.w) > 0.5 || Math.abs(view.h - lastView.h) > 0.5) {
     lastDrawnFloor = floorOf(player.y);
+    lastView = view;
     fitHouse();
   }
 
   updateSidebar(currentRoom.name);
-
-  requestAnimationFrame(tick);
 }
 
 // --- Updates without refreshing ---

@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.70",
+    title: "A closer camera, and a map",
+    text: "The house is drawn closer now, like the bedrooms, and the view follows you as you walk. Press M any time for the map: the whole floor at once (press M again to go back). Also: Clover talks about what she's actually doing (no baking chat while she's out in the yard), her and Mortimer's portraits are centered, the admin wrench is redrawn, and the basket and trophy tooltips behave. If something ever goes wrong for a moment, the house now keeps going instead of freezing.",
+  },
+  {
     build: "0.69",
     title: "Residents: Clover the baker and Mortimer the librarian",
     text: "Two new neighbors have moved in, and they keep their own hours (on the hometown's clock). Clover the rabbit bakes in the kitchen in the morning, takes her bread basket out to the yard at midday, and is back for supper. Mortimer the owl sleeps on his perch in the Library all day and potters about the shelves at night. Walk up and press E to chat. Each of them asks for one thing a day (a crop, a fish, a dish...) and pays crumbs for it, and you can bring them a gift once a day. Chatting, helping and gifts build friendship hearts, which unlock their stories, their recipes (cheaper for close friends) and, at 10 hearts, a title. Also: the stones at the bottom of the porch steps are a proper flagstone walk now.",

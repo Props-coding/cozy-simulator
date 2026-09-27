@@ -20,8 +20,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.69" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.69">
+       build, change every "v=0.70" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.70">
 </head>
 <body>
   <!-- The loading screen: a dark front porch at night. The porch light
@@ -249,14 +249,15 @@
       <rect x="12.5" y="24.6" width="7" height="1.8" rx="0.6" fill="#e8b84a"/>
     </symbol>
     <symbol id="ic-tools" viewBox="0 0 32 32">
-      <path d="M7 25 L19 13" stroke="#8a5a2e" stroke-width="4.5" stroke-linecap="round"/>
-      <path d="M7 25 L19 13" stroke="#b8844e" stroke-width="2" stroke-linecap="round"/>
-      <path d="M16.5 9.5 L22.5 3.5 L28.5 9.5 L22.5 15.5 Z" fill="#9aa4ac" stroke="#5e666c" stroke-width="1.4" stroke-linejoin="round"/>
-      <path d="M19 9.2 L22.5 5.7" stroke="#d7dde2" stroke-width="1.3" stroke-linecap="round"/>
-      <path d="M25 26 L14 15" stroke="#5e666c" stroke-width="4" stroke-linecap="round"/>
-      <path d="M25 26 L14 15" stroke="#9aa4ac" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="11.5" cy="12.5" r="4.6" fill="#9aa4ac" stroke="#5e666c" stroke-width="1.4"/>
-      <circle cx="10" cy="11" r="2" fill="#fffaf3"/>
+      <!-- A wrench, lying corner to corner and centered: the open jaw at the
+           top right, a round hole at the handle's end. -->
+      <g transform="rotate(45 16 16)">
+        <path d="M13.2 11 H18.8 V27.5 A2.8 2.8 0 0 1 13.2 27.5 Z" fill="#b8c0c8" stroke="#5e666c" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M9.5 8.5 A6.5 6.5 0 0 1 22.5 8.5 C22.5 11 21 12.5 19 13 L13 13 C11 12.5 9.5 11 9.5 8.5 Z" fill="#b8c0c8" stroke="#5e666c" stroke-width="1.5" stroke-linejoin="round"/>
+        <rect x="13.6" y="1.2" width="4.8" height="7.5" rx="1" fill="#fffaf3" stroke="#5e666c" stroke-width="1.3"/>
+        <circle cx="16" cy="27" r="1.3" fill="#5e666c"/>
+        <path d="M14.6 14 V24" stroke="#e4e9ee" stroke-width="1.3" stroke-linecap="round"/>
+      </g>
     </symbol>
     <symbol id="ic-pin" viewBox="0 0 32 32">
       <ellipse cx="16" cy="28" rx="5" ry="1.6" fill="#7a5c3e" opacity="0.25"/>
@@ -982,7 +983,7 @@
           </div>
         </div>
         <p id="action-hint"></p>
-        <p id="move-hint" class="hint">Move with the arrow keys or WASD.</p>
+        <p id="move-hint" class="hint">Move with the arrow keys or WASD. Press M for the map.</p>
       </div>
       <div id="side-column">
       <div id="sidebar">
@@ -1068,71 +1069,71 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.69</p>
+  <p id="version-tag">build 0.70</p>
 
-  <script src="config.js?v=0.69"></script>
-  <script src="catalog.js?v=0.69"></script>
-  <script src="world.js?v=0.69"></script>
-  <script src="render.js?v=0.69"></script>
-  <script src="render-furniture.js?v=0.69"></script>
-  <script src="render-rooms.js?v=0.69"></script>
-  <script src="render-extras.js?v=0.69"></script>
-  <script src="render-characters.js?v=0.69"></script>
-  <script src="render-scene.js?v=0.69"></script>
-  <script src="outdoors.js?v=0.69"></script>
-  <script src="render-residents.js?v=0.69"></script>
+  <script src="config.js?v=0.70"></script>
+  <script src="catalog.js?v=0.70"></script>
+  <script src="world.js?v=0.70"></script>
+  <script src="render.js?v=0.70"></script>
+  <script src="render-furniture.js?v=0.70"></script>
+  <script src="render-rooms.js?v=0.70"></script>
+  <script src="render-extras.js?v=0.70"></script>
+  <script src="render-characters.js?v=0.70"></script>
+  <script src="render-scene.js?v=0.70"></script>
+  <script src="outdoors.js?v=0.70"></script>
+  <script src="render-residents.js?v=0.70"></script>
   <script>
     // The page's code is here (the loading screen's first step).
     Loading.step("code");
     Loading.nextTip();
     // Keep the game's files on this computer, so coming back is quicker
     // (sw.js). Each build keeps its own copy, so an update always loads fresh.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.69").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.70").catch(() => {});
   </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.69",
-        "./network.js": "./network.js?v=0.69",
-        "./audio.js": "./audio.js?v=0.69",
-        "./theater.js": "./theater.js?v=0.69",
-        "./whiteboard.js": "./whiteboard.js?v=0.69",
-        "./shop.js": "./shop.js?v=0.69",
-        "./emoji.js": "./emoji.js?v=0.69",
-        "./achievements.js": "./achievements.js?v=0.69",
-        "./home.js": "./home.js?v=0.69",
-        "./residents.js": "./residents.js?v=0.69",
-        "./ui-icons.js": "./ui-icons.js?v=0.69",
-        "./pictures.js": "./pictures.js?v=0.69",
-        "./turntable.js": "./turntable.js?v=0.69",
-        "./wardrobe.js": "./wardrobe.js?v=0.69",
-        "./kanban.js": "./kanban.js?v=0.69",
-        "./rooms.js": "./rooms.js?v=0.69",
-        "./journal.js": "./journal.js?v=0.69",
-        "./phone.js": "./phone.js?v=0.69",
-        "./laptop.js": "./laptop.js?v=0.69",
-        "./news.js": "./news.js?v=0.69",
-        "./account.js": "./account.js?v=0.69",
-        "./profile.js": "./profile.js?v=0.69",
-        "./icons.js": "./icons.js?v=0.69",
-        "./reputation.js": "./reputation.js?v=0.69",
-        "./titles.js": "./titles.js?v=0.69",
-        "./admin.js": "./admin.js?v=0.69",
-        "./updater.js": "./updater.js?v=0.69",
-        "./weather.js": "./weather.js?v=0.69",
-        "./basket.js": "./basket.js?v=0.69",
-        "./npc.js": "./npc.js?v=0.69",
-        "./bank.js": "./bank.js?v=0.69",
-        "./kitchen.js": "./kitchen.js?v=0.69",
-        "./market.js": "./market.js?v=0.69",
-        "./menu.js": "./menu.js?v=0.69",
-        "./garden.js": "./garden.js?v=0.69",
-        "./fishing.js": "./fishing.js?v=0.69",
-        "./bus.js": "./bus.js?v=0.69"
+        "./main.js": "./main.js?v=0.70",
+        "./network.js": "./network.js?v=0.70",
+        "./audio.js": "./audio.js?v=0.70",
+        "./theater.js": "./theater.js?v=0.70",
+        "./whiteboard.js": "./whiteboard.js?v=0.70",
+        "./shop.js": "./shop.js?v=0.70",
+        "./emoji.js": "./emoji.js?v=0.70",
+        "./achievements.js": "./achievements.js?v=0.70",
+        "./home.js": "./home.js?v=0.70",
+        "./residents.js": "./residents.js?v=0.70",
+        "./ui-icons.js": "./ui-icons.js?v=0.70",
+        "./pictures.js": "./pictures.js?v=0.70",
+        "./turntable.js": "./turntable.js?v=0.70",
+        "./wardrobe.js": "./wardrobe.js?v=0.70",
+        "./kanban.js": "./kanban.js?v=0.70",
+        "./rooms.js": "./rooms.js?v=0.70",
+        "./journal.js": "./journal.js?v=0.70",
+        "./phone.js": "./phone.js?v=0.70",
+        "./laptop.js": "./laptop.js?v=0.70",
+        "./news.js": "./news.js?v=0.70",
+        "./account.js": "./account.js?v=0.70",
+        "./profile.js": "./profile.js?v=0.70",
+        "./icons.js": "./icons.js?v=0.70",
+        "./reputation.js": "./reputation.js?v=0.70",
+        "./titles.js": "./titles.js?v=0.70",
+        "./admin.js": "./admin.js?v=0.70",
+        "./updater.js": "./updater.js?v=0.70",
+        "./weather.js": "./weather.js?v=0.70",
+        "./basket.js": "./basket.js?v=0.70",
+        "./npc.js": "./npc.js?v=0.70",
+        "./bank.js": "./bank.js?v=0.70",
+        "./kitchen.js": "./kitchen.js?v=0.70",
+        "./market.js": "./market.js?v=0.70",
+        "./menu.js": "./menu.js?v=0.70",
+        "./garden.js": "./garden.js?v=0.70",
+        "./fishing.js": "./fishing.js?v=0.70",
+        "./bus.js": "./bus.js?v=0.70"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.69"></script>
+  <script type="module" src="main.js?v=0.70"></script>
 </body>
 </html>

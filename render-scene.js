@@ -117,7 +117,7 @@ function layoutPlayerTags(ctx, players) {
 
   // Kept inside the map's edges (someone right at the edge still has their
   // whole name showing).
-  const edge = houseBounds();
+  const edge = viewBounds();
   return tags.map((t) => {
     const target = t.top - t.headTop; // 0, or how far up it had to go
     const stack = (tagStacks[t.p.id] ??= target);
@@ -602,14 +602,14 @@ function lawnAreas() {
 // The other way: where a grid spot is on the page, in page pixels (for
 // placing things like the emote wheel over the house view).
 function gridToPage(canvas, gx, gy) {
-  const { left, top } = houseBounds();
+  const { left, top } = viewBounds();
   const perPixel = canvas.width / canvas.clientWidth / viewScale;
   const r = canvas.getBoundingClientRect();
   return { x: r.left + (ORIGIN_X + gx * TILE - left) / perPixel, y: r.top + (ORIGIN_Y + gy * TILE - top) / perPixel };
 }
 
 function screenToGrid(canvas, px, py) {
-  const { left, top } = houseBounds();
+  const { left, top } = viewBounds();
   const perPixel = canvas.width / canvas.clientWidth / viewScale; // house pixels per CSS pixel
   return { x: (px * perPixel + left - ORIGIN_X) / TILE, y: (py * perPixel + top - ORIGIN_Y) / TILE };
 }
@@ -695,7 +695,10 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   ctx.save();
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  const { left, top } = houseBounds();
+  // The camera follows you (see viewBounds in render.js).
+  const at = me && floorOf(me.y) === floor ? toScreen(me.x + PLAYER_SIZE / 2, me.y + PLAYER_SIZE / 2) : null;
+  if (at) followWithCamera(at.x, at.y);
+  const { left, top } = viewBounds();
   ctx.translate(-left, -top);
 
   drawFloors(ctx);

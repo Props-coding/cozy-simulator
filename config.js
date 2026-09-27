@@ -372,6 +372,17 @@ const CONFIG = {
     ],
   },
 
+  // --- The camera ---
+  // The view is `zoom` times closer than the whole ground floor and
+  // follows you around (`follow` is how quickly it catches up each frame:
+  // 0.05 lazy, 0.3 snappy). Press `mapKey` for the map, the whole floor at
+  // once. Bedrooms always show whole. zoom: 1 turns the close-up off.
+  camera: {
+    zoom: 1.8,
+    follow: 0.12,
+    mapKey: "m",
+  },
+
   // --- Residents' requests (Update 6) ---
   // Each day (the hometown's day), Clover and Mortimer each ask everyone
   // for one thing from this list (a different pick for each person, and
