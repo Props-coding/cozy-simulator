@@ -52,13 +52,14 @@ const CODES = {
 };
 
 // Little pictures for the header chip.
-const ICONS = { clear: "☀️", partly: "⛅", cloudy: "☁️", fog: "🌫️", drizzle: "🌦️", rain: "🌧️", snow: "🌨️", storm: "⛈️" };
-const NIGHT_ICONS = { clear: "🌙", partly: "☁️" };
+// The chip's little drawing for each sky (the "ic-" pictures in index.html).
+const ICONS = { clear: "sun", partly: "partly", cloudy: "cloud", fog: "fog", drizzle: "rain", rain: "rain", snow: "snow", storm: "storm" };
+const NIGHT_ICONS = { clear: "night", partly: "night-cloud" };
 
 // Try-outs from the admin panel ("rain", "snow", "night" and so on). They
 // only change this computer, until you pick "Real weather" or reload.
 let preview = { sky: null, night: null, dusk: false };
-let real = null; // the last real reading: { sky, rain, snow, clouds, temp, night, words, sunrise, sunset }
+let real = null; // the last real reading: { sky, rain, snow, clouds, temp, night, words, sunrise, sunset, utcOffset (the hometown's clock, for residents' hours) }
 
 const chip = document.getElementById("weather-chip");
 
@@ -85,10 +86,10 @@ function temperature(celsius) {
 
 function showChip() {
   if (!chip) return;
-  const icon = (OUTDOORS.night && NIGHT_ICONS[OUTDOORS.sky]) || ICONS[OUTDOORS.sky] || "☀️";
+  const icon = (OUTDOORS.night && NIGHT_ICONS[OUTDOORS.sky]) || ICONS[OUTDOORS.sky] || "sun";
   const temp = temperature(OUTDOORS.temp);
   chip.hidden = !real && !preview.sky && preview.night === null;
-  chip.querySelector(".weather-icon").textContent = icon;
+  chip.querySelector(".weather-icon use").setAttribute("href", "#ic-" + icon);
   chip.querySelector(".weather-temp").textContent = temp;
   const place = CONFIG.weather.hometown.name;
   chip.dataset.tip = `Weather in ${place}: ${OUTDOORS.words || "Clear"}${temp ? ", " + temp : ""}${OUTDOORS.night ? ", night" : ""}. It shows in the yard and through the windows. Weather data by Open-Meteo.com (CC BY 4.0).`;
@@ -108,7 +109,7 @@ async function fetchWeather() {
     // using its offset from UTC). Used for the dusk glow in windows.
     const offset = (data.utc_offset_seconds ?? 0) * 1000;
     const moment = (text) => (typeof text === "string" ? Date.parse(text + "Z") - offset : null);
-    real = { sky, rain, snow, clouds: Number.isFinite(c.cloud_cover) ? Math.max(clouds, c.cloud_cover / 100) : clouds, temp: c.temperature_2m, night: c.is_day === 0, words, sunrise: moment(data.daily?.sunrise?.[0]), sunset: moment(data.daily?.sunset?.[0]) };
+    real = { sky, rain, snow, clouds: Number.isFinite(c.cloud_cover) ? Math.max(clouds, c.cloud_cover / 100) : clouds, temp: c.temperature_2m, night: c.is_day === 0, words, sunrise: moment(data.daily?.sunrise?.[0]), sunset: moment(data.daily?.sunset?.[0]), utcOffset: offset };
     apply();
   } catch (err) {
     // No weather (offline, or the service is down): keep whatever we had.

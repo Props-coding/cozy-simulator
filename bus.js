@@ -7,7 +7,7 @@
 // they are, each trip plugs in with registerTrip (a destination or a mini
 // game), and shows up in Gus's list with a "Go" button. For example:
 //
-//   registerTrip({ id: "beach", name: "The Beach", icon: "🏖️",
+//   registerTrip({ id: "beach", name: "The Beach", icon: "bus",
 //     note: "Sand, waves and a shell hunt.", start: () => { ... } });
 import { playBusHorn } from "./audio.js";
 import { openNpc } from "./npc.js";
@@ -45,7 +45,7 @@ export function nearWaitingBus(player) {
 export function talkToDriver() {
   openNpc({
     name: CONFIG.bus.driver,
-    icon: "🐻",
+    portrait: { glyph: "gus" },
     color: "#3f6f9f",
     pitch: 200,
     hello: trips.length ? "all aboard! where to today?" : ["howdy! no trips yet, i'm afraid. still planning the routes.", "trips coming soon! i'm just doing laps for now.", "hop on any time. well. soon."],

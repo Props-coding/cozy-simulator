@@ -53,7 +53,7 @@ export async function openTradingPost() {
   await refreshMarket();
   openNpc({
     name: "Trading post",
-    icon: "🤝",
+    portrait: { f: "tradingPost", w: 1.9, h: 0.6 },
     color: "#c98f3c",
     pitch: 380,
     hello: ["Swap, sell, or just have a look.", "One friend's pond boot is another friend's treasure.", "Everything here waits for the right person."],
@@ -154,7 +154,7 @@ export function offerTradeTo(name) {
   if (!things.length) return false;
   offerTo = name;
   itemSelect.innerHTML = "";
-  for (const [id, n] of things) itemSelect.add(new Option(`${itemInfo(id).icon} ${itemInfo(id).name} (you have ${n})`, id));
+  for (const [id, n] of things) itemSelect.add(new Option(`${itemInfo(id).name} (you have ${n})`, id));
   itemSelect.onchange = () => {
     listing = itemSelect.value;
     nInput.max = basketCount(listing);
@@ -175,7 +175,7 @@ function openTradeDialog(id, forName = null) {
   priceInput.value = Math.max(1, itemInfo(id).sell || 10);
   // Anything can be asked for in a swap: everything with a name.
   wantSelect.innerHTML = "";
-  for (const [wid, info] of allKnownThings()) if (wid !== id) wantSelect.add(new Option(`${info.icon} ${info.name}`, wid));
+  for (const [wid, info] of allKnownThings()) if (wid !== id) wantSelect.add(new Option(info.name, wid));
   document.querySelector('input[name="trade-kind"][value="crumbs"]').checked = true;
   showKind();
   note.hidden = true;
@@ -247,7 +247,7 @@ export async function talkToJuniper() {
   if (!market.merchant.here) return;
   openNpc({
     name: CONFIG.merchant.name,
-    icon: "🦊",
+    portrait: { f: "juniper", w: 0.55, h: 0.4 },
     color: "#d9702e",
     pitch: 460,
     hello: ["Fresh off the bus! Have a look, have a look.", "I've been all over. Brought a few things back.", "Only here today, then off down the road again.", "Rare seeds, strange bait... and a recipe or two."],
@@ -257,14 +257,14 @@ export async function talkToJuniper() {
 
 // What a good is: its name, picture and a note.
 function describe(good) {
-  if (good.kind === "seed") return { icon: "🌰", name: itemInfo(`seed:${good.ref}`).name, note: "Seeds you can't get from Hazel." };
+  if (good.kind === "seed") return { icon: `seed:${good.ref}`, name: itemInfo(`seed:${good.ref}`).name, note: "Seeds you can't get from Hazel." };
   if (good.kind === "bait") return { icon: itemInfo(`bait:${good.ref}`).icon, name: itemInfo(`bait:${good.ref}`).name, note: "Finds rare, epic and legendary fish, at any fishing level." };
   if (good.kind === "recipe") {
     const r = CONFIG.kitchen.recipes.find((x) => x.id === good.ref);
-    return { icon: "📜", name: `Recipe: ${r.name}`, note: "A traveler's recipe, for your book." };
+    return { icon: "scroll", name: `Recipe: ${r.name}`, note: "A traveler's recipe, for your book." };
   }
   const d = DECOR[good.ref];
-  return { icon: "🧳", name: d.name, note: "For your bedroom (it'll be in Decorate on your laptop)." };
+  return { icon: `decor:${good.ref}`, name: d.name, note: "For your bedroom (it'll be in Decorate on your laptop)." };
 }
 
 function packRows() {

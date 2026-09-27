@@ -2,6 +2,34 @@
 // together): name tags, room signs, door tags, lights, the lawn and rain,
 // decorating helpers, and drawing a whole frame (drawScene).
 
+// An admin's little shield (before their name on the name tag): steel
+// blue with a gold rim and a light top, centered at (x, y), about 10 pixels tall.
+function drawAdminShield(ctx, x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.moveTo(0, -5);
+  ctx.quadraticCurveTo(3, -3.6, 4.6, -4.2);
+  ctx.quadraticCurveTo(4.8, 2.5, 0, 5.2);
+  ctx.quadraticCurveTo(-4.8, 2.5, -4.6, -4.2);
+  ctx.quadraticCurveTo(-3, -3.6, 0, -5);
+  const g = ctx.createLinearGradient(0, -5, 0, 5);
+  g.addColorStop(0, "#8ab0d8");
+  g.addColorStop(1, "#4a6f9a");
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = "#c9962e";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(-2.5, -2.4);
+  ctx.lineTo(1, -2.8);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Name tag and optional badge (like "sleeping"). Drawn in a last pass so
 // they stay readable even when the player is behind furniture or a wall.
 // How far each player's name tag is lifted to clear their hat right now
@@ -143,8 +171,7 @@ function drawPlayerTag(ctx, { p, cx, headTop }) {
   if (owner) {
     drawCreatorCrown(ctx, cx - tagWidth / 2 + 11, headTop - 6.5, 1);
   } else if (p.admin) {
-    ctx.font = "9px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif";
-    ctx.fillText(CONFIG.adminBadge, cx - tagWidth / 2 + 10, headTop - 7.5);
+    drawAdminShield(ctx, cx - tagWidth / 2 + 10, headTop - 11);
   }
 
   if (p.badge) {
@@ -466,7 +493,7 @@ function drawDoorTags(ctx, me) {
     const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
     signFade[id] = fade;
     if (fade === 0) continue;
-    const label = inYard ? "🏠 Front door (elevator)" : "🌳 Out to the yard";
+    const label = inYard ? "Front door (elevator)" : "Out to the yard";
     const c = toScreen(dx + 0.8, dy);
     const w = ctx.measureText(label).width + 14, h = 17;
     // (In the house the doorway is in the bottom wall, so the tag sits beside it.)
@@ -493,7 +520,7 @@ function drawDoorTags(ctx, me) {
     signFade[id] = fade;
     if (fade === 0) continue;
     const status = { open: "Open", knock: "Knock first", private: "Private", party: "Party!" }[f.door.privacy] ?? "Open";
-    const lines = [`${f.door.owner}'s room · ${status}${f.door.online ? "" : " · 🌙 asleep"}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
+    const lines = [`${f.door.owner}'s room · ${status}${f.door.online ? "" : " · asleep"}`, ...(f.door.note ? [`"${f.door.note}"`] : [])];
     const c = toScreen(f.x + f.w / 2, f.y);
     const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14, h = 6 + lines.length * 13;
     const x = c.x - w / 2, y = c.y + 4;
@@ -692,6 +719,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
     }
   }
   for (const pet of pets) sprites.push({ sortY: pet.y, draw: (ctx) => drawPet(ctx, pet) });
+  sprites.push(...residentSprites(floor)); // Clover and Mortimer (render-residents.js)
   sprites.sort((a, b) => a.sortY - b.sortY);
   for (const sprite of sprites) sprite.draw(ctx);
 

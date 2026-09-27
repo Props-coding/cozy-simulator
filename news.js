@@ -2,9 +2,14 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.69",
+    title: "Residents: Clover the baker and Mortimer the librarian",
+    text: "Two new neighbors have moved in, and they keep their own hours (on the hometown's clock). Clover the rabbit bakes in the kitchen in the morning, takes her bread basket out to the yard at midday, and is back for supper. Mortimer the owl sleeps on his perch in the Library all day and potters about the shelves at night. Walk up and press E to chat. Each of them asks for one thing a day (a crop, a fish, a dish...) and pays crumbs for it, and you can bring them a gift once a day. Chatting, helping and gifts build friendship hearts, which unlock their stories, their recipes (cheaper for close friends) and, at 10 hearts, a title. Also: the stones at the bottom of the porch steps are a proper flagstone walk now.",
+  },
+  {
     build: "0.59",
     title: "Outdoors: the yard, live weather, a garden, fishing and more",
-    text: "Step out through the front door (bottom of the elevator lobby) into a big yard. The weather out there is real: rain, snow, fog, storms and sunshine from our hometown, with umbrellas when it rains and a weather chip in the header. Buy seeds from Hazel the hedgehog and grow crops in the shared garden (anyone can water anyone's bed, and rain waters them all), then sell your harvest. Fish at the pond with rods and bait from Otis the otter: better bait finds rarer fish, your fishing level unlocks better rods, and fish can swim in your bedroom fish tank. At night the campfire lights itself, and voice is on around it. There's a porch swing for two, a bus stop with a little bus on a schedule (trips coming soon), and the raccoons have moved out to a shady spot by the bins, where they'll buy any junk you fish up. Your new basket (🧺) holds it all.",
+    text: "Step out through the front door (bottom of the elevator lobby) into a big yard. The weather out there is real: rain, snow, fog, storms and sunshine from our hometown, with umbrellas when it rains and a weather chip in the header. Buy seeds from Hazel the hedgehog and grow crops in the shared garden (anyone can water anyone's bed, and rain waters them all), then sell your harvest. Fish at the pond with rods and bait from Otis the otter: better bait finds rarer fish, your fishing level unlocks better rods, and fish can swim in your bedroom fish tank. At night the campfire lights itself, and voice is on around it. There's a porch swing for two, a bus stop with a little bus on a schedule (trips coming soon), and the raccoons have moved out to a shady spot by the bins, where they'll buy any junk you fish up. Your new basket (the basket button at the top) holds it all.",
   },
   {
     build: "0.52",

@@ -93,6 +93,8 @@ import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
 import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank, castAt } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
+import { talkToResident, residentHint } from "./residents.js";
+import { uiIcon } from "./ui-icons.js";
 import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
@@ -111,7 +113,7 @@ const joinScreen = document.getElementById("join-screen");
 const gameScreen = document.getElementById("game-screen");
 const nameInput = document.getElementById("name-input");
 const joinButton = document.getElementById("join-button");
-const roomLabel = document.getElementById("room-label");
+const roomName = document.getElementById("room-name"); // (after the pin icon)
 const actionHint = document.getElementById("action-hint");
 const peerList = document.getElementById("peer-list");
 const muteToggle = document.getElementById("mute-toggle");
@@ -285,7 +287,7 @@ editOutfitButton.addEventListener("click", () => {
   const open = joinOutfit.hidden;
   joinOutfit.hidden = !open;
   joinScreen.classList.toggle("editing", open);
-  editOutfitButton.textContent = open ? "✓ Done" : "✏️ Edit outfit";
+  editOutfitButton.innerHTML = open ? "Done" : `${uiIcon("pencil")} Edit outfit`;
   renderOutfitPicker(joinPicker);
   playClickSound();
 });
@@ -391,7 +393,7 @@ joinButton.addEventListener("click", async () => {
     notice: (text, ms = 5000) => showNotice(text, ms),
     post: (text, bigCatch) => {
       sendChat({ bigCatch });
-      addChatLine({ channel: "house", system: true, text: `🎣 You caught a ${text}!` });
+      addChatLine({ channel: "house", system: true, text: `You caught a ${text}!` });
     },
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
@@ -663,6 +665,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "cookieJar") return "Press E for today's fortune cookie.";
   if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
+  if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint();
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
@@ -793,6 +796,13 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     stopFishing(null);
     talkToOtis();
+    return;
+  }
+
+  // Residents (Update 6): Clover and Mortimer.
+  if (key === "e" && nearestInteraction(player)?.startsWith("resident:")) {
+    for (const k in keysDown) keysDown[k] = false;
+    talkToResident(nearestInteraction(player).slice(9));
     return;
   }
 
@@ -1044,7 +1054,7 @@ canvas.addEventListener("contextmenu", (e) => {
   const person = lastScenePlayers.find((p) => !isMe(p.name) && Math.hypot(g.x - (p.x + PLAYER_SIZE / 2), g.y - (p.y + PLAYER_SIZE - 0.45)) < 0.5);
   if (person) {
     const items = [
-      { label: "🤝 Trade", run: () => offerTradeTo(person.name) || showNotice("Your basket is empty, so there's nothing to offer yet.") },
+      { label: "Trade", icon: "swap", run: () => offerTradeTo(person.name) || showNotice("Your basket is empty, so there's nothing to offer yet.") },
       ...adminActionsFor(person.name, mutedNames.has(person.name.toLowerCase())),
     ];
     openMenu(at, person.name, items);
@@ -1104,7 +1114,8 @@ function furnitureMenu(f, at) {
   const seats = seatSpots(f);
   if (seats.length) {
     items.push({
-      label: "🪑 Sit",
+      label: "Sit",
+      icon: "chair",
       run: () => {
         const taken = takenSeats();
         const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
@@ -1116,11 +1127,11 @@ function furnitureMenu(f, at) {
       },
     });
   }
-  items.push({ label: "🔍 Inspect", run: () => openMenu(at, pieceName(f), [], pieceLines(f)) });
+  items.push({ label: "Inspect", icon: "magnifier", run: () => openMenu(at, pieceName(f), [], pieceLines(f)) });
   const room = getCurrentRoom(player);
   if (f.decor?.mine && room.owned?.mine && room.owned.kind === "bedroom") {
-    items.push({ label: "✋ Move", run: () => movePiece(f.decor.index) });
-    items.push({ label: "📦 Store", run: () => storePiece(f.decor.index) });
+    items.push({ label: "Move", icon: "move", run: () => movePiece(f.decor.index) });
+    items.push({ label: "Store", icon: "box", run: () => storePiece(f.decor.index) });
   }
   return items;
 }
@@ -1252,11 +1263,11 @@ function houseNotices(house) {
   if (house.announcement && house.announcement.id !== lastAnnouncement) {
     lastAnnouncement = house.announcement.id;
     playChatSound();
-    addChatLine({ channel: "house", system: true, text: `📣 ${house.announcement.by}: ${house.announcement.text}` });
-    showNotice(`📣 ${house.announcement.text}`, 9000);
+    addChatLine({ channel: "house", system: true, text: `${house.announcement.by}: ${house.announcement.text}` });
+    showNotice(house.announcement.text, 9000);
   }
   maintenanceBanner.hidden = !house.maintenance;
-  if (house.maintenance) maintenanceBanner.textContent = `🔧 ${house.maintenance} (Saving and shopping are paused.)`;
+  if (house.maintenance) maintenanceBanner.textContent = `${house.maintenance} (Saving and shopping are paused.)`;
 }
 
 // Problems on this page go to the house server (the admin panel's Server
@@ -1547,18 +1558,18 @@ onEmote((id, peerId) => {
 // keys 1 to 5 still work too.) Escape closes it without choosing.
 const wheel = document.getElementById("emote-wheel");
 const WHEEL_EMOTES = [
-  { id: "wave", icon: "👋", title: "Wave (press 1)" },
-  { id: "heart", icon: "❤️", title: "Heart (press 2)" },
-  { id: "laugh", icon: "😂", title: "Laugh (press 3)" },
-  { id: "dance", icon: "🕺", title: "Dance! Pick your style in your wardrobe (press 4)" },
-  { id: "sleepy", icon: "💤", title: "Sleepy (press 5)" },
+  { id: "wave", icon: "wave", title: "Wave (press 1)" },
+  { id: "heart", icon: "heart", title: "Heart (press 2)" },
+  { id: "laugh", icon: "laugh", title: "Laugh (press 3)" },
+  { id: "dance", icon: "dance", title: "Dance! Pick your style in your wardrobe (press 4)" },
+  { id: "sleepy", icon: "moon", title: "Sleepy (press 5)" },
 ];
 let wheelChoice = null;
 let wheelCenter = { x: 0, y: 0 };
 const wheelSlots = WHEEL_EMOTES.map(({ id, icon, title }, i) => {
   const slot = document.createElement("div");
   slot.className = "emote-slot" + (id === "dance" ? " dance-slot" : "");
-  slot.textContent = icon;
+  slot.innerHTML = uiIcon(icon);
   slot.title = title;
   const angle = (i / WHEEL_EMOTES.length) * Math.PI * 2 - Math.PI / 2;
   slot.style.left = `${Math.cos(angle) * CONFIG.emoteWheel.radius}px`;
@@ -1895,14 +1906,14 @@ function renderChat({ toBottom = false, newMessage = false } = {}) {
       const crown = document.createElement("img");
       crown.className = "owner-crown";
       crown.src = creatorCrownURL();
-      crown.alt = "👑";
+      crown.alt = "Crown";
       crown.title = "Creator of Porchlight";
       name.classList.add("owner-name");
       name.prepend(crown);
     } else if (line.admin) {
       const badge = document.createElement("span");
       badge.className = "admin-badge";
-      badge.textContent = CONFIG.adminBadge;
+      badge.innerHTML = uiIcon("shield");
       badge.title = "House admin";
       name.prepend(badge);
     }
@@ -2039,20 +2050,20 @@ onChat((message, peerId) => {
   // A friend unlocked an achievement.
   const earned = ACHIEVEMENTS.find((a) => a.id === message?.achievement);
   if (earned) {
-    addChatLine({ channel: "house", system: true, text: `🏆 ${peerName} earned "${earned.name}"` });
+    addChatLine({ channel: "house", system: true, text: `${peerName} earned "${earned.name}"` });
     return;
   }
   // A friend reached a new tier.
   const reached = message?.tier !== undefined && tierInfo(message.tier, message.level);
   if (reached) {
-    addChatLine({ channel: "house", system: true, text: `${reached.tier.icon} ${peerName} reached ${reached.tier.name} in "${reached.track.name}"` });
+    addChatLine({ channel: "house", system: true, text: `${peerName} reached ${reached.tier.name} in "${reached.track.name}"` });
     return;
   }
   // A friend added or finished a card on the Workshop boards.
   const k = message?.kanban;
   if (k && (k.kind === "added" || k.kind === "done") && typeof k.title === "string") {
     const title = clipText(k.title, 80);
-    const text = k.kind === "added" ? `📝 ${peerName} added "${title}" to ${clipText(String(k.board ?? "a board"), 30)}.` : `✅ ${clipText(String(k.who ?? peerName), 16)} finished "${title}"!`;
+    const text = k.kind === "added" ? `${peerName} added "${title}" to ${clipText(String(k.board ?? "a board"), 30)}.` : `${clipText(String(k.who ?? peerName), 16)} finished "${title}"!`;
     addChatLine({ channel: "house", system: true, text });
     return;
   }
@@ -2060,12 +2071,12 @@ onChat((message, peerId) => {
   const fish = CONFIG.fish.find((f) => f.id === message?.bigCatch?.id);
   if (fish) {
     const size = Math.round(Number(message.bigCatch.size)) || "?";
-    addChatLine({ channel: "house", system: true, text: `${message.bigCatch.record === true ? "🏆" : "🎣"} ${peerName} caught a ${fish.name} (${size} cm)${message.bigCatch.record === true ? ", a new house record" : ""}!` });
+    addChatLine({ channel: "house", system: true, text: `${peerName} caught a ${fish.name} (${size} cm)${message.bigCatch.record === true ? ", a new house record" : ""}!` });
     return;
   }
   // A friend went to bed, or got up.
   if (typeof message?.bedtime === "boolean") {
-    addChatLine({ channel: "house", system: true, text: message.bedtime ? `🌙 ${peerName} went to bed.` : `☀️ ${peerName} got up.` });
+    addChatLine({ channel: "house", system: true, text: message.bedtime ? `${peerName} went to bed.` : `${peerName} got up.` });
     return;
   }
   if (typeof message?.text !== "string") return;
@@ -2099,8 +2110,8 @@ initLaptop({
   color: () => myColor,
   notice: (text) => showNotice(text),
   onLetter: (letter) => {
-    showNotice(`📬 A letter from ${letter.from}! Read it on your bedroom laptop.`);
-    addChatLine({ channel: "house", system: true, text: `📬 You got a letter from ${letter.from}. Read it on your bedroom laptop.` });
+    showNotice(`A letter from ${letter.from}! Read it on your bedroom laptop.`);
+    addChatLine({ channel: "house", system: true, text: `You got a letter from ${letter.from}. Read it on your bedroom laptop.` });
     playChatSound();
   },
 });
@@ -2193,14 +2204,14 @@ function updateSleep() {
   if (performance.now() - lastBedtimeNote > 10000) {
     lastBedtimeNote = performance.now();
     sendChat({ bedtime: amAsleep });
-    addChatLine({ channel: "house", system: true, text: amAsleep ? "🌙 You went to bed." : "☀️ You got up." });
+    addChatLine({ channel: "house", system: true, text: amAsleep ? "You went to bed." : "You got up." });
   }
 }
 
-// The badge over someone: "sleeping" in bed, 🔨 working in the Workshop.
+// The badge over someone: "sleeping" in bed, "working" in the Workshop.
 function statusBadge(roomId, bed, name) {
   if (bed) return "sleeping";
-  if (roomId === "workshop" && busyBuilders().has(String(name ?? "").toLowerCase())) return "🔨"; // working on a card in Doing
+  if (roomId === "workshop" && busyBuilders().has(String(name ?? "").toLowerCase())) return "working"; // working on a card in Doing
   return null;
 }
 
@@ -2240,14 +2251,14 @@ initAchievements({
   announce: (id) => {
     const a = ACHIEVEMENTS.find((x) => x.id === id);
     sendChat({ achievement: id });
-    addChatLine({ channel: "house", system: true, text: `🏆 You earned "${a.name}" (+${a.crumbs} crumbs)` });
+    addChatLine({ channel: "house", system: true, text: `You earned "${a.name}" (+${a.crumbs} crumbs)` });
   },
   // Telling friends when you reach a tier.
   announceTier: (id, level) => {
     const t = tierInfo(id, level);
     if (!t) return;
     sendChat({ tier: id, level });
-    addChatLine({ channel: "house", system: true, text: `${t.tier.icon} You reached ${t.tier.name} in "${t.track.name}" (+${t.tier.crumbs} crumbs)` });
+    addChatLine({ channel: "house", system: true, text: `You reached ${t.tier.name} in "${t.track.name}" (+${t.tier.crumbs} crumbs)` });
   },
 });
 
@@ -2380,7 +2391,7 @@ initAccountHooks({
     }),
   conflict: () => {
     showNotice("Your account saved newer progress on another computer, so this window stopped saving.");
-    addChatLine({ channel: "house", system: true, text: "⚠️ Your account saved newer progress on another computer, so this window stopped saving. Reload to carry on with the newer progress." });
+    addChatLine({ channel: "house", system: true, text: "Your account saved newer progress on another computer, so this window stopped saving. Reload to carry on with the newer progress." });
   },
 });
 
@@ -2496,11 +2507,11 @@ const MY_BUILD = document.getElementById("version-tag").textContent.replace("bui
 const asleepList = document.getElementById("asleep-list");
 const asleepHeading = document.getElementById("asleep-heading");
 function updateSidebar(myRoomName) {
-  let rows = peerRow(myColor, `${myName} (you) · ${amAsleep ? "💤 " : ""}${myRoomName} · ${formatLocalTime(myTimeZone)}`, false, myName);
+  let rows = peerRow(myColor, `${myName} (you) · ${amAsleep ? "asleep · " : ""}${myRoomName} · ${formatLocalTime(myTimeZone)}`, false, myName);
   for (const peer of visiblePeers) {
     const time = formatLocalTime(peer.tz);
-    const roomName = (bedAt(peer) ? "💤 " : "") + roomNameFor(peer.room);
-    rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD, peer.name);
+    const where = (bedAt(peer) ? "asleep · " : "") + roomNameFor(peer.room);
+    rows += peerRow(peer.color, `${peer.name} · ${where}${time ? " · " + time : ""}`, peer.build !== MY_BUILD, peer.name);
   }
   let asleep = "";
   for (const { door } of sleepers()) asleep += peerRow(door.color, door.owner, false, door.owner);
@@ -2577,7 +2588,7 @@ function tick(now) {
 
   const currentRoom = getCurrentRoom(player);
   checkMyPass(currentRoom);
-  roomLabel.textContent = "📍 " + currentRoom.name;
+  roomName.textContent = currentRoom.name;
   const hint = actionHintFor(currentRoom);
   if (actionHint.textContent !== hint) actionHint.textContent = hint;
   // While you're asleep, you count as "asleep" for sound: no mic, no voices.
@@ -2637,13 +2648,13 @@ function tick(now) {
     const bed = peer.seat ? null : bedAt(shown);
     const seat = peer.seat ? seatByKey(peer.seat.key, floorOf(peer.y)) : undefined;
     const at = bed ? tuckedIn(bed) : seat ? { x: seat.x - PLAYER_SIZE / 2, y: seat.y - PLAYER_SIZE + (onSwing(seat.key) ? swingY : 0) } : shown;
-    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "📞" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: seat?.face ?? (SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null), seatLift: seat?.lift ?? 0, sortY: seat?.sortY, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null, fishing: cleanFishing(peer.fishing, shown) };
+    return { id: peer.id, pet, x: at.x, y: at.y, moving: shown.moving, color: peer.color, hat, shoes, glasses, face: cleanFace(peer.face), ...peerAccessories(peer), title: titleText(peer.title), name: peer.name, badge: peer.phone === true ? "on the phone" : statusBadge(peer.room, bed, peer.name), bubble: bubbleFor(peer.id), emote: bed ? sleepingEmote() : emoteNow(peerEmotes[peer.id]), typing: peer.typing === true, asleep: bed && { color: bed.color, facing: bed.facing }, aura: cleanAura(peer.aura, peer.name), admin: checkBadge(peer.badge, peer.name), seated: seat?.face ?? (SEAT_FACES.includes(peer.seat?.face) ? peer.seat.face : null), seatLift: seat?.lift ?? 0, sortY: seat?.sortY, speaking: peer.speaking === true, whisper: typeof peer.whisper === "string" ? whisperLean(peer.x, peer.whisper) : null, fishing: cleanFishing(peer.fishing, shown) };
   });
   scenePlayers.push(...sleepers().map(sleeperScenePlayer));
   lastScenePlayers = scenePlayers;
   const myBed = mySeat ? null : bedAt(player);
   const myAt = myBed ? tuckedIn(myBed) : onSwing(mySeat?.key) ? { x: player.x, y: player.y + swingY } : player;
-  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "📞" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
+  scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "on the phone" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
   // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.

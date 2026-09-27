@@ -8,6 +8,7 @@
 // its name, picture and price with registerItems.
 //
 // The 🧺 button in the header opens the basket, to see what you have.
+import { setPicture } from "./pictures.js";
 import { playClickSound } from "./audio.js";
 import { myWallet } from "./bank.js";
 
@@ -24,7 +25,7 @@ export function registerItems(list) {
 }
 
 export function itemInfo(id) {
-  return KNOWN[id] ?? { name: id, icon: "❔", sell: 0, group: "Other" };
+  return KNOWN[id] ?? { name: id, icon: "unknown", sell: 0, group: "Other" };
 }
 
 export function basketCount(id) {
@@ -68,7 +69,7 @@ function renderBasket() {
     const row = document.createElement("div");
     row.className = "basket-row";
     row.innerHTML = `<span class="basket-icon"></span><span class="basket-name"></span><span class="basket-count"></span>`;
-    row.querySelector(".basket-icon").textContent = info.icon;
+    setPicture(row.querySelector(".basket-icon"), info.icon, 24);
     row.querySelector(".basket-name").textContent = info.name;
     row.querySelector(".basket-count").textContent = "× " + n;
     if (info.sell) row.title = `Sells for ${info.sell} crumbs each`;

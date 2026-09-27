@@ -1192,23 +1192,52 @@ canvas {
 #asleep-list li {
   display: flex;
   align-items: center;
-  padding: 1px 0;
+  padding: 1px 0 1px 2px; /* (room on the left for the dot's ring) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
 }
 
+/* A little crescent moon after each sleeper's name. */
 #asleep-list li::after {
-  content: "💤";
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
   margin-left: 5px;
-  font-size: 0.85em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M20 4 A12 12 0 1 0 28 22 A10 10 0 0 1 20 4 Z' fill='%23f1d77a' stroke='%23c9a23c' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 #asleep-list .peer-dot {
   width: 8px;
   height: 8px;
   margin-right: 6px;
+  flex: none;
+}
+
+/* The interface's drawn icons (ui-icons.js): sized to the text around
+   them, sitting on its baseline. */
+.ui-icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+  vertical-align: -0.28em;
+}
+
+/* The round header buttons' pictures. */
+.header-icon {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+#room-label .ui-icon {
+  margin-right: 4px;
+}
+
+h3 .ui-icon {
+  margin-right: 4px;
 }
 
 hr {
@@ -1639,6 +1668,12 @@ input[type="range"]::-moz-range-thumb {
 
 .app-icon {
   font-size: 38px;
+  line-height: 1;
+}
+
+.app-icon .ui-icon {
+  width: 40px;
+  height: 40px;
 }
 
 .app-badge {
@@ -4252,6 +4287,20 @@ canvas.house-icon {
   cursor: pointer;
 }
 
+.door-choice-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* A door light: a small glowing bulb in the choice's color. */
+.door-choice-icon.light {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 18%, var(--light) 40%);
+  box-shadow: 0 0 0 1.5px rgba(74, 58, 44, 0.35), 0 0 6px var(--light);
+}
+
 .door-choice.chosen {
   background: #f3e6d0;
   border-color: #c98a3a;
@@ -4547,6 +4596,19 @@ canvas.house-icon {
   transform: rotate(-2deg);
 }
 
+/* Friendship hearts next to a resident's name (Update 6). */
+#npc-hearts {
+  margin-left: 8px;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #d9607a;
+  vertical-align: middle;
+}
+
+#npc-hearts .empty {
+  color: #e8cfc4;
+}
+
 #npc-text {
   margin: 6px 0 0;
   min-height: 2.8em;
@@ -4604,7 +4666,19 @@ canvas.house-icon {
 .npc-icon {
   font-size: 24px;
   width: 30px;
-  text-align: center;
+  flex: none;
+  display: flex;
+  justify-content: center;
+}
+
+/* Item pictures (pictures.js): drawn canvases in place of emoji (without
+   the frame the house view's canvas has). */
+canvas.item-picture {
+  display: block;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .npc-words {
@@ -4703,7 +4777,9 @@ canvas.house-icon {
 .seed-icon {
   grid-row: span 2;
   font-size: 22px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .seed-choice small {
@@ -4730,7 +4806,9 @@ canvas.house-icon {
 .basket-icon {
   font-size: 20px;
   width: 26px;
-  text-align: center;
+  flex: none;
+  display: flex;
+  justify-content: center;
 }
 
 .basket-name {
@@ -4851,6 +4929,7 @@ canvas.house-icon {
 
 #boost-bar .boost-icon {
   font-size: 16px;
+  display: inline-flex;
 }
 
 #boost-bar .boost-tip {

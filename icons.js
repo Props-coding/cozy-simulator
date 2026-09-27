@@ -10,6 +10,8 @@
 // furniture (with its footprint w and h, and `wall` for things that hang
 // on a wall), { pet }, { hat } or { shoes } a pet or something worn, and
 // { glyph } one of the little drawings below.
+import { pictureCanvas } from "./pictures.js";
+
 const ICONS = {
   // Settling in
   welcome: { f: "umbrellaStand", w: 0.5, h: 0.4 },
@@ -52,6 +54,34 @@ const ICONS = {
   foodComa: { glyph: "zzz" },
   danceFloor: { f: "theaterSeat", w: 0.9, h: 0.7 },
 
+  // Outdoors, the kitchen and trade, and the residents (drawn with the
+  // item pictures, see pictures.js)
+  firstSeed: { pic: "seed:carrot" },
+  rainCheck: { pic: "raincloud" },
+  farmStand: { pic: "basket" },
+  greatPumpkin: { pic: "crop:pumpkin" },
+  firstCatch: { pic: "fish:bluegill" },
+  bigOne: { pic: "fish:bass" },
+  legendCatch: { pic: "fish:rainbowKoi" },
+  pondScholar: { pic: "book" },
+  fullTank: { f: "fishTank", w: 1.0, h: 0.5 },
+  junkDealer: { pic: "junk:boot" },
+  firstDish: { pic: "dish:omelette" },
+  burntOffering: { pic: "junk:burnt" },
+  wellFed: { pic: "dish:pancakes" },
+  sharing: { pic: "gift" },
+  fortuneTold: { pic: "fortune" },
+  cookbook: { pic: "book" },
+  firstTrade: { f: "tradingPost", w: 1.9, h: 0.6 },
+  wellTraveled: { f: "juniper", w: 0.55, h: 0.4 },
+  happyToHelp: { pic: "gift" },
+  cloverFriend: { resident: "clover" },
+  mortimerFriend: { resident: "mortimer" },
+  harvester: { pic: "crop:carrot" },
+  angler: { pic: "rod:bamboo" },
+  chef: { pic: "pot" },
+  goodNeighbor: { pic: "watering" },
+
   // Tiered achievements
   homebody: { f: "armchair", w: 1.1, h: 0.8 },
   visitor: { glyph: "calendar" },
@@ -92,6 +122,58 @@ function softShadow(ctx, w, y) {
 }
 
 const GLYPHS = {
+  // Gus the bear, the bus driver: a round brown face in a driver's cap.
+  gus(ctx) {
+    ctx.fillStyle = "#7a5638";
+    for (const dx of [-11, 11]) {
+      ctx.beginPath();
+      ctx.arc(dx, -9, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#c79a74";
+    for (const dx of [-11, 11]) {
+      ctx.beginPath();
+      ctx.arc(dx, -9, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const head = ctx.createLinearGradient(0, -14, 0, 16);
+    head.addColorStop(0, "#9a7050");
+    head.addColorStop(1, "#6e4c30");
+    ctx.fillStyle = head;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 15, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e3c9a4";
+    ctx.beginPath();
+    ctx.ellipse(0, 7, 7, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2a1c12";
+    ctx.beginPath();
+    ctx.ellipse(0, 4.5, 2.6, 1.8, 0, 0, Math.PI * 2);
+    ctx.arc(-5.5, -1, 1.6, 0, Math.PI * 2);
+    ctx.arc(5.5, -1, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2a1c12";
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(-2, 8.5);
+    ctx.quadraticCurveTo(0, 10.5, 2, 8.5);
+    ctx.stroke();
+    // The cap: teal, with a peak and a little badge.
+    ctx.fillStyle = "#3f8a86";
+    ctx.beginPath();
+    ctx.ellipse(0, -10, 12, 5.5, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-12, -10.5, 24, 3);
+    ctx.fillStyle = "#2c6a66";
+    ctx.beginPath();
+    ctx.ellipse(0, -7.5, 13, 2.2, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#e0b84a";
+    ctx.beginPath();
+    ctx.arc(0, -12, 2, 0, Math.PI * 2);
+    ctx.fill();
+  },
   padlock(ctx) {
     softShadow(ctx, 20, 30);
     ctx.strokeStyle = "#9aa4ae";
@@ -422,7 +504,22 @@ const cache = new Map(); // key -> a finished canvas
 
 function drawSpec(big, spec) {
   const ctx = big.getContext("2d");
-  if (spec.f) {
+  if (spec.pic) {
+    // One of the item pictures (pictures.js), drawn big.
+    const c = pictureCanvas(spec.pic, 100);
+    if (c) ctx.drawImage(c, (big.width - c.width) / 2, (big.height - c.height) / 2);
+  } else if (spec.resident) {
+    // Clover or Mortimer (render-residents.js).
+    ctx.save();
+    // From the waist up (their feet fall below the canvas), so the face
+    // is big enough to read in a small circle.
+    ctx.translate(big.width / 2, big.height + 90);
+    ctx.scale(5, 5);
+    const pose = { facing: 0, moving: false, act: "chat", asleep: false, y: 0 };
+    if (spec.resident === "clover") drawClover(ctx, pose, 1);
+    else drawMortimer(ctx, pose, 1);
+    ctx.restore();
+  } else if (spec.f) {
     drawDecorPreview(big, { kind: spec.f, w: spec.w, h: spec.h ?? 0.5, wall: spec.wall, color: spec.color ?? "#d9785f" }, "#d9785f");
   } else if (spec.pet) {
     drawPetPreview(big, spec.pet);
@@ -470,6 +567,25 @@ function fitInto(big, out) {
   const s = Math.min((out.width - pad * 2) / w, (out.height - pad * 2) / h);
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(big, x0, y0, w, h, (out.width - w * s) / 2, (out.height - h * s) / 2, w * s, h * s);
+}
+
+// A character's portrait for their window (npc.js): `spec` is
+// { resident: "clover" }, { f: furniture kind, w, h } (Hazel, Otis and
+// the other shopkeepers are drawn as furniture), or { glyph: "gus" }.
+export function portraitCanvas(spec, size = 58) {
+  const id = JSON.stringify(spec) + "|" + size;
+  let done = cache.get(id);
+  if (!done) {
+    const big = Object.assign(document.createElement("canvas"), { width: 240, height: 240 });
+    drawSpec(big, spec);
+    done = Object.assign(document.createElement("canvas"), { width: size * 2, height: size * 2 });
+    fitInto(big, done);
+    cache.set(id, done);
+  }
+  const c = Object.assign(document.createElement("canvas"), { width: done.width, height: done.height, className: "house-icon" });
+  c.style.width = c.style.height = size + "px";
+  c.getContext("2d").drawImage(done, 0, 0);
+  return c;
 }
 
 // An icon as a canvas, `size` CSS pixels across (drawn at twice that, so

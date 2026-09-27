@@ -15,13 +15,30 @@ import { serverApi, accountName, onPasswordChange } from "./account.js";
 import { playClickSound } from "./audio.js";
 
 const KEY_STORAGE = "cozy-house-journal-key"; // { account, key } (the unlocked key, on this computer only)
+// Moods, each a little drawn face (see moodFace).
 const MOODS = [
-  ["great", "😄", "Great"],
-  ["good", "🙂", "Good"],
-  ["okay", "😐", "Okay"],
-  ["low", "😔", "Low"],
-  ["rough", "😢", "Rough"],
+  ["great", "Great"],
+  ["good", "Good"],
+  ["okay", "Okay"],
+  ["low", "Low"],
+  ["rough", "Rough"],
 ];
+
+// A mood's face, drawn in the house's style: a round face whose color
+// cools and mouth turns down as the mood gets lower.
+function moodFace(id) {
+  const look = {
+    great: { fill: "#f1c95a", mouth: "M10 18 Q16 25 22 18 Z", eyes: "arcs" },
+    good: { fill: "#f3d27a", mouth: "M11 19 Q16 23 21 19", eyes: "dots" },
+    okay: { fill: "#e8d8a4", mouth: "M11.5 20 H20.5", eyes: "dots" },
+    low: { fill: "#c8d0dc", mouth: "M11.5 21.5 Q16 18.5 20.5 21.5", eyes: "dots" },
+    rough: { fill: "#b8c4d8", mouth: "M11 22 Q16 18 21 22", eyes: "dots", tear: true },
+  }[id];
+  const eyes = look.eyes === "arcs" ? '<path d="M9.5 14 Q11.5 11.5 13.5 14 M18.5 14 Q20.5 11.5 22.5 14" stroke="#4a3424" stroke-width="1.6" fill="none" stroke-linecap="round"/>' : '<circle cx="11.5" cy="13.5" r="1.5" fill="#4a3424"/><circle cx="20.5" cy="13.5" r="1.5" fill="#4a3424"/>';
+  const mouthFill = look.mouth.endsWith("Z") ? "#8a3a2e" : "none";
+  const tear = look.tear ? '<path d="M9 16 C7.5 18.5 8 20 9.2 20 C10.4 20 10.6 18.5 9 16 Z" fill="#7ab4e0"/>' : "";
+  return `<svg class="ui-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16.8" r="12" fill="#8a7a6a" opacity="0.25"/><circle cx="16" cy="16" r="12" fill="${look.fill}" stroke="#9a8260" stroke-width="1.4"/>${eyes}<path d="${look.mouth}" stroke="#4a3424" stroke-width="1.6" fill="${mouthFill}" stroke-linecap="round" stroke-linejoin="round"/>${tear}</svg>`;
+}
 const MAX_TEXT = 4000; // characters per day
 
 const panel = document.getElementById("journal-panel");
@@ -193,12 +210,12 @@ async function showDay(date) {
 function renderMoods() {
   moodRow.innerHTML = "";
   const page = opened[day];
-  for (const [id, icon, label] of MOODS) {
+  for (const [id, label] of MOODS) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "journal-mood" + (page.mood === id ? " chosen" : "");
     button.title = label;
-    button.textContent = icon;
+    button.innerHTML = moodFace(id);
     button.disabled = !!page.broken;
     button.addEventListener("click", () => {
       page.mood = page.mood === id ? null : id; // tap again to clear it

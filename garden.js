@@ -15,6 +15,7 @@
 // everyone's logged off). The server only remembers who planted what, when,
 // and when it was watered; how grown a crop is gets worked out here, from
 // those times and the crop list in config.js.
+import { setPicture } from "./pictures.js";
 import { serverApi, accountName } from "./account.js";
 import { sendGardenPing, onGardenPing } from "./network.js";
 import { playClickSound, playCrumbSound, playWaterSound, playPlantSound, playHarvestSound } from "./audio.js";
@@ -36,8 +37,8 @@ const seedName = (crop) => crop.name.replace(/ies$/, "y").replace(/([^s])s$/, "$
 registerItems(
   Object.fromEntries(
     CONFIG.crops.flatMap((c) => [
-      [`seed:${c.id}`, { name: seedName(c), icon: "🌰", sell: 0, group: "Seeds" }],
-      [`crop:${c.id}`, { name: c.name, icon: c.icon, sell: c.sell, group: "Harvest" }],
+      [`seed:${c.id}`, { name: seedName(c), icon: `seed:${c.id}`, sell: 0, group: "Seeds" }],
+      [`crop:${c.id}`, { name: c.name, icon: `crop:${c.id}`, sell: c.sell, group: "Harvest" }],
     ])
   )
 );
@@ -243,7 +244,7 @@ function openSeedPicker(bed) {
     button.type = "button";
     button.className = "seed-choice";
     button.innerHTML = `<span class="seed-icon"></span><b></b><small></small>`;
-    button.querySelector(".seed-icon").textContent = crop.icon;
+    setPicture(button.querySelector(".seed-icon"), `seed:${crop.id}`, 26);
     button.querySelector("b").textContent = `${crop.name} × ${n}`;
     button.querySelector("small").textContent = `Ripe in ${timeText(crop.hours)} (watered)`;
     button.addEventListener("click", () => plant(crop));
@@ -300,7 +301,7 @@ export function talkToHazel() {
   const first = !basketItems("seed:").length && !basketItems("crop:").length;
   openNpc({
     name: "Hazel",
-    icon: "🦔",
+    portrait: { f: "hazel", w: 0.55, h: 0.4 },
     color: "#6a9a5a",
     pitch: 440,
     hello: first ? "oh! a new gardener! i'm hazel. seeds are on the counter, and i'll buy whatever you grow." : HAZEL_HELLO,
@@ -322,7 +323,7 @@ function seedsForSale() {
       return HAZEL_THANKS[Math.floor(Math.random() * HAZEL_THANKS.length)];
     };
     return {
-      icon: crop.icon,
+      icon: `seed:${crop.id}`,
       name: seedName(crop),
       note: `Ripe in ${timeText(crop.hours)} watered. Sells for ${crop.sell} each, ${crop.yield[0] === crop.yield[1] ? crop.yield[0] : crop.yield.join(" to ")} per bed.${have ? ` You have ${have}.` : ""}`,
       price: crop.seed,

@@ -19,6 +19,8 @@
 // (the bank, see bank.js), which also decides what bites, how big it is,
 // and how soon a bite can come. All the numbers are in config.js
 // (fishing, rods, bait, fish, junk).
+import { uiIcon } from "./ui-icons.js";
+import { setPicture } from "./pictures.js";
 import { playClickSound, playCrumbSound, playWaterSound, playHarvestSound, playAchievementSound } from "./audio.js";
 import { crumbBalance } from "./shop.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
@@ -35,9 +37,9 @@ const RARITY = ["", "Common", "Uncommon", "Rare", "Epic", "Legendary"];
 
 // Tell the basket what fish, bait and junk are.
 registerItems({
-  ...Object.fromEntries(CONFIG.fish.map((f) => [`fish:${f.id}`, { name: f.name, icon: f.icon, sell: f.sell, group: "Fish" }])),
-  ...Object.fromEntries(CONFIG.bait.filter((b) => b.price > 0).map((b) => [`bait:${b.id}`, { name: b.name, icon: b.icon, sell: 0, group: "Bait" }])),
-  ...Object.fromEntries(CONFIG.junk.map((j) => [`junk:${j.id}`, { name: j.name, icon: j.icon, sell: 0, group: "Junk" }])),
+  ...Object.fromEntries(CONFIG.fish.map((f) => [`fish:${f.id}`, { name: f.name, icon: `fish:${f.id}`, sell: f.sell, group: "Fish" }])),
+  ...Object.fromEntries(CONFIG.bait.filter((b) => b.price > 0).map((b) => [`bait:${b.id}`, { name: b.name, icon: `bait:${b.id}`, sell: 0, group: "Bait" }])),
+  ...Object.fromEntries(CONFIG.junk.map((j) => [`junk:${j.id}`, { name: j.name, icon: `junk:${j.id}`, sell: 0, group: "Junk" }])),
 });
 
 // --- Your fishing progress (the bank's latest copy) ---
@@ -227,7 +229,11 @@ function startReel(caught) {
   const pull = CONFIG.fishing.pulls[caught.pull] ? caught.pull : "steady";
   reel = { progress: R.start, tension: 0.3, slack: 0, pull, strength: caught.junk ? 0.6 : 1 + R.rarityPull * (caught.rarity - 1), nextTug: 0, tugUntil: 0, holding: false, last: performance.now(), t: 0 };
   reelSay.textContent = `${caught.junk ? "Something's on the line." : PULL_WORDS[pull]} Hold Space to reel in, let go to give it line.`;
-  fishMark.textContent = caught.junk ? "❔" : caught.rarity >= 4 ? "🐠" : "🐟";
+  // Something on the line (you don't know what until it's landed): a
+  // fish, or a question mark for junk; a bit bigger for a rare one.
+  if (caught.junk) setPicture(fishMark, "unknown", 20);
+  else fishMark.innerHTML = uiIcon("fish");
+  fishMark.style.fontSize = caught.rarity >= 4 ? "24px" : "18px";
   reelBar.hidden = false;
   reelFrame = requestAnimationFrame(stepReel);
 }
@@ -298,7 +304,7 @@ async function land() {
   } else {
     const fish = FISH[caught.fish];
     playHarvestSound();
-    const extra = caught.houseRecord ? " A new house record! 🏆" : caught.first ? " New in your fish log!" : caught.record ? " Your biggest yet!" : caught.houseBest ? ` (Your best: ${caught.best} cm. House best: ${caught.houseBest.size} cm, ${caught.houseBest.name}.)` : "";
+    const extra = caught.houseRecord ? " A new house record!" : caught.first ? " New in your fish log!" : caught.record ? " Your biggest yet!" : caught.houseBest ? ` (Your best: ${caught.best} cm. House best: ${caught.houseBest.size} cm, ${caught.houseBest.name}.)` : "";
     hooks.notice(`You caught a ${fish.name} (${caught.size} cm, ${RARITY[fish.rarity].toLowerCase()})!${extra}`, 7000);
     // Epic and legendary catches, and house records, go in the house chat.
     if (fish.rarity >= 4 || caught.houseRecord) hooks.post?.(`${fish.name} (${caught.size} cm)${caught.houseRecord ? ", a new house record" : ""}`, { id: fish.id, size: caught.size, record: caught.houseRecord === true });
@@ -348,7 +354,7 @@ const OTIS_HELLO = [
 export function talkToOtis() {
   openNpc({
     name: "Otis",
-    icon: "🦦",
+    portrait: { f: "otis", w: 0.55, h: 0.4 },
     color: "#5a7aa0",
     pitch: 280,
     hello: Object.keys(mine().log).length === 0 ? "oh, a new face! i'm otis. here's a twig rod, on the house. grab some worms and give it a go!" : OTIS_HELLO,
@@ -371,14 +377,14 @@ function levelNote() {
 function rodRows() {
   const level = fishingLevel();
   return [
-    { icon: "⭐", name: levelNote(), note: "You earn XP for every catch. Higher levels unlock better rods." },
+    { icon: "level", name: levelNote(), note: "You earn XP for every catch. Higher levels unlock better rods." },
     ...RODS.map((rod) => {
       const owned = mine().rods.includes(rod.id);
       const using = mine().rod === rod.id;
       const locked = level < rod.level;
       const note = `Line strength ${Math.round(rod.zone * 250)}, bites ${Math.round((1 - rod.bite) * 100)}% quicker, luck +${Math.round(rod.luck * 100)}%.` + (locked ? ` Needs fishing level ${rod.level}.` : "");
       return {
-        icon: locked ? "🔒" : rod.icon,
+        icon: locked ? "lock" : `rod:${rod.id}`,
         name: rod.name + (using ? " (in hand)" : ""),
         note,
         price: owned ? undefined : rod.price,
@@ -421,7 +427,7 @@ function baitRows() {
       actions.push({ label: "Buy 10", soft: true, disabled: locked || crumbBalance() < bait.price * 10, run: buy(10) });
     }
     return {
-      icon: locked ? "🔒" : bait.icon,
+      icon: locked ? "lock" : `bait:${bait.id}`,
       name: bait.name + (using ? " (using)" : "") + (have !== null ? ` × ${have}` : ""),
       note: `Finds ${finds} fish.` + (locked ? ` Needs fishing level ${bait.level}.` : ""),
       price: bait.price || undefined,
@@ -467,14 +473,14 @@ async function loadRecords() {
 function logRows() {
   const caught = Object.keys(mine().log).length;
   return [
-    { icon: "📖", name: `Your fish log: ${caught} of ${CONFIG.fish.length} kinds`, note: "Some fish only bite at night, in the rain, or in certain seasons." },
+    { icon: "book", name: `Your fish log: ${caught} of ${CONFIG.fish.length} kinds`, note: "Some fish only bite at night, in the rain, or in certain seasons." },
     ...[...CONFIG.fish]
       .sort((a, b) => a.rarity - b.rarity)
       .map((fish) => {
         const entry = mine().log[fish.id];
         return entry
-          ? { icon: fish.icon, name: `${fish.name} (${RARITY[fish.rarity].toLowerCase()})`, note: `Caught ${entry.n}, your biggest ${entry.best} cm${houseRecords[fish.id] ? `, house best ${houseRecords[fish.id].size} cm (${houseRecords[fish.id].name})` : ""}. ${whenText(fish)}.` }
-          : { icon: "❔", name: `??? (${RARITY[fish.rarity].toLowerCase()})`, note: `Not caught yet. ${whenText(fish)}.`, locked: true };
+          ? { icon: `fish:${fish.id}`, name: `${fish.name} (${RARITY[fish.rarity].toLowerCase()})`, note: `Caught ${entry.n}, your biggest ${entry.best} cm${houseRecords[fish.id] ? `, house best ${houseRecords[fish.id].size} cm (${houseRecords[fish.id].name})` : ""}. ${whenText(fish)}.` }
+          : { icon: "unknown", name: `??? (${RARITY[fish.rarity].toLowerCase()})`, note: `Not caught yet. ${whenText(fish)}.`, locked: true };
       }),
   ];
 }
@@ -484,7 +490,7 @@ export function openFishTank(tank) {
   const index = tank.decor.index;
   openNpc({
     name: "Your fish tank",
-    icon: "🐠",
+    portrait: { f: "fishTank", w: 1.0, h: 0.5 },
     color: "#3f8ab0",
     pitch: 600,
     hello: ["blub.", "blub blub.", "the fish look happy to see you."],
@@ -499,7 +505,7 @@ function tankRows(index) {
   return tankFish(index).map((id, i) => {
     const fish = FISH[id];
     return {
-      icon: fish?.icon ?? "🐟",
+      icon: fish ? `fish:${fish.id}` : "fish:bluegill",
       name: fish?.name ?? id,
       note: "Swimming happily.",
       actions: [

@@ -6,6 +6,7 @@
 //
 // Mail is kept on the house server, so letters arrive even when the
 // friend you wrote to is offline.
+import { uiIcon } from "./ui-icons.js";
 import { getPeers, sendMail, onMail } from "./network.js";
 import { NEWS } from "./news.js";
 import { renderStore, startDecorating } from "./home.js";
@@ -57,10 +58,10 @@ export function closeLaptop() {
 // Each "site" has a tab title, a little icon and an address. The address
 // bar only shows where you are (it isn't for typing).
 const SITES = {
-  home: { title: "New tab", icon: "🏠", url: "https://start.cozy" },
-  mail: { title: "Mail", icon: "✉️", url: "https://mail.cozy/inbox" },
-  news: { title: "The Cozy Times", icon: "📰", url: "https://news.cozy" },
-  store: { title: "Nest & Nook", icon: "🪺", url: "https://nestandnook.cozy/furniture" },
+  home: { title: "New tab", icon: "house", url: "https://start.cozy" },
+  mail: { title: "Mail", icon: "letter", url: "https://mail.cozy/inbox" },
+  news: { title: "The Cozy Times", icon: "news", url: "https://news.cozy" },
+  store: { title: "Nest & Nook", icon: "nook-bird", url: "https://nestandnook.cozy/furniture" },
 };
 let current = "home";
 let history = []; // pages before this one (for Back)
@@ -76,7 +77,7 @@ function setAddress(url, tabTitle) {
 function show(name) {
   current = name;
   for (const [id, el] of Object.entries(pages)) el.hidden = id !== name;
-  favicon.textContent = SITES[name].icon;
+  favicon.innerHTML = uiIcon(SITES[name].icon);
   setAddress(SITES[name].url);
   if (name === "home") renderStart();
   if (name === "mail") showInbox();
@@ -271,7 +272,8 @@ function showInbox() {
   setAddress("https://mail.cozy/inbox", "Mail · Inbox");
   const page = pages.mail;
   page.innerHTML = "";
-  const write = el("button", "warm-button mail-write", "✏️ Write a letter");
+  const write = el("button", "warm-button mail-write", "Write a letter");
+  write.insertAdjacentHTML("afterbegin", uiIcon("pencil") + " ");
   write.type = "button";
   write.addEventListener("click", () => {
     playClickSound();

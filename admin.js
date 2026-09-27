@@ -251,7 +251,11 @@ function meTab() {
       btn("Unlock all", () => (unlockAllQuietly(), "Every achievement unlocked (quietly: no pop-ups or crumbs).")),
       btn("Reset all", () => (resetAchievements(), "Achievements and their counters reset."), { danger: true, confirm: { title: "Reset all your achievements?", text: "Every achievement, tier and counter (hours, chats, fish...) goes back to nothing. There's no undo.", yes: "Reset all" } }),
     ]),
-    row("Daily limits", [btn("Reset mine", async () => (await admin("/api/admin/reset-limits", { name: accountName() }), "Today's fortune cookie, the focus bonus and this week's merchant limits are fresh again."))], "fortune cookie, focus bonus, merchant"),
+    row("Resident hearts", [
+      btn("+1 heart each", () => (bank("adminHearts"), "One more heart with Clover and Mortimer.")),
+      btn("Back to none", () => (bank("adminHearts", { reset: true }), "Friendship with the residents is back to nothing."), { danger: true, confirm: { title: "Reset your friendship with the residents?", text: "Your hearts with Clover and Mortimer go back to none. Recipes you learned and achievements stay.", yes: "Reset" } }),
+    ]),
+    row("Daily limits", [btn("Reset mine", async () => (await admin("/api/admin/reset-limits", { name: accountName() }), "Today's fortune cookie, the focus bonus, this week's merchant limits and today's resident requests are fresh again."))], "fortune cookie, focus bonus, merchant, residents' requests"),
     section("Go"),
     row("Jump to", [picker]),
     section("You"),
@@ -275,8 +279,8 @@ function giftables() {
     ...CONFIG.bait.filter((b) => b.price).map((b) => `bait:${b.id}`),
     ...CONFIG.kitchen.pantry.map((f) => `food:${f.id}`),
     ...CONFIG.kitchen.recipes.map((r) => `dish:${r.id}`),
-  ].map((id) => [id, `${itemInfo(id).icon} ${itemInfo(id).name}`]);
-  const shop = SHOP_CATALOG.map((i) => [i.id, `🦝 ${i.name}`]);
+  ].map((id) => [id, itemInfo(id).name]);
+  const shop = SHOP_CATALOG.map((i) => [i.id, i.name]);
   return [...ids.sort((a, b) => a[1].localeCompare(b[1])), ...shop];
 }
 
@@ -287,7 +291,7 @@ function playersTab() {
   for (const p of [...state.players].sort((a, b) => b.online - a.online || a.name.localeCompare(b.name))) {
     const chip = make("button", "admin-chip" + (picked === p.name ? " picked" : ""));
     chip.type = "button";
-    chip.append(make("span", "dot" + (p.online ? " on" : "")), `${p.name}${p.admin ? " 🛠️" : ""}${p.muted ? " 🔇" : ""}${p.kicked ? " 🚪" : ""}`);
+    chip.append(make("span", "dot" + (p.online ? " on" : "")), `${p.name}${p.admin ? " (admin)" : ""}${p.muted ? " (muted)" : ""}${p.kicked ? " (sent out)" : ""}`);
     chip.title = p.online ? "In the house now" : "Away";
     chip.addEventListener("click", () => {
       playClickSound();
@@ -324,7 +328,7 @@ function playersTab() {
         p.online ? "in the house now" : "away right now"
       ),
       row("Voice", p.muted ? [btn("Unmute", async () => (await admin("/api/admin/mute", { name: p.name, minutes: 0 }), `${p.name} can talk again.`))] : [muteFor, btn("Mute", async () => (await admin("/api/admin/mute", { name: p.name, minutes: Number(muteFor.value) }), `${p.name} is muted for everyone.`), { disabled: isMe })]),
-      row("Daily limits", [btn("Reset", async () => (await admin("/api/admin/reset-limits", { name: p.name }), `${p.name}'s daily limits are fresh again.`))], "fortune cookie, focus bonus, merchant"),
+      row("Daily limits", [btn("Reset", async () => (await admin("/api/admin/reset-limits", { name: p.name }), `${p.name}'s daily limits are fresh again.`))], "fortune cookie, focus bonus, merchant, residents' requests"),
       row("Password", [
         btn("Reset code", async () => {
           const r = await serverApi("POST", "/api/admin/reset", { name: p.name });
@@ -421,7 +425,7 @@ function serverTab() {
     li.append(make("span", "when", when(e.at)), make("span", "what", `${e.where}${e.who ? ` (${e.who})` : ""}: ${e.message}`));
     errors.appendChild(li);
   }
-  if (!state.errors.length) errors.appendChild(make("li", "", "No problems since the server last started. 🎉"));
+  if (!state.errors.length) errors.appendChild(make("li", "", "No problems since the server last started."));
   const log = make("ul", "admin-list");
   for (const l of state.log) {
     const li = make("li");
@@ -486,14 +490,14 @@ export function adminActionsFor(name, muted) {
     hooks.sendOrder(o);
   };
   return [
-    { label: "🛠️ Teleport to", run: () => tell(hooks.goTo(name) ? `Went to ${name}.` : `Couldn't get to ${name}.`) },
-    { label: "🛠️ Bring here", disabled: here.inBedroom, title: here.inBedroom ? "Not from inside a bedroom" : "", run: run(async () => (await order("summon", { x: here.x, y: here.y }), `Bringing ${name} over.`)) },
-    { label: "🛠️ Unstick", run: run(async () => (await order("unstick"), `${name} goes back to the hallway.`)) },
+    { icon: "tools", label: "Teleport to", run: () => tell(hooks.goTo(name) ? `Went to ${name}.` : `Couldn't get to ${name}.`) },
+    { icon: "tools", label: "Bring here", disabled: here.inBedroom, title: here.inBedroom ? "Not from inside a bedroom" : "", run: run(async () => (await order("summon", { x: here.x, y: here.y }), `Bringing ${name} over.`)) },
+    { icon: "tools", label: "Unstick", run: run(async () => (await order("unstick"), `${name} goes back to the hallway.`)) },
     muted
-      ? { label: "🛠️ Unmute", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 0 }), `${name} can talk again.`)) }
-      : { label: "🛠️ Mute (10 min)", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 10 }), `${name} is muted for everyone for 10 minutes.`)) },
+      ? { icon: "tools", label: "Unmute", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 0 }), `${name} can talk again.`)) }
+      : { icon: "tools", label: "Mute (10 min)", run: run(async () => (await serverApi("POST", "/api/admin/mute", { name, minutes: 10 }), `${name} is muted for everyone for 10 minutes.`)) },
     {
-      label: "🛠️ Send out (10 min)",
+      icon: "tools", label: "Send out (10 min)",
       danger: true,
       run: run(async () => {
         if (!(await hooks.confirm({ title: `Send ${name} out of the house?`, text: `${name} is logged out and can't come back for 10 minutes. Everyone stops seeing and hearing them.`, yes: "Send out", no: "Cancel" }))) return "";
@@ -550,7 +554,7 @@ function showBanner() {
   const names = { clear: "sun", cloudy: "clouds" };
   const parts = [seasonPreview, now.sky && (names[now.sky] ?? now.sky), now.time].filter(Boolean);
   banner.hidden = !parts.length;
-  document.getElementById("override-text").textContent = `👀 Trying out: ${parts.join(", ")} (only you see this)`;
+  document.getElementById("override-text").textContent = `Trying out: ${parts.join(", ")} (only you see this)`;
 }
 document.getElementById("override-reset").addEventListener("click", () => {
   playClickSound();

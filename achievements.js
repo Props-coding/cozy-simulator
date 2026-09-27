@@ -11,8 +11,11 @@
 // are kept by the house server (the bank, see bank.js), which pays the
 // crumbs. The server gives the ones it sees happen itself (buying,
 // fishing, gardening: `server` in catalog.js); the page claims the rest.
+import { pictureCanvas } from "./pictures.js";
+import { iconCanvas } from "./icons.js";
 import { playAchievementSound } from "./audio.js";
 import { bank, myWallet, noteStat } from "./bank.js";
+import { heartToast } from "./residents.js";
 
 // Every moment (one-time achievement) is listed in catalog.js (shared
 // with the house server, which pays the rewards).
@@ -29,6 +32,7 @@ export const MOMENT_GROUPS = [
   ["Raccoons and pets", ["raccoons", "firstBuy", "allHats", "allShoes", "patPat", "pettingZoo", "hoarder"]],
   ["Outdoors", ["firstSeed", "rainCheck", "farmStand", "greatPumpkin", "firstCatch", "bigOne", "legendCatch", "pondScholar", "fullTank", "junkDealer"]],
   ["Kitchen and trade", ["firstDish", "burntOffering", "wellFed", "sharing", "fortuneTold", "cookbook", "firstTrade", "wellTraveled"]],
+  ["Residents", ["happyToHelp", "cloverFriend", "mortimerFriend"]],
   ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
 ];
 
@@ -94,21 +98,23 @@ export function unlock(id) {
 // What the server says you just earned: pop-ups, and a line for friends.
 // (Lots of tiers at once, like the first time, get one pop-up.)
 export function showBankEvents(events) {
+  // A new friendship heart with a resident (Update 6).
+  for (const e of events) if (e.type === "hearts") showToast(heartToast(e));
   for (const e of events) {
     if (e.type !== "achievement" || !byId[e.id]) continue;
-    showToast({ ...byId[e.id], label: "Achievement!" });
+    showToast({ ...byId[e.id], iconKey: e.id, label: "Achievement!" });
     hooks.announce(e.id);
   }
   const reached = events.filter((e) => e.type === "tier" && tracks().some((t) => t.id === e.id) && tiers()[e.level - 1]);
   if (reached.length > 3) {
     const crumbs = reached.reduce((sum, e) => sum + e.crumbs, 0);
-    showToast({ kind: "tier", icon: "🏅", label: "Tiered achievements!", name: `You're already at ${reached.length} tiers`, desc: "See them on your profile (the 🏆 button).", crumbs });
+    showToast({ kind: "tier", iconKey: "medal:0", label: "Tiered achievements!", name: `You're already at ${reached.length} tiers`, desc: "See them on your profile (the trophy button).", crumbs });
     return;
   }
   for (const e of reached) {
     const track = tracks().find((t) => t.id === e.id);
     const tier = tiers()[e.level - 1];
-    showToast({ kind: "tier", icon: track.icon, label: `${tier.name} tier!`, name: `${track.name} ${tier.icon}`, desc: goalText(track, e.level - 1), crumbs: e.crumbs });
+    showToast({ kind: "tier", iconKey: track.id, label: `${tier.name} tier!`, name: track.name, desc: goalText(track, e.level - 1), crumbs: e.crumbs });
     hooks.announceTier(e.id, e.level);
   }
 }
@@ -234,7 +240,12 @@ function showNextToast() {
     return;
   }
   toastShowing = true;
-  toast.querySelector(".toast-icon").textContent = a.icon;
+  // The picture: a drawing from icons.js (iconKey: an achievement, a
+  // room, a medal) or pictures.js (picture), never an emoji.
+  const iconEl = toast.querySelector(".toast-icon");
+  iconEl.textContent = "";
+  const drawn = a.iconKey ? iconCanvas(a.iconKey, 34) : a.picture ? pictureCanvas(a.picture, 34) : null;
+  if (drawn) iconEl.appendChild(drawn);
   toast.querySelector(".toast-label").textContent = a.label ?? "Achievement!";
   toast.querySelector(".toast-reward").hidden = !a.crumbs;
   toast.dataset.kind = a.kind ?? "";

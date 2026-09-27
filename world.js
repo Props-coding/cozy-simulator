@@ -300,6 +300,7 @@ const BASE_FURNITURE = [
   { kind: "readingTable", x: 0.45, y: -2.2, w: 1.6, h: 0.6 },
   { kind: "chair", x: 0.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
   { kind: "fern", x: 5.2, y: -1.8, w: 0.6, h: 0.6 },
+  { kind: "owlPerch", x: 5.15, y: -2.75, w: 0.5, h: 0.3 }, // where Mortimer sleeps through the day (Update 6)
   // A little garden on the lawn north of the hallway (outside, past the
   // Library): a birdbath in the middle with a flower bed on each side, a
   // low hedge along the house, and a tree in each far corner.
@@ -540,9 +541,8 @@ function fenceRun(x1, y1, x2, y2, style = "picket") {
 // x, and y from the yard's top) drawn as a smooth curve `w` wide; `stone`
 // ones (near the house) are laid with stones, the rest are dirt.
 const YARD_PATHS = [
-  { stone: true, w: 1.3, points: [[18.0, -2.75], [18.0, -2.0], [18.0, -1.2]] }, // porch steps down to the garden gate
-  { stone: true, w: 1.0, points: [[17.6, -2.3], [16.4, -2.3], [15.0, -2.28]] }, // along the porch, near the steps
-  { w: 0.95, points: [[15.4, -2.28], [12.6, -2.25], [10.5, -2.2], [9.4, -1.7], [9.15, -0.6]] }, // along the porch, west to Hazel's corner
+  { stone: true, w: 1.5, points: [[18.0, -2.75], [18.0, -2.0], [18.0, -1.2]] }, // flagstones from the porch steps down to the garden gate
+  { w: 0.95, points: [[17.4, -2.3], [15.4, -2.28], [12.6, -2.25], [10.5, -2.2], [9.4, -1.7], [9.15, -0.6]] }, // along the porch, west to Hazel's corner
   { w: 0.95, points: [[9.15, -0.6], [9.2, 1.5], [9.3, 3.2], [9.25, 4.8], [9.45, 6.3], [10.1, 7.1], [11.2, 7.3]] }, // down past Otis to the pond
   { w: 1.0, points: [[11.0, 7.3], [13.5, 7.25], [15.6, 7.2], [17.3, 7.15], [18.0, 7.1]] }, // along the bottom, past the trading post
   { w: 1.1, points: [[18.0, -1.3], [18.0, 1.5], [18.0, 4.6], [18.0, 6.2], [18.0, 7.1]] }, // through the garden, out of its bottom gate
@@ -788,6 +788,119 @@ function isNightOutside() {
   return hour >= nightFrom || hour < nightTo;
 }
 
+
+// --- Residents (Update 6) ---
+// Characters who live in the house and keep their own hours, by the
+// hometown's clock: Clover the rabbit bakes in the kitchen in the morning,
+// takes a stroll in the yard at midday and is back for supper; Mortimer
+// the owl, the librarian, sleeps on his perch in the Library all day and
+// pads between the shelves at night. Each part of their day is a loop of
+// stops ({ x, y } where their feet are, how long they stay, and what they
+// do there); where they are in it comes from the clock, so everyone sees
+// them in the same place. Outside all their hours they're home (not shown).
+// Their talk lives in residents.js, their looks in render-residents.js.
+const RESIDENTS = [
+  {
+    id: "clover",
+    name: "Clover",
+    kind: "rabbit",
+    speed: 1.1, // tiles a second
+    day: [
+      { from: 5, to: 11, stops: [
+        { x: 13.05, y: 4.4, stay: 14, act: "bake" },
+        { x: 14.9, y: 4.4, stay: 7, act: "stir" },
+        { x: 17.3, y: 4.45, stay: 4, act: "fetch" },
+        { x: 14.9, y: 4.4, stay: 6, act: "stir" },
+      ] },
+      { from: 11, to: 16, stops: [
+        { x: 17.0, y: YARD - 2.2, stay: 10, act: "stroll" },
+        { x: 12.9, y: YARD - 1.85, stay: 16, act: "chat", face: -1 },
+      ] },
+      { from: 16, to: 21, stops: [
+        { x: 13.05, y: 4.4, stay: 16, act: "bake" },
+        { x: 14.9, y: 4.4, stay: 6, act: "stir" },
+        { x: 16.45, y: 4.45, stay: 6, act: "wash" },
+        { x: 14.9, y: 4.4, stay: 4, act: "stir" },
+      ] },
+    ],
+  },
+  {
+    id: "mortimer",
+    name: "Mortimer",
+    kind: "owl",
+    speed: 0.9,
+    day: [
+      { from: 19, to: 6, stops: [
+        { x: 2.45, y: -1.6, stay: 16, act: "read" },
+        { x: 2.3, y: -2.65, stay: 0 },
+        { x: 1.3, y: -2.7, stay: 9, act: "shelve" },
+        { x: 2.3, y: -2.65, stay: 0 },
+        { x: 3.05, y: -4.3, stay: 9, act: "look" },
+        { x: 3.8, y: -2.7, stay: 0 },
+        { x: 4.6, y: -2.7, stay: 9, act: "shelve" },
+        { x: 3.8, y: -2.7, stay: 0 },
+      ] },
+      { from: 6, to: 19, asleep: true, stops: [{ x: 5.4, y: -2.62, stay: 60, act: "perch" }] },
+    ],
+  },
+];
+
+// The hometown's hour right now, with minutes as a fraction (like 13.5).
+// The live weather tells us the hometown's offset from UTC; until it has,
+// this computer's own clock is used.
+function hometownHour(now = Date.now()) {
+  const offset = OUTDOORS.utcOffset ?? -new Date(now).getTimezoneOffset() * 60_000;
+  const d = new Date(now + offset);
+  return d.getUTCHours() + d.getUTCMinutes() / 60;
+}
+
+// Where a resident is right now: { x, y, facing (-1 left, 1 right, 0 front,
+// "back"), moving, act, asleep }, or null while they're home.
+function residentState(r, now = Date.now()) {
+  const hour = hometownHour(now);
+  const part = r.day.find((p) => (p.from < p.to ? hour >= p.from && hour < p.to : hour >= p.from || hour < p.to));
+  if (!part) return null;
+  const stops = part.stops;
+  // One trip round the loop: stay at each stop, then walk to the next.
+  const legs = stops.map((s, i) => {
+    const next = stops[(i + 1) % stops.length];
+    return { s, next, walk: stops.length > 1 ? Math.hypot(next.x - s.x, next.y - s.y) / r.speed : 0 };
+  });
+  const loop = legs.reduce((sum, l) => sum + l.s.stay + l.walk, 0) || 1;
+  let t = (now / 1000) % loop;
+  for (const { s, next, walk } of legs) {
+    if (t < s.stay) {
+      // Facing: at the counter or the shelves you face the wall; otherwise
+      // towards whatever the stop says, or the front.
+      const facing = ["bake", "fetch", "wash", "shelve", "look"].includes(s.act) ? "back" : s.face ?? 0;
+      return { x: s.x, y: s.y, facing, moving: false, act: s.act, asleep: !!part.asleep, t: s.stay - t };
+    }
+    t -= s.stay;
+    if (t < walk) {
+      const k = t / walk;
+      const dx = next.x - s.x, dy = next.y - s.y;
+      const facing = Math.abs(dx) > Math.abs(dy) * 0.6 ? Math.sign(dx) : dy < 0 ? "back" : 0;
+      return { x: s.x + dx * k, y: s.y + dy * k, facing, moving: true, act: null, asleep: false };
+    }
+    t -= walk;
+  }
+  const s = stops[0];
+  return { x: s.x, y: s.y, facing: 0, moving: false, act: s.act, asleep: !!part.asleep };
+}
+
+// The resident you're standing next to (within `reach` tiles), with how
+// far away they are: { r, state, d }, or null.
+function residentInReach(player, reach = 1.1) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE;
+  let best = null;
+  for (const r of RESIDENTS) {
+    const state = residentState(r);
+    if (!state || floorOf(state.y) !== floorOf(player.y)) continue;
+    const d = Math.hypot(cx - state.x, (cy - state.y) * 1.2);
+    if (d < reach && (!best || d < best.d)) best = { r, state, d };
+  }
+  return best;
+}
 // --- Seasonal decorations ---
 // The shared rooms (hallways, Theater, Study, Dinner, Library) dress up
 // for the season: little cutouts stuck along the hallway walls (bats and
@@ -809,7 +922,7 @@ const SEASONAL = {
     { size: "small", x: 5.3, y: 9.2 }, // Theater, by the popcorn
     { size: "big", x: 1.0, y: 10.0 }, // Theater, back corner
     { size: "small", x: 2.8, y: -5.0 }, // Library, under the windows
-    { size: "big", x: 4.9, y: -2.6 }, // Library, by the fern
+    { size: "big", x: 4.3, y: -1.0 }, // Library, in the front corner (Mortimer's perch is by the fern)
   ],
 };
 let seasonPreview = null; // set from the admin panel to try out a season
@@ -1615,6 +1728,9 @@ function nearestInteraction(player) {
   near("cookieJar", 0.9);
   near("tradingPost", 1.0);
   if (MERCHANT.here) near("juniper", 1.1);
+  // Residents (Update 6), wherever they are right now.
+  const resident = residentInReach(player);
+  if (resident) options.push(["resident:" + resident.r.id, resident.d]);
   if (myFishTankInReach(player)) options.push(["fishTank", 0.2]);
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (myPhoneInReach(player)) options.push(["phone", 0.05]);
