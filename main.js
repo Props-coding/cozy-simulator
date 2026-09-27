@@ -387,7 +387,7 @@ joinButton.addEventListener("click", async () => {
   startMail();
   startWeather(); // the hometown's real sky, outside and through the windows
   // The shared garden in the yard (beds kept on the house server).
-  initBus({ outside: () => floorOf(player.y) === YARD_FLOOR });
+  initBus({ outside: () => floorOf(player.y) <= YARD_FLOOR });
   // Fishing at the pond: big catches are shared in the house chat.
   initFishing({
     notice: (text, ms = 5000) => showNotice(text, ms),
@@ -836,7 +836,7 @@ window.addEventListener("keydown", (e) => {
   // The bus is waiting and you're by its door: talk to the driver.
   if (key === "e" && !nearestInteraction(player) && !mySeat && nearWaitingBus(player)) {
     for (const k in keysDown) keysDown[k] = false;
-    talkToDriver();
+    talkToDriver(player);
     return;
   }
 

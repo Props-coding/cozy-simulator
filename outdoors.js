@@ -2306,28 +2306,12 @@ FURNITURE_DRAWERS.porchSwing = (ctx, f) => {
 };
 
 // --- The bus stop (Update 4, step 7) ---
-// Where the bus is right now. Everyone's clock agrees (it's worked out from
-// the time of day), so friends see the bus at the same moment.
-// Returns { phase: "away" | "arriving" | "waiting" | "leaving", x (the
-// bus's left end, grid units), untilNext (seconds until it next arrives),
-// leavesIn (seconds, while waiting) }.
 const BUS_LENGTH = 4.4;
 const BUS_STOP_X = 14.8; // where its left end stops: just left of the shelter (not in front of it), its door by the gate
-const BUS_DRIVE = 7; // seconds to drive in (or out)
-function busState(now = Date.now()) {
-  const period = Math.max(2, CONFIG.bus.everyMinutes) * 60;
-  const wait = CONFIG.bus.waitSeconds;
-  const t = (now / 1000) % period;
-  const ease = (k) => 1 - (1 - k) ** 3; // slowing down as it pulls in
-  if (t < BUS_DRIVE) {
-    return { phase: "arriving", x: -BUS_LENGTH - 1 + (BUS_STOP_X + BUS_LENGTH + 1) * ease(t / BUS_DRIVE), untilNext: 0 };
-  }
-  if (t < BUS_DRIVE + wait) return { phase: "waiting", x: BUS_STOP_X, untilNext: 0, leavesIn: BUS_DRIVE + wait - t };
-  if (t < BUS_DRIVE * 2 + wait) {
-    const k = (t - BUS_DRIVE - wait) / BUS_DRIVE;
-    return { phase: "leaving", x: BUS_STOP_X + (HOUSE_WIDTH + 1 - BUS_STOP_X) * k * k, untilNext: period - t };
-  }
-  return { phase: "away", x: null, untilNext: period - t };
+// The bus is always parked at the stop now (trips to the Lake and the
+// Farm leave whenever you like), so it's simply "waiting", with its door open.
+function busState() {
+  return { phase: "waiting", x: BUS_STOP_X };
 }
 
 Object.assign(FURNITURE_DRAWERS, {
@@ -2335,9 +2319,8 @@ Object.assign(FURNITURE_DRAWERS, {
   // a door in the middle (open while it waits), and headlights at night.
   bus(ctx, f) {
     const bus = busState();
-    if (bus.x === null) return;
     const t = performance.now() / 1000;
-    const a = toScreen(bus.x, f.y + f.h);
+    const a = toScreen(f.stopX ?? bus.x, f.y + f.h); // (stopX: where it parks at the Lake)
     const w = BUS_LENGTH * TILE, h = 50;
     const moving = bus.phase !== "waiting";
     const bob = moving ? Math.sin(t * 18) * 0.8 : 0;
@@ -2494,9 +2477,8 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.font = "800 8px 'Quicksand', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("BUS", b.x, b.y - 69);
-    // Timetable board.
-    const bus = busState();
-    const text = bus.phase === "waiting" ? "Here now!" : bus.phase === "arriving" ? "Arriving..." : `Next: ${Math.max(1, Math.ceil(bus.untilNext / 60))} min`;
+    // The board: where the bus goes.
+    const text = "Trips";
     ctx.fillStyle = "#2b2b30";
     roundRectPath(ctx, b.x - 22, b.y - 52, 44, 22, 3);
     ctx.fill();
@@ -2505,7 +2487,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillText(text, b.x, b.y - 43);
     ctx.fillStyle = "#c8c8d0";
     ctx.font = "600 6px 'Quicksand', sans-serif";
-    ctx.fillText("Trips coming soon", b.x, b.y - 34);
+    ctx.fillText("Lake · Farm", b.x, b.y - 34);
     ctx.textAlign = "left";
   },
 });
