@@ -83,6 +83,21 @@ export async function grantRoomy() {
   store();
 }
 
+// An admin cleared your bedroom (the house server did it too): start
+// again from the starter pieces. `resetAt` is when; each reset happens once.
+const RESET_SEEN_KEY = "cozy-house-room-reset-seen";
+export function checkRoomReset(resetAt) {
+  if (!resetAt || resetAt <= Number(localStorage.getItem(RESET_SEEN_KEY) || 0)) return false;
+  try {
+    localStorage.setItem(RESET_SEEN_KEY, String(resetAt));
+  } catch {
+    // (storage blocked: it just might happen again next time)
+  }
+  home.placed = [];
+  store();
+  return true;
+}
+
 // The fish in one of your placed fish tanks (Update 4: fishing.js puts
 // them in and takes them out).
 export function setTankFish(index, fish) {

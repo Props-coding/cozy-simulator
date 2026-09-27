@@ -696,5 +696,51 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   for (const tag of layoutPlayerTags(ctx, players)) drawPlayerTag(ctx, tag);
   for (const pet of pets) drawPetHearts(ctx, pet);
   drawDoorTags(ctx, me); // on top: it's only there because you walked up to a door
+  drawDebugOverlays(ctx);
+  ctx.restore();
+}
+
+// --- Debug outlines (the admin panel's Debug tab; only on this computer) ---
+// Room edges and names (blue), everything you bump into (red), and where
+// people sit (green dots, with a line showing which way they face).
+const DEBUG_OVERLAYS = { seats: false, solids: false, rooms: false };
+function drawDebugOverlays(ctx) {
+  if (!DEBUG_OVERLAYS.seats && !DEBUG_OVERLAYS.solids && !DEBUG_OVERLAYS.rooms) return;
+  const onFloor = (y) => floorOf(y) === viewFloor;
+  const box = (r, color, fill) => {
+    const a = toScreen(r.x, r.y), b = toScreen(r.x + r.w, r.y + r.h);
+    ctx.fillStyle = fill;
+    ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(a.x + 0.5, a.y + 0.5, b.x - a.x - 1, b.y - a.y - 1);
+  };
+  ctx.save();
+  ctx.font = "700 9px 'Quicksand', sans-serif";
+  if (DEBUG_OVERLAYS.rooms) {
+    for (const room of ROOMS.filter((r) => r.rect && onFloor(r.rect.y))) {
+      box(room.rect, "rgba(40, 90, 220, 0.9)", "rgba(40, 90, 220, 0.06)");
+      const a = toScreen(room.rect.x, room.rect.y);
+      ctx.fillStyle = "rgba(40, 90, 220, 0.95)";
+      ctx.fillText(room.id, a.x + 3, a.y + 10);
+    }
+  }
+  if (DEBUG_OVERLAYS.solids) for (const s of SOLIDS.filter((s) => onFloor(s.y))) box(s, "rgba(220, 40, 40, 0.85)", "rgba(220, 40, 40, 0.12)");
+  if (DEBUG_OVERLAYS.seats) {
+    const step = { down: [0, 6], up: [0, -6], left: [-6, 0], right: [6, 0] };
+    for (const seat of seatsOnFloor(viewFloor)) {
+      const p = toScreen(seat.x, seat.y);
+      ctx.fillStyle = "rgba(30, 160, 60, 0.95)";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      const [dx, dy] = step[seat.face] ?? [0, 0];
+      ctx.strokeStyle = "rgba(30, 160, 60, 0.95)";
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + dx, p.y + dy);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }

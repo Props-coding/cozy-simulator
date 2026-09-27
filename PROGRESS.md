@@ -313,6 +313,15 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
     - New achievements (Home Cooking, Burnt Offering, Well Fed, Sharing Is Caring, Fortune Told, Cookbook, Open for Business, Well Traveled) and a Chef tier (meals cooked). Admin panel: "Bring Juniper (1 hour)" and "Know every recipe".
     - All the lists (pantry, recipes, boosts, fortunes, trading post, merchant) are in config.js.
   - New files: `bank.js` (the page's side of the bank), `kitchen.js`, `market.js` and `catalog.js` (the raccoons' stock and the achievements list, moved out of shop.js and achievements.js so the server can read them). Price changes now need the server copies updated too (see server/README.md).
+- Build 0.64: the admin panel, rebuilt. Six tabs (Me, Players, World, Events, Server, Debug), labels with their controls beside them, and a search box that finds any tool. Things that can't be undone are red and ask first.
+  - Me: crumbs (+100, +1,000, any number, Set to 0), unlocks (raccoon items, Nest & Nook, Roomy, every recipe), fill basket, fishing XP, achievements, reset your daily limits, a room picker (grouped by floor) instead of the old dropdown, and "View as player" (hides the tools and your admin badge; Ctrl+Shift+A brings them back).
+  - Players: everyone, with a green dot if they're here. Pick someone to give them crumbs or any thing (with a note in their mailbox), go to them, bring them over, unstick them (back to the hallway), mute them for everyone, reset their daily limits (fortune cookie, focus bonus, merchant limits), make a password reset code, reset their bedroom (everything packed away, still theirs), or send them out of the house for a while (logged out, can't log back in until the time's up, and nobody sees or hears them). Invites: make a code (1 use, 5 or no limit; 1, 7 or 30 days), copy it, cancel it, and see who joined with each. Friends type the code where the house phrase goes.
+  - World: season, weather and time of day as three separate choices, each with "Real" (only you see them; a banner over the house says so, with "Back to real"). Ripen your own beds, or fast-forward everyone's garden.
+  - Events: start or stop Juniper's visit (or the full moon, which does something from Update 8) for everyone.
+  - Server: back up now, announce something to everyone (in chat and over the house), close the house for maintenance (only admins get in; friends inside see a notice), recent problems (from the server and from friends' pages), and the admin log (who did what, to whom, and when).
+  - Debug: outlines over the house for seat spots, collision boxes and room edges.
+  - Safety: every tool is checked on the server as admin-only, and everything that touches someone else goes in the log. Orders that need a friend's own page (bring over, unstick, send out, reset room) are signed by the server, and every page checks the signature, so nobody can fake one.
+  - Also fixed: a login reload loop right after the bank arrived (the server fix went live on 0.63; the page is now more careful too).
 
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.

@@ -335,7 +335,38 @@ export function serverApi(method, path, body, options) {
 // the signature with the server's public key before showing the badge, so
 // nobody can give themselves one.
 export function myBadge() {
-  return account?.badge ?? null;
+  return viewingAsPlayer() ? null : account?.badge ?? null;
+}
+
+// "View as player" (the admin panel's Me tab): the admin tools and your
+// badge are hidden, so you see the house (and friends see you) like
+// everyone else. Ctrl+Shift+A brings them back.
+const PLAYER_VIEW_KEY = "cozy-house-view-as-player";
+export function viewingAsPlayer() {
+  return storage.get(PLAYER_VIEW_KEY) === "1";
+}
+export function setViewAsPlayer(on) {
+  if (on) storage.set(PLAYER_VIEW_KEY, "1");
+  else storage.remove(PLAYER_VIEW_KEY);
+}
+
+// An admin order from a friend's browser (bring someone over, unstick
+// them, send them out, clear their room): real only if the house server
+// signed it, and only for a few minutes. Resolves to { kind, target, data }
+// or null.
+export async function checkAdminOrder(order) {
+  if (!order || typeof order.payload !== "string" || typeof order.sig !== "string") return null;
+  const [tag, kind, target, data, expires, extra] = order.payload.split("|");
+  if (tag !== "admin" || extra !== undefined || !(Number(expires) > Date.now())) return null;
+  const publicKey = await badgeKey();
+  if (!publicKey) return null;
+  try {
+    const sig = Uint8Array.from(atob(order.sig), (c) => c.charCodeAt(0));
+    const ok = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, publicKey, sig, new TextEncoder().encode(order.payload));
+    return ok ? { kind, target, data: JSON.parse(data) } : null;
+  } catch {
+    return null;
+  }
 }
 
 let badgeKeyPromise = null;
@@ -474,4 +505,10 @@ async function start() {
     }
   }
 }
-start();
+start().then(() => {
+  // Sent out by an admin (main.js): say so on the login card.
+  const sentOut = sessionStorage.getItem("cozy-house-sent-out");
+  if (!sentOut) return;
+  sessionStorage.removeItem("cozy-house-sent-out");
+  showError(note, sentOut);
+});

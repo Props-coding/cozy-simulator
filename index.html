@@ -18,8 +18,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.63" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.63">
+       build, change every "v=0.64" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.64">
 </head>
 <body>
   <!-- The crumb icon: a happy little cookie crumb with chocolate chips,
@@ -191,65 +191,13 @@
           <button id="admin-button" type="button" title="Admin tools" aria-label="Admin tools" aria-expanded="false" hidden>🛠️</button>
           <!-- Admin tools (admin.js), only for admin accounts. -->
           <div id="admin-panel" hidden>
-            <h2>Admin tools</h2>
-            <p class="admin-hint">For testing. These change your own save only (except accounts).</p>
-            <div class="admin-group">
-              <span>Crumbs</span>
-              <button type="button" class="soft-button" data-tool="crumbs-100">+100</button>
-              <button type="button" class="soft-button" data-tool="crumbs-1000">+1,000</button>
-              <button type="button" class="soft-button" data-tool="crumbs-zero">Set to 0</button>
+            <div class="admin-head">
+              <h2>Admin tools</h2>
+              <input id="admin-search" type="search" placeholder="Find a tool..." autocomplete="off" aria-label="Find a tool">
             </div>
-            <div class="admin-group">
-              <span>Unlock</span>
-              <button type="button" class="soft-button" data-tool="shop-all">All hats, shoes &amp; pets</button>
-              <button type="button" class="soft-button" data-tool="decor-all">All Nest &amp; Nook items</button>
-              <button type="button" class="soft-button" data-tool="roomy">Roomy bedroom</button>
-            </div>
-            <div class="admin-group">
-              <span>Achievements</span>
-              <button type="button" class="soft-button" data-tool="achievements-all">Unlock all</button>
-              <button type="button" class="soft-button" data-tool="achievements-reset">Reset all</button>
-            </div>
-            <div class="admin-group">
-              <span>Season</span>
-              <button type="button" class="soft-button" data-season="">Real date</button>
-              <button type="button" class="soft-button" data-season="spring">Spring</button>
-              <button type="button" class="soft-button" data-season="summer">Summer</button>
-              <button type="button" class="soft-button" data-season="autumn">Autumn</button>
-              <button type="button" class="soft-button" data-season="winter">Winter</button>
-            </div>
-            <div class="admin-group">
-              <span>Weather</span>
-              <button type="button" class="soft-button" data-weather="">Real weather</button>
-              <button type="button" class="soft-button" data-weather="clear">Sun</button>
-              <button type="button" class="soft-button" data-weather="cloudy">Clouds</button>
-              <button type="button" class="soft-button" data-weather="fog">Fog</button>
-              <button type="button" class="soft-button" data-weather="rain">Rain</button>
-              <button type="button" class="soft-button" data-weather="storm">Storm</button>
-              <button type="button" class="soft-button" data-weather="snow">Snow</button>
-              <button type="button" class="soft-button" data-weather="day">Day</button>
-              <button type="button" class="soft-button" data-weather="dusk">Dusk</button>
-              <button type="button" class="soft-button" data-weather="night">Night</button>
-            </div>
-            <div class="admin-group">
-              <span>Outdoors</span>
-              <button id="admin-ripen" type="button" class="soft-button">Ripen all (preview)</button>
-              <button id="admin-basket" type="button" class="soft-button">Fill my basket</button>
-              <button id="admin-fishxp" type="button" class="soft-button">+200 fishing XP</button>
-            </div>
-            <div class="admin-group">
-              <span>Kitchen &amp; Trade</span>
-              <button id="admin-merchant" type="button" class="soft-button">Bring Juniper (1 hour)</button>
-              <button id="admin-recipes" type="button" class="soft-button">Know every recipe</button>
-            </div>
-            <div class="admin-group">
-              <span>Jump to</span>
-              <select id="admin-room"></select>
-              <button id="admin-go" type="button" class="soft-button">Go</button>
-            </div>
-            <h3>Accounts</h3>
-            <ul id="admin-users"></ul>
-            <p id="admin-status" class="admin-status"></p>
+            <div id="admin-tabs" class="admin-tabs" role="tablist"></div>
+            <div id="admin-body"></div>
+            <p id="admin-status" class="admin-status" aria-live="polite"></p>
           </div>
           <button id="trophy-button" type="button" title="Your achievements" aria-label="Your achievements">🏆</button>
           <button id="settings-button" type="button" title="Sound settings" aria-label="Sound settings" aria-expanded="false">
@@ -295,6 +243,13 @@
       <div id="house-column">
         <div id="house-wrap">
           <canvas id="house"></canvas>
+          <!-- An admin is trying out a season, weather or time of day (admin.js). -->
+          <div id="override-banner" hidden>
+            <span id="override-text"></span>
+            <button id="override-reset" type="button" class="warm-button">Back to real</button>
+          </div>
+          <!-- The house is closing for maintenance (main.js). -->
+          <div id="maintenance-banner" hidden></div>
           <!-- The Theater's screen: shown over the house while you're in the
                Theater. theater.js puts the YouTube player inside. -->
           <div id="theater-panel" hidden>
@@ -691,58 +646,58 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.63</p>
+  <p id="version-tag">build 0.64</p>
 
-  <script src="config.js?v=0.63"></script>
-  <script src="catalog.js?v=0.63"></script>
-  <script src="world.js?v=0.63"></script>
-  <script src="render.js?v=0.63"></script>
-  <script src="render-furniture.js?v=0.63"></script>
-  <script src="render-rooms.js?v=0.63"></script>
-  <script src="render-extras.js?v=0.63"></script>
-  <script src="render-characters.js?v=0.63"></script>
-  <script src="render-scene.js?v=0.63"></script>
-  <script src="outdoors.js?v=0.63"></script>
+  <script src="config.js?v=0.64"></script>
+  <script src="catalog.js?v=0.64"></script>
+  <script src="world.js?v=0.64"></script>
+  <script src="render.js?v=0.64"></script>
+  <script src="render-furniture.js?v=0.64"></script>
+  <script src="render-rooms.js?v=0.64"></script>
+  <script src="render-extras.js?v=0.64"></script>
+  <script src="render-characters.js?v=0.64"></script>
+  <script src="render-scene.js?v=0.64"></script>
+  <script src="outdoors.js?v=0.64"></script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.63",
-        "./network.js": "./network.js?v=0.63",
-        "./audio.js": "./audio.js?v=0.63",
-        "./theater.js": "./theater.js?v=0.63",
-        "./whiteboard.js": "./whiteboard.js?v=0.63",
-        "./shop.js": "./shop.js?v=0.63",
-        "./emoji.js": "./emoji.js?v=0.63",
-        "./achievements.js": "./achievements.js?v=0.63",
-        "./home.js": "./home.js?v=0.63",
-        "./turntable.js": "./turntable.js?v=0.63",
-        "./wardrobe.js": "./wardrobe.js?v=0.63",
-        "./kanban.js": "./kanban.js?v=0.63",
-        "./rooms.js": "./rooms.js?v=0.63",
-        "./journal.js": "./journal.js?v=0.63",
-        "./phone.js": "./phone.js?v=0.63",
-        "./laptop.js": "./laptop.js?v=0.63",
-        "./news.js": "./news.js?v=0.63",
-        "./account.js": "./account.js?v=0.63",
-        "./profile.js": "./profile.js?v=0.63",
-        "./icons.js": "./icons.js?v=0.63",
-        "./reputation.js": "./reputation.js?v=0.63",
-        "./titles.js": "./titles.js?v=0.63",
-        "./admin.js": "./admin.js?v=0.63",
-        "./updater.js": "./updater.js?v=0.63",
-        "./weather.js": "./weather.js?v=0.63",
-        "./basket.js": "./basket.js?v=0.63",
-        "./npc.js": "./npc.js?v=0.63",
-        "./bank.js": "./bank.js?v=0.63",
-        "./kitchen.js": "./kitchen.js?v=0.63",
-        "./market.js": "./market.js?v=0.63",
-        "./garden.js": "./garden.js?v=0.63",
-        "./fishing.js": "./fishing.js?v=0.63",
-        "./bus.js": "./bus.js?v=0.63"
+        "./main.js": "./main.js?v=0.64",
+        "./network.js": "./network.js?v=0.64",
+        "./audio.js": "./audio.js?v=0.64",
+        "./theater.js": "./theater.js?v=0.64",
+        "./whiteboard.js": "./whiteboard.js?v=0.64",
+        "./shop.js": "./shop.js?v=0.64",
+        "./emoji.js": "./emoji.js?v=0.64",
+        "./achievements.js": "./achievements.js?v=0.64",
+        "./home.js": "./home.js?v=0.64",
+        "./turntable.js": "./turntable.js?v=0.64",
+        "./wardrobe.js": "./wardrobe.js?v=0.64",
+        "./kanban.js": "./kanban.js?v=0.64",
+        "./rooms.js": "./rooms.js?v=0.64",
+        "./journal.js": "./journal.js?v=0.64",
+        "./phone.js": "./phone.js?v=0.64",
+        "./laptop.js": "./laptop.js?v=0.64",
+        "./news.js": "./news.js?v=0.64",
+        "./account.js": "./account.js?v=0.64",
+        "./profile.js": "./profile.js?v=0.64",
+        "./icons.js": "./icons.js?v=0.64",
+        "./reputation.js": "./reputation.js?v=0.64",
+        "./titles.js": "./titles.js?v=0.64",
+        "./admin.js": "./admin.js?v=0.64",
+        "./updater.js": "./updater.js?v=0.64",
+        "./weather.js": "./weather.js?v=0.64",
+        "./basket.js": "./basket.js?v=0.64",
+        "./npc.js": "./npc.js?v=0.64",
+        "./bank.js": "./bank.js?v=0.64",
+        "./kitchen.js": "./kitchen.js?v=0.64",
+        "./market.js": "./market.js?v=0.64",
+        "./garden.js": "./garden.js?v=0.64",
+        "./fishing.js": "./fishing.js?v=0.64",
+        "./bus.js": "./bus.js?v=0.64"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.63"></script>
+  <script type="module" src="main.js?v=0.64"></script>
 </body>
 </html>

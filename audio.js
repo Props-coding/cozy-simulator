@@ -894,8 +894,14 @@ export async function requestMic() {
 export function updateMicForRoom(roomId) {
   currentRoomId = roomId;
   if (localTrack) {
-    localTrack.enabled = isVoiceRoom(roomId) && !whisperingTo;
+    localTrack.enabled = isVoiceRoom(roomId) && !whisperingTo && !adminMuted;
   }
+}
+
+// Muted by an admin: your mic stays off everywhere until it's lifted.
+let adminMuted = false;
+export function setAdminMuted(on) {
+  adminMuted = on;
 }
 
 // --- Speaking: is your mic picking up your voice right now? ---

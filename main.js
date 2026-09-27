@@ -17,6 +17,9 @@ import {
   onEmote,
   sendEmote,
   myPeerId,
+  onAdminOrder,
+  sendAdminOrder,
+  hideNames,
 } from "./network.js";
 import {
   requestMic,
@@ -61,13 +64,14 @@ import {
   soundIsBlocked,
   resumeAudio,
   setBedroomAudioLookup,
+  setAdminMuted,
 } from "./audio.js";
 import { initTheater, enterTheater, leaveTheater, updateTheater } from "./theater.js";
 import { expandAsYouType, expandShortcodes, expandEmoticons } from "./emoji.js";
 import { FREE_HATS, ownedHats, ownedShoes, ownedPets, ownedGlasses, ownedOfType, crumbBalance, itemName, initShop, isShopBusy, talkToRaccoons } from "./shop.js";
 import { ACHIEVEMENTS, initAchievements, unlock, count, collect, showBankEvents } from "./achievements.js";
 import { initBank, bank, startTicking } from "./bank.js";
-import { initHome, myHome, shareMyRoom, isDecorating, heldPiece } from "./home.js";
+import { initHome, myHome, shareMyRoom, isDecorating, heldPiece, checkRoomReset } from "./home.js";
 import { openTurntable, isTurntableOpen, applyMyLofi, myLofiStation } from "./turntable.js";
 import { roomLevelKey } from "./reputation.js";
 import { titleText, titleList, checkNewTitles } from "./titles.js";
@@ -79,7 +83,7 @@ import { openJournal, isJournalOpen } from "./journal.js";
 import { initPhone, openPhonePanel, closePhonePanel, isPhonePanelOpen, hangUp, inCall, phoneBusy, checkCall } from "./phone.js";
 import { openProfile, isProfileOpen } from "./profile.js";
 import { initAdmin } from "./admin.js";
-import { isHouseReady, myBadge, checkBadge, checkRoomPass, initAccountHooks } from "./account.js";
+import { isHouseReady, myBadge, checkBadge, checkRoomPass, initAccountHooks, checkAdminOrder, serverApi } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
 import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
@@ -356,7 +360,16 @@ joinButton.addEventListener("click", async () => {
   // Everyone's bedroom door on the suite floor, from the house server.
   // (And your own room, as it is in this browser, goes up to the server.)
   shareMyRoom();
-  startRooms({ changed: () => (houseSignature = ""), notice: (text) => showNotice(text) });
+  startRooms({
+    changed: () => {
+      houseSignature = "";
+      // An admin cleared your bedroom: your copy of it starts over too.
+      const mine = bedroomDoors().find((d) => isMe(d.owner));
+      if (mine && checkRoomReset(mine.resetAt)) showNotice("An admin tidied your bedroom back to its starter pieces. Everything you own is still yours: put it back with Decorate.", 7000);
+    },
+    notice: (text) => showNotice(text),
+    house: houseNotices,
+  });
   // The Workshop's project boards: kept up to date, and new or finished
   // cards announced in the house chat.
   startKanban({
@@ -382,7 +395,18 @@ joinButton.addEventListener("click", async () => {
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
   startMarket(); // the trading post, and whether Juniper's here (market.js)
-  initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
+  initAdmin({
+    teleport,
+    rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)),
+    refreshLook,
+    confirm: (options) => askConfirm(options),
+    here: () => ({ x: player.x, y: player.y, inBedroom: getCurrentRoom(player).id.startsWith("bedroom-") }),
+    goTo: goToFriend,
+    sendOrder: (order) => {
+      sendAdminOrder(order);
+      obeyOrder(order); // (orders about someone else still matter here: a sent-out friend disappears)
+    },
+  });
 
   joinScreen.hidden = true;
   gameScreen.hidden = false;
@@ -1022,6 +1046,117 @@ function teleport(roomId) {
   return false;
 }
 
+// Somewhere to stand near (x, y): the nearest free spot inside a room.
+function placeNear(x, y) {
+  const fits = (px, py) => {
+    const box = { x: px, y: py, w: PLAYER_SIZE, h: PLAYER_SIZE };
+    return isInsideARoom(box) && !SOLIDS.some((s) => rectsOverlap(box, s));
+  };
+  for (let ring = 1; ring < 14; ring++) {
+    for (let i = -ring; i <= ring; i++) {
+      for (const [dx, dy] of [[i, -ring], [i, ring], [-ring, i], [ring, i]]) {
+        const px = x + dx * 0.3, py = y + dy * 0.3;
+        if (fits(px, py)) {
+          if (mySeat) standUp();
+          stopFishing(null);
+          Object.assign(player, { x: px, y: py });
+          for (const k in keysDown) keysDown[k] = false;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// The admin panel's "Go to": next to a friend (into their bedroom, if
+// they're in one and you may go in).
+function goToFriend(name) {
+  const peer = getPeers().find((p) => isMe(p.name) === false && p.name.toLowerCase() === name.toLowerCase());
+  if (!peer) return false;
+  if (String(peer.room).startsWith("bedroom-")) return teleport(peer.room);
+  return placeNear(peer.x, peer.y);
+}
+
+// --- Admin orders and notices (see the admin panel, admin.js) ---
+// Orders come through the house, signed by the server; each browser checks
+// the signature before doing anything.
+const sentOutUntil = {}; // lowercase name -> when they may come back
+let serverSentOut = [];
+function applySentOut() {
+  const now = Date.now();
+  const names = [...serverSentOut, ...Object.keys(sentOutUntil).filter((n) => sentOutUntil[n] > now)];
+  hideNames(names);
+  if (names.some((n) => isMe(n))) leaveHouse();
+}
+
+let leaving = false;
+function leaveHouse() {
+  if (leaving) return;
+  leaving = true;
+  try {
+    sessionStorage.setItem("cozy-house-sent-out", "An admin sent you out of the house for a little while. You can come back soon.");
+  } catch {
+    // (the note just won't show)
+  }
+  location.reload();
+}
+
+async function obeyOrder(order) {
+  const o = await checkAdminOrder(order);
+  if (!o) return;
+  if (o.kind === "kick") {
+    sentOutUntil[o.target.toLowerCase()] = Date.now() + (o.data.minutes ?? 10) * 60_000;
+    applySentOut();
+    return;
+  }
+  if (!isMe(o.target) || !inHouse) return;
+  if (o.kind === "summon") {
+    if (placeNear(o.data.x, o.data.y)) showNotice("An admin brought you over. Hi!");
+  } else if (o.kind === "unstick") {
+    const spot = spawnPoint(0);
+    if (placeNear(spot.x, spot.y)) showNotice("An admin got you unstuck. You're back in the hallway.");
+  } else if (o.kind === "resetRoom") {
+    checkRoomReset(Date.now());
+    showNotice("An admin tidied your bedroom back to its starter pieces. Everything you own is still yours.", 7000);
+  }
+}
+onAdminOrder(obeyOrder);
+
+// From the house server every 20 seconds (with the bedroom doors): who's
+// muted or sent out, an announcement, and whether the house is closing.
+let mutedNames = new Set();
+let lastAnnouncement = null;
+const maintenanceBanner = document.getElementById("maintenance-banner");
+function houseNotices(house) {
+  if (!house) return;
+  serverSentOut = house.kicked.map((n) => n.toLowerCase());
+  applySentOut();
+  const wasMuted = mutedNames.has(myName.toLowerCase());
+  mutedNames = new Set(house.muted.map((n) => n.toLowerCase()));
+  const muted = mutedNames.has(myName.toLowerCase());
+  setAdminMuted(muted);
+  if (muted !== wasMuted) showNotice(muted ? "An admin muted you for a little while: friends can't hear you." : "You're not muted any more.", 6000);
+  if (house.announcement && house.announcement.id !== lastAnnouncement) {
+    lastAnnouncement = house.announcement.id;
+    playChatSound();
+    addChatLine({ channel: "house", system: true, text: `📣 ${house.announcement.by}: ${house.announcement.text}` });
+    showNotice(`📣 ${house.announcement.text}`, 9000);
+  }
+  maintenanceBanner.hidden = !house.maintenance;
+  if (house.maintenance) maintenanceBanner.textContent = `🔧 ${house.maintenance} (Saving and shopping are paused.)`;
+}
+
+// Problems on this page go to the house server (the admin panel's Server
+// tab shows them), a few at most.
+let errorsSent = 0;
+function reportError(message, where) {
+  if (errorsSent++ >= 10 || !isHouseReady()) return;
+  serverApi("POST", "/api/errors", { message: String(message), where: String(where ?? ""), build: MY_BUILD }).catch(() => {});
+}
+window.addEventListener("error", (e) => reportError(e.message, `${(e.filename ?? "").split("/").pop()}:${e.lineno}`));
+window.addEventListener("unhandledrejection", (e) => reportError(e.reason?.message ?? e.reason, "promise"));
+
 // After the admin panel unlocks things (or the raccoons dress you): redraw
 // the Join screen's outfit picker, if it's showing.
 function refreshLook() {
@@ -1591,7 +1726,8 @@ function updateElevator(dt) {
 }
 
 function isTyping(e) {
-  return (e.target instanceof HTMLInputElement && e.target.type === "text") || e.target instanceof HTMLTextAreaElement;
+  // (Any box you type in: text, search, numbers. Not checkboxes and the like.)
+  return (e.target instanceof HTMLInputElement && !["checkbox", "radio", "range", "button"].includes(e.target.type)) || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
 }
 
 function bubbleFor(who) {
@@ -2306,7 +2442,7 @@ function tick(now) {
   // While you're asleep, you count as "asleep" for sound: no mic, no voices.
   const soundRoom = amAsleep ? "asleep" : currentRoom.id;
   updateMicForRoom(soundRoom);
-  updateVoiceRouting(soundRoom, getPeers(), peerAllowed);
+  updateVoiceRouting(soundRoom, getPeers(), (p) => peerAllowed(p) && !mutedNames.has(String(p.name).toLowerCase()));
 
   if (currentRoom.id !== previousRoomId) {
     if (previousRoomId === "theater") leaveTheater();

@@ -612,6 +612,7 @@ function doorInfo(key, user, viewerKey = key) {
     // How they look, so they can be shown asleep in bed while they're away.
     look: { hat: shortText(look.hat, 30), shoes: shortText(look.shoes, 30), glasses: shortText(look.glasses, 30), pet: shortText(look.pet, 30), face: faceOf(look), scarf: shortText(look.scarf, 30), backpack: shortText(look.backpack, 30), earrings: shortText(look.earrings, 30), title: shortText(look.title, 30) },
     online: Date.now() - (user.lastSeen ?? 0) < ONLINE_MS,
+    resetAt: room.resetAt ?? 0, // (an admin cleared it: the owner's page clears its copy too)
   };
 }
 
@@ -993,7 +994,7 @@ function merchantState() {
   const m = GAME.CONFIG.merchant;
   const dayNumber = Math.floor((Date.now() + sky.offset) / 86_400_000);
   const week = Math.floor((dayNumber + 3) / 7); // (weeks start on Monday)
-  const here = hometown().getUTCDay() === m.day || (db.merchantUntil ?? 0) > Date.now();
+  const here = hometown().getUTCDay() === m.day || eventOn("merchant");
   // A shuffle that's the same all week: a little random-number maker seeded with the week.
   let seed = week * 2654435761 >>> 0;
   const next = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
@@ -1441,7 +1442,8 @@ const BANK = {
   },
   // The traveling merchant comes for an hour (for everyone), whatever the day.
   adminMerchant() {
-    db.merchantUntil = Date.now() + 3_600_000;
+    db.events ??= {};
+    db.events.merchant = Date.now() + 3_600_000;
     return {};
   },
   adminRecipes(w) {
@@ -1494,6 +1496,289 @@ function checkPlaced(w, before, after, ev) {
   return kept;
 }
 
+// --- The admin panel's tools (build 0.64) ---
+// Everything here is for admin accounts only (checked on every request),
+// and every change is written in the admin log: who did what, to whom, when.
+//
+// Some tools need a friend's own browser to do something (come to you,
+// get unstuck, leave the house, clear their room). Those go out through
+// the house as an "admin order": the server signs it with the badge key,
+// and every browser checks the signature before doing anything, so nobody
+// can send a fake one.
+
+const LOG_SIZE = 300;
+const ERROR_SIZE = 60;
+const ORDER_MINUTES = 5; // how long an order stays valid
+
+function requireAdmin(req) {
+  const who = currentUser(req);
+  if (!who.user.admin) throw new Oops(403, "Admins only.");
+  return who;
+}
+
+function adminLog(by, action, target = "", detail = "") {
+  db.adminLog ??= [];
+  db.adminLog.unshift({ at: Date.now(), by: by.name, action, target, detail: String(detail).slice(0, 200) });
+  db.adminLog.length = Math.min(db.adminLog.length, LOG_SIZE);
+}
+
+// Recent problems: the server's own, and ones friends' pages report.
+const recentErrors = [];
+function noteError(where, message, who = "") {
+  recentErrors.unshift({ at: Date.now(), where, message: String(message).slice(0, 300), who });
+  recentErrors.length = Math.min(recentErrors.length, ERROR_SIZE);
+}
+
+// A member by name (case doesn't matter), or a 404.
+function memberNamed(name) {
+  const key = String(name ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  const user = db.users[key];
+  if (!user?.member) throw new Oops(404, "There's nobody in the house by that name.");
+  return { user, key };
+}
+
+// An admin order: "admin|kind|target|data|expires", signed with the badge key.
+function signOrder(kind, target, data = {}) {
+  const payload = `admin|${kind}|${target}|${JSON.stringify(data)}|${Date.now() + ORDER_MINUTES * 60_000}`;
+  return { payload, sig: sign("sha256", Buffer.from(payload), { key: badgeKey, dsaEncoding: "ieee-p1363" }).toString("base64") };
+}
+
+// What every browser needs to know about the house's admin state (sent
+// with the bedroom doors, which everyone checks every 20 seconds).
+function houseNotices() {
+  const now = Date.now();
+  const names = (list) => Object.entries(list ?? {}).filter(([, until]) => until > now).map(([key]) => db.users[key]?.name).filter(Boolean);
+  const a = db.announcement;
+  return {
+    muted: names(db.mutes),
+    kicked: names(db.kicks),
+    announcement: a && a.until > now ? { id: a.id, text: a.text, by: a.by } : null,
+    maintenance: db.maintenance?.on ? db.maintenance.message || "The house is closed for a little while." : null,
+  };
+}
+
+// Events an admin can start (the merchant's visit; the full moon comes
+// with Update 8). Each lasts `minutes` for everyone.
+const EVENTS = ["merchant", "fullMoon"];
+function eventOn(id) {
+  return (db.events?.[id] ?? 0) > Date.now();
+}
+
+// Invite codes: another way into the house, besides the house phrase.
+// Each can be used `uses` times (0 for no limit) until it expires.
+function inviteCode() {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return "COZY-" + Array.from(randomBytes(5), (b) => letters[b % letters.length]).join("");
+}
+function inviteUsable(inv) {
+  return !inv.cancelled && inv.expires > Date.now() && (!inv.uses || inv.joined.length < inv.uses);
+}
+
+const adminTools = {
+  // Everything the panel shows, in one go.
+  "GET /api/admin/state": async (req) => {
+    requireAdmin(req);
+    const now = Date.now();
+    return {
+      events: Object.fromEntries(EVENTS.map((id) => [id, Math.max(0, (db.events?.[id] ?? 0) - now)])),
+      notices: houseNotices(),
+      invites: (db.invites ?? []).slice(0, 50),
+      log: (db.adminLog ?? []).slice(0, 120),
+      errors: recentErrors,
+      players: Object.entries(db.users)
+        .filter(([, u]) => u.member)
+        .map(([key, u]) => ({ name: u.name, admin: !!u.admin, online: now - (u.lastSeen ?? 0) < ONLINE_MS, crumbs: u.wallet?.crumbs ?? null, muted: (db.mutes?.[key] ?? 0) > now, kicked: (db.kicks?.[key] ?? 0) > now })),
+    };
+  },
+
+  // Giving someone crumbs or a thing (with a note in their mailbox).
+  "POST /api/admin/give": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const { user, key } = memberNamed(body.name);
+    const w = ensureWallet(user, key);
+    let what;
+    if (body.crumbs !== undefined) {
+      const n = amount(body.crumbs, 1, 100_000);
+      w.crumbs = whole(w.crumbs + n);
+      what = `${n} crumbs`;
+    } else {
+      const item = String(body.item ?? "");
+      const n = amount(body.n ?? 1, 1, 999);
+      if (Object.hasOwn(GAME.SHOP, item)) {
+        if (!w.owned.includes(item)) w.owned.push(item);
+        what = GAME.SHOP[item].name;
+      } else if (knownItem(item)) {
+        putIn(w, item, n);
+        what = `${n} × ${itemLabel(item)}`;
+      } else throw new Oops(400, "That's not something that can be given.");
+    }
+    sendLetter(user, { from: me.name, subject: `A gift: ${what}`, body: `${me.name} sent you ${what}. It's already yours.` });
+    adminLog(me, "gave", user.name, what);
+    await saveDb();
+    return { ok: true, what };
+  },
+
+  // An order for someone's own browser: come here (x, y), get unstuck,
+  // or clear their bedroom. Kicking and muting are below.
+  "POST /api/admin/order": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const { user, key } = memberNamed(body.name);
+    const kind = String(body.kind ?? "");
+    let data = {};
+    if (kind === "summon") {
+      if (!Number.isFinite(body.x) || !Number.isFinite(body.y)) throw new Oops(400, "Where to?");
+      data = { x: body.x, y: body.y };
+    } else if (kind === "resetRoom") {
+      const room = ensureRoom(key, user);
+      room.placed = [];
+      room.style = "classic";
+      room.privacy = "open";
+      room.resetAt = Date.now(); // (their page clears its copy when it next sees the doors)
+    } else if (kind !== "unstick") throw new Oops(400, "That's not an order.");
+    adminLog(me, { summon: "brought over", unstick: "unstuck", resetRoom: "reset the room of" }[kind], user.name);
+    await saveDb();
+    return { order: signOrder(kind, user.name, data) };
+  },
+
+  // Mute someone for everyone (minutes, or 0 to unmute).
+  "POST /api/admin/mute": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const { user, key } = memberNamed(body.name);
+    const minutes = amount(body.minutes, 0, 24 * 60);
+    db.mutes ??= {};
+    if (minutes) db.mutes[key] = Date.now() + minutes * 60_000;
+    else delete db.mutes[key];
+    adminLog(me, minutes ? "muted" : "unmuted", user.name, minutes ? `${minutes} min` : "");
+    await saveDb();
+    return { ok: true };
+  },
+
+  // Sending someone out of the house: logged out everywhere, can't come
+  // back for `minutes`, and everyone's browser stops showing them.
+  "POST /api/admin/kick": async (req) => {
+    const { user: me, key: myKey } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const { user, key } = memberNamed(body.name);
+    if (key === myKey) throw new Oops(400, "That's you!");
+    const minutes = amount(body.minutes ?? 10, 1, 24 * 60);
+    db.kicks ??= {};
+    db.kicks[key] = Date.now() + minutes * 60_000;
+    for (const [k, s] of Object.entries(db.sessions)) if (s.user === key) delete db.sessions[k];
+    adminLog(me, "sent out", user.name, `${minutes} min`);
+    await saveDb();
+    return { order: signOrder("kick", user.name, { minutes }) };
+  },
+
+  // Today's fortune cookie, the focus bonus and this week's merchant
+  // limits, fresh again (for one person).
+  "POST /api/admin/reset-limits": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const { user, key } = memberNamed(body.name);
+    const w = ensureWallet(user, key);
+    w.cookieDay = 0;
+    w.lastFocus = 0;
+    w.merchant = { week: 0, bought: {} };
+    adminLog(me, "reset daily limits for", user.name);
+    await saveDb();
+    return { ok: true };
+  },
+
+  // --- Invites ---
+  "POST /api/admin/invites": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const uses = amount(body.uses ?? 1, 0, 50);
+    const days = amount(body.days ?? 7, 1, 60);
+    db.invites ??= [];
+    const invite = { code: inviteCode(), by: me.name, at: Date.now(), expires: Date.now() + days * 86_400_000, uses, joined: [], cancelled: false, note: cleanText(body.note, 40) };
+    db.invites.unshift(invite);
+    db.invites.length = Math.min(db.invites.length, 100);
+    adminLog(me, "made an invite", invite.code, `${uses || "unlimited"} use${uses === 1 ? "" : "s"}, ${days} days`);
+    await saveDb();
+    return { invite };
+  },
+  "POST /api/admin/invites/cancel": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const invite = (db.invites ?? []).find((i) => i.code === body.code);
+    if (!invite) throw new Oops(404, "No invite with that code.");
+    invite.cancelled = true;
+    adminLog(me, "cancelled an invite", invite.code);
+    await saveDb();
+    return { ok: true };
+  },
+
+  // --- Events and time ---
+  "POST /api/admin/event": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    if (!EVENTS.includes(body.id)) throw new Oops(400, "That's not an event.");
+    const minutes = amount(body.minutes, 0, 24 * 60);
+    db.events ??= {};
+    db.events[body.id] = minutes ? Date.now() + minutes * 60_000 : 0;
+    adminLog(me, minutes ? "started an event" : "stopped an event", body.id, minutes ? `${minutes} min` : "");
+    await saveDb();
+    return { ok: true };
+  },
+  // Every crop in the garden grows as if `hours` had passed (watered).
+  "POST /api/admin/crops": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const hours = amount(body.hours, 1, 240);
+    const back = hours * 3_600_000;
+    for (const plot of Object.values(db.garden?.plots ?? {})) {
+      plot.plantedAt -= back;
+      plot.waters = plot.waters.map((t) => t - back);
+    }
+    if (db.garden) db.garden.version++;
+    adminLog(me, "fast-forwarded the garden", "", `${hours} h`);
+    await saveDb();
+    return { ok: true };
+  },
+
+  // --- The server ---
+  "POST /api/admin/backup": async (req) => {
+    const { user: me } = requireAdmin(req);
+    await saveDb();
+    await backup();
+    adminLog(me, "made a backup");
+    return { ok: true, folder: `daily-${new Date().toISOString().slice(0, 10)}` };
+  },
+  "POST /api/admin/announce": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    const text = cleanText(body.text, 200);
+    const minutes = amount(body.minutes ?? 30, 0, 24 * 60);
+    db.announcement = text && minutes ? { id: newId(), text, by: me.name, until: Date.now() + minutes * 60_000 } : null;
+    adminLog(me, text && minutes ? "announced" : "cleared the announcement", "", text);
+    await saveDb();
+    return { ok: true };
+  },
+  "POST /api/admin/maintenance": async (req) => {
+    const { user: me } = requireAdmin(req);
+    const body = await readJson(req, 2_000);
+    db.maintenance = { on: body.on === true, message: cleanText(body.message, 160) };
+    adminLog(me, db.maintenance.on ? "closed the house for maintenance" : "opened the house again", "", db.maintenance.message);
+    await saveDb();
+    return { ok: true };
+  },
+};
+
+// What pages send when something goes wrong on them (for the Server tab).
+const errorRoute = {
+  "POST /api/errors": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!allowed("errors:" + key, 30)) return { ok: true };
+    const body = await readJson(req, 4_000);
+    noteError(`page ${cleanText(body.build, 12)}`, `${cleanText(body.message, 200)} (${cleanText(body.where, 80)})`, user.name);
+    return { ok: true };
+  },
+};
+
 const routes = {
   "GET /api/health": async () => ({ ok: true }),
 
@@ -1525,6 +1810,8 @@ const routes = {
     if (key && !allowed("login-name:" + key, 10)) throw new Oops(429, "Too many tries for that name. Please wait a few minutes.");
     const hash = await hashPassword(String(body.password ?? ""), user ? user.salt : DUMMY_SALT);
     if (!user || !timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(user.hash, "hex"))) throw new Oops(401, "That name and password don't match.");
+    const kickedFor = Math.ceil(((db.kicks?.[key] ?? 0) - Date.now()) / 60_000);
+    if (kickedFor > 0) throw new Oops(403, `An admin sent you out of the house for a little while. Try again in ${kickedFor} minute${kickedFor === 1 ? "" : "s"}.`);
     const token = newSession(key);
     await saveDb();
     return { token, user: publicUser(user) };
@@ -1544,7 +1831,11 @@ const routes = {
     const { user } = currentUser(req);
     if (!allowed("join:" + ip, 10)) throw new Oops(429, "Too many tries. Please wait a few minutes.");
     const body = await readJson(req, 10_000);
-    if (!sameText(normalizePhrase(body.phrase ?? ""), normalizePhrase(env.HOUSE_PHRASE))) throw new Oops(403, "That's not the house phrase. Check with a friend.");
+    // The house phrase, or an invite code from an admin.
+    const code = String(body.phrase ?? "").trim().toUpperCase().replace(/\s+/g, "");
+    const invite = (db.invites ?? []).find((i) => i.code === code && inviteUsable(i));
+    if (!invite && !sameText(normalizePhrase(body.phrase ?? ""), normalizePhrase(env.HOUSE_PHRASE))) throw new Oops(403, "That's not the house phrase (or an invite code). Check with a friend.");
+    if (invite && !user.member) invite.joined.push(user.name);
     user.member = true;
     await saveDb();
     return { user: publicUser(user) };
@@ -1712,6 +2003,7 @@ const routes = {
     const w = ensureWallet(user, key);
     const ev = [];
     const result = BANK[action](w, body, ev, { user, key });
+    if (action.startsWith("admin")) adminLog(user, "used a tool on themselves", "", action);
     checkTiers(w, ev);
     await saveDb();
     return { wallet: publicWallet(w), events: ev, result };
@@ -1766,7 +2058,7 @@ const routes = {
       roomsChanged = false;
       await saveDb();
     }
-    return { doors };
+    return { doors, house: houseNotices() };
   },
 
   // Your own door: who can come in, a short note, and a decoration.
@@ -2102,6 +2394,8 @@ const routes = {
   },
 };
 
+Object.assign(routes, adminTools, errorRoute);
+
 // Admin requests only come from admin.mjs on the droplet itself (Caddy
 // only passes on /api/ addresses), and must carry the admin token.
 const adminRoutes = {
@@ -2139,6 +2433,8 @@ const adminRoutes = {
   },
 };
 
+const MAINTENANCE_OPEN = new Set(["GET /api/health", "GET /api/badge-key", "POST /api/login", "GET /api/me", "POST /api/logout", "GET /api/rooms", "POST /api/errors"]);
+
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin;
   const cors = corsHeaders(origin);
@@ -2158,9 +2454,23 @@ const server = http.createServer(async (req, res) => {
     }
     const handler = routes[routeKey];
     if (!handler) throw new Oops(404, "Nothing here.");
+    // While the house is closed for maintenance, only admins get in (the
+    // doors still answer, so everyone inside sees the notice).
+    if (db.maintenance?.on && !MAINTENANCE_OPEN.has(routeKey)) {
+      let admin = false;
+      try {
+        admin = currentUser(req).user.admin === true;
+      } catch {
+        // (not logged in)
+      }
+      if (!admin) throw new Oops(503, db.maintenance.message || "The house is closed for a little while. Try again soon!");
+    }
     send(res, 200, await handler(req, ip), cors);
   } catch (err) {
-    if (!(err instanceof Oops)) console.error(err);
+    if (!(err instanceof Oops)) {
+      console.error(err);
+      noteError("server", err.message);
+    }
     send(res, err.status || 500, { error: err instanceof Oops ? err.message : "Something went wrong on the server." }, cors);
   }
 });

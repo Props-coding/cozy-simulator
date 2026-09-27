@@ -125,6 +125,21 @@ export function startWeather() {
 
 // The admin panel's weather try-outs: a sky ("rain", "snow"...), "day",
 // "dusk" or "night", or null for the real weather again.
+// The admin panel's separate controls: just the sky ("rain"..., or null
+// for the real one), or just the time of day ("day", "dusk", "night", or
+// null). previewing() says what's being tried out right now.
+export function previewSky(pick) {
+  preview = { ...preview, sky: pick };
+  apply();
+}
+export function previewTime(pick) {
+  preview = { ...preview, night: pick === null ? null : pick === "night", dusk: pick === "dusk" };
+  apply();
+}
+export function previewing() {
+  return { sky: preview.sky, time: preview.dusk ? "dusk" : preview.night === null ? null : preview.night ? "night" : "day" };
+}
+
 export function previewWeather(pick) {
   if (pick === null) preview = { sky: null, night: null, dusk: false };
   else if (pick === "day" || pick === "night") preview = { ...preview, night: pick === "night", dusk: false };

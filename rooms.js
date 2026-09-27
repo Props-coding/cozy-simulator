@@ -23,7 +23,8 @@ export function startRooms(options) {
 
 export async function refreshRooms() {
   try {
-    const { doors: latest } = await serverApi("GET", "/api/rooms");
+    const { doors: latest, house } = await serverApi("GET", "/api/rooms");
+    hooks.house?.(house); // (who's muted or sent out, announcements, maintenance: main.js)
     const signature = JSON.stringify(latest);
     if (signature === lastSignature) return;
     lastSignature = signature;

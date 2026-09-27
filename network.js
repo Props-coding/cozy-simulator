@@ -80,6 +80,25 @@ export function sendPhone(peerId, message) {
   phoneAction?.send(message, { target: peerId });
 }
 
+// Admin orders (signed by the house server; see checkAdminOrder in
+// account.js before doing anything with one).
+let adminAction = null;
+let externalOnAdmin = null;
+export function onAdminOrder(callback) {
+  externalOnAdmin = callback;
+}
+export function sendAdminOrder(order) {
+  adminAction?.send(order);
+}
+
+// Friends an admin sent out of the house (by name): nobody's browser shows
+// them, hears them or listens to them until they're allowed back.
+const hiddenNames = new Set();
+export function hideNames(names) {
+  hiddenNames.clear();
+  for (const name of names) hiddenNames.add(String(name).toLowerCase());
+}
+
 // The Study focus timer was started, moved on, or stopped by a friend.
 // callback gets the message: { phase, remainingMs }.
 export function onFocus(callback) {
@@ -252,6 +271,9 @@ export function connectToRoom(myName, myColor) {
   chatAction = room.makeAction("chat");
   chatAction.onMessage = (message, { peerId }) => externalOnChat?.(message, peerId);
 
+  adminAction = room.makeAction("admin");
+  adminAction.onMessage = (order) => externalOnAdmin?.(order);
+
   focusAction = room.makeAction("focus");
   focusAction.onMessage = (message) => externalOnFocus?.(message);
 
@@ -292,5 +314,7 @@ export function broadcastPosition(state) {
 
 // Returns the current list of other players, as an array.
 export function getPeers() {
-  return Object.entries(peers).map(([id, p]) => ({ id, ...p }));
+  return Object.entries(peers)
+    .filter(([, p]) => !hiddenNames.has(String(p.name).toLowerCase()))
+    .map(([id, p]) => ({ id, ...p }));
 }

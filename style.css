@@ -2464,11 +2464,12 @@ input[type="range"]::-moz-range-thumb {
   top: calc(100% + 10px);
   right: 0;
   z-index: 21;
-  width: 440px;
-  max-height: min(75vh, 620px);
-  overflow-y: auto;
+  width: min(600px, 94vw);
+  max-height: min(80vh, 680px);
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  padding: 14px 16px;
+  padding: 14px 16px 12px;
   text-align: left;
   background: #fffaf3;
   border: 2px dashed #c9a24a;
@@ -2477,87 +2478,308 @@ input[type="range"]::-moz-range-thumb {
   animation: pop-in 0.15s ease-out;
 }
 
-#admin-panel h2,
-#admin-panel h3 {
-  margin: 0 0 6px;
-  font-size: 1em;
+/* Title and search along the top. */
+.admin-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-head h2 {
+  margin: 0;
+  font-size: 1.05em;
+  color: var(--wood);
+  white-space: nowrap;
+}
+
+#admin-search {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 2px solid #ead8bd;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9em;
+  background: white;
+  color: var(--wood-dark);
+}
+
+#admin-search:focus-visible {
+  outline: none;
+  border-color: #c98a3a;
+}
+
+/* The tabs: Me, Players, World, Events, Server, Debug. */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #f0e4d0;
+}
+
+.admin-tabs button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.88em;
+  font-weight: 700;
+  color: #9c8770;
+  cursor: pointer;
+}
+
+.admin-tabs button:hover {
   color: var(--wood);
 }
 
-#admin-panel h3 {
-  margin-top: 12px;
+.admin-tabs button.active {
+  background: #f3e6d0;
+  color: var(--wood-dark);
 }
 
-.admin-hint {
-  margin: 0 0 10px;
-  font-size: 0.8em;
-  color: #9c8770;
+.admin-tabs.searching button {
+  opacity: 0.45;
 }
 
-.admin-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+#admin-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
-.admin-group > span {
-  width: 92px;
+/* A heading inside a tab. */
+.admin-section {
+  margin: 12px 0 6px;
+  font-size: 0.78em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #b09070;
+}
+
+.admin-section:first-child {
+  margin-top: 2px;
+}
+
+/* One tool: a label on the left, its controls beside it. */
+.admin-row {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid #f6ecdc;
+}
+
+.admin-label {
+  padding-top: 5px; /* (lines up with the first row of buttons) */
   font-weight: 700;
   font-size: 0.85em;
   color: var(--wood-dark);
 }
 
-.admin-group button,
-#admin-users button {
-  padding: 3px 10px;
+.admin-label small {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85em;
+  color: #9c8770;
+}
+
+.admin-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-controls button {
+  padding: 4px 11px;
   font-size: 0.8em;
 }
 
-#admin-room {
-  font-family: inherit;
-  font-weight: 600;
-  padding: 5px 28px 5px 10px;
-  border-radius: 999px;
+.admin-controls input[type="number"],
+.admin-controls input[type="text"],
+.admin-controls select {
+  padding: 4px 8px;
   border: 2px solid #ead8bd;
-  background: #fffaf3 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237a5238' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
-  color: var(--wood);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85em;
+  background: white;
+  color: var(--wood-dark);
+}
+
+.admin-controls input[type="number"] {
+  width: 76px;
+}
+
+.admin-controls input[type="text"] {
+  flex: 1;
+  min-width: 140px;
+}
+
+.admin-controls select {
   max-width: 200px;
-  appearance: none;
-  -webkit-appearance: none;
+}
+
+.admin-note {
+  font-size: 0.8em;
+  color: #9c8770;
+}
+
+/* Things that can't be undone: red, and they ask first. */
+.danger-button {
+  padding: 4px 11px;
+  border: 2px solid #c0554a;
+  border-radius: 999px;
+  background: #fbe9e6;
+  color: #a8392f;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: 700;
   cursor: pointer;
 }
 
-#admin-room:focus-visible {
-  outline: none;
-  border-color: #c98a3a;
+.danger-button:hover {
+  background: #c0554a;
+  color: white;
 }
 
-#admin-users {
-  list-style: none;
+/* A row of choices where one is picked (season, weather, time of day). */
+.admin-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 2px solid #ead8bd;
+  border-radius: 999px;
+  overflow: hidden;
+  background: white;
+}
+
+.admin-seg button {
+  padding: 4px 10px;
+  border: none;
+  border-right: 1px solid #f0e4d0;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--wood);
+  cursor: pointer;
+}
+
+.admin-seg button:last-child {
+  border-right: none;
+}
+
+.admin-seg button[aria-pressed="true"] {
+  background: #d9a441;
+  color: white;
+}
+
+/* Friends and rooms to pick from: little chips. */
+.admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 2px solid #ead8bd;
+  border-radius: 999px;
+  background: white;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--wood-dark);
+  cursor: pointer;
+}
+
+.admin-chip:hover {
+  border-color: #d9a441;
+}
+
+.admin-chip.picked {
+  background: #d9a441;
+  border-color: #d9a441;
+  color: white;
+}
+
+.admin-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c8b8a4;
+}
+
+.admin-chip .dot.on {
+  background: #5fae5a;
+}
+
+.admin-floor {
+  margin: 6px 0 3px;
+  font-size: 0.75em;
+  font-weight: 800;
+  color: #b09070;
+}
+
+/* Lists: invites, recent problems, the admin log. */
+.admin-list {
   margin: 0;
   padding: 0;
-  font-size: 0.82em;
+  list-style: none;
+  font-size: 0.8em;
   color: #6b5540;
 }
 
-#admin-users li {
+.admin-list li {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
   gap: 8px;
   padding: 4px 0;
-  border-bottom: 1px solid #f0e4d0;
+  border-bottom: 1px solid #f6ecdc;
+}
+
+.admin-list li .when {
+  flex: none;
+  width: 92px;
+  color: #9c8770;
+}
+
+.admin-list li .what {
+  flex: 1;
+}
+
+.admin-list li code {
+  font-weight: 800;
+  color: var(--wood-dark);
+}
+
+.admin-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-hidden {
+  display: none !important;
 }
 
 .admin-status {
   min-height: 1em;
-  margin: 10px 0 0;
-  font-size: 0.85em;
+  margin: 8px 0 0;
+  font-size: 0.82em;
   font-weight: 600;
-  color: #4f7a48;
-  user-select: text;
+  color: #7a5238;
 }
 
 /* --- A friend's profile card --- */
@@ -4687,5 +4909,39 @@ canvas.house-icon {
 .basket-row .basket-actions button {
   padding: 3px 9px;
   font-size: 0.85em;
+}
+
+/* The banner over the house while an admin tries out a season, weather or
+   time of day, and the maintenance notice (for everyone). */
+#override-banner:not([hidden]),
+#maintenance-banner:not([hidden]) {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 12;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 40px);
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  background: rgba(58, 42, 30, 0.88);
+  color: #fffaf3;
+  font-size: 0.85em;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(40, 25, 10, 0.3);
+}
+
+#override-banner button {
+  padding: 3px 12px;
+  font-size: 0.9em;
+}
+
+#maintenance-banner:not([hidden]) {
+  top: auto;
+  bottom: 12px;
+  padding: 8px 16px;
+  background: rgba(168, 57, 47, 0.92);
 }
 
