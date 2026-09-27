@@ -22,6 +22,7 @@ import { unlock } from "./achievements.js";
 import { crumbBalance } from "./shop.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
 import { bank, applyBank } from "./bank.js";
+import { recipeShopRows, dishesToSell } from "./kitchen.js";
 import { openNpc } from "./npc.js";
 import { isReallyRaining } from "./weather.js";
 
@@ -305,13 +306,14 @@ export function talkToHazel() {
     hello: first ? "oh! a new gardener! i'm hazel. seeds are on the counter, and i'll buy whatever you grow." : HAZEL_HELLO,
     tabs: [
       { id: "buy", label: "Buy seeds", items: seedsForSale },
-      { id: "sell", label: "Sell harvest", items: cropsToSell, empty: "Nothing to sell yet. Grow something, then bring it here!" },
+      { id: "sell", label: "Sell harvest", items: () => [...cropsToSell(), ...dishesToSell("ooh, home cooking! lovely.")], empty: "Nothing to sell yet. Grow something (or cook something), then bring it here!" },
+      { id: "recipes", label: "Recipes", items: () => recipeShopRows("hazel", "a family recipe. cook it with love, dear.") },
     ],
   });
 }
 
 function seedsForSale() {
-  return CONFIG.crops.map((crop) => {
+  return CONFIG.crops.filter((crop) => !crop.merchant).map((crop) => {
     const have = basketCount(`seed:${crop.id}`);
     const buy = (n) => async () => {
       if (crumbBalance() < crop.seed * n) return `hmm, that's ${crop.seed * n} crumbs, dear. you have ${crumbBalance()}.`;

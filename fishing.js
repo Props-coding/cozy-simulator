@@ -23,6 +23,7 @@ import { playClickSound, playCrumbSound, playWaterSound, playHarvestSound, playA
 import { crumbBalance } from "./shop.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
 import { bank, myWallet } from "./bank.js";
+import { recipeShopRows } from "./kitchen.js";
 import { openNpc, refreshNpc } from "./npc.js";
 import { setTankFish, tankFish } from "./home.js";
 
@@ -259,6 +260,7 @@ export function talkToOtis() {
       { id: "bait", label: "Bait", items: baitRows },
       { id: "sell", label: "Sell fish", items: fishToSell, empty: "No fish to sell yet. Cast a line at the pond!" },
       { id: "log", label: "Fish log", items: logRows },
+      { id: "recipes", label: "Recipes", items: () => recipeShopRows("otis", "an old otter family secret. don't tell anyone.") },
     ],
   });
 }
@@ -303,7 +305,8 @@ async function buyRod(rod) {
 
 function baitRows() {
   const level = fishingLevel();
-  return CONFIG.bait.map((bait) => {
+  // (The traveling merchant's bait only shows once you have some.)
+  return CONFIG.bait.filter((bait) => !bait.merchant || basketCount(`bait:${bait.id}`) > 0 || mine().bait === bait.id).map((bait) => {
     const have = bait.price ? basketCount(`bait:${bait.id}`) : null;
     const locked = level < bait.level;
     const using = mine().bait === bait.id;
@@ -316,7 +319,7 @@ function baitRows() {
     };
     const actions = [];
     if (!using) actions.push({ label: "Use", soft: true, disabled: locked || (bait.price > 0 && !have), run: async () => ((await bank("useBait", { id: bait.id })) && playClickSound(), null) });
-    if (bait.price) {
+    if (bait.price && !bait.merchant) {
       actions.push({ label: "Buy 1", disabled: locked || crumbBalance() < bait.price, run: buy(1) });
       actions.push({ label: "Buy 10", soft: true, disabled: locked || crumbBalance() < bait.price * 10, run: buy(10) });
     }

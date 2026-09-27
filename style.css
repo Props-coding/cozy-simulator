@@ -4557,3 +4557,135 @@ canvas.house-icon {
   background: #c0554a;
   box-shadow: 0 0 0 2px #fff7e6;
 }
+
+/* --- Kitchen & Trade (Update 5) --- */
+
+/* The boost bar: the boost from your last dish, with minutes left.
+   Hovering shows what it does. */
+#boost-bar:not([hidden]) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fffaf3;
+  box-shadow: 0 4px 14px rgba(122, 92, 62, 0.15);
+  font-weight: 700;
+  color: #6f8a3a;
+  cursor: default;
+}
+
+#boost-bar .boost-icon {
+  font-size: 16px;
+}
+
+#boost-bar .boost-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 30;
+  width: 200px;
+  transform: translateX(-50%);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--wood-dark);
+  color: #fffaf3;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(60, 40, 20, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+#boost-bar .boost-tip b {
+  display: block;
+  color: #f2d27a;
+}
+
+#boost-bar:hover .boost-tip,
+#boost-bar:focus .boost-tip {
+  opacity: 1;
+}
+
+/* Small dialogs over the house: giving a dish, listing at the stall. */
+.small-dialog:not([hidden]) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 25;
+  transform: translate(-50%, -50%);
+  width: min(320px, calc(100% - 40px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  background: #fffaf3;
+  border: 3px solid var(--wood);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(60, 40, 20, 0.35);
+  animation: pop-in 0.15s ease-out;
+}
+
+.small-dialog h3 {
+  margin: 0 30px 0 0;
+  color: var(--wood-dark);
+}
+
+.dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--wood-dark);
+}
+
+.dialog-row select,
+.dialog-row input[type="number"] {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 2px solid #e8d8c0;
+  border-radius: 8px;
+  font: inherit;
+  background: white;
+}
+
+.dialog-row input[type="number"] {
+  max-width: 90px;
+}
+
+.trade-kinds {
+  gap: 14px;
+}
+
+.trade-kinds label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.dialog-note {
+  margin: 0;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #b0443a;
+}
+
+/* Buttons on basket rows (eat or give a dish). */
+.basket-row .basket-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.basket-row .basket-actions button {
+  padding: 3px 9px;
+  font-size: 0.85em;
+}
+

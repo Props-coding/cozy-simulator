@@ -307,7 +307,7 @@ function searchDecor(query) {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   const tabNames = Object.fromEntries(STORE_TABS.map(([id, , label]) => [id, label]));
   return Object.entries(DECOR).filter(([id, item]) => {
-    if (!item.tab) return false; // the starter desk and mattress aren't sold
+    if (!item.tab || item.tab === "traveler") return false; // the starter pieces, and the traveling merchant's things, aren't sold here
     const text = `${item.name} ${WREN_NOTES[id] ?? ""} ${tabNames[item.tab]}`.toLowerCase();
     return words.every((word) => text.includes(word));
   });

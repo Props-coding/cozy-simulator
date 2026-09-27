@@ -2460,3 +2460,218 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillRect(b.x + 9, b.y - 33, 6, 4);
   },
 });
+
+// --- Kitchen & Trade (Update 5) ---
+Object.assign(FURNITURE_DRAWERS, {
+  // The fortune cookie jar, on a little round table in the Dinner room: a
+  // glass jar with a wooden lid, full of cookies.
+  cookieJar(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    // The table: one leg on a round foot, and a round top.
+    ctx.fillStyle = "#8b5e3c";
+    ctx.fillRect(b.x - 1.5, b.y - 18, 3, 16);
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 3, 7, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#a8784e";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 19, 12, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Cookies inside the glass (drawn first, so the glass tints them).
+    const jy = b.y - 20;
+    ctx.fillStyle = "#e0b060";
+    for (const [dx, dy] of [[-4, -3], [3, -3], [-1, -7], [4, -9], [-4, -11]]) {
+      ctx.beginPath();
+      ctx.ellipse(b.x + dx, jy + dy, 3.4, 2.2, dx * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(200, 225, 235, 0.35)";
+    roundRectPath(ctx, b.x - 8, jy - 16, 16, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)"; // a shine, lit from above
+    ctx.fillRect(b.x - 6, jy - 14, 2, 9);
+    // Wooden lid with a knob.
+    ctx.fillStyle = "#9a6a42";
+    roundRectPath(ctx, b.x - 9, jy - 19, 18, 4, 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(b.x, jy - 20, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // The trading post: a wooden stall with an orange and cream awning,
+  // parcels of swapped things on the counter, and a chalkboard sign.
+  tradingPost(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#9a6e48");
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE;
+    ctx.fillStyle = "#6e4a30";
+    ctx.fillRect(a.x + 2, box.top.y - 36, 4, 36);
+    ctx.fillRect(a.x + w - 6, box.top.y - 36, 4, 36);
+    // Little crates and parcels on the counter.
+    const goods = ["#c98f3c", "#6f8a6a", "#b5763a", "#8a7ab0", "#d9a441"];
+    for (let i = 0; i < 5; i++) {
+      const x = box.top.x + 5 + i * ((box.top.w - 14) / 5);
+      ctx.fillStyle = goods[i];
+      roundRectPath(ctx, x, box.top.y + 1 - (i % 2) * 3, 9, 8 + (i % 2) * 3, 1.5);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.fillRect(x + 1, box.top.y + 2 - (i % 2) * 3, 7, 1.5);
+    }
+    // The awning: orange and cream stripes, with a scalloped edge.
+    const ay = box.top.y - 42;
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = i % 2 ? "#f4efe4" : "#e0883a";
+      ctx.fillRect(a.x - 4 + (i * (w + 8)) / 8, ay, (w + 8) / 8 + 0.5, 10);
+      ctx.beginPath();
+      ctx.arc(a.x - 4 + ((i + 0.5) * (w + 8)) / 8, ay + 10, (w + 8) / 16, 0, Math.PI);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(a.x - 4, ay, w + 8, 2);
+    // Sign: "TRADE".
+    ctx.fillStyle = "#3a3a36";
+    roundRectPath(ctx, a.x + w / 2 - 18, box.face.y + 4, 36, 11, 2);
+    ctx.fill();
+    ctx.fillStyle = "#f4efe4";
+    ctx.font = "700 8px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("TRADE", a.x + w / 2, box.face.y + 12.5);
+    ctx.textAlign = "left";
+  },
+
+  // Juniper's wares on a patterned blanket (only while she's here).
+  merchantWares(ctx, f) {
+    if (!MERCHANT.here) return;
+    const a = toScreen(f.x, f.y), w = f.w * TILE, h = f.h * TILE;
+    ctx.fillStyle = "#7a3f5a";
+    roundRectPath(ctx, a.x, a.y, w, h, 3);
+    ctx.fill();
+    ctx.strokeStyle = "#e8c070";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    roundRectPath(ctx, a.x + 3, a.y + 3, w - 6, h - 6, 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // A seed pouch, a jar of glowing worms, a scroll and a little globe.
+    const cy = a.y + h / 2;
+    ctx.fillStyle = "#c9a26a";
+    ctx.beginPath();
+    ctx.ellipse(a.x + 9, cy + 1, 5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(240, 230, 140, 0.9)";
+    roundRectPath(ctx, a.x + 17, cy - 5, 7, 9, 2);
+    ctx.fill();
+    ctx.fillStyle = "#f4ead4";
+    ctx.fillRect(a.x + 28, cy - 2, 10, 4);
+    ctx.fillStyle = "#4f8a8a";
+    ctx.beginPath();
+    ctx.arc(a.x + w - 9, cy - 1, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
+  // Juniper the fox, the traveling merchant: orange fur and a cream chest,
+  // a bushy tail, a green scarf and a patched traveling hat, with a big
+  // backpack of goods (only while she's here, on her day).
+  juniper(ctx, f) {
+    if (!MERCHANT.here) return;
+    const t = performance.now() / 1000;
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    const bx = b.x, by = b.y;
+    // Bushy tail with a white tip, swishing.
+    const swish = Math.sin(t * 1.8) * 3;
+    ctx.fillStyle = "#d9702e";
+    ctx.beginPath();
+    ctx.ellipse(bx + 14 + swish * 0.3, by - 12, 6, 11, 0.6 + swish * 0.03, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f4ead8";
+    ctx.beginPath();
+    ctx.ellipse(bx + 19 + swish * 0.5, by - 20, 3.5, 4, 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    // Backpack (behind her), with a rolled blanket and a pot on top.
+    ctx.fillStyle = "#7a5436";
+    roundRectPath(ctx, bx - 14, by - 44, 20, 26, 4);
+    ctx.fill();
+    ctx.fillStyle = "#a8473a";
+    roundRectPath(ctx, bx - 15, by - 49, 22, 7, 3.5);
+    ctx.fill();
+    ctx.fillStyle = "#6a7278";
+    ctx.beginPath();
+    ctx.arc(bx - 10, by - 51, 3.5, Math.PI, 0);
+    ctx.fill();
+    // Feet.
+    ctx.fillStyle = "#3a2a22";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(bx + side * 4.5, by - 2, 4, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Body, lit from above, with a cream chest.
+    const body = ctx.createLinearGradient(0, by - 36, 0, by - 4);
+    body.addColorStop(0, "#e8843a");
+    body.addColorStop(1, "#c8622a");
+    ctx.fillStyle = body;
+    roundRectPath(ctx, bx - 9, by - 34, 18, 32, 8);
+    ctx.fill();
+    ctx.fillStyle = "#f4ead8";
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 18, 5.5, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Green scarf.
+    ctx.fillStyle = "#4f7a5a";
+    roundRectPath(ctx, bx - 9, by - 31, 18, 5, 2.5);
+    ctx.fill();
+    ctx.fillRect(bx + 3, by - 28, 4, 9);
+    // Head: pointed ears, a cream muzzle.
+    ctx.fillStyle = "#e8843a";
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(bx + side * 3, by - 42);
+      ctx.lineTo(bx + side * 9, by - 51);
+      ctx.lineTo(bx + side * 9.5, by - 39);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 38, 9, 7.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f4ead8";
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 35, 5.5, 3.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const blink = t % 4.5 < 0.12;
+    ctx.fillStyle = "#2a1e18";
+    if (blink) {
+      ctx.fillRect(bx - 5, by - 40, 3, 1);
+      ctx.fillRect(bx + 2, by - 40, 3, 1);
+    } else {
+      ctx.beginPath();
+      ctx.arc(bx - 3.5, by - 40, 1.4, 0, Math.PI * 2);
+      ctx.arc(bx + 3.5, by - 40, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(bx, by - 36, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // A patched traveling hat with a feather.
+    ctx.fillStyle = "#5a4a3a";
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 45, 12, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    roundRectPath(ctx, bx - 6.5, by - 53, 13, 9, 3);
+    ctx.fill();
+    ctx.fillStyle = "#8a6a4a";
+    ctx.fillRect(bx - 3, by - 51, 4, 3);
+    ctx.strokeStyle = "#d9a441";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx + 5, by - 48);
+    ctx.quadraticCurveTo(bx + 11, by - 58, bx + 14, by - 60);
+    ctx.stroke();
+  },
+});

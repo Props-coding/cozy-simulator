@@ -270,6 +270,8 @@ const BASE_FURNITURE = [
   { kind: "fridge", x: 16.9, y: 3.3, w: 0.8, h: 0.6 },
   { kind: "teaCart", x: 12.4, y: 9.9, w: 1.2, h: 0.6 },
   { kind: "lemonTree", x: 17.2, y: 10.1, w: 0.6, h: 0.6 },
+  // The fortune cookie jar (Update 5): one cookie a day each.
+  { kind: "cookieJar", x: 17.15, y: 5.3, w: 0.5, h: 0.45 },
   { kind: "chair", x: 14.7, y: 5.5, w: 0.6, h: 0.6, facing: "down" },
   { kind: "chair", x: 13.3, y: 6.7, w: 0.6, h: 0.6, facing: "right" },
   { kind: "chair", x: 16.1, y: 6.7, w: 0.6, h: 0.6, facing: "left" },
@@ -659,7 +661,7 @@ const YARD_FURNITURE = [
   // mailbox by the gate in the bottom right.
   { kind: "wildflowers", x: 2.0, y: YARD + 2.3, w: 1.1, h: 0.3, solid: false },
   { kind: "pondStones", x: 5.4, y: YARD + 2.6, w: 0.7, h: 0.35 },
-  { kind: "mailbox", x: 19.1, y: YARD + 8.55, w: 0.4, h: 0.3 },
+  { kind: "mailbox", x: 20.85, y: YARD + 8.55, w: 0.4, h: 0.3 },
   { kind: "wildflowers", x: 19.8, y: YARD + 8.75, w: 0.9, h: 0.3, solid: false },
   { kind: "birdbath", x: 21.5, y: YARD + 8.05, w: 0.6, h: 0.4 },
   { kind: "pondStones", x: 23.1, y: YARD + 7.8, w: 0.7, h: 0.35 },
@@ -705,6 +707,12 @@ const YARD_FURNITURE = [
   // wait), the bus stop sign with its timetable, and the bus itself, which
   // drives along the road on a schedule (see outdoors.js and bus.js).
   { kind: "busShelter", x: 19.4, y: YARD + 9.5, w: 2.5, h: 0.75 },
+  // Kitchen & Trade (Update 5): the trading post stall below the garden,
+  // facing the path, and where Juniper the traveling merchant sets out her
+  // blanket of wares by the bus stop on her day (drawn only then).
+  { kind: "tradingPost", x: 14.4, y: YARD + 5.85, w: 1.9, h: 0.6 },
+  { kind: "merchantWares", x: 18.95, y: YARD + 8.0, w: 1.6, h: 0.5, solid: false },
+  { kind: "juniper", x: 18.3, y: YARD + 8.3, w: 0.55, h: 0.4, solid: false },
   { kind: "busSign", x: 22.6, y: YARD + 10.0, w: 0.3, h: 0.2 },
   { kind: "bus", x: 0, y: YARD + 10.7, w: HOUSE_WIDTH, h: 0.5, solid: false },
 
@@ -722,6 +730,9 @@ const YARD_SPAWN = { x: 17.7, y: YARD - 2.3 };
 // Is it night outside? Update 4's weather (weather.js) fills in OUTDOORS
 // from the real sky over the hometown; until it has, night is guessed from
 // this computer's clock (CONFIG.outdoors.nightFrom to nightTo).
+// Whether Juniper, the traveling merchant, is in the yard today (Update
+// 5: market.js fills it in from the house server).
+const MERCHANT = { here: false };
 const OUTDOORS = { night: null, sky: "clear", rain: 0, snow: 0, clouds: 0, temp: null, raining: false, words: "", updated: 0 };
 function isNightOutside() {
   if (OUTDOORS.night !== null) return OUTDOORS.night;
@@ -1300,6 +1311,11 @@ const DECOR = {
   mirror: { name: "Mirror", tab: "decor", price: 25, kind: "mirror", w: 0.7, wall: true, short: true },
   scroll: { name: "Calligraphy Scroll", tab: "decor", price: 15, kind: "scroll", w: 0.55, wall: true },
 
+  // --- From Juniper, the traveling merchant (Update 5): not sold at Nest & Nook ---
+  travelRug: { name: "Far-Off Rug", tab: "traveler", price: 70, kind: "rug", w: 2.4, h: 1.6, color: "#3f6f7a", shape: "checker", solid: false },
+  brassGlobe: { name: "Brass Globe", tab: "traveler", price: 90, kind: "globe", w: 0.5, h: 0.45 },
+  spyglass: { name: "Brass Spyglass", tab: "traveler", price: 120, kind: "telescope", w: 0.6, h: 0.5 },
+
   // --- Starter pieces every bedroom comes with (not sold) ---
   starterDesk: { name: "Laptop Desk", tab: null, price: 0, kind: "laptopDesk", w: 1.3, h: 0.6, keep: true , turn: true },
   starterMattress: { name: "Plain Mattress", tab: null, price: 0, kind: "mattress", w: 1.4, h: 2.1, sleep: true, solid: false, ownerColor: true , turn: true },
@@ -1539,6 +1555,19 @@ function nearestInteraction(player) {
   const otisDistance = Math.hypot(cx - (otis.x + otis.w / 2), cy - (otis.y + otis.h / 2));
   if (otisDistance < 1.3) options.push(["otis", otisDistance]);
   if (fishingSpot(player)) options.push(["fishing", 1.35]);
+  // Kitchen & Trade (Update 5): the stove, the fridge, the cookie jar, the
+  // trading post, and Juniper (on her day).
+  const near = (kind, most) => {
+    const f = FURNITURE.find((x) => x.kind === kind && floorOf(x.y) === floorOf(player.y));
+    if (!f) return;
+    const d = Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h));
+    if (d < most) options.push([kind, d]);
+  };
+  near("stove", 0.9);
+  near("fridge", 0.9);
+  near("cookieJar", 0.9);
+  near("tradingPost", 1.0);
+  if (MERCHANT.here) near("juniper", 1.1);
   if (myFishTankInReach(player)) options.push(["fishTank", 0.2]);
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (myPhoneInReach(player)) options.push(["phone", 0.05]);

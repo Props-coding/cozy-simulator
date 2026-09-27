@@ -13,6 +13,7 @@ import { playClickSound, playCrumbSound } from "./audio.js";
 import { previewWeather } from "./weather.js";
 import { ripenGardenPreview } from "./garden.js";
 import { addFishingXp } from "./fishing.js";
+import { refreshMarket } from "./market.js";
 
 const button = document.getElementById("admin-button");
 const panel = document.getElementById("admin-panel");
@@ -123,6 +124,23 @@ document.getElementById("admin-basket").addEventListener("click", (e) => {
   say("Your basket now has at least 5 of everything.");
   playCrumbSound();
   e.currentTarget.blur();
+});
+
+// --- Kitchen & Trade (Update 5) ---
+// Juniper comes for an hour (for everyone), whatever the day; every recipe
+// in your book.
+document.getElementById("admin-merchant").addEventListener("click", async (e) => {
+  e.currentTarget.blur();
+  await bank("adminMerchant");
+  refreshMarket();
+  say("Juniper's here for an hour (for everyone), by the bus stop.");
+  playClickSound();
+});
+document.getElementById("admin-recipes").addEventListener("click", (e) => {
+  e.currentTarget.blur();
+  bank("adminRecipes");
+  say("Every recipe is in your book now.");
+  playClickSound();
 });
 
 // --- Jump to a room ---

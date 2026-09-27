@@ -170,6 +170,16 @@ const ACHIEVEMENT_LIST = [
   { id: "fullTank", icon: "🐠", name: "Full Tank", desc: "Fill a fish tank in your bedroom.", crumbs: 15, server: true },
   { id: "junkDealer", icon: "👢", name: "One Raccoon's Trash", desc: "Sell pond junk to the raccoons.", crumbs: 10, server: true },
 
+  // Kitchen & Trade (Update 5)
+  { id: "firstDish", icon: "🍳", name: "Home Cooking", desc: "Cook your first dish.", crumbs: 10, server: true },
+  { id: "burntOffering", icon: "🫠", name: "Burnt Offering", desc: "Cook something that isn't a recipe.", crumbs: 5, server: true },
+  { id: "wellFed", icon: "☕", name: "Well Fed", desc: "Eat a dish for a boost.", crumbs: 5, server: true },
+  { id: "sharing", icon: "🎁", name: "Sharing Is Caring", desc: "Give a dish to a friend.", crumbs: 15, server: true },
+  { id: "fortuneTold", icon: "🥠", name: "Fortune Told", desc: "Open a fortune cookie.", crumbs: 5, server: true },
+  { id: "firstTrade", icon: "🤝", name: "Open for Business", desc: "Sell something at the trading post.", crumbs: 15, server: true },
+  { id: "wellTraveled", icon: "🦊", name: "Well Traveled", desc: "Buy something from the traveling merchant.", crumbs: 15, server: true },
+  { id: "cookbook", icon: "📖", name: "Cookbook", desc: "Know 10 recipes.", crumbs: 40, server: true },
+
   // Secrets
   { id: "whoAreYou", icon: "🧥", name: "Three Raccoons?", desc: "Ask the raccoons who they really are.", crumbs: 10, secret: true },
   { id: "foodComa", icon: "😴", name: "Food Coma", desc: "Get sleepy in the Dinner room.", crumbs: 10, secret: true },

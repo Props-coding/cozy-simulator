@@ -72,6 +72,25 @@ function renderBasket() {
     row.querySelector(".basket-name").textContent = info.name;
     row.querySelector(".basket-count").textContent = "× " + n;
     if (info.sell) row.title = `Sells for ${info.sell} crumbs each`;
+    // Some things can be used from here (a dish: eat it, or give it away).
+    const actions = info.actions?.(id) ?? [];
+    if (actions.length) {
+      const box = document.createElement("span");
+      box.className = "basket-actions";
+      for (const action of actions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = action.soft ? "soft-button" : "warm-button";
+        button.textContent = action.label;
+        button.title = action.title ?? "";
+        button.addEventListener("click", () => {
+          playClickSound();
+          action.run();
+        });
+        box.appendChild(button);
+      }
+      row.appendChild(box);
+    }
     list.appendChild(row);
   }
 }

@@ -28,6 +28,7 @@ export const MOMENT_GROUPS = [
   ["Time of day", ["nightOwl", "earlyBird"]],
   ["Raccoons and pets", ["raccoons", "firstBuy", "allHats", "allShoes", "patPat", "pettingZoo", "hoarder"]],
   ["Outdoors", ["firstSeed", "rainCheck", "farmStand", "greatPumpkin", "firstCatch", "bigOne", "legendCatch", "pondScholar", "fullTank", "junkDealer"]],
+  ["Kitchen and trade", ["firstDish", "burntOffering", "wellFed", "sharing", "fortuneTold", "cookbook", "firstTrade", "wellTraveled"]],
   ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
 ];
 
@@ -46,7 +47,7 @@ const STORAGE_KEY = "cozy-house-achievements";
 const MAX_PINS = 5;
 // Counters the server keeps (chats, emotes and dances are sent along with
 // the once-a-minute check-in; the rest it counts itself).
-const SERVER_STATS = new Set(["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "lastDay"]);
+const SERVER_STATS = new Set(["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "dishesCooked", "lastDay"]);
 const serverStat = (stat) => SERVER_STATS.has(stat) || stat.startsWith("room_");
 let save = { stats: {}, pinned: [] };
 try {
@@ -180,6 +181,7 @@ export function trackValueFrom(track, s = {}, values = {}) {
     harvests: n(s.harvests),
     friendsWatered: n(s.friendsWatered),
     fishCaught: n(s.fishCaught),
+    dishesCooked: n(s.dishesCooked),
   };
   const v = Object.hasOwn(built, track.stat) ? built[track.stat] : values[track.stat];
   return n(v);

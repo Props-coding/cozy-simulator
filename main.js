@@ -87,6 +87,8 @@ import { isNpcOpen } from "./npc.js";
 import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
 import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
+import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
+import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -379,6 +381,7 @@ joinButton.addEventListener("click", async () => {
     },
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
+  startMarket(); // the trading post, and whether Juniper's here (market.js)
   initAdmin({ teleport, rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)), refreshLook });
 
   joinScreen.hidden = true;
@@ -628,6 +631,11 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
   if (nearestInteraction(player) === "otis") return "Press E to talk to Otis: rods, bait, selling fish and your fish log.";
   if (nearestInteraction(player) === "fishTank") return "Your fish tank. Press E to add or take out fish.";
+  if (nearestInteraction(player) === "stove") return "Press E to cook: your recipes, or experiment and see what happens.";
+  if (nearestInteraction(player) === "fridge") return "Press E to open the fridge and pantry: eggs, milk, flour, sugar and more.";
+  if (nearestInteraction(player) === "cookieJar") return "Press E for today's fortune cookie.";
+  if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
+  if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint();
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
@@ -758,6 +766,14 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     stopFishing(null);
     talkToOtis();
+    return;
+  }
+
+  // Kitchen & Trade (Update 5).
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, tradingPost: openTradingPost, juniper: talkToJuniper }[nearestInteraction(player)];
+  if (key === "e" && kitchenAction) {
+    for (const k in keysDown) keysDown[k] = false;
+    kitchenAction();
     return;
   }
 
@@ -1398,7 +1414,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || !elevatorPanel.hidden || !!ride;
+  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again
@@ -1974,6 +1990,8 @@ initBank({
   error: (message) => showNotice(message),
   state: () => ({ room: roomLevelKey(getCurrentRoom(player)), asleep: amAsleep }),
 });
+
+initKitchen({ notice: (text, ms) => showNotice(text, ms) });
 
 initAchievements({
   announce: (id) => {

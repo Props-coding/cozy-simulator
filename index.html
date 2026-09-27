@@ -183,6 +183,8 @@
             <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
             <span id="crumb-count">0</span>
           </span>
+          <!-- The boost from the last dish you ate (kitchen.js): hover for what it does. -->
+          <span id="boost-bar" hidden></span>
           <button id="basket-button" type="button" title="Your basket: seeds, harvest and more" aria-label="Your basket">🧺</button>
           <span id="weather-chip" hidden><span class="weather-icon">☀️</span><span class="weather-temp"></span></span>
           <span id="room-label">📍 Hallway</span>
@@ -234,6 +236,11 @@
               <button id="admin-ripen" type="button" class="soft-button">Ripen all (preview)</button>
               <button id="admin-basket" type="button" class="soft-button">Fill my basket</button>
               <button id="admin-fishxp" type="button" class="soft-button">+200 fishing XP</button>
+            </div>
+            <div class="admin-group">
+              <span>Kitchen &amp; Trade</span>
+              <button id="admin-merchant" type="button" class="soft-button">Bring Juniper (1 hour)</button>
+              <button id="admin-recipes" type="button" class="soft-button">Know every recipe</button>
             </div>
             <div class="admin-group">
               <span>Jump to</span>
@@ -362,6 +369,28 @@
             <h3>🧺 Your basket</h3>
             <div id="basket-items"></div>
             <button id="basket-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
+          </div>
+          <!-- Giving a dish to a friend (kitchen.js). -->
+          <div id="gift-panel" class="small-dialog" hidden>
+            <h3 id="gift-title">🎁 Give a dish</h3>
+            <label class="dialog-row">To <select id="gift-to"></select></label>
+            <p id="gift-note" class="dialog-note" hidden></p>
+            <button id="gift-send" type="button" class="warm-button">Send it</button>
+            <button id="gift-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
+          </div>
+          <!-- Putting something out at the trading post (market.js). -->
+          <div id="trade-dialog" class="small-dialog" hidden>
+            <h3 id="trade-title">Put it out at the stall</h3>
+            <label class="dialog-row">How many <input id="trade-n" type="number" min="1" value="1"></label>
+            <div class="dialog-row trade-kinds">
+              <label><input type="radio" name="trade-kind" value="crumbs" checked> For crumbs</label>
+              <label><input type="radio" name="trade-kind" value="swap"> For a swap</label>
+            </div>
+            <label id="trade-price-row" class="dialog-row">Price <input id="trade-price" type="number" min="1" value="10"> crumbs</label>
+            <label id="trade-swap-row" class="dialog-row" hidden><select id="trade-want"></select> × <input id="trade-want-n" type="number" min="1" value="1"></label>
+            <p id="trade-note" class="dialog-note" hidden></p>
+            <button id="trade-list" type="button" class="warm-button">Put it out</button>
+            <button id="trade-close" type="button" class="panel-close" title="Close (Escape)" aria-label="Close">✕</button>
           </div>
           <!-- The raccoons' shop: the inside of their coat, swinging open. -->
           <div id="shop-panel" hidden>
@@ -706,6 +735,8 @@
         "./basket.js": "./basket.js?v=0.63",
         "./npc.js": "./npc.js?v=0.63",
         "./bank.js": "./bank.js?v=0.63",
+        "./kitchen.js": "./kitchen.js?v=0.63",
+        "./market.js": "./market.js?v=0.63",
         "./garden.js": "./garden.js?v=0.63",
         "./fishing.js": "./fishing.js?v=0.63",
         "./bus.js": "./bus.js?v=0.63"

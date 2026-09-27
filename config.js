@@ -79,6 +79,9 @@ const CONFIG = {
     { id: "corn", name: "Corn", icon: "🌽", hours: 16, seed: 14, sell: 12, yield: [3, 5], look: "stalk", color: "#f0d25a" },
     { id: "pumpkin", name: "Pumpkin", icon: "🎃", hours: 24, seed: 25, sell: 90, yield: [1, 1], look: "pumpkin", color: "#e8883a" },
     { id: "blueberry", name: "Blueberries", icon: "🫐", hours: 48, seed: 30, sell: 10, yield: [9, 13], look: "berry", color: "#4a5ab8" },
+    // Only from the traveling merchant (Update 5): `merchant` seeds aren't at Hazel's.
+    { id: "starfruit", name: "Starfruit", icon: "⭐", hours: 20, seed: 45, sell: 40, yield: [2, 3], look: "vine", color: "#f2d24a", merchant: true },
+    { id: "moonflower", name: "Moonflower", icon: "🌙", hours: 18, seed: 40, sell: 55, yield: [1, 1], look: "flower", color: "#dfe4ff", merchant: true },
   ],
 
   // --- Fishing at the pond (Update 4) ---
@@ -119,6 +122,8 @@ const CONFIG = {
     { id: "cricket", name: "Crickets", icon: "🦗", price: 5, level: 2, catches: [2, 3] },
     { id: "minnow", name: "Minnows", icon: "🐟", price: 12, level: 5, catches: [3, 4] },
     { id: "lure", name: "Golden Lure", icon: "🌟", price: 30, level: 9, catches: [4, 5] },
+    // Only from the traveling merchant (Update 5): finds rare to legendary fish at any level.
+    { id: "glowworm", name: "Glow Worms", icon: "🐛", price: 35, level: 1, catches: [3, 4, 5], merchant: true },
   ],
 
   // The fish. rarity: 1 (common) to 5 (legendary). sell: crumbs from Otis.
@@ -161,6 +166,138 @@ const CONFIG = {
     { id: "letter", name: "Soggy Letter", icon: "✉️" },
     { id: "duck", name: "Rubber Duck", icon: "🦆" },
   ],
+
+  // --- The kitchen (Update 5) ---
+  // Cook at the Dinner room's stove (press E there). Crops and fish come
+  // from your own garden and the pond; the basics that can't be grown come
+  // from the fridge and pantry (press E at the fridge), for `price` crumbs.
+  // Put 2 to 4 things in the pot and cook: a known mix makes that dish
+  // (and it's added to your recipe book); anything else makes a Burnt
+  // Mystery (the raccoons will buy it, as junk).
+  kitchen: {
+    pantry: [
+      { id: "flour", name: "Flour", icon: "🌾", price: 3, shelf: "pantry" },
+      { id: "sugar", name: "Sugar", icon: "🍬", price: 3, shelf: "pantry" },
+      { id: "rice", name: "Rice", icon: "🍚", price: 4, shelf: "pantry" },
+      { id: "honey", name: "Honey", icon: "🍯", price: 6, shelf: "pantry" },
+      { id: "salt", name: "Salt & Spices", icon: "🧂", price: 2, shelf: "pantry" },
+      { id: "egg", name: "Eggs", icon: "🥚", price: 3, shelf: "fridge" },
+      { id: "milk", name: "Milk", icon: "🥛", price: 3, shelf: "fridge" },
+      { id: "butter", name: "Butter", icon: "🧈", price: 4, shelf: "fridge" },
+      { id: "cheese", name: "Cheese", icon: "🧀", price: 6, shelf: "fridge" },
+    ],
+    burnt: { id: "burnt", name: "Burnt Mystery", icon: "🫠" },
+
+    // Eating a dish gives its boost for `boostMinutes` (one boost at a
+    // time: a new one replaces the old). The boosts:
+    boostMinutes: 30,
+    boosts: {
+      cozy: { name: "Cozy", icon: "☕", desc: "An extra crumb every minute you're in the house." },
+      quickBite: { name: "Quick Bites", icon: "🎣", desc: "Fish bite sooner (about 30% quicker)." },
+      lucky: { name: "Lucky", icon: "🍀", desc: "Rarer fish bite more often." },
+      greenThumb: { name: "Green Thumb", icon: "🌱", desc: "One extra crop from every harvest." },
+    },
+
+    // The recipes. ingredients: "crop:tomato" (from the garden),
+    // "food:egg" (from the fridge or pantry), "fish" (any fish) or
+    // "fish:goldenCarp" (that fish). sell: what Hazel pays for one.
+    // boost: what eating it does. learn: how you can learn it besides
+    // cooking it by chance: "hazel" or "otis" (they sell the recipe for
+    // `price`), or "merchant" (only from the traveling merchant, and it
+    // can't be found by chance). hint: shown before you know it.
+    recipes: [
+      { id: "pancakes", name: "Pancakes", icon: "🥞", ingredients: ["food:flour", "food:egg", "food:milk"], sell: 18, boost: "cozy", hint: "A breakfast stack: from the pantry and fridge." },
+      { id: "honeyToast", name: "Honey Toast", icon: "🍞", ingredients: ["food:flour", "food:butter", "food:honey"], sell: 20, boost: "cozy", hint: "Golden and sticky." },
+      { id: "omelette", name: "Cheese Omelette", icon: "🍳", ingredients: ["food:egg", "food:egg", "food:cheese"], sell: 18, boost: "quickBite", hint: "Two of one thing, and something from the fridge." },
+      { id: "pickles", name: "Radish Pickles", icon: "🫙", ingredients: ["crop:radish", "crop:radish", "food:salt"], sell: 20, boost: "greenThumb", hint: "Something quick-growing, in a jar." },
+      { id: "salad", name: "Garden Salad", icon: "🥗", ingredients: ["crop:lettuce", "crop:tomato", "crop:carrot"], sell: 40, boost: "greenThumb", hint: "Three things from the garden, nothing else.", learn: "hazel", price: 40 },
+      { id: "carrotCake", name: "Carrot Cake", icon: "🍰", ingredients: ["crop:carrot", "food:flour", "food:sugar", "food:egg"], sell: 45, boost: "cozy", hint: "A cake with a vegetable in it.", learn: "hazel", price: 50 },
+      { id: "jam", name: "Strawberry Jam", icon: "🍓", ingredients: ["crop:strawberry", "crop:strawberry", "food:sugar"], sell: 32, boost: "cozy", hint: "Berries, twice, and something sweet." },
+      { id: "smoothie", name: "Berry Smoothie", icon: "🥤", ingredients: ["crop:strawberry", "crop:blueberry", "food:milk"], sell: 30, boost: "lucky", hint: "Two kinds of berry, blended." },
+      { id: "blueberryPancakes", name: "Blueberry Pancakes", icon: "🫐", ingredients: ["food:flour", "food:egg", "food:milk", "crop:blueberry"], sell: 36, boost: "lucky", hint: "A breakfast stack, with something blue." },
+      { id: "tomatoSoup", name: "Tomato Soup", icon: "🥣", ingredients: ["crop:tomato", "crop:tomato", "food:butter"], sell: 30, boost: "quickBite", hint: "Red, warm, and buttery." },
+      { id: "chowder", name: "Corn Chowder", icon: "🍲", ingredients: ["crop:corn", "food:milk", "food:butter"], sell: 36, boost: "cozy", hint: "Something yellow from the garden, made creamy." },
+      { id: "popcorn", name: "Popcorn", icon: "🍿", ingredients: ["crop:corn", "food:butter", "food:salt"], sell: 26, boost: "cozy", hint: "The Theater's favorite." },
+      { id: "sunflowerSeeds", name: "Roasted Sunflower Seeds", icon: "🌻", ingredients: ["crop:sunflower", "food:salt"], sell: 40, boost: "lucky", hint: "A tall flower, salted." },
+      { id: "pumpkinPie", name: "Pumpkin Pie", icon: "🥧", ingredients: ["crop:pumpkin", "food:flour", "food:sugar", "food:egg"], sell: 130, boost: "greenThumb", hint: "The biggest thing in the garden, baked.", learn: "hazel", price: 90 },
+      { id: "pumpkinSoup", name: "Pumpkin Soup", icon: "🎃", ingredients: ["crop:pumpkin", "food:milk", "food:butter"], sell: 115, boost: "cozy", hint: "The biggest thing in the garden, as soup." },
+      { id: "risotto", name: "Veggie Risotto", icon: "🍚", ingredients: ["food:rice", "crop:carrot", "food:cheese", "food:butter"], sell: 40, boost: "greenThumb", hint: "Creamy rice, with something orange." },
+      { id: "grilledFish", name: "Grilled Fish", icon: "🍢", ingredients: ["fish", "food:salt"], sell: 18, boost: "quickBite", hint: "Any fish, simply done.", learn: "otis", price: 25 },
+      { id: "sushi", name: "Sushi", icon: "🍣", ingredients: ["fish", "food:rice"], sell: 26, boost: "lucky", hint: "Any fish, with something from the pantry.", learn: "otis", price: 35 },
+      { id: "fishTacos", name: "Fish Tacos", icon: "🌮", ingredients: ["fish", "crop:corn", "crop:tomato"], sell: 45, boost: "lucky", hint: "Any fish, and two things from the garden." },
+      { id: "fishStew", name: "Fisherman's Stew", icon: "🍲", ingredients: ["fish", "fish", "crop:carrot", "food:salt"], sell: 50, boost: "quickBite", hint: "Two fish, and something orange.", learn: "otis", price: 45 },
+      // Only from the traveling merchant:
+      { id: "carpCurry", name: "Golden Carp Curry", icon: "🍛", ingredients: ["fish:goldenCarp", "food:rice", "food:salt"], sell: 90, boost: "lucky", hint: "A traveler's recipe.", learn: "merchant", price: 80 },
+      { id: "starfruitTart", name: "Starfruit Tart", icon: "⭐", ingredients: ["crop:starfruit", "food:flour", "food:sugar", "food:butter"], sell: 110, boost: "cozy", hint: "A traveler's recipe.", learn: "merchant", price: 80 },
+      { id: "moonTea", name: "Moonflower Tea", icon: "🍵", ingredients: ["crop:moonflower", "food:honey"], sell: 95, boost: "quickBite", hint: "A traveler's recipe.", learn: "merchant", price: 70 },
+    ],
+
+    // Fortune cookies: one a day each from the jar on the kitchen counter
+    // (the day changes at midnight in the hometown). `bonusChance` of them
+    // hide a little extra (bonusCrumbs [fewest, most], or a seed).
+    fortuneBonusChance: 0.12,
+    fortuneBonusCrumbs: [10, 30],
+    fortunes: [
+      "You will find a sock you thought was lost forever.",
+      "A raccoon is thinking about you right now. Maybe too much.",
+      "Water your plants. They know when you forget.",
+      "Today is a good day to sit in a comfy chair.",
+      "The fish are plotting something. Stay alert.",
+      "Someone in this house thinks you're great.",
+      "Your next snack will be exactly what you needed.",
+      "Beware of stairs. Take the elevator.",
+      "A small kindness today comes back tomorrow.",
+      "You will laugh at something that isn't even that funny.",
+      "The pond knows your secrets.",
+      "Good news arrives by bus.",
+      "You are one nap away from greatness.",
+      "Hazel says hi. She always says hi.",
+      "An old boot holds untold treasure. Probably not, though.",
+      "Your plants are proud of you.",
+      "Help! I'm trapped in a fortune cookie factory! (Just kidding.)",
+      "Rest is productive too.",
+      "The best seat in the house is the one you're in.",
+      "Someone will ask you to watch a video. Say yes.",
+      "A lucky catch is in your future. Bring bait.",
+      "Tea solves most things.",
+      "You'll remember the name of that song at 3 in the morning.",
+      "The raccoons are not three raccoons. (They are.)",
+      "Wear the hat. You know the one.",
+    ],
+  },
+
+  // --- The trading post (Update 5) ---
+  // A stall in the yard where friends trade basket things: list something
+  // for crumbs, or ask for a swap. Listed things wait at the stall (even
+  // while you're away) and come back to you if nobody takes them within
+  // `listingDays`. Each person can have `maxListings` at once.
+  tradingPost: {
+    maxListings: 5,
+    listingDays: 7,
+  },
+
+  // --- The traveling merchant (Update 5) ---
+  // Juniper the fox comes on the bus every `day` (0 Sunday to 6 Saturday,
+  // in the hometown) and stays all day, with a few things you can't get
+  // anywhere else. Each week she brings `stockSize` of the things below
+  // (a different mix each week), and each person can buy up to `limit` of
+  // each. kind: "seed" (a crop), "bait", "recipe" or "decor" (Nest & Nook).
+  merchant: {
+    name: "Juniper",
+    day: 5,
+    stockSize: 5,
+    goods: [
+      { id: "starfruitSeed", kind: "seed", ref: "starfruit", price: 45, limit: 3 },
+      { id: "moonflowerSeed", kind: "seed", ref: "moonflower", price: 40, limit: 3 },
+      { id: "glowworms", kind: "bait", ref: "glowworm", price: 35, limit: 5 },
+      { id: "curryRecipe", kind: "recipe", ref: "carpCurry", price: 80, limit: 1 },
+      { id: "tartRecipe", kind: "recipe", ref: "starfruitTart", price: 80, limit: 1 },
+      { id: "teaRecipe", kind: "recipe", ref: "moonTea", price: 70, limit: 1 },
+      { id: "travelRug", kind: "decor", ref: "travelRug", price: 70, limit: 1 },
+      { id: "brassGlobe", kind: "decor", ref: "brassGlobe", price: 90, limit: 1 },
+      { id: "spyglass", kind: "decor", ref: "spyglass", price: 120, limit: 1 },
+    ],
+  },
 
   // --- The bus stop (Update 4) ---
   // A little bus pulls up at the stop by the road every `everyMinutes`
@@ -474,6 +611,7 @@ const CONFIG = {
     // Outdoors (Update 4)
     { id: "harvester", icon: "🥕", name: "Green Thumb", stat: "harvests", desc: "Harvest {n} crop{s} from the garden.", goals: [1, 10, 40, 120, 300, 750] },
     { id: "angler", icon: "🎣", name: "Angler", stat: "fishCaught", desc: "Catch {n} fish at the pond.", goals: [1, 10, 40, 120, 300, 750] },
+    { id: "chef", icon: "🍳", name: "Chef", stat: "dishesCooked", desc: "Cook {n} meal{s} at the stove.", goals: [1, 10, 30, 80, 200, 500] },
     { id: "goodNeighbor", icon: "💧", name: "Good Neighbor", stat: "friendsWatered", desc: "Water a friend's garden bed {n} time{s}.", goals: [1, 10, 30, 80, 200, 500] },
   ],
 

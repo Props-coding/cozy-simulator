@@ -350,7 +350,7 @@ function applyGarden(body, user, w, ev) {
     if (body.action === "harvest" && w) {
       if (!crop || growthOf(plot, now) < 1) throw new Oops(409, "That's not ripe yet.");
       const [low, high] = crop.yield;
-      const n = low + Math.floor(Math.random() * (high - low + 1));
+      const n = low + Math.floor(Math.random() * (high - low + 1)) + (boosted(w, "greenThumb") ? 1 : 0);
       delete plots[bed];
       putIn(w, `crop:${crop.id}`, n);
       addStat(w, "harvests", n);
@@ -653,6 +653,8 @@ async function loadGame() {
     BAIT: byId(g.CONFIG.bait),
     CROPS: byId(g.CONFIG.crops),
     JUNK: byId(g.CONFIG.junk),
+    FOOD: byId(g.CONFIG.kitchen.pantry),
+    RECIPES: byId(g.CONFIG.kitchen.recipes),
     TRACKS: g.CONFIG.tieredAchievements ?? [],
     TIERS: g.CONFIG.achievementTiers ?? [],
   };
@@ -664,7 +666,7 @@ async function loadGame() {
 const MAX_STACK = 9999;
 const STARTERS = { starterDesk: 1, starterMattress: 1, starterNightstand: 1, starterPhone: 1 };
 // Counters the server keeps (the tiered achievements are counted in these).
-const SERVER_STATS = ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught"];
+const SERVER_STATS = ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "dishesCooked"];
 
 const whole = (v, max = 1e9) => (Number.isFinite(v) ? Math.max(0, Math.min(max, Math.floor(v))) : 0);
 
@@ -672,7 +674,9 @@ const whole = (v, max = 1e9) => (Number.isFinite(v) ? Math.max(0, Math.min(max, 
 function knownItem(id) {
   const [kind, name] = String(id).split(":");
   if (kind === "fish") return Object.hasOwn(GAME.FISH, name);
-  if (kind === "junk") return Object.hasOwn(GAME.JUNK, name);
+  if (kind === "junk") return Object.hasOwn(GAME.JUNK, name) || name === GAME.CONFIG.kitchen.burnt.id;
+  if (kind === "food") return Object.hasOwn(GAME.FOOD, name);
+  if (kind === "dish") return Object.hasOwn(GAME.RECIPES, name);
   if (kind === "bait") return Object.hasOwn(GAME.BAIT, name) && GAME.BAIT[name].price > 0;
   if (kind === "seed" || kind === "crop") return Object.hasOwn(GAME.CROPS, name);
   return false;
@@ -681,7 +685,7 @@ function knownItem(id) {
 // A wallet, made the first time it's needed from that person's cloud save
 // (everything they had before the bank), so nothing is lost.
 function ensureWallet(user, key) {
-  if (user.wallet) return user.wallet;
+  if (user.wallet) return fillWallet(user.wallet);
   const shop = savedData(user, "cozy-house-crumbs") ?? {};
   const basket = savedData(user, "cozy-house-basket")?.items ?? {};
   const fishing = savedData(user, "cozy-house-fishing") ?? {};
@@ -725,13 +729,24 @@ function ensureWallet(user, key) {
   }
   if (Number.isFinite(progress.stats?.lastDay)) w.stats.lastDay = progress.stats.lastDay;
   user.wallet = w;
+  return fillWallet(w);
+}
+
+// Parts of the wallet added later (Update 5): the recipe book, the boost
+// from the last dish you ate, the day of your last fortune cookie, and what
+// you've bought from the traveling merchant this week.
+function fillWallet(w) {
+  w.recipes ??= [];
+  w.boost ??= null;
+  w.cookieDay ??= 0;
+  w.merchant ??= { week: 0, bought: {} };
   return w;
 }
 
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -920,6 +935,76 @@ function growthOf(plot, now = Date.now()) {
   return Math.min(1, (wet + (total - wet) * GAME.CONFIG.garden.dryGrowth) / (crop.hours * HOUR));
 }
 
+// --- The kitchen, the trading post and the merchant (Update 5) ---
+const QUICK_BITE = 0.7; // how much sooner fish bite with the Quick Bites boost
+
+function boostOf(w) {
+  return w.boost && w.boost.until > Date.now() ? w.boost : null;
+}
+const boosted = (w, id) => boostOf(w)?.id === id;
+
+// Whether 2 to 4 basket things are this recipe's ingredients (in any
+// order; "fish" is any fish).
+function recipeMatches(recipe, items) {
+  if (recipe.ingredients.length !== items.length) return false;
+  const left = [...items];
+  for (const need of [...recipe.ingredients].sort((a, b) => (a === "fish") - (b === "fish"))) {
+    const i = left.findIndex((id) => (need === "fish" ? id.startsWith("fish:") : id === need));
+    if (i < 0) return false;
+    left.splice(i, 1);
+  }
+  return true;
+}
+
+// A basket thing's name, for letters ("Rainbow Trout", "Pumpkin Pie").
+function itemLabel(id) {
+  const [kind, name] = id.split(":");
+  const list = { fish: GAME.FISH, crop: GAME.CROPS, food: GAME.FOOD, dish: GAME.RECIPES, bait: GAME.BAIT, junk: GAME.JUNK }[kind];
+  if (kind === "seed") return (GAME.CROPS[name]?.name ?? name) + " seeds";
+  if (id === `junk:${GAME.CONFIG.kitchen.burnt.id}`) return GAME.CONFIG.kitchen.burnt.name;
+  return list?.[name]?.name ?? name;
+}
+
+// A letter in someone's mailbox (from a friend, or from the Trading Post).
+function sendLetter(user, { from, subject, body }) {
+  const letter = { id: randomBytes(9).toString("base64url"), from, color: "#c98f3c", subject: subject.slice(0, MAIL_LIMITS.subject), body: body.slice(0, MAIL_LIMITS.body), sentAt: Date.now(), read: false };
+  user.inbox = [letter, ...(user.inbox ?? [])].slice(0, MAIL_LIMITS.inbox);
+}
+
+// The trading post's stall. Listings older than listingDays go back to
+// whoever listed them (with a note).
+function marketState() {
+  db.market ??= { listings: [] };
+  const old = Date.now() - GAME.CONFIG.tradingPost.listingDays * 86_400_000;
+  for (const l of db.market.listings.filter((x) => x.at < old)) {
+    const sellerUser = db.users[l.seller];
+    if (sellerUser) {
+      putIn(ensureWallet(sellerUser, l.seller), l.item, l.n);
+      sendLetter(sellerUser, { from: "Trading Post", subject: `Back from the stall: ${l.n} × ${itemLabel(l.item)}`, body: `Nobody took your ${l.n} × ${itemLabel(l.item)} this week, so it's back in your basket.` });
+    }
+  }
+  db.market.listings = db.market.listings.filter((x) => x.at >= old);
+  return db.market;
+}
+
+// Is the merchant here, and what did she bring this week? (A different
+// mix each week, the same for everyone.)
+function merchantState() {
+  const m = GAME.CONFIG.merchant;
+  const dayNumber = Math.floor((Date.now() + sky.offset) / 86_400_000);
+  const week = Math.floor((dayNumber + 3) / 7); // (weeks start on Monday)
+  const here = hometown().getUTCDay() === m.day || (db.merchantUntil ?? 0) > Date.now();
+  // A shuffle that's the same all week: a little random-number maker seeded with the week.
+  let seed = week * 2654435761 >>> 0;
+  const next = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  const goods = [...m.goods];
+  for (let i = goods.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [goods[i], goods[j]] = [goods[j], goods[i]];
+  }
+  return { here, week, stock: goods.slice(0, m.stockSize) };
+}
+
 // --- Every bank action: (wallet, what the page sent, events, who) ---
 const BANK = {
   // Once a minute while you're in the house: time in the house (and in
@@ -949,7 +1034,7 @@ const BANK = {
       w.activeMs = Math.min((w.activeMs ?? 0) + counted, 120_000);
       while (w.activeMs >= 60_000) {
         w.activeMs -= 60_000;
-        earn(w, GAME.CONFIG.crumbsPerMinute, ev);
+        earn(w, GAME.CONFIG.crumbsPerMinute * (boosted(w, "cozy") ? 2 : 1), ev);
       }
     }
     return {};
@@ -1028,7 +1113,7 @@ const BANK = {
   buyBait(w, b) {
     const bait = GAME.BAIT[b.id];
     const n = amount(b.n, 1, 50);
-    if (!bait || !bait.price) throw new Oops(400, "Otis doesn't sell that.");
+    if (!bait || !bait.price || bait.merchant) throw new Oops(400, "Otis doesn't sell that.");
     if (fishingLevel(w.fishing.xp) < bait.level) throw new Oops(409, `That bait needs fishing level ${bait.level}.`);
     spend(w, bait.price * n);
     putIn(w, `bait:${bait.id}`, n);
@@ -1046,12 +1131,13 @@ const BANK = {
   hook(w) {
     const f = w.fishing;
     const now = Date.now();
-    const soonest = GAME.CONFIG.fishing.biteSeconds[0] * rodOf(w).bite * 1000 - 1000;
+    const soonest = GAME.CONFIG.fishing.biteSeconds[0] * rodOf(w).bite * (boosted(w, "quickBite") ? QUICK_BITE : 1) * 1000 - 1000;
     if (!f.castAt || now - f.castAt < soonest) throw new Oops(409, "Nothing's biting yet.");
     f.castAt = 0;
     const bait = baitInUse(w);
     if (bait.price) takeOut(w, `bait:${bait.id}`, 1);
-    const caught = pickCatch(bait, rodOf(w));
+    const rod = rodOf(w);
+    const caught = pickCatch(bait, boosted(w, "lucky") ? { ...rod, luck: rod.luck + 0.3 } : rod);
     f.pending = { ...caught, at: now };
     return { rarity: caught.fish ? GAME.FISH[caught.fish].rarity : 1, junk: !!caught.junk };
   },
@@ -1093,7 +1179,7 @@ const BANK = {
   sell(w, b, ev) {
     const id = String(b.id ?? "");
     const [kind, name] = id.split(":");
-    const price = kind === "fish" ? GAME.FISH[name]?.sell : kind === "crop" ? GAME.CROPS[name]?.sell : null;
+    const price = kind === "fish" ? GAME.FISH[name]?.sell : kind === "crop" ? GAME.CROPS[name]?.sell : kind === "dish" ? GAME.RECIPES[name]?.sell : null;
     if (!price) throw new Oops(400, "Nobody buys that.");
     const n = amount(b.n, 1, MAX_STACK);
     takeOut(w, id, n);
@@ -1106,7 +1192,7 @@ const BANK = {
   buySeed(w, b) {
     const crop = GAME.CROPS[b.id];
     const n = amount(b.n, 1, 20);
-    if (!crop) throw new Oops(400, "Hazel doesn't have those seeds.");
+    if (!crop || crop.merchant) throw new Oops(400, "Hazel doesn't have those seeds.");
     spend(w, crop.seed * n);
     putIn(w, `seed:${crop.id}`, n);
     return {};
@@ -1127,6 +1213,173 @@ const BANK = {
     w.home.size = "roomy";
     ensureRoom(key, user).size = "roomy";
     grant(w, "roomy", ev);
+    return {};
+  },
+
+  // --- The kitchen (Update 5) ---
+  // Basics from the fridge and pantry.
+  buyFood(w, b) {
+    const food = GAME.FOOD[b.id];
+    const n = amount(b.n, 1, 20);
+    if (!food) throw new Oops(400, "That's not in the kitchen.");
+    spend(w, food.price * n);
+    putIn(w, `food:${food.id}`, n);
+    return {};
+  },
+  // Cooking 2 to 4 things from your basket. A known mix (or any recipe
+  // that isn't the merchant's) makes the dish and goes in your recipe
+  // book; anything else burns.
+  cook(w, b, ev) {
+    const items = Array.isArray(b.items) ? b.items.map(String) : [];
+    if (items.length < 2 || items.length > 4) throw new Oops(400, "Put 2 to 4 things in the pot.");
+    const need = {};
+    for (const id of items) need[id] = (need[id] ?? 0) + 1;
+    for (const [id, n] of Object.entries(need)) {
+      if (!/^(crop|food|fish):/.test(id) || have(w, id) < n) throw new Oops(409, "You don't have all of that.");
+    }
+    const recipe = Object.values(GAME.RECIPES).find((r) => (r.learn !== "merchant" || w.recipes.includes(r.id)) && recipeMatches(r, items));
+    for (const [id, n] of Object.entries(need)) takeOut(w, id, n);
+    if (!recipe) {
+      putIn(w, `junk:${GAME.CONFIG.kitchen.burnt.id}`, 1);
+      grant(w, "burntOffering", ev);
+      return { burnt: true };
+    }
+    putIn(w, `dish:${recipe.id}`, 1);
+    const learned = !w.recipes.includes(recipe.id);
+    if (learned) w.recipes.push(recipe.id);
+    addStat(w, "dishesCooked", 1);
+    grant(w, "firstDish", ev);
+    if (w.recipes.length >= 10) grant(w, "cookbook", ev);
+    return { dish: recipe.id, learned };
+  },
+  // Eating a dish: its boost, for a while (one at a time).
+  eat(w, b, ev) {
+    const id = String(b.id ?? "");
+    const recipe = GAME.RECIPES[id.slice(5)];
+    if (!id.startsWith("dish:") || !recipe) throw new Oops(400, "You can't eat that.");
+    takeOut(w, id, 1);
+    w.boost = { id: recipe.boost, until: Date.now() + GAME.CONFIG.kitchen.boostMinutes * 60_000 };
+    grant(w, "wellFed", ev);
+    return { boost: recipe.boost };
+  },
+  // Giving a dish to a friend: it goes straight into their basket, with a
+  // note in their mailbox.
+  gift(w, b, ev, { user }) {
+    const id = String(b.id ?? "");
+    if (!id.startsWith("dish:") || !knownItem(id)) throw new Oops(400, "Only dishes can be gifted.");
+    const toKey = String(b.to ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    const friend = db.users[toKey];
+    if (!friend?.member) throw new Oops(404, "There's nobody in the house by that name.");
+    if (friend === user) throw new Oops(400, "That's you! Treat yourself by eating it instead.");
+    takeOut(w, id, 1);
+    putIn(ensureWallet(friend, toKey), id, 1);
+    const dish = GAME.RECIPES[id.slice(5)];
+    grant(w, "sharing", ev);
+    sendLetter(friend, { from: user.name, subject: `A gift: ${dish.name} ${dish.icon}`, body: `${user.name} made you ${dish.name}! It's in your basket. Eat it for a boost, or keep it for later.` });
+    return { to: friend.name };
+  },
+  // Recipes Hazel and Otis sell.
+  buyRecipe(w, b, ev) {
+    const recipe = GAME.RECIPES[b.id];
+    if (!recipe || !["hazel", "otis"].includes(recipe.learn) || recipe.learn !== b.from) throw new Oops(400, "They don't have that recipe.");
+    if (w.recipes.includes(recipe.id)) throw new Oops(409, "You already know that one.");
+    spend(w, recipe.price);
+    w.recipes.push(recipe.id);
+    if (w.recipes.length >= 10) grant(w, "cookbook", ev);
+    return {};
+  },
+  // A fortune cookie: one a day (the hometown's day), now and then with a
+  // little something inside.
+  fortune(w, b, ev) {
+    const day = hometownDay();
+    if (w.cookieDay === day) throw new Oops(409, "You've had today's fortune cookie. Come back tomorrow!");
+    w.cookieDay = day;
+    grant(w, "fortuneTold", ev);
+    const k = GAME.CONFIG.kitchen;
+    const text = k.fortunes[Math.floor(Math.random() * k.fortunes.length)];
+    if (Math.random() >= k.fortuneBonusChance) return { text };
+    if (Math.random() < 0.5) {
+      const [low, high] = k.fortuneBonusCrumbs;
+      const crumbs = low + Math.floor(Math.random() * (high - low + 1));
+      earn(w, crumbs, ev);
+      return { text, crumbs };
+    }
+    const crops = GAME.CONFIG.crops.filter((c) => !c.merchant);
+    const crop = crops[Math.floor(Math.random() * crops.length)];
+    putIn(w, `seed:${crop.id}`, 1);
+    return { text, seed: crop.id };
+  },
+
+  // --- The trading post (Update 5) ---
+  // Listing something: it leaves your basket and waits at the stall.
+  tradeList(w, b, ev, { user, key }) {
+    const item = String(b.item ?? "");
+    const n = amount(b.n, 1, MAX_STACK);
+    if (!knownItem(item)) throw new Oops(400, "That can't be traded.");
+    const market = marketState();
+    if (market.listings.filter((l) => l.seller === key).length >= GAME.CONFIG.tradingPost.maxListings) throw new Oops(409, `You can have ${GAME.CONFIG.tradingPost.maxListings} things at the stall at once.`);
+    let price = null, want = null;
+    if (b.want) {
+      want = { item: String(b.want.item ?? ""), n: amount(b.want.n, 1, MAX_STACK) };
+      if (!knownItem(want.item)) throw new Oops(400, "You can't ask for that.");
+    } else price = amount(b.price, 1, 100_000);
+    takeOut(w, item, n);
+    market.listings.push({ id: newId(), seller: key, sellerName: user.name, item, n, price, want, at: Date.now() });
+    return {};
+  },
+  tradeCancel(w, b, ev, { key }) {
+    const market = marketState();
+    const listing = market.listings.find((l) => l.id === b.id && l.seller === key);
+    if (!listing) throw new Oops(404, "That's not at the stall any more.");
+    market.listings = market.listings.filter((l) => l !== listing);
+    putIn(w, listing.item, listing.n);
+    return {};
+  },
+  tradeBuy(w, b, ev, { user, key }) {
+    const market = marketState();
+    const listing = market.listings.find((l) => l.id === b.id);
+    if (!listing) throw new Oops(404, "Someone got there first.");
+    if (listing.seller === key) throw new Oops(400, "That's yours! Take it back from Your stall instead.");
+    const sellerUser = db.users[listing.seller];
+    if (!sellerUser) throw new Oops(404, "Whoever listed that has left the house.");
+    const seller = ensureWallet(sellerUser, listing.seller);
+    let paid;
+    if (listing.price !== null) {
+      spend(w, listing.price);
+      seller.crumbs = whole(seller.crumbs + listing.price);
+      grant(seller, "firstTrade", []); // (no pop-up for them: they may be away. It shows on their profile.)
+      paid = `${listing.price} crumbs`;
+    } else {
+      takeOut(w, listing.want.item, listing.want.n);
+      putIn(seller, listing.want.item, listing.want.n);
+      grant(seller, "firstTrade", []);
+      paid = `${listing.want.n} × ${itemLabel(listing.want.item)}`;
+    }
+    market.listings = market.listings.filter((l) => l !== listing);
+    putIn(w, listing.item, listing.n);
+    sendLetter(sellerUser, { from: "Trading Post", subject: `Sold: ${listing.n} × ${itemLabel(listing.item)}`, body: `${user.name} took your ${listing.n} × ${itemLabel(listing.item)} and paid ${paid}. It's already yours.` });
+    return { got: listing.item, n: listing.n };
+  },
+
+  // --- The traveling merchant (Update 5) ---
+  merchantBuy(w, b, ev) {
+    const shop = merchantState();
+    if (!shop.here) throw new Oops(409, `${GAME.CONFIG.merchant.name} isn't here right now.`);
+    const good = shop.stock.find((g) => g.id === b.id);
+    if (!good) throw new Oops(400, "That's not in this week's pack.");
+    if (w.merchant.week !== shop.week) w.merchant = { week: shop.week, bought: {} };
+    if ((w.merchant.bought[good.id] ?? 0) >= good.limit) throw new Oops(409, "That's all of those you can have this week.");
+    if (good.kind === "recipe" && w.recipes.includes(good.ref)) throw new Oops(409, "You already know that one.");
+    spend(w, good.price);
+    w.merchant.bought[good.id] = (w.merchant.bought[good.id] ?? 0) + 1;
+    grant(w, "wellTraveled", ev);
+    if (good.kind === "seed") putIn(w, `seed:${good.ref}`, 1);
+    else if (good.kind === "bait") putIn(w, `bait:${good.ref}`, 1);
+    else if (good.kind === "recipe") {
+      w.recipes.push(good.ref);
+      if (w.recipes.length >= 10) grant(w, "cookbook", ev);
+    }
+    else if (good.kind === "decor") w.home.owned[good.ref] = Math.min(99, (w.home.owned[good.ref] ?? 0) + 1);
     return {};
   },
 
@@ -1158,6 +1411,8 @@ const BANK = {
       ...Object.keys(GAME.JUNK).map((id) => `junk:${id}`),
       ...Object.keys(GAME.BAIT).map((id) => `bait:${id}`),
       ...Object.keys(GAME.CROPS).flatMap((id) => [`seed:${id}`, `crop:${id}`]),
+      ...Object.keys(GAME.FOOD).map((id) => `food:${id}`),
+      ...Object.keys(GAME.RECIPES).map((id) => `dish:${id}`),
     ].filter(knownItem);
     for (const id of ids) w.basket[id] = Math.max(have(w, id), 5);
     return {};
@@ -1182,6 +1437,15 @@ const BANK = {
   adminUnlockAll(w) {
     for (const id of Object.keys(GAME.ACH)) w.unlocked[id] ??= Date.now();
     for (const t of GAME.TRACKS) w.tiers[t.id] = Math.min(t.goals.length, GAME.TIERS.length);
+    return {};
+  },
+  // The traveling merchant comes for an hour (for everyone), whatever the day.
+  adminMerchant() {
+    db.merchantUntil = Date.now() + 3_600_000;
+    return {};
+  },
+  adminRecipes(w) {
+    w.recipes = Object.keys(GAME.RECIPES);
     return {};
   },
   adminResetAchievements(w) {
@@ -1453,6 +1717,17 @@ const routes = {
     return { wallet: publicWallet(w), events: ev, result };
   },
 
+  // --- The trading post's stall, and whether the merchant's here (Update 5) ---
+  "GET /api/market": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const before = db.market?.listings.length ?? 0;
+    const market = marketState();
+    if (market.listings.length !== before) await saveDb(); // (some went home)
+    const { here, week, stock } = merchantState();
+    return { listings: market.listings.map(({ seller, ...l }) => l), mine: market.listings.filter((l) => l.seller === key).map((l) => l.id), merchant: { here, week, stock } };
+  },
+
   // --- The shared garden (Update 4) ---
   // db.garden.plots: bed number -> { owner (their name), color, crop,
   // plantedAt, waters: [times], wateredBy }. How fast crops grow is worked
@@ -1688,7 +1963,7 @@ const routes = {
       pinned: (Array.isArray(saved("cozy-house-achievements")?.pinned) ? saved("cozy-house-achievements").pinned : []).filter((id) => typeof id === "string" && /^[a-zA-Z]{1,30}$/.test(id)).slice(0, 5),
       // The counters their tiers are counted in, for "progress to the next tier".
       stats: Object.fromEntries(
-        ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught"]
+        ["seconds", "sleepSeconds", "chats", "focusSessions", "crumbsEarned", "emotesUsed", "dances", "daysVisited", "harvests", "friendsWatered", "fishCaught", "dishesCooked"]
           .filter((k) => Number.isFinite(progress.stats?.[k]))
           .map((k) => [k, progress.stats[k]])
       ),
