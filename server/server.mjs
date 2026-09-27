@@ -744,6 +744,9 @@ function fillWallet(w) {
   w.cookieDay ??= 0;
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
+  w.residents.hearts ??= {}; // friendship points with each resident
+  w.residents.chatDay ??= {}; // the last day you chatted with each (the first chat of a day counts)
+  w.residents.giftDay ??= {}; // the last day you gave each a gift
   return w;
 }
 
@@ -764,10 +767,44 @@ function todaysRequests(w) {
   return out;
 }
 
+// Friendship with the residents: points, hearts, and what's done today.
+function friendships(w) {
+  const day = hometownDay();
+  const h = GAME.CONFIG.residents?.hearts;
+  const out = {};
+  for (const id of Object.keys(GAME.CONFIG.residents?.requests ?? {})) {
+    const points = w.residents.hearts[id] ?? 0;
+    out[id] = { points, hearts: Math.floor(points / h.pointsPerHeart), chatted: w.residents.chatDay[id] === day, gifted: w.residents.giftDay[id] === day };
+  }
+  return out;
+}
+
+// Adds (or, for a disliked gift, takes away) friendship points, and tells
+// the page when a new heart is reached. Ten hearts earns an achievement.
+function addFriendship(w, id, n, ev) {
+  const h = GAME.CONFIG.residents.hearts;
+  const before = w.residents.hearts[id] ?? 0;
+  const after = Math.max(0, Math.min(h.maxHearts * h.pointsPerHeart, before + n));
+  w.residents.hearts[id] = after;
+  const was = Math.floor(before / h.pointsPerHeart), now = Math.floor(after / h.pointsPerHeart);
+  if (now > was) ev.push({ type: "hearts", id, hearts: now });
+  if (now >= h.maxHearts) grant(w, id + "Friend", ev);
+}
+
+// What a resident thinks of a gift: "loved", "liked", "neutral" or
+// "disliked" (config.js: residents.tastes).
+function tasteOf(id, item) {
+  const t = GAME.CONFIG.residents.tastes?.[id] ?? {};
+  for (const kind of ["loved", "liked", "disliked"]) if ((t[kind] ?? []).includes(item)) return kind;
+  const prefix = item.split(":")[0] + ":";
+  for (const kind of ["loved", "liked", "disliked"]) if ((t[kind] ?? []).includes(prefix)) return kind;
+  return "neutral";
+}
+
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -1355,9 +1392,49 @@ const BANK = {
     if (w.residents.day !== day) w.residents = { ...w.residents, day, done: {} };
     w.residents.done[id] = true;
     earn(w, want.crumbs, ev);
+    addFriendship(w, id, GAME.CONFIG.residents.hearts.request, ev);
     addStat(w, "requestsDone", 1);
     grant(w, "happyToHelp", ev);
     return { crumbs: want.crumbs };
+  },
+  // The first chat of the day with a resident (a little friendship).
+  residentChat(w, b, ev) {
+    const id = String(b.id ?? "");
+    if (!GAME.CONFIG.residents?.requests?.[id]) throw new Oops(400, "Nobody by that name lives here.");
+    const day = hometownDay();
+    if (w.residents.chatDay[id] === day) return {};
+    w.residents.chatDay[id] = day;
+    addFriendship(w, id, GAME.CONFIG.residents.hearts.chat, ev);
+    return {};
+  },
+  // One gift a day to each resident: any one thing from your basket.
+  residentGift(w, b, ev) {
+    const id = String(b.id ?? "");
+    const item = String(b.item ?? "");
+    if (!GAME.CONFIG.residents?.requests?.[id]) throw new Oops(400, "Nobody by that name lives here.");
+    if (!knownItem(item)) throw new Oops(400, "That's not something you can give.");
+    const day = hometownDay();
+    if (w.residents.giftDay[id] === day) throw new Oops(409, "You've already given them a gift today. Come back tomorrow!");
+    takeOut(w, item, 1);
+    w.residents.giftDay[id] = day;
+    const taste = tasteOf(id, item);
+    addFriendship(w, id, GAME.CONFIG.residents.hearts.gift[taste] ?? 0, ev);
+    return { taste };
+  },
+  // A recipe a resident teaches, once you're friends enough.
+  buyResidentRecipe(w, b, ev) {
+    const from = String(b.from ?? "");
+    const entry = (GAME.CONFIG.residents?.recipes?.[from] ?? []).find((r) => r.id === b.id);
+    const recipe = entry && GAME.RECIPES[entry.id];
+    if (!recipe) throw new Oops(400, "They don't know that recipe.");
+    const h = GAME.CONFIG.residents.hearts;
+    const hearts = Math.floor((w.residents.hearts[from] ?? 0) / h.pointsPerHeart);
+    if (hearts < h.recipesAt) throw new Oops(403, "Become better friends first.");
+    if (w.recipes.includes(recipe.id)) throw new Oops(409, "You already know that one.");
+    spend(w, hearts >= h.discountAt ? Math.round(entry.price * (1 - h.discount)) : entry.price);
+    w.recipes.push(recipe.id);
+    if (w.recipes.length >= 10) grant(w, "cookbook", ev);
+    return {};
   },
   // A fortune cookie: one a day (the hometown's day), now and then with a
   // little something inside.
@@ -1515,6 +1592,15 @@ const BANK = {
   },
   adminFishXp(w, b) {
     w.fishing.xp = whole(w.fishing.xp + amount(b.n, 0, 100_000));
+    return {};
+  },
+  // Friendship with every resident: one more heart, or back to none.
+  adminHearts(w, b, ev) {
+    const h = GAME.CONFIG.residents.hearts;
+    for (const id of Object.keys(GAME.CONFIG.residents.requests)) {
+      if (b.reset) w.residents.hearts[id] = 0;
+      else addFriendship(w, id, h.pointsPerHeart, ev);
+    }
     return {};
   },
   // Every achievement and tier, quietly (no crumbs).
@@ -1766,6 +1852,8 @@ const adminTools = {
     w.lastFocus = 0;
     w.merchant = { week: 0, bought: {} };
     w.residents.done = {};
+    w.residents.chatDay = {};
+    w.residents.giftDay = {};
     adminLog(me, "reset daily limits for", user.name);
     await saveDb();
     return { ok: true };

@@ -16,8 +16,9 @@ const talk = document.getElementById("npc-text");
 const tabsRow = document.getElementById("npc-tabs");
 const list = document.getElementById("npc-items");
 const crumbs = document.getElementById("npc-crumbs");
+const heartsRow = document.getElementById("npc-hearts");
 
-let npc = null; // who's open: { name, icon, color, pitch, hello, bye, tabs: [{ id, label, items() }] }
+let npc = null; // who's open: { name, icon, color, pitch, hello, bye, tabs: [{ id, label, items() }], hearts() (residents only) }
 let tab = null;
 let typing = null;
 
@@ -93,6 +94,13 @@ export function closeNpc() {
 export function refreshNpc() {
   if (!npc) return;
   crumbs.textContent = crumbBalance();
+  // Residents show your friendship as a row of hearts (filled and empty).
+  const hearts = npc.hearts?.();
+  heartsRow.hidden = !hearts;
+  if (hearts) {
+    heartsRow.innerHTML = "♥".repeat(hearts.have) + `<span class="empty">${"♥".repeat(hearts.max - hearts.have)}</span>`;
+    heartsRow.title = `Friendship: ${hearts.have} of ${hearts.max} hearts`;
+  }
   for (const b of tabsRow.children) b.classList.toggle("active", b.dataset.tab === tab);
   list.innerHTML = "";
   const current = npc.tabs.find((t) => t.id === tab);

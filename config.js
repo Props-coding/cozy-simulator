@@ -379,6 +379,71 @@ const CONFIG = {
   // would). item: a basket item, like "crop:carrot", "fish:trout",
   // "dish:jam" or "junk:letter"; n: how many; line: how they ask.
   residents: {
+    // Friendship hearts (step 3): each person's friendship with each
+    // resident, kept by the house server. `pointsPerHeart` points make a
+    // heart, up to `maxHearts`. Points come from the first chat of the
+    // day, finishing today's request, and one gift a day (how much depends
+    // on whether they love it, like it, don't mind it or dislike it; see
+    // `tastes` below). At `recipesAt` hearts a resident teaches you
+    // recipes (their Recipes tab), at `discountAt` hearts those are
+    // `discount` cheaper (0.25 is a quarter off), and the extra chat
+    // topics in `stories` open at the hearts they say.
+    hearts: {
+      pointsPerHeart: 100,
+      maxHearts: 10,
+      chat: 15,
+      request: 50,
+      gift: { loved: 80, liked: 40, neutral: 20, disliked: -20 },
+      recipesAt: 3,
+      discountAt: 6,
+      discount: 0.25,
+    },
+    // What each resident thinks of gifts. An exact item ("crop:pumpkin")
+    // or a whole kind ("fish:" for any fish). Exact items win over kinds;
+    // anything not listed is "neutral".
+    tastes: {
+      clover: {
+        loved: ["crop:blueberry", "crop:strawberry", "crop:pumpkin", "dish:pumpkinPie", "dish:carrotCake", "dish:starfruitTart"],
+        liked: ["crop:", "dish:", "food:honey"],
+        disliked: ["junk:", "fish:eel", "fish:catfish"],
+      },
+      mortimer: {
+        loved: ["fish:trout", "fish:eel", "dish:sushi", "dish:moonTea", "junk:letter", "junk:duck"],
+        liked: ["fish:", "dish:", "crop:sunflower"],
+        disliked: ["crop:radish", "crop:lettuce", "junk:can", "junk:weeds"],
+      },
+    },
+    // The recipes each resident teaches (at `recipesAt` hearts), and their
+    // price before any discount. These are recipes you can also find by
+    // experimenting at the stove.
+    recipes: {
+      clover: [
+        { id: "honeyToast", price: 30 },
+        { id: "jam", price: 40 },
+        { id: "blueberryPancakes", price: 45 },
+        { id: "pumpkinSoup", price: 80 },
+      ],
+      mortimer: [
+        { id: "tomatoSoup", price: 40 },
+        { id: "chowder", price: 45 },
+        { id: "risotto", price: 50 },
+        { id: "fishTacos", price: 55 },
+      ],
+    },
+    // Extra chat topics that open with friendship: a bit more of each
+    // resident's story at `hearts` hearts.
+    stories: {
+      clover: [
+        { hearts: 2, name: "Tell me about Doug", icon: "🫙", line: "doug is my sourdough starter. my gran gave him to me the day i left home. 'feed him, talk to him, and he'll never let you down.' twelve years, and he never has. well. once he ate a spoon. we don't talk about it." },
+        { hearts: 5, name: "Why did you come here?", icon: "🚌", line: "honest truth? my old bakery closed. i sat at a bus stop with doug and a suitcase, and gus said, 'there's a house up the road that smells like it needs bread.' he was right. it did." },
+        { hearts: 8, name: "What do you dream about?", icon: "💭", line: "a little shop window. a bell over the door. warm loaves stacked up, and everyone in the house stopping by in the morning. oh. wait. that's... that's kind of just this. huh." },
+      ],
+      mortimer: [
+        { hearts: 2, name: "Why the spectacles?", icon: "👓", line: "i don't need them. owls see perfectly well. but a librarian without spectacles is simply an owl in a room full of books, and that's a different thing altogether." },
+        { hearts: 5, name: "How long have you been here?", icon: "⏳", line: "before the house had a hallway, there was a library. before the library, a shelf. before the shelf, there was me, and a book i hadn't finished. i still haven't. it's very long." },
+        { hearts: 8, name: "The tapping at the window", icon: "🪟", line: "i'll tell you, because you're a friend. the tapping. it's a moth. a very large, very polite moth. it never comes in. it just looks at the lamp. and at me. i think it's lonely. so i leave the lamp on." },
+      ],
+    },
     requests: {
       clover: [
         { item: "crop:carrot", n: 3, crumbs: 45, line: "i'm making carrot muffins. well, i'm trying to. could you spare three carrots?" },
@@ -781,6 +846,8 @@ const CONFIG = {
     { id: "goodNeighbor", text: "the Good Neighbor", tier: "goodNeighbor", level: 3 },
     { id: "rainmaker", text: "the Rainmaker", tier: "goodNeighbor", level: 6 },
     { id: "pumpkinChampion", text: "the Pumpkin Champion", achievement: "greatPumpkin" },
+    { id: "cloverFavorite", text: "Clover's Favorite", achievement: "cloverFriend" },
+    { id: "libraryFriend", text: "Friend of the Library", achievement: "mortimerFriend" },
     { id: "angler", text: "the Angler", tier: "angler", level: 3 },
     { id: "masterAngler", text: "the Master Angler", tier: "angler", level: 6 },
     { id: "fishWhisperer", text: "the Fish Whisperer", achievement: "legendCatch" },

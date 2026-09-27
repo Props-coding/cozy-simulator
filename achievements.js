@@ -13,6 +13,7 @@
 // fishing, gardening: `server` in catalog.js); the page claims the rest.
 import { playAchievementSound } from "./audio.js";
 import { bank, myWallet, noteStat } from "./bank.js";
+import { heartToast } from "./residents.js";
 
 // Every moment (one-time achievement) is listed in catalog.js (shared
 // with the house server, which pays the rewards).
@@ -29,7 +30,7 @@ export const MOMENT_GROUPS = [
   ["Raccoons and pets", ["raccoons", "firstBuy", "allHats", "allShoes", "patPat", "pettingZoo", "hoarder"]],
   ["Outdoors", ["firstSeed", "rainCheck", "farmStand", "greatPumpkin", "firstCatch", "bigOne", "legendCatch", "pondScholar", "fullTank", "junkDealer"]],
   ["Kitchen and trade", ["firstDish", "burntOffering", "wellFed", "sharing", "fortuneTold", "cookbook", "firstTrade", "wellTraveled"]],
-  ["Residents", ["happyToHelp"]],
+  ["Residents", ["happyToHelp", "cloverFriend", "mortimerFriend"]],
   ["Secrets", ["whoAreYou", "foodComa", "danceFloor"]],
 ];
 
@@ -95,6 +96,8 @@ export function unlock(id) {
 // What the server says you just earned: pop-ups, and a line for friends.
 // (Lots of tiers at once, like the first time, get one pop-up.)
 export function showBankEvents(events) {
+  // A new friendship heart with a resident (Update 6).
+  for (const e of events) if (e.type === "hearts") showToast(heartToast(e));
   for (const e of events) {
     if (e.type !== "achievement" || !byId[e.id]) continue;
     showToast({ ...byId[e.id], label: "Achievement!" });

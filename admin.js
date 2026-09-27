@@ -251,6 +251,10 @@ function meTab() {
       btn("Unlock all", () => (unlockAllQuietly(), "Every achievement unlocked (quietly: no pop-ups or crumbs).")),
       btn("Reset all", () => (resetAchievements(), "Achievements and their counters reset."), { danger: true, confirm: { title: "Reset all your achievements?", text: "Every achievement, tier and counter (hours, chats, fish...) goes back to nothing. There's no undo.", yes: "Reset all" } }),
     ]),
+    row("Resident hearts", [
+      btn("+1 heart each", () => (bank("adminHearts"), "One more heart with Clover and Mortimer.")),
+      btn("Back to none", () => (bank("adminHearts", { reset: true }), "Friendship with the residents is back to nothing."), { danger: true, confirm: { title: "Reset your friendship with the residents?", text: "Your hearts with Clover and Mortimer go back to none. Recipes you learned and achievements stay.", yes: "Reset" } }),
+    ]),
     row("Daily limits", [btn("Reset mine", async () => (await admin("/api/admin/reset-limits", { name: accountName() }), "Today's fortune cookie, the focus bonus, this week's merchant limits and today's resident requests are fresh again."))], "fortune cookie, focus bonus, merchant, residents' requests"),
     section("Go"),
     row("Jump to", [picker]),

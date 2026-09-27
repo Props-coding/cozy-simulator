@@ -5,7 +5,7 @@
 //
 // Friends only send the title's id; the words come from config.js, so a
 // title always reads the same for everyone.
-import { tierOf, hasAchievement, myStats, collect, showToast } from "./achievements.js";
+import { tierOf, hasAchievement, myStats, collect, showToast, ACHIEVEMENTS } from "./achievements.js";
 import { levelFor } from "./reputation.js";
 
 const allTitles = () => CONFIG.titles ?? [];
@@ -22,7 +22,11 @@ export function titleSource(title) {
     const track = (CONFIG.tieredAchievements ?? []).find((t) => t.id === title.tier);
     return `${track?.name ?? title.tier}: ${CONFIG.achievementTiers?.[title.level - 1]?.name ?? "tier " + title.level}`;
   }
-  if (title.achievement) return "A secret";
+  if (title.achievement) {
+    // A one-time achievement: say which (unless it's a secret one).
+    const a = ACHIEVEMENTS.find((x) => x.id === title.achievement);
+    return a && !a.secret ? a.desc : "A secret";
+  }
   return "";
 }
 

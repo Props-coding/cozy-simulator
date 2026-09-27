@@ -6,10 +6,11 @@
 // depends on the time of day, what they're doing and the weather. A
 // second tab has today's request: one thing each resident would love (a
 // crop, a fish, a dish...), paid for in crumbs by the house server (the
-// bank), from the lists in config.js (residents.requests).
+// bank), from the lists in config.js (residents.requests). Talking, helping
+// and gifts build friendship hearts, which open their stories and recipes.
 import { openNpc, npcSay, refreshNpc } from "./npc.js";
 import { bank, myWallet, loadBank } from "./bank.js";
-import { itemInfo, basketCount } from "./basket.js";
+import { itemInfo, basketCount, basketItems } from "./basket.js";
 import { playCrumbSound } from "./audio.js";
 
 const pick = (lines) => lines[Math.floor(Math.random() * lines.length)];
@@ -178,40 +179,155 @@ const WHO = {
   },
 };
 
+// --- Friendship (step 3) ---
+const H = () => CONFIG.residents.hearts;
+const friendOf = (id) => myWallet().friends?.[id] ?? { points: 0, hearts: 0, chatted: false, gifted: false };
+
+// How they react to a gift, by what they think of it.
+const GIFT_LINES = {
+  clover: {
+    loved: ["oh! oh my goodness. this is exactly what i wanted. how did you know?!", "for me? you shouldn't have. no, you absolutely should have. thank you!"],
+    liked: ["how lovely! this'll go straight into something tasty.", "ooh, thank you! i'll find a use for this, don't you worry."],
+    neutral: ["oh! thank you, sweetpea. i'll... find a place for it.", "that's very thoughtful. very... thoughtful."],
+    disliked: ["oh. oh dear. um. thank you? it's... wriggling. or it smells like it would.", "that's, um. i'll put it by the door. outside the door."],
+  },
+  mortimer: {
+    loved: ["hoo! oh, this is splendid. truly splendid. i'm quite overcome.", "for me? i... i don't know what to say. and i always know what to say."],
+    liked: ["most thoughtful. thank you kindly.", "ah, very nice. i shall enjoy this after the next chapter."],
+    neutral: ["hm. thank you. i'll catalogue it under 'miscellaneous'.", "how... unexpected. thank you."],
+    disliked: ["ah. hm. i'll put it somewhere. somewhere far from the books.", "i see. well. it's the thought that counts. i'm told."],
+  },
+};
+
+// The Gift tab: anything in your basket (but seeds and bait), one gift a
+// day for each resident.
+function giftRows(id) {
+  if (friendOf(id).gifted) return [];
+  return basketItems()
+    .filter(([item]) => /^(crop|fish|dish|junk|food):/.test(item))
+    .sort(([a], [b]) => itemInfo(a).group.localeCompare(itemInfo(b).group) || itemInfo(a).name.localeCompare(itemInfo(b).name))
+    .map(([item, n]) => {
+      const info = itemInfo(item);
+      return {
+        icon: info.icon,
+        name: info.name,
+        note: `You have ${n}.`,
+        actions: [
+          {
+            label: "Give",
+            soft: true,
+            run: async () => {
+              const answer = await bank("residentGift", { id, item });
+              if (!answer) return null;
+              return pick(GIFT_LINES[id][answer.taste] ?? GIFT_LINES[id].neutral);
+            },
+          },
+        ],
+      };
+    });
+}
+
+// The Recipes tab: what they teach good friends, cheaper for close ones.
+function recipeRows(id) {
+  const { hearts } = friendOf(id);
+  if (hearts < H().recipesAt) return [];
+  const known = myWallet().recipes ?? [];
+  const cheaper = hearts >= H().discountAt;
+  return (CONFIG.residents.recipes[id] ?? []).map((entry) => {
+    const r = CONFIG.kitchen.recipes.find((x) => x.id === entry.id);
+    if (!r) return null;
+    const have = known.includes(r.id);
+    const price = cheaper ? Math.round(entry.price * (1 - H().discount)) : entry.price;
+    const boost = CONFIG.kitchen.boosts[r.boost];
+    return {
+      icon: have ? r.icon : "📜",
+      name: r.name + (have ? " (in your book)" : ""),
+      note: `${r.ingredients.map((i) => (i === "fish" ? "any fish" : itemInfo(i).name)).join(" + ")}.${boost ? ` ${boost.icon} ${boost.name}.` : ""}${cheaper && !have ? " (A friend's price!)" : ""}`,
+      price: have ? undefined : price,
+      actions: have
+        ? []
+        : [
+            {
+              label: "Learn",
+              disabled: myWallet().crumbs < price,
+              run: async () => {
+                if (!(await bank("buyResidentRecipe", { from: id, id: r.id }))) return null;
+                playCrumbSound();
+                return id === "clover" ? "there! now you know it too. don't tell doug, he gets jealous." : "there. copied out in my best hand. do return the favor by cooking it well.";
+              },
+            },
+          ],
+    };
+  }).filter(Boolean);
+}
+
+// The pop-up when you reach a new heart (achievements.js shows it).
+export function heartToast(e) {
+  const name = WHO[e.id]?.name ?? e.id;
+  const story = (CONFIG.residents.stories[e.id] ?? []).find((st) => st.hearts === e.hearts);
+  const desc =
+    e.hearts >= H().maxHearts ? `You're the best of friends!`
+    : e.hearts === H().recipesAt ? `${name} will teach you recipes now (their Recipes tab).`
+    : e.hearts === H().discountAt ? `${name}'s recipes are cheaper for you now.`
+    : story ? `${name} has something new to tell you: "${story.name}"`
+    : "Keep visiting to become better friends.";
+  return { kind: "tier", icon: "💗", label: "Friendship!", name: `${name}: ${e.hearts} ${e.hearts === 1 ? "heart" : "hearts"}`, desc, crumbs: 0 };
+}
+
 // Opens a resident's window (main.js calls this when you press E by one).
 export function talkToResident(id) {
   const r = RESIDENTS.find((x) => x.id === id);
   const who = WHO[id];
   const state = r && residentState(r);
   if (!who || !state) return;
+  const hearts = () => ({ have: friendOf(id).hearts, max: H().maxHearts });
   if (state.asleep) {
     openNpc({
       name: who.name,
       icon: who.icon,
       color: who.color,
       pitch: 120,
+      hearts,
       hello: ["zzz... hoo... five more minutes... zzz", "mm... overdue... zzz...", "zzz... the dewey decimal... zzz"],
       tabs: [{ id: "asleep", label: "Shh", items: () => [], empty: "Mortimer sleeps through the day on his perch. He wakes up around 7 PM (hometown time)." }],
     });
     return;
   }
   const hello = who.hello[partOfDay()] ?? Object.values(who.hello)[0];
+  // The first chat of the day is a little friendship (the server counts
+  // it once a day).
+  const chatted = async () => {
+    if (!friendOf(id).chatted) await bank("residentChat", { id });
+  };
   openNpc({
     name: who.name,
     icon: who.icon,
     color: who.color,
     pitch: who.pitch,
+    hearts,
     hello,
     tabs: [
       {
         id: "chat",
         label: "Chat",
-        items: () =>
-          who.topics.map((topic) => ({
+        items: () => [
+          ...who.topics.map((topic) => ({
             icon: topic.icon,
             name: topic.name,
-            actions: [{ label: "Ask", soft: true, run: async () => topic.say() }],
+            actions: [{ label: "Ask", soft: true, run: async () => (await chatted(), topic.say()) }],
           })),
+          // Their stories, opening with friendship.
+          ...(CONFIG.residents.stories[id] ?? []).map((story) => {
+            const open = friendOf(id).hearts >= story.hearts;
+            return {
+              icon: open ? story.icon : "🔒",
+              name: open ? story.name : "Something more personal",
+              note: open ? "" : `Opens at ${story.hearts} hearts.`,
+              locked: !open,
+              actions: open ? [{ label: "Ask", soft: true, run: async () => (await chatted(), story.line) }] : [],
+            };
+          }),
+        ],
       },
       {
         id: "request",
@@ -220,10 +336,26 @@ export function talkToResident(id) {
         items: () => requestRows(id),
         empty: "No request today.",
       },
+      {
+        id: "gift",
+        label: "Give a gift",
+        onOpen: () => npcSay(friendOf(id).gifted ? (id === "clover" ? "you already spoiled me today! come back tomorrow." : "one gift a day is more than generous. tomorrow, perhaps.") : id === "clover" ? "a present? for me? you don't have to! ...what is it?" : "a gift? how civilized. let's see."),
+        items: () => giftRows(id),
+        get empty() {
+          return friendOf(id).gifted ? `You've given ${who.name} a gift today. One a day: come back tomorrow!` : "Nothing to give yet. Grow, fish or cook something first!";
+        },
+      },
+      {
+        id: "recipes",
+        label: "Recipes",
+        onOpen: () => npcSay(friendOf(id).hearts >= H().recipesAt ? (id === "clover" ? "my favorites! well, some of them. the rest are secret." : "recipes from my collection. mostly from cookbooks. some from memory.") : id === "clover" ? "my recipes? oh, maybe once we know each other a little better!" : "my recipes are for friends of the library. give it time."),
+        items: () => recipeRows(id),
+        empty: `${who.name} teaches recipes to good friends (${H().recipesAt} hearts).`,
+      },
     ],
   });
-  // Today's request comes with your wallet: fetch it fresh, in case the
-  // day turned over since it last came.
+  // Today's request and friendship come with your wallet: fetch it fresh,
+  // in case the day turned over since it last came.
   loadBank().then(refreshNpc).catch(() => {});
 }
 
