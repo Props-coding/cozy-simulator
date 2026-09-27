@@ -2,7 +2,7 @@
 // together): name tags, room signs, door tags, lights, the lawn and rain,
 // decorating helpers, and drawing a whole frame (drawScene).
 
-// Name tag and optional badge (like "eating"). Drawn in a last pass so
+// Name tag and optional badge (like "sleeping"). Drawn in a last pass so
 // they stay readable even when the player is behind furniture or a wall.
 // How far each player's name tag is lifted to clear their hat right now
 // (eased, so it glides when they change hats). Keyed by player id.
@@ -461,7 +461,7 @@ function drawDoorTags(ctx, me) {
     const fade = Math.max(0, Math.min(1, (signFade[id] || 0) + (near ? step : -step)));
     signFade[id] = fade;
     if (fade === 0) continue;
-    const label = inYard ? (door.id === "kitchen" ? "🏠 Kitchen (Dinner)" : "🏠 Front door (elevator)") : "🌳 Out to the yard";
+    const label = inYard ? "🏠 Front door (elevator)" : "🌳 Out to the yard";
     const c = toScreen(dx + 0.8, dy);
     const w = ctx.measureText(label).width + 14, h = 17;
     // (In the house the doorway is in the bottom wall, so the tag sits beside it.)

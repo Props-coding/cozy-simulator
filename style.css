@@ -4746,14 +4746,15 @@ canvas.house-icon {
   color: #9a6a1e;
 }
 
-/* Landing a fish: a bar along the bottom of the house, with a green zone
-   and a marker sliding back and forth. */
+/* Reeling in a fish: a card along the bottom of the house with two
+   meters. Tension (green, then orange, then red: too tight snaps the
+   line; grey when it's too slack) and Line (how far in the fish is). */
 #fishing-bar:not([hidden]) {
   position: absolute;
   left: 50%;
   bottom: 24px;
   transform: translateX(-50%);
-  width: min(420px, calc(100% - 40px));
+  width: min(440px, calc(100% - 40px));
   box-sizing: border-box;
   padding: 10px 16px 14px;
   background: #fff7e6;
@@ -4761,6 +4762,7 @@ canvas.house-icon {
   border-radius: 20px;
   box-shadow: 0 10px 28px rgba(60, 40, 20, 0.35);
   cursor: pointer;
+  touch-action: none;
   animation: pop-in 0.15s ease-out;
   z-index: 5;
 }
@@ -4771,31 +4773,65 @@ canvas.house-icon {
   color: #4a3a2c;
 }
 
+.fishing-meter {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8em;
+  font-weight: 800;
+  color: #8a6a4a;
+  text-align: left;
+}
+
 .fishing-track {
   position: relative;
-  height: 22px;
+  height: 16px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #7ab0d0, #5a8ab0);
   overflow: hidden;
 }
 
-#fishing-zone {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: #8fd07a;
-  box-shadow: inset 0 0 0 2px #5fa04a;
+.fishing-track.tension {
+  background: linear-gradient(90deg, #d8d2c6 0 8%, #e8f0dc 8% 60%, #f6e2c0 60% 85%, #f4c8c0 85%);
 }
 
-#fishing-marker {
+.fishing-track.line {
+  overflow: visible;
+  background: linear-gradient(180deg, #7ab0d0, #5a8ab0);
+}
+
+#fishing-tension {
+  height: 100%;
+  width: 30%;
+  border-radius: 999px;
+  background: #6fb05a;
+}
+
+#fishing-tension.warn {
+  background: #e0963a;
+}
+
+#fishing-tension.danger {
+  background: #d0463a;
+}
+
+#fishing-tension.slack {
+  background: #a8a09a;
+}
+
+#fishing-line {
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+#fishing-fish {
   position: absolute;
-  top: -2px;
-  bottom: -2px;
-  width: 6px;
-  margin-left: -3px;
-  border-radius: 3px;
-  background: #c0554a;
-  box-shadow: 0 0 0 2px #fff7e6;
+  top: 50%;
+  transform: translate(-50%, -50%) scaleX(-1);
+  font-size: 18px;
+  line-height: 1;
 }
 
 /* --- Kitchen & Trade (Update 5) --- */

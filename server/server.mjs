@@ -641,7 +641,7 @@ let GAME = null;
 async function loadGame() {
   const files = ["config.js", "catalog.js", "world.js"];
   const code = (await Promise.all(files.map((f) => readFile(join(GAME_DIR, f), "utf8")))).join("\n;\n");
-  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST })", {}, { timeout: 5000 });
+  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond })", {}, { timeout: 5000 });
   const byId = (list) => Object.fromEntries(list.map((x) => [x.id, x]));
   GAME = {
     CONFIG: g.CONFIG,
@@ -656,6 +656,8 @@ async function loadGame() {
     JUNK: byId(g.CONFIG.junk),
     FOOD: byId(g.CONFIG.kitchen.pantry),
     RECIPES: byId(g.CONFIG.kitchen.recipes),
+    pondShadows: g.pondShadows,
+    inPond: g.inPond,
     TRACKS: g.CONFIG.tieredAchievements ?? [],
     TIERS: g.CONFIG.achievementTiers ?? [],
   };
@@ -898,11 +900,15 @@ function fishBiting(fish) {
   if (when.season && !when.season.includes(season())) return false;
   return true;
 }
-function pickCatch(bait, rod) {
+// What bites, from the bait, the rod and the shadow that came to the
+// bobber ("small", "medium" or "large": bigger shadows bring the rarer of
+// the bait's fish more often).
+function pickCatch(bait, rod, shadow = "small") {
   const junk = GAME.CONFIG.junk;
   if (Math.random() < GAME.CONFIG.fishing.junkChance) return { junk: junk[Math.floor(Math.random() * junk.length)].id };
+  const rarer = GAME.CONFIG.fishing.shadows[shadow]?.rarer ?? 0;
   const tiers = [...bait.catches].sort((a, b) => a - b);
-  const weights = tiers.map((_, i) => (i === 0 ? 1 : 0.35 + rod.luck));
+  const weights = tiers.map((_, i) => (i === 0 ? 1 : 0.35 + rod.luck + rarer));
   let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
   let tier = tiers[0];
   for (let i = 0; i < tiers.length; i++) {
@@ -917,6 +923,20 @@ function pickCatch(bait, rod) {
     if (pool.length) return { fish: pool[Math.floor(Math.random() * pool.length)].id };
   }
   return { junk: junk[0].id };
+}
+
+// Which shadow the page says came to the bobber, if it really did: the
+// server works out where that shadow swam between the cast and now, and
+// it has to have come within reach of where the bobber landed. Otherwise
+// (or with no shadow) it's a small fish.
+function shadowAtBobber(id, spot, from, to) {
+  if (!spot || !Number.isInteger(id)) return "small";
+  const reach = GAME.CONFIG.fishing.shadows.reach + 0.35; // (a little slack for timing)
+  for (let t = from; t <= to; t += 250) {
+    const s = GAME.pondShadows(t).find((x) => x.id === id);
+    if (s && Math.hypot(s.x - spot.bx, s.y - spot.by) <= reach) return s.size;
+  }
+  return "small";
 }
 
 // --- The garden: how grown a crop is (the same sums the page does) ---
@@ -1124,25 +1144,33 @@ const BANK = {
   // Casting, then (after a bite) hooking, then landing it. A bite can't
   // come sooner than the quickest bite the rod allows, so nobody can
   // fish faster than the pond does.
-  cast(w) {
+  // Where the bobber landed (out on the pond) is remembered, so the
+  // shadow that bites is the one that really swam up to it.
+  cast(w, b) {
+    const bx = Number(b.bx), by = Number(b.by);
+    if (!Number.isFinite(bx) || !Number.isFinite(by) || !GAME.inPond(bx, by)) throw new Oops(400, "That's not on the pond.");
     w.fishing.castAt = Date.now();
+    w.fishing.castSpot = { bx, by };
     w.fishing.pending = null;
     return {};
   },
-  hook(w) {
+  hook(w, b) {
     const f = w.fishing;
     const now = Date.now();
     const soonest = GAME.CONFIG.fishing.biteSeconds[0] * rodOf(w).bite * (boosted(w, "quickBite") ? QUICK_BITE : 1) * 1000 - 1000;
     if (!f.castAt || now - f.castAt < soonest) throw new Oops(409, "Nothing's biting yet.");
+    const castAt = f.castAt;
     f.castAt = 0;
     const bait = baitInUse(w);
     if (bait.price) takeOut(w, `bait:${bait.id}`, 1);
     const rod = rodOf(w);
-    const caught = pickCatch(bait, boosted(w, "lucky") ? { ...rod, luck: rod.luck + 0.3 } : rod);
-    f.pending = { ...caught, at: now };
-    return { rarity: caught.fish ? GAME.FISH[caught.fish].rarity : 1, junk: !!caught.junk };
+    const shadow = shadowAtBobber(b.shadow, f.castSpot, castAt, now);
+    const caught = pickCatch(bait, boosted(w, "lucky") ? { ...rod, luck: rod.luck + 0.3 } : rod, shadow);
+    f.pending = { ...caught, shadow, at: now };
+    const fish = caught.fish ? GAME.FISH[caught.fish] : null;
+    return { rarity: fish ? fish.rarity : 1, junk: !!caught.junk, pull: fish?.pull ?? "steady", shadow };
   },
-  land(w, b, ev) {
+  land(w, b, ev, { user }) {
     const f = w.fishing;
     const p = f.pending;
     if (!p || Date.now() - p.at > 60_000) throw new Oops(409, "It got away.");
@@ -1155,7 +1183,14 @@ const BANK = {
     }
     const fish = GAME.FISH[p.fish];
     const [small, big] = fish.size;
-    const size = Math.round(small + Math.random() ** 1.6 * (big - small));
+    // The shadow's size picks the part of the fish's size range.
+    const [from, to] = GAME.CONFIG.fishing.shadows[p.shadow]?.sizes ?? [0, 1];
+    const size = Math.round(small + (from + (to - from) * Math.random() ** 1.3) * (big - small));
+    // The house's biggest of each fish (everyone's).
+    db.fishRecords ??= {};
+    const best = db.fishRecords[fish.id];
+    const houseRecord = !best || size > best.size;
+    if (houseRecord) db.fishRecords[fish.id] = { name: user.name, size, at: Date.now() };
     const first = !f.log[fish.id];
     const entry = (f.log[fish.id] ??= { n: 0, best: 0 });
     entry.n++;
@@ -1168,7 +1203,7 @@ const BANK = {
     if (fish.rarity >= 4) grant(w, "bigOne", ev);
     if (fish.rarity >= 5) grant(w, "legendCatch", ev);
     if (Object.keys(f.log).length >= 10) grant(w, "pondScholar", ev);
-    return { fish: fish.id, size, first, record, levelBefore, level: fishingLevel(f.xp) };
+    return { fish: fish.id, size, first, record, best: entry.best, houseRecord, houseBest: houseRecord ? null : best, levelBefore, level: fishingLevel(f.xp) };
   },
   lose(w) {
     w.fishing.pending = null;
@@ -2020,6 +2055,13 @@ const routes = {
     checkTiers(w, ev);
     await saveDb();
     return { wallet: publicWallet(w), events: ev, result };
+  },
+
+  // The biggest of each fish anyone in the house has caught.
+  "GET /api/fish-records": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    return { records: db.fishRecords ?? {} };
   },
 
   // --- The trading post's stall, and whether the merchant's here (Update 5) ---

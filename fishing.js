@@ -23,6 +23,7 @@ import { playClickSound, playCrumbSound, playWaterSound, playHarvestSound, playA
 import { crumbBalance } from "./shop.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
 import { bank, myWallet } from "./bank.js";
+import { serverApi } from "./account.js";
 import { recipeShopRows } from "./kitchen.js";
 import { openNpc, refreshNpc } from "./npc.js";
 import { setTankFish, tankFish } from "./home.js";
@@ -72,11 +73,18 @@ function whenText(fish) {
   return parts.length ? "Only " + parts.join(", ") : "Any time";
 }
 
-// --- Casting, biting and reeling ---
-// state: null, or { phase: "waiting" | "bite" | "reeling", bx, by, biteAt, catch }
+// --- Casting, nibbles, the bite, and the tension reel ---
+// Cast (press E at the water, or click the pond to aim), wait for a fish
+// shadow to swim up to your bobber, let it nibble (don't strike yet!),
+// then press E on the real bite. Then the tension reel: hold Space (or the
+// mouse) to reel, let go to give line. Too tight and the line snaps; too
+// loose for too long and the fish slips away.
+//
+// state: null, or { phase: "waiting" | "nibble" | "bite" | "hooking" |
+// "reeling", bx, by, castAt, shadow (the shadow that came, or null) }
 let state = null;
 let hooks = { notice: () => {} };
-let biteTimer = null;
+let timer = null;
 
 export function initFishing(options) {
   hooks = { ...hooks, ...options };
@@ -90,66 +98,111 @@ export function isReeling() {
   return state?.phase === "reeling";
 }
 
-// What friends see: your bobber (and whether a fish is biting).
+// What friends see: your bobber (twitching on a nibble, dipping on a bite).
 export function fishingLine() {
-  return state ? { bx: state.bx, by: state.by, bite: state.phase !== "waiting" } : null;
+  return state ? { bx: state.bx, by: state.by, bite: ["bite", "hooking", "reeling"].includes(state.phase), nibble: state.phase === "nibble" && performance.now() < (state.twitchUntil ?? 0) } : null;
 }
 
 export function fishingHint() {
   if (!state) {
     const bait = baitInUse();
     const baitText = bait.price ? `${bait.name} ×${basketCount(`bait:${bait.id}`)}` : "no bait";
-    return `Press E to cast your ${myRod().name.toLowerCase()} (${baitText}).`;
+    return `Press E to cast your ${myRod().name.toLowerCase()} (${baitText}), or click the pond to aim at a fish.`;
   }
-  if (state.phase === "waiting") return "Waiting for a bite... (E or walking reels your line back in)";
+  if (state.phase === "waiting") return "Waiting for a fish to swim over... (E or walking reels your line back in)";
+  if (state.phase === "nibble") return "Something's nibbling... wait for the real bite!";
   if (state.phase === "bite") return "A bite! Press E now!";
   return "";
 }
 
-// Press E at the water.
+// Press E at the water: cast straight out, strike on a bite, or (too
+// soon) spook it.
 export function useFishing(spot) {
-  if (!state) return cast(spot);
+  if (!state) return spot && castAt(spot);
   if (state.phase === "bite") return hook();
+  if (state.phase === "nibble") return stopFishing("Too soon! That was only a nibble, and the fish swam off. Cast again.");
   if (state.phase === "waiting") stopFishing("You reeled your line back in.");
 }
 
-function cast(spot) {
-  const [low, high] = CONFIG.fishing.biteSeconds;
-  const wait = (low + Math.random() * (high - low)) * myRod().bite * 1000;
-  state = { phase: "waiting", bx: spot.bx, by: spot.by };
-  bank("cast");
+// Cast to a spot on the pond ({ bx, by }): E casts straight out; clicking
+// the pond (main.js) aims.
+export function castAt(spot) {
+  if (state || !inPond(spot.bx, spot.by)) return false;
+  state = { phase: "waiting", bx: spot.bx, by: spot.by, castAt: Date.now(), shadow: null };
+  bank("cast", { bx: spot.bx, by: spot.by });
   playWaterSound();
-  clearTimeout(biteTimer);
-  biteTimer = setTimeout(bite, wait);
+  clearTimeout(timer);
+  timer = setTimeout(watch, 250);
+  return true;
+}
+
+// Bites come a little faster with a better rod (and the Quick Bites boost).
+function biteScale() {
+  return myRod().bite * (myWallet().boost?.id === "quickBite" && myWallet().boost.until > Date.now() ? 0.7 : 1);
+}
+
+// While waiting: once the soonest bite could come, the first shadow to
+// swim within reach of the bobber takes an interest. If none comes by the
+// longest wait, a little one bites anyway.
+function watch() {
+  if (state?.phase !== "waiting") return;
+  const [low, high] = CONFIG.fishing.biteSeconds;
+  const waited = (Date.now() - state.castAt) / 1000;
+  if (waited >= low * biteScale()) {
+    const near = pondShadows(Date.now()).find((s) => Math.hypot(s.x - state.bx, s.y - state.by) <= CONFIG.fishing.shadows.reach);
+    if (near || waited >= high * biteScale()) return startNibbles(near ?? null);
+  }
+  timer = setTimeout(watch, 250);
+}
+
+function startNibbles(shadow) {
+  state.phase = "nibble";
+  state.shadow = shadow?.id ?? null;
+  POND_VIEW.locked = shadow ? { id: shadow.id, x: state.bx, y: state.by, size: shadow.size } : { id: -1, x: state.bx, y: state.by, size: "small" };
+  const [few, most] = CONFIG.fishing.nibbles;
+  let left = few + Math.floor(Math.random() * (most - few + 1));
+  const next = () => {
+    if (state?.phase !== "nibble") return;
+    if (left-- <= 0) return bite();
+    state.twitchUntil = performance.now() + 250;
+    playWaterSound();
+    const [a, b] = CONFIG.fishing.nibbleSeconds;
+    timer = setTimeout(next, (a + Math.random() * (b - a)) * 1000);
+  };
+  const [a, b] = CONFIG.fishing.nibbleSeconds;
+  timer = setTimeout(next, (a + Math.random() * (b - a)) * 1000);
 }
 
 function bite() {
   if (!state) return;
   state.phase = "bite";
   playTug();
-  biteTimer = setTimeout(() => stopFishing("It got away! Press E faster when the ! pops up."), CONFIG.fishing.hookSeconds * 1000);
+  timer = setTimeout(() => stopFishing("It got away! Press E faster when the ! pops up."), CONFIG.fishing.hookSeconds * 1000);
 }
 
-// Hooked! The server uses up the bait and decides what's on the line
-// (the page only learns how hard it pulls: its rarity).
+// Hooked! The server uses up the bait, checks which shadow came to the
+// bobber, and decides what's on the line (the page only learns how hard it
+// pulls: its rarity and how it fights).
 async function hook() {
-  clearTimeout(biteTimer);
+  clearTimeout(timer);
   state.phase = "hooking";
-  const caught = await bank("hook");
+  const caught = await bank("hook", { shadow: state.shadow });
   if (!state) return;
   if (!caught) return stopFishing("It got away!");
   state.phase = "reeling";
   state.catch = caught;
-  startReel(caught.rarity);
+  startReel(caught);
 }
 
-// Stops fishing (walked away, reeled in, or it got away), with a message.
+// Stops fishing (walked away, landed it, or it got away), with a message.
 export function stopFishing(message) {
   if (!state) return;
-  clearTimeout(biteTimer);
+  clearTimeout(timer);
   state = null;
+  POND_VIEW.locked = null;
   reelBar.hidden = true;
   cancelAnimationFrame(reelFrame);
+  reel = null;
   if (message) hooks.notice(message);
 }
 
@@ -159,47 +212,82 @@ function playTug() {
   setTimeout(playWaterSound, 180);
 }
 
-// --- The reeling bar ---
+// --- The tension reel ---
 const reelBar = document.getElementById("fishing-bar");
-const reelZone = document.getElementById("fishing-zone");
-const reelMarker = document.getElementById("fishing-marker");
+const reelSay = document.getElementById("fishing-say");
+const tensionFill = document.getElementById("fishing-tension");
+const lineFill = document.getElementById("fishing-line");
+const fishMark = document.getElementById("fishing-fish");
 let reelFrame = null;
-let reel = null; // { zoneStart, zoneWidth, speed, started }
+let reel = null; // { progress, tension, slack, pull, strength, nextTug, tugUntil, holding, last }
+const PULL_WORDS = { steady: "It's pulling steadily.", darting: "It's darting about!", heavy: "It's heavy! Take it slow." };
 
-function startReel(rarity) {
-  const zoneWidth = Math.max(0.08, myRod().zone * (1 - (rarity - 1) * 0.12));
-  reel = { zoneStart: 0.15 + Math.random() * (0.7 - zoneWidth), zoneWidth, speed: 0.55 + rarity * 0.22, started: performance.now() };
-  reelZone.style.left = reel.zoneStart * 100 + "%";
-  reelZone.style.width = reel.zoneWidth * 100 + "%";
+function startReel(caught) {
+  const R = CONFIG.fishing.reel;
+  const pull = CONFIG.fishing.pulls[caught.pull] ? caught.pull : "steady";
+  reel = { progress: R.start, tension: 0.3, slack: 0, pull, strength: caught.junk ? 0.6 : 1 + R.rarityPull * (caught.rarity - 1), nextTug: 0, tugUntil: 0, holding: false, last: performance.now(), t: 0 };
+  reelSay.textContent = `${caught.junk ? "Something's on the line." : PULL_WORDS[pull]} Hold Space to reel in, let go to give it line.`;
+  fishMark.textContent = caught.junk ? "❔" : caught.rarity >= 4 ? "🐠" : "🐟";
   reelBar.hidden = false;
-  const move = () => {
-    reelMarker.style.left = markerAt() * 100 + "%";
-    reelFrame = requestAnimationFrame(move);
-  };
-  move();
+  reelFrame = requestAnimationFrame(stepReel);
 }
 
-// Where the marker is (0 to 1), bouncing back and forth.
-function markerAt() {
-  const t = ((performance.now() - reel.started) / 1000) * reel.speed;
-  const p = t % 2;
-  return p < 1 ? p : 2 - p;
-}
-
-function tryLand() {
-  const at = markerAt();
-  const inZone = at >= reel.zoneStart && at <= reel.zoneStart + reel.zoneWidth;
-  const caught = state.catch;
-  if (!inZone) {
-    bank("lose");
-    stopFishing(caught.junk ? "Whatever it was, it slipped off the hook." : `The ${RARITY[caught.rarity].toLowerCase()} fish got away! So close.`);
+function stepReel(now) {
+  if (!reel) return;
+  const R = CONFIG.fishing.reel;
+  const P = CONFIG.fishing.pulls[reel.pull];
+  const dt = Math.min(0.05, (now - reel.last) / 1000);
+  reel.last = now;
+  reel.t += dt;
+  // How hard the fish pulls right now: its steady pull, sudden tugs, and
+  // (heavy ones) a slow swell.
+  let pull = P.pull * reel.strength;
+  if (P.tug) {
+    if (reel.t >= reel.nextTug) {
+      const [a, b] = P.every;
+      reel.tugUntil = reel.t + 0.35;
+      reel.nextTug = reel.t + a + Math.random() * (b - a);
+    }
+    if (reel.t < reel.tugUntil) pull += P.tug * reel.strength;
+  }
+  if (reel.pull === "heavy") pull *= 1 + 0.15 * Math.sin(reel.t * 1.3);
+  const ease = 1.25 - myRod().zone; // (a stronger rod takes the strain better)
+  if (reel.holding) {
+    reel.tension += R.tensionUp * pull * ease * dt;
+    reel.progress += R.reelSpeed * (1 - Math.min(0.6, pull * 0.3)) * dt;
+  } else {
+    reel.tension -= R.tensionDown * dt;
+    reel.progress -= R.giveBack * pull * dt;
+  }
+  reel.tension = Math.max(0, Math.min(1.05, reel.tension));
+  reel.slack = reel.tension < R.slackAt ? reel.slack + dt : 0;
+  showReel();
+  const what = state.catch.junk ? "Whatever it was" : `The ${RARITY[state.catch.rarity].toLowerCase()} fish`;
+  if (reel.tension >= 1) return failReel(`Snap! The line was too tight. ${what} got away.`);
+  if (reel.slack >= R.slackSeconds) return failReel(`The line went slack and ${what.toLowerCase()} slipped off the hook.`);
+  if (reel.progress <= 0) return failReel(`${what} swam off with the line. So close!`);
+  if (reel.progress >= 1) {
+    stopFishing(null);
+    land();
     return;
   }
-  stopFishing(null);
-  land();
+  reelFrame = requestAnimationFrame(stepReel);
 }
 
-// Landed: the server puts it in your basket and says what it was.
+function showReel() {
+  tensionFill.style.width = `${Math.min(100, reel.tension * 100)}%`;
+  tensionFill.className = reel.tension > 0.85 ? "danger" : reel.tension > 0.6 ? "warn" : reel.tension < CONFIG.fishing.reel.slackAt ? "slack" : "";
+  lineFill.style.width = `${Math.max(0, Math.min(100, reel.progress * 100))}%`;
+  fishMark.style.left = `${Math.max(0, Math.min(100, reel.progress * 100))}%`;
+}
+
+function failReel(message) {
+  bank("lose");
+  stopFishing(message);
+}
+
+// Landed: the server puts it in your basket and says what it was, and how
+// it measures up (your best, and the house's best).
 async function land() {
   const caught = await bank("land");
   if (!caught) return;
@@ -210,9 +298,10 @@ async function land() {
   } else {
     const fish = FISH[caught.fish];
     playHarvestSound();
-    const extra = caught.first ? " New in your fish log!" : caught.record ? " A new record!" : "";
-    hooks.notice(`You caught a ${fish.name} (${caught.size} cm, ${RARITY[fish.rarity].toLowerCase()})!${extra}`, 6000);
-    if (fish.rarity >= 4) hooks.post?.(`${fish.name} (${caught.size} cm)`, { id: fish.id, size: caught.size }); // (shared in the house chat)
+    const extra = caught.houseRecord ? " A new house record! 🏆" : caught.first ? " New in your fish log!" : caught.record ? " Your biggest yet!" : caught.houseBest ? ` (Your best: ${caught.best} cm. House best: ${caught.houseBest.size} cm, ${caught.houseBest.name}.)` : "";
+    hooks.notice(`You caught a ${fish.name} (${caught.size} cm, ${RARITY[fish.rarity].toLowerCase()})!${extra}`, 7000);
+    // Epic and legendary catches, and house records, go in the house chat.
+    if (fish.rarity >= 4 || caught.houseRecord) hooks.post?.(`${fish.name} (${caught.size} cm)${caught.houseRecord ? ", a new house record" : ""}`, { id: fish.id, size: caught.size, record: caught.houseRecord === true });
   }
   const levelNow = caught.level;
   if (levelNow > caught.levelBefore) {
@@ -223,22 +312,30 @@ async function land() {
   }
 }
 
-reelBar.addEventListener("click", () => isReeling() && tryLand());
-
-// While reeling, E, Space or a click lands the fish, and Escape lets go.
+// Reeling: hold Space (or press and hold on the bar) to reel; let go to
+// give line. Escape lets it go.
+const setHolding = (on) => reel && (reel.holding = on);
+reelBar.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  setHolding(true);
+});
+window.addEventListener("pointerup", () => setHolding(false));
 window.addEventListener("keydown", (e) => {
   if (!isReeling()) return;
   e.stopImmediatePropagation();
   const key = e.key.toLowerCase();
-  if (e.repeat) return;
-  if (key === "e" || key === " " || key === "enter") {
+  if (key === " " || key === "e") {
     e.preventDefault();
-    tryLand();
+    setHolding(true);
   } else if (key === "escape") {
     e.preventDefault();
-    stopFishing("You let it go.");
+    failReel("You let it go.");
   }
 });
+window.addEventListener("keyup", (e) => {
+  if (e.key === " " || e.key.toLowerCase() === "e") setHolding(false);
+});
+window.addEventListener("blur", () => setHolding(false));
 
 // --- Otis the otter ---
 const OTIS_HELLO = [
@@ -259,7 +356,7 @@ export function talkToOtis() {
       { id: "rods", label: "Rods", items: rodRows },
       { id: "bait", label: "Bait", items: baitRows },
       { id: "sell", label: "Sell fish", items: fishToSell, empty: "No fish to sell yet. Cast a line at the pond!" },
-      { id: "log", label: "Fish log", items: logRows },
+      { id: "log", label: "Fish log", items: logRows, onOpen: loadRecords },
       { id: "recipes", label: "Recipes", items: () => recipeShopRows("otis", "an old otter family secret. don't tell anyone.") },
     ],
   });
@@ -279,7 +376,7 @@ function rodRows() {
       const owned = mine().rods.includes(rod.id);
       const using = mine().rod === rod.id;
       const locked = level < rod.level;
-      const note = `Catch zone ${Math.round(rod.zone * 100)}%, bites ${Math.round((1 - rod.bite) * 100)}% quicker, luck +${Math.round(rod.luck * 100)}%.` + (locked ? ` Needs fishing level ${rod.level}.` : "");
+      const note = `Line strength ${Math.round(rod.zone * 250)}, bites ${Math.round((1 - rod.bite) * 100)}% quicker, luck +${Math.round(rod.luck * 100)}%.` + (locked ? ` Needs fishing level ${rod.level}.` : "");
       return {
         icon: locked ? "🔒" : rod.icon,
         name: rod.name + (using ? " (in hand)" : ""),
@@ -356,6 +453,17 @@ function fishToSell() {
   });
 }
 
+// The house's biggest of each fish (from the house server), for the log.
+let houseRecords = {};
+async function loadRecords() {
+  try {
+    houseRecords = (await serverApi("GET", "/api/fish-records")).records;
+    refreshNpc();
+  } catch {
+    // (the log shows without them)
+  }
+}
+
 function logRows() {
   const caught = Object.keys(mine().log).length;
   return [
@@ -365,7 +473,7 @@ function logRows() {
       .map((fish) => {
         const entry = mine().log[fish.id];
         return entry
-          ? { icon: fish.icon, name: `${fish.name} (${RARITY[fish.rarity].toLowerCase()})`, note: `Caught ${entry.n}, biggest ${entry.best} cm. ${whenText(fish)}.` }
+          ? { icon: fish.icon, name: `${fish.name} (${RARITY[fish.rarity].toLowerCase()})`, note: `Caught ${entry.n}, your biggest ${entry.best} cm${houseRecords[fish.id] ? `, house best ${houseRecords[fish.id].size} cm (${houseRecords[fish.id].name})` : ""}. ${whenText(fish)}.` }
           : { icon: "❔", name: `??? (${RARITY[fish.rarity].toLowerCase()})`, note: `Not caught yet. ${whenText(fish)}.`, locked: true };
       }),
   ];

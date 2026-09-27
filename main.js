@@ -90,7 +90,7 @@ import { startWeather } from "./weather.js";
 import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
 import { isNpcOpen } from "./npc.js";
 import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
-import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank } from "./fishing.js";
+import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank, castAt } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
 import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
@@ -1016,6 +1016,14 @@ canvas.addEventListener("click", (e) => {
   if (isDecorating() || uiBusy()) return;
   const r = canvas.getBoundingClientRect();
   const g = screenToGrid(canvas, e.clientX - r.left, e.clientY - r.top);
+  // At the pond's edge (or on the dock): click the water to cast there, if
+  // it's in reach.
+  if (!isFishing() && fishingSpot(player) && inPond(g.x, g.y)) {
+    const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+    if (Math.hypot(g.x - cx, g.y - cy) <= CONFIG.fishing.castReach) castAt({ bx: g.x, by: g.y });
+    else showNotice("That's too far to cast. Try somewhere closer.");
+    return;
+  }
   const hit = lastScenePlayers.find((p) => Math.hypot(g.x - (p.x + PLAYER_SIZE / 2), g.y - (p.y + PLAYER_SIZE - 0.45)) < 0.5);
   if (hit) openProfile(hit.name);
 });
@@ -2057,7 +2065,7 @@ onChat((message, peerId) => {
   const fish = CONFIG.fish.find((f) => f.id === message?.bigCatch?.id);
   if (fish) {
     const size = Math.round(Number(message.bigCatch.size)) || "?";
-    addChatLine({ channel: "house", system: true, text: `🎣 ${peerName} caught a ${fish.name} (${size} cm)!` });
+    addChatLine({ channel: "house", system: true, text: `${message.bigCatch.record === true ? "🏆" : "🎣"} ${peerName} caught a ${fish.name} (${size} cm)${message.bigCatch.record === true ? ", a new house record" : ""}!` });
     return;
   }
   // A friend went to bed, or got up.
@@ -2115,7 +2123,7 @@ let lastBedtimeNote = -Infinity;
 initPhone({
   peers: () => visiblePeers,
   doors: () => bedroomDoors().map((d) => ({ ...d, mine: isMe(d.owner) })),
-  isAway: () => amAsleep || getCurrentRoom(player).id === "dinner",
+  isAway: () => amAsleep,
   startLine: (peerId) => setWhisperTarget(peerId),
   stopLine: () => setWhisperTarget(null),
   color: () => myColor,
@@ -2194,11 +2202,11 @@ function updateSleep() {
   }
 }
 
-// The badge over someone: "eating" in Dinner, "sleeping" in bed.
+// The badge over someone: "sleeping" in bed, 🔨 working in the Workshop.
 function statusBadge(roomId, bed, name) {
   if (bed) return "sleeping";
   if (roomId === "workshop" && busyBuilders().has(String(name ?? "").toLowerCase())) return "🔨"; // working on a card in Doing
-  return roomId === "dinner" ? "eating" : null;
+  return null;
 }
 
 // Where someone asleep is drawn: in the middle of the bed with their head

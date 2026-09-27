@@ -124,10 +124,58 @@ const CONFIG = {
     xp: [5, 10, 20, 40, 80], // XP for a catch of each rarity (junk gives 1)
     levels: [0, 30, 80, 150, 250, 400, 600, 850, 1150, 1500, 2000, 2600, 3300, 4100, 5000],
     tankSize: 6, // how many fish fit in a bedroom fish tank
+    castReach: 4.5, // how far you can aim a cast (click the pond), in steps
+
+    // Fish shadows swimming in the pond (the same for everyone). Cast
+    // near one: a bigger shadow is a better, bigger fish. `reach` is how
+    // close (in steps) a shadow has to come to your bobber to bite. With no
+    // shadow near, a small fish bites after the longest wait. Each size:
+    // how often it shows up (`chance`), how much more often the rarer of
+    // your bait's fish bite (`rarer`), which part of a fish's size range it
+    // gives (`sizes`, 0 smallest to 1 biggest) and how big it's drawn.
+    shadows: {
+      count: 5,
+      reach: 0.9,
+      small: { chance: 0.55, rarer: 0, sizes: [0, 0.5], scale: 0.7 },
+      medium: { chance: 0.32, rarer: 0.35, sizes: [0.25, 0.8], scale: 1 },
+      large: { chance: 0.13, rarer: 0.9, sizes: [0.55, 1], scale: 1.45 },
+    },
+
+    // Nibbles before the real bite: the bobber twitches this many times
+    // ([fewest, most]), `nibbleSeconds` apart. Pressing E on a nibble
+    // spooks the fish (cast again; no bait is used).
+    nibbles: [1, 3],
+    nibbleSeconds: [0.7, 1.4],
+
+    // The tension reel. Hold Space (or the mouse) to reel in, let go to
+    // give line. Tension rises while you reel (faster the harder the fish
+    // pulls) and falls when you let go. At 1 the line snaps; below
+    // `slackAt` for `slackSeconds` the fish slips away. Reeling brings the
+    // fish in by `reelSpeed` a second (a full line is 1); giving line lets
+    // it swim back out a little. Rarer fish pull harder (`rarityPull` more
+    // per rarity), and better rods take the strain better.
+    reel: {
+      start: 0.25, // how far in the fish starts (0 to 1)
+      reelSpeed: 0.22,
+      giveBack: 0.08,
+      tensionUp: 0.55,
+      tensionDown: 0.7,
+      slackAt: 0.08,
+      slackSeconds: 1.5,
+      rarityPull: 0.14,
+    },
+    // How each kind of fish pulls (fish below say which): steady (an even
+    // pull), darting (sudden hard tugs), heavy (a strong, slow pull).
+    pulls: {
+      steady: { pull: 0.9, tug: 0, every: [0, 0] },
+      darting: { pull: 0.7, tug: 1.1, every: [0.8, 1.8] },
+      heavy: { pull: 1.25, tug: 0.25, every: [2.5, 4] },
+    },
   },
 
   // Rods, from Otis the otter by the dock. level: the fishing level you need
-  // before he'll sell it. zone: how wide the green "catch" zone is (0 to 1).
+  // before he'll sell it. zone: how well it takes the strain while reeling
+  // (0.2 to 0.4: a stronger rod's tension rises more slowly).
   // bite: how long bites take (0.6 is 40% quicker). luck: how often you
   // catch the rarer of the fish your bait can find (0 is never extra).
   rods: [
@@ -159,26 +207,26 @@ const CONFIG = {
   // night, false: only by day), rain (only while it rains), season (only in
   // these seasons). color: for fish tanks.
   fish: [
-    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 3, size: [8, 20], color: "#6a8ab8" },
-    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 3, size: [10, 25], color: "#c8b050" },
-    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 4, size: [8, 18], color: "#f0a040", when: { night: false } },
-    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 4, size: [6, 14], color: "#c8d0e0", when: { night: true } },
-    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 6, size: [25, 60], color: "#a08050" },
-    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 6, size: [7, 15], color: "#d05a3a" },
-    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 8, size: [20, 50], color: "#e08aa0", when: { season: ["spring", "autumn"] } },
-    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 8, size: [30, 80], color: "#6a6058", when: { night: true } },
-    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 12, size: [25, 60], color: "#5a8a4a" },
-    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 14, size: [40, 100], color: "#7a9a5a" },
-    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 18, size: [30, 70], color: "#f07a3a", when: { night: false } },
-    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 16, size: [40, 110], color: "#4a4a3a", when: { rain: true } },
-    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 30, size: [80, 180], color: "#7a7a80" },
-    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 35, size: [25, 45], color: "#5a6a3a", when: { season: ["summer"] } },
-    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 38, size: [30, 60], color: "#f2c230", when: { season: ["spring", "summer"] } },
-    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 40, size: [20, 40], color: "#d8d0f0", when: { night: true } },
-    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 75, size: [40, 80], color: "#f4f4f8" },
-    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 90, size: [40, 80], color: "#c86bb0", when: { rain: true } },
-    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 90, size: [60, 120], color: "#a8d8f0", when: { season: ["winter"] } },
-    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 125, size: [120, 200], color: "#4a4a44", when: { night: true, rain: true } },
+    { id: "bluegill", name: "Bluegill", icon: "🐟", rarity: 1, sell: 3, size: [8, 20], pull: "steady", color: "#6a8ab8" },
+    { id: "perch", name: "Perch", icon: "🐟", rarity: 1, sell: 3, size: [10, 25], pull: "darting", color: "#c8b050" },
+    { id: "sunfish", name: "Sunfish", icon: "🐠", rarity: 1, sell: 4, size: [8, 18], pull: "steady", color: "#f0a040", when: { night: false } },
+    { id: "shiner", name: "Moon Shiner", icon: "🐟", rarity: 1, sell: 4, size: [6, 14], pull: "darting", color: "#c8d0e0", when: { night: true } },
+    { id: "carp", name: "Carp", icon: "🐟", rarity: 2, sell: 6, size: [25, 60], pull: "heavy", color: "#a08050" },
+    { id: "crayfish", name: "Crayfish", icon: "🦞", rarity: 2, sell: 6, size: [7, 15], pull: "darting", color: "#d05a3a" },
+    { id: "trout", name: "Rainbow Trout", icon: "🐟", rarity: 2, sell: 8, size: [20, 50], pull: "darting", color: "#e08aa0", when: { season: ["spring", "autumn"] } },
+    { id: "catfish", name: "Catfish", icon: "🐟", rarity: 2, sell: 8, size: [30, 80], pull: "heavy", color: "#6a6058", when: { night: true } },
+    { id: "bass", name: "Largemouth Bass", icon: "🐟", rarity: 3, sell: 12, size: [25, 60], pull: "darting", color: "#5a8a4a" },
+    { id: "pike", name: "Pike", icon: "🐟", rarity: 3, sell: 14, size: [40, 100], pull: "darting", color: "#7a9a5a" },
+    { id: "koi", name: "Koi", icon: "🐠", rarity: 3, sell: 18, size: [30, 70], pull: "steady", color: "#f07a3a", when: { night: false } },
+    { id: "eel", name: "Eel", icon: "🐍", rarity: 3, sell: 16, size: [40, 110], pull: "darting", color: "#4a4a3a", when: { rain: true } },
+    { id: "sturgeon", name: "Sturgeon", icon: "🐟", rarity: 4, sell: 30, size: [80, 180], pull: "heavy", color: "#7a7a80" },
+    { id: "turtle", name: "Snapping Turtle", icon: "🐢", rarity: 4, sell: 35, size: [25, 45], pull: "heavy", color: "#5a6a3a", when: { season: ["summer"] } },
+    { id: "goldenCarp", name: "Golden Carp", icon: "🐠", rarity: 4, sell: 38, size: [30, 60], pull: "steady", color: "#f2c230", when: { season: ["spring", "summer"] } },
+    { id: "moonfish", name: "Moonfish", icon: "🐡", rarity: 4, sell: 40, size: [20, 40], pull: "darting", color: "#d8d0f0", when: { night: true } },
+    { id: "ghostKoi", name: "Ghost Koi", icon: "🐠", rarity: 5, sell: 75, size: [40, 80], pull: "steady", color: "#f4f4f8" },
+    { id: "rainbowKoi", name: "Rainbow Koi", icon: "🌈", rarity: 5, sell: 90, size: [40, 80], pull: "darting", color: "#c86bb0", when: { rain: true } },
+    { id: "icePike", name: "Ice Pike", icon: "🧊", rarity: 5, sell: 90, size: [60, 120], pull: "darting", color: "#a8d8f0", when: { season: ["winter"] } },
+    { id: "whiskers", name: "Old Whiskers", icon: "🐋", rarity: 5, sell: 125, size: [120, 200], pull: "heavy", color: "#4a4a44", when: { night: true, rain: true } },
   ],
 
   // Junk you might reel in instead. The raccoons buy it for `junkPrice`
@@ -370,8 +418,8 @@ const CONFIG = {
   wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],
 
   // The grandfather clock in the hallway chimes softly on every hour (your
-  // own local time). It follows the master volume and mute, is silent in
-  // Dinner, and can be turned off in Settings.
+  // own local time). It follows the master volume and mute, is silent
+  // while you're asleep, and can be turned off in Settings.
   hourlyChime: {
     on: true, // the starting setting for someone who hasn't chosen yet
     volume: 0.06, // how loud (0 to 1, before the master volume)

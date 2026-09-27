@@ -7,7 +7,7 @@
 // room; a bedroom's owner can also pick lo-fi or silence instead). main.js
 // passes "asleep" as the room while you're in bed, which isn't a voice
 // room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire"];
+const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire", "dinner"];
 
 function isVoiceRoom(roomId) {
   if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
@@ -21,10 +21,9 @@ export function setBedroomAudioLookup(lookup) {
   bedroomAudio = lookup;
 }
 
-// Dinner ("away eating") and being asleep: no sounds at all, not even
-// little chimes.
+// Being asleep: no sounds at all, not even little chimes.
 function isSilentSpot() {
-  return currentRoomId === "dinner" || currentRoomId === "asleep";
+  return currentRoomId === "asleep";
 }
 
 let localTrack = null;
@@ -984,7 +983,7 @@ export function whisperTarget() {
 // Called when a friend's voice stream arrives, so we can play it. A
 // whisper line (metadata.whisper) is played on its own: it's silent unless
 // that friend is whispering to you, and then you hear it in any room
-// (except where everything is silent: Dinner, or asleep).
+// (except while you're asleep, when everything is silent).
 const whisperAudioElements = {}; // peer id -> <audio> for their whisper line to you
 export function handlePeerStream(stream, peerId, metadata) {
   if (metadata?.whisper) {
@@ -1061,7 +1060,7 @@ export function setMasterVolume(vol) {
 
 // --- Lo-fi music for the Study room ---
 // Plays locally, not synced with friends. Fades in when you enter Study,
-// fades out when you leave (or when Dinner/master mute silences it).
+// fades out when you leave (or when the master mute silences it).
 
 let inStudy = false;
 let lofiUserVolume = 1; // this room's own volume slider, 0 to 1
@@ -1142,7 +1141,7 @@ export function enterStudy(containerEl) {
   }
 }
 
-// Call once, when you walk out of Study (to anywhere, including Dinner).
+// Call once, when you walk out of Study.
 export function leaveStudy() {
   inStudy = false;
 }

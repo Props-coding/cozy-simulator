@@ -549,6 +549,47 @@ const GARDEN_BEDS = [13.5, 15.6, 18.7, 20.8].flatMap((x) => [-0.75, 1.0, 2.75].m
 // Where you'd cast from (a spot at the pond's edge or on the dock), and
 // where the bobber lands: { bx, by } in grid units, or null if you're not
 // at the water.
+// --- Fish shadows in the pond ---
+// A few faint fish shapes swim slow loops around the pond. Where each one
+// is comes only from the clock (t, in milliseconds), so everyone sees the
+// same fish and the house server can work out which one was near your
+// bobber when it bit. Their sizes (small, medium, large) change each hour.
+// Returns [{ id, x, y, angle, size }].
+function shadowHash(n) {
+  const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return v - Math.floor(v);
+}
+function pondShadows(t) {
+  const cfg = CONFIG.fishing.shadows;
+  const hour = Math.floor(t / 3_600_000);
+  const s = t / 1000;
+  const shadows = [];
+  for (let i = 0; i < cfg.count; i++) {
+    const roll = shadowHash(hour * 97 + i * 31);
+    const size = roll < cfg.small.chance ? "small" : roll < cfg.small.chance + cfg.medium.chance ? "medium" : "large";
+    // Around and around (half of them the other way), drifting in and out.
+    const turn = (0.06 + 0.05 * shadowHash(i * 7.1)) * (i % 2 ? -1 : 1);
+    const theta = s * turn + shadowHash(i * 5.5) * Math.PI * 2;
+    const drift = 0.11 + 0.08 * shadowHash(i * 3.3);
+    const r = 0.35 + 0.25 * (1 + Math.sin(s * drift + i * 1.9));
+    const x = POND.cx + (POND.rx - 0.7) * r * Math.cos(theta);
+    const y = POND.cy + (POND.ry - 0.6) * r * Math.sin(theta);
+    // Facing the way it swims.
+    const angle = Math.atan2((POND.ry - 0.6) * Math.cos(theta) * turn, -(POND.rx - 0.7) * Math.sin(theta) * turn);
+    shadows.push({ id: i, x, y, angle, size });
+  }
+  return shadows;
+}
+
+// The shadow that's come to your own bobber (fishing.js sets it; it's
+// drawn there, nibbling), or null.
+const POND_VIEW = { locked: null };
+
+// True if (x, y) is out on the pond's water (not right at the edge).
+function inPond(x, y) {
+  return ((x - POND.cx) / (POND.rx - 0.3)) ** 2 + ((y - POND.cy) / (POND.ry - 0.25)) ** 2 <= 1;
+}
+
 function fishingSpot(player) {
   if (floorOf(player.y) !== YARD_FLOOR) return null;
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
@@ -589,20 +630,17 @@ function gardenBedInReach(player) {
 
 const YARD_FURNITURE = [
   // The house's back wall: the front door on the porch (walk up into it
-  // to go in), a side door on the west section (just for looks: it's
-  // locked), windows glowing warm from inside, and lanterns by the doors.
-  { kind: "yardDoor", x: FRONT_DOOR_X, y: YARD_WALL_Y, w: FRONT_DOOR_W, door: "front", solid: false },
-  { kind: "yardDoor", x: 4.9, y: YARD_WALL_Y, w: 1.6, door: "side", solid: false },
+  // to go in), windows glowing warm from inside, and lanterns by the door.
+  { kind: "yardDoor", x: FRONT_DOOR_X, y: YARD_WALL_Y, w: FRONT_DOOR_W, solid: false },
   { kind: "houseWindow", x: 0.9, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 3.0, y: YARD_WALL_Y, w: 1.2, solid: false },
+  { kind: "houseWindow", x: 5.1, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 7.2, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 9.6, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 11.7, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 14.4, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 17.4, y: YARD_WALL_Y, w: 1.2, solid: false },
   { kind: "houseWindow", x: 22.5, y: YARD_WALL_Y, w: 1.2, solid: false },
-  { kind: "porchLantern", x: 4.55, y: YARD_WALL_Y, solid: false },
-  { kind: "porchLantern", x: 6.85, y: YARD_WALL_Y, solid: false },
   { kind: "porchLantern", x: 19.55, y: YARD_WALL_Y, solid: false },
   { kind: "porchLantern", x: 22.15, y: YARD_WALL_Y, solid: false },
 
@@ -620,7 +658,7 @@ const YARD_FURNITURE = [
   { kind: "fern", x: 16.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
   { kind: "snakePlant", x: 19.3, y: YARD - 5.25, w: 0.6, h: 0.6 },
 
-  // Flower beds along the house west of the porch, either side of the side door.
+  // Flower beds along the house west of the porch, under the windows.
   { kind: "flowerBed", x: 0.2, y: YARD - 5.35, w: 4.1, h: 0.5 },
   { kind: "flowerBed", x: 7.1, y: YARD - 5.35, w: 4.2, h: 0.5 },
 

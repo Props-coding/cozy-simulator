@@ -328,6 +328,14 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Quicker return visits: a small service worker (sw.js) keeps the game's files, the fonts and the voice library on your computer. Each build keeps its own copy (so an update always loads the new files), and the page itself, the house server, the weather and YouTube always come fresh.
   - Right-click menu: the browser's menu is off on the house (chat and text boxes keep theirs, for copy and paste), and the house can't be dragged or selected by accident. Instead, a small menu: on a friend, Trade (a direct offer only they can take: it waits at the trading post under "For you", with a note in their mailbox), plus the admin tools for admins (teleport to, bring here, unstick, mute, send out). On furniture: Sit, Inspect, and in your own room Move or Store. Nothing on empty floor. Escape or clicking away closes it.
 - Build 0.66: no accidental text selection. Menus, panels, shops, buttons and the header can't be highlighted by dragging, double-clicking or quick clicks (set once for the whole page in style.css, so new menus get it too). Text boxes, the chat box, chat messages and the journal can still be selected, for copy and paste.
+- Build 0.67: fishing rework, a normal Dinner room, and no more side door.
+  - Fish shadows: faint fish shapes swim slow loops in the pond, the same for everyone (their paths come from the clock). Bigger shadows are better, bigger fish. Click the pond (within reach) to aim your cast at one; E still casts straight out. The house server works out which shadow really swam up to your bobber, so a big shadow can't be faked.
+  - Nibbles: the bobber twitches a few times before the real bite. Pressing E on a nibble spooks the fish (cast again; no bait used).
+  - Tension reel (instead of the timing bar): hold Space (or hold the mouse on the card) to reel in, let go to give line. The Tension meter goes green, orange, red: at the top the line snaps; too slack for too long and the fish slips away. Each fish pulls its own way (steady, darting or heavy), rarer ones harder; better rods take the strain better ("line strength").
+  - Size records: every catch shows how it compares with your best and the house best; a new house record is announced in the house chat, and Otis's fish log shows both.
+  - All the numbers are in config.js (fishing: shadows, nibbles, reel, pulls, castReach; each fish's `pull`).
+  - The Dinner room is a normal room now: voice chat is on (like the Lounge), no more "eating" badge, sounds and chimes play there, and the phone doesn't count you as away. The old silent-room code is gone.
+  - The locked green side door by the campfire is gone (a window in its place, like the others).
 
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.

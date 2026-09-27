@@ -48,19 +48,19 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Lounge (business floor, between the Workshop and the elevator) | On, with others in the room | Friends' voices | Sofa, armchair, arcade cabinet and snacks, for a break and a chat |
 | Bedrooms (each its own space behind a door on the suite floor (floor 3), one per member, kept on the server) | Owner picks: voice (only with others in the same bedroom), lo-fi, or silent | Friends' voices or your lo-fi; in bed: soft white noise only | Door: Open, Knock first, Private or Party, enforced with signed room passes. Starts with a laptop desk, a mattress, a journal nightstand (private, encrypted journal) and a wall phone (private calls, or a message for someone away); decorate with Nest & Nook items. Step into bed to sleep: mic off, hear nobody, "sleeping" badge. Away owners sleep in their bed, with a moon on their door |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
-| Dinner | Off | Nothing, all sound muted | Means "I'm away eating". Show a small "eating" badge over the character |
+| Dinner (the kitchen) | On, with others in the room | Friends' voices | A normal room since 0.67 (it used to be a silent "away eating" room). The kitchen: stove, fridge and pantry, and the fortune cookie jar |
 
 Always keep a visible master mute and a volume control, in case someone needs to override the rules.
 
 ## How audio should work
 
 - **Mic permission** is requested once on the Join screen. The Join button click also satisfies the browser rule that audio can only start after a user click.
-- **Sending:** the mic is only live while the player stands in a voice room (Gaming for v1). In Study and Dinner the mic track is disabled so nothing leaves their computer.
+- **Sending:** the mic is only live while the player stands in a voice room. In quiet rooms (like the Study) the mic track is disabled so nothing leaves their computer.
 - **Receiving:** play a friend's voice only if both people are in the same voice room.
 - **Lo-fi in Study:** plays locally for each person, not synced. It starts when they enter Study, fades out when they leave, and has its own volume slider.
   - First try embedding a live lo-fi YouTube stream using the official YouTube embed. Embedding is sometimes blocked, so also prepare a backup: a direct audio stream URL.
   - **Do not guess stream URLs.** Find one that works today, confirm it is fine to stream, and put it in `config.js` so it is easy to swap.
-- **Dinner:** silences everything, including lo-fi and all friends' voices.
+- **Asleep in bed:** silences everything except soft white noise. (Dinner used to silence everything; since 0.67 it's a normal voice room.)
 
 ## World and movement
 

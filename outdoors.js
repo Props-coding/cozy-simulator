@@ -176,6 +176,7 @@ function drawPondShimmer(ctx) {
     ctx.ellipse(x, y, 2 + phase * 10, 1 + phase * 4, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
+  drawFishShadows(ctx);
   ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
   for (let i = 0; i < 12; i++) {
     const on = Math.sin(t * 2 + i * 1.7) > 0.6;
@@ -183,6 +184,39 @@ function drawPondShimmer(ctx) {
     const a = noise(i * 9.1) * Math.PI * 2, r = Math.sqrt(noise(i * 3.7));
     ctx.fillRect(c.x + Math.cos(a) * rx * r, c.y + Math.sin(a) * ry * r, 4, 1.2);
   }
+}
+
+// Faint fish shapes swimming in the pond (world.js: pondShadows), bigger
+// for bigger fish. The one on your line waits at your bobber.
+function drawFishShadows(ctx) {
+  const now = Date.now();
+  const locked = POND_VIEW.locked;
+  const t = performance.now() / 1000;
+  for (const s of pondShadows(now)) {
+    if (locked && locked.id === s.id) continue;
+    drawFishShadow(ctx, s.x, s.y, s.angle, CONFIG.fishing.shadows[s.size].scale, t + s.id);
+  }
+  if (locked) drawFishShadow(ctx, locked.x - 0.25, locked.y + 0.12, 0, CONFIG.fishing.shadows[locked.size].scale, t * 3);
+}
+
+function drawFishShadow(ctx, x, y, angle, scale, wiggle) {
+  const p = toScreen(x, y);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(angle);
+  ctx.scale(scale, scale * 0.55); // (seen from above, a little flattened)
+  ctx.fillStyle = "rgba(20, 45, 60, 0.28)";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 13, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const flick = Math.sin(wiggle * 6) * 3;
+  ctx.beginPath();
+  ctx.moveTo(-11, 0);
+  ctx.lineTo(-20, -5 + flick);
+  ctx.lineTo(-20, 5 + flick);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 // --- Daylight and night ---
@@ -531,27 +565,24 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.stroke();
   },
 
-  // A door in the house's back wall, in the same style as the bedroom
-  // doors: a thin wooden frame, a painted door with two tall panels and a
-  // brass knob, and a little roof over it. The front door (a real
-  // doorway: walk up into it) fills in the wall either side of it; the
-  // side door is just for looks, on the wall itself.
+  // The front door in the house's back wall, in the same style as the
+  // bedroom doors: a thin wooden frame, a painted door with two tall
+  // panels and a brass knob, and a little roof over it. It's a real
+  // doorway (walk up into it), so it fills in the wall either side of it.
   yardDoor(ctx, f) {
     const a = toScreen(f.x, f.y);
     const w = f.w * TILE, bottom = a.y, top = a.y - WALL_HEIGHT;
-    if (f.door === "front") {
-      // The wall around the door: siding below, the wooden top above.
-      ctx.fillStyle = "#a07c55";
-      ctx.fillRect(a.x, top, w, WALL_HEIGHT);
-      ctx.fillStyle = "rgba(60, 35, 15, 0.28)";
-      for (let y = top + 6; y < bottom - 2; y += 7) ctx.fillRect(a.x, y, w, 1.5);
-      ctx.fillStyle = "rgba(255, 235, 200, 0.12)";
-      for (let y = top + 1; y < bottom - 2; y += 7) ctx.fillRect(a.x, y, w, 1);
-      ctx.fillStyle = WOOD;
-      ctx.fillRect(a.x, top - WALL_THICKNESS * TILE, w, WALL_THICKNESS * TILE);
-    }
+    // The wall around the door: siding below, the wooden top above.
+    ctx.fillStyle = "#a07c55";
+    ctx.fillRect(a.x, top, w, WALL_HEIGHT);
+    ctx.fillStyle = "rgba(60, 35, 15, 0.28)";
+    for (let y = top + 6; y < bottom - 2; y += 7) ctx.fillRect(a.x, y, w, 1.5);
+    ctx.fillStyle = "rgba(255, 235, 200, 0.12)";
+    for (let y = top + 1; y < bottom - 2; y += 7) ctx.fillRect(a.x, y, w, 1);
+    ctx.fillStyle = WOOD;
+    ctx.fillRect(a.x, top - WALL_THICKNESS * TILE, w, WALL_THICKNESS * TILE);
     const dw = 0.95 * TILE, x = a.x + (w - dw) / 2, dtop = top + 5, dh = bottom - dtop;
-    const color = f.door === "front" ? "#8a4a3a" : "#5f8a6a";
+    const color = "#8a4a3a";
     ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // shadow on the wall
     ctx.fillRect(x, dtop + 2, dw + 4, dh - 2);
     ctx.fillStyle = "#6b4630"; // frame
@@ -1707,7 +1738,8 @@ function drawBobber(ctx, p) {
   const t = performance.now() / 1000;
   const bob = toScreen(p.fishing.bx, p.fishing.by);
   const bite = p.fishing.bite;
-  const dip = bite ? Math.abs(Math.sin(t * 14)) * 3 : Math.sin(t * 2) * 1;
+  // A bite dips it hard; a nibble gives it a quick little twitch.
+  const dip = bite ? Math.abs(Math.sin(t * 14)) * 3 : p.fishing.nibble ? Math.abs(Math.sin(t * 30)) * 1.8 : Math.sin(t * 2) * 1;
   const ring = (t * (bite ? 1.6 : 0.6)) % 1;
   ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 * (1 - ring)})`;
   ctx.lineWidth = 1;
