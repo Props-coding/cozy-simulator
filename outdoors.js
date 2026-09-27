@@ -59,54 +59,37 @@ function paintPaths(ctx) {
   ctx.lineWidth = 1.35 * TILE;
   ctx.stroke(edge);
   ctx.restore();
-  // 2. The paths themselves: stone near the house, packed earth further out.
+  // 2. The paths themselves, as packed earth (the stone walk's flagstones
+  //    are laid on top of earth too, so the gaps between them look like soil).
   for (const path of paths) {
-    ctx.fillStyle = path.stone ? "#b8b0a2" : "#c9ab80";
+    ctx.fillStyle = path.stone ? "#b39873" : "#c9ab80";
     path.at.forEach((p, i) => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius(path, i), 0, Math.PI * 2);
       ctx.fill();
     });
   }
-  // 3. Their surface: flat stones set in the stone paths, and specks of
-  //    grit in the dirt ones.
+  // 3. Specks of grit in the dirt paths.
   for (const path of paths) {
+    if (path.stone) continue;
     const seed = path.n * 101;
-    if (path.stone) {
-      path.at.forEach((p, i) => {
-        if (i % 3) return;
-        const next = path.at[Math.min(i + 1, path.at.length - 1)], prev = path.at[Math.max(i - 1, 0)];
-        const dx = next.x - prev.x, dy = next.y - prev.y, len = Math.hypot(dx, dy) || 1;
-        const nx = -dy / len, ny = dx / len; // across the path
-        const r = radius(path, i);
-        for (const k of [-0.55, 0, 0.55]) {
-          const j = noise(seed + i * 3 + k * 7);
-          const sx = p.x + nx * r * (k + (j - 0.5) * 0.2), sy = p.y + ny * r * (k + (j - 0.5) * 0.2);
-          ctx.fillStyle = ["#cfc8ba", "#c4bcad", "#d8d2c6"][Math.floor(j * 3)];
-          ctx.beginPath();
-          ctx.ellipse(sx, sy, 7 + j * 2, 4.5 + j, j * 0.6, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = "rgba(110, 100, 85, 0.35)";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      });
-    } else {
-      path.at.forEach((p, i) => {
-        const r = radius(path, i) * 0.8;
-        for (let k = 0; k < 2; k++) {
-          const a = noise(seed + i * 5 + k) * Math.PI * 2, d = Math.sqrt(noise(seed + i * 7 + k * 3)) * r;
-          ctx.fillStyle = (i + k) % 3 ? "rgba(150, 120, 85, 0.45)" : "rgba(235, 220, 195, 0.65)";
-          ctx.beginPath();
-          ctx.ellipse(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d * 0.7, 1.6, 1.1, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-    }
+    path.at.forEach((p, i) => {
+      const r = radius(path, i) * 0.8;
+      for (let k = 0; k < 2; k++) {
+        const a = noise(seed + i * 5 + k) * Math.PI * 2, d = Math.sqrt(noise(seed + i * 7 + k * 3)) * r;
+        ctx.fillStyle = (i + k) % 3 ? "rgba(150, 120, 85, 0.45)" : "rgba(235, 220, 195, 0.65)";
+        ctx.beginPath();
+        ctx.ellipse(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d * 0.7, 1.6, 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
   }
+  // 3b. Flagstones on the stone paths (after all the dirt, so no grit lands on them).
+  for (const path of paths) if (path.stone) paintFlagstones(ctx, path);
   // 4. Along the borders: a few pebbles and tufts of grass.
   const g = GRASS[yardSeason()] ?? GRASS.summer;
   for (const path of paths) {
+    if (path.stone) continue; // the flagstone walk has neat edges
     path.at.forEach((p, i) => {
       if (i % 5 || i === 0 || i === path.at.length - 1) return;
       const next = path.at[i + 1], prev = path.at[i - 1];
@@ -132,6 +115,78 @@ function paintPaths(ctx) {
         ctx.lineTo(x + 3, y + 1);
         ctx.stroke();
       }
+    });
+  }
+}
+
+// A stone walk: flat flagstones laid in rows across the path, two to a row
+// with the joint shifting from row to row (like bricks), slightly uneven
+// shapes and colors, a thin earth gap between them, and a sliver of their
+// thickness showing along the bottom (light from above, like everything).
+function paintFlagstones(ctx, path) {
+  // Walk the path by distance, so rows are evenly spaced.
+  const pts = path.at, dist = [0];
+  for (let i = 1; i < pts.length; i++) dist.push(dist[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+  const total = dist[dist.length - 1];
+  const rows = Math.max(2, Math.round(total / (0.5 * TILE)));
+  const rowH = total / rows, half = (path.w * TILE) / 2, gap = 2.5;
+  const colors = ["#cbc3b3", "#c2b9a8", "#d3ccbe", "#bdb3a1"];
+  const seed = path.n * 211;
+  for (let row = 0; row < rows; row++) {
+    // Where this row sits, and which way the path runs there.
+    const at = (row + 0.5) * rowH;
+    let i = 1;
+    while (i < pts.length - 1 && dist[i] < at) i++;
+    const a = pts[i - 1], b = pts[i], t = (at - dist[i - 1]) / ((dist[i] - dist[i - 1]) || 1);
+    const cx = a.x + (b.x - a.x) * t, cy = a.y + (b.y - a.y) * t;
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const ux = (b.x - a.x) / len, uy = (b.y - a.y) / len; // along the path
+    const vx = -uy, vy = ux; // across it
+    // The joint between the two stones: left of middle, then right, and so on.
+    const split = (row % 2 ? 0.2 : -0.2) + (noise(seed + row * 7) - 0.5) * 0.16;
+    const pieces = [[-1, split], [split, 1]];
+    pieces.forEach(([from, to], k) => {
+      const j = (n) => (noise(seed + row * 13 + k * 5 + n) - 0.5) * 3; // a little unevenness
+      // Corners in (along, across) pixels, pulled in by the gap.
+      const al0 = -rowH / 2 + gap / 2, al1 = rowH / 2 - gap / 2;
+      const ac0 = from * half + (from === -1 ? 1 : gap / 2), ac1 = to * half - (to === 1 ? 1 : gap / 2);
+      const corners = [[al0 + j(1), ac0 + j(2)], [al0 + j(3), ac1 + j(4)], [al1 + j(5), ac1 + j(6)], [al1 + j(7), ac0 + j(8)]]
+        .map(([al, ac]) => ({ x: cx + ux * al + vx * ac, y: cy + uy * al + vy * ac }));
+      // A rounded four-sided outline (dy moves it down, for the edge below).
+      const shape = (dy) => {
+        const mid = (n) => ({ x: (corners[n % 4].x + corners[(n + 1) % 4].x) / 2, y: (corners[n % 4].y + corners[(n + 1) % 4].y) / 2 + dy });
+        ctx.beginPath();
+        ctx.moveTo(mid(0).x, mid(0).y);
+        for (let n = 1; n <= 4; n++) ctx.arcTo(corners[n % 4].x, corners[n % 4].y + dy, mid(n).x, mid(n).y, 4);
+        ctx.closePath();
+      };
+      // Its thickness (a darker edge peeking out below), then the top.
+      ctx.fillStyle = "#958b7a";
+      shape(2);
+      ctx.fill();
+      const color = colors[Math.floor(noise(seed + row * 3 + k * 11) * colors.length)];
+      ctx.fillStyle = color;
+      shape(0);
+      ctx.fill();
+      // Lit from above: a soft light band along the top of the stone.
+      ctx.save();
+      shape(0);
+      ctx.clip();
+      const top = Math.min(...corners.map((c) => c.y)), bottom = Math.max(...corners.map((c) => c.y));
+      const shade = ctx.createLinearGradient(0, top, 0, bottom);
+      shade.addColorStop(0, "rgba(255, 255, 255, 0.28)");
+      shade.addColorStop(0.35, "rgba(255, 255, 255, 0)");
+      shade.addColorStop(1, "rgba(90, 75, 55, 0.12)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(Math.min(...corners.map((c) => c.x)) - 2, top - 2, 80, bottom - top + 4);
+      // A few tiny specks, so it reads as stone.
+      for (let n = 0; n < 3; n++) {
+        const px = cx + ux * (noise(seed + row * 17 + k * 3 + n) - 0.5) * rowH * 0.6 + vx * ((from + to) / 2 + (noise(seed + row * 19 + k + n * 2) - 0.5) * (to - from) * 0.6) * half;
+        const py = cy + uy * (noise(seed + row * 17 + k * 3 + n) - 0.5) * rowH * 0.6 + vy * ((from + to) / 2 + (noise(seed + row * 19 + k + n * 2) - 0.5) * (to - from) * 0.6) * half;
+        ctx.fillStyle = "rgba(110, 100, 85, 0.3)";
+        ctx.fillRect(px, py, 1.5, 1.5);
+      }
+      ctx.restore();
     });
   }
 }

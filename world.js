@@ -540,9 +540,8 @@ function fenceRun(x1, y1, x2, y2, style = "picket") {
 // x, and y from the yard's top) drawn as a smooth curve `w` wide; `stone`
 // ones (near the house) are laid with stones, the rest are dirt.
 const YARD_PATHS = [
-  { stone: true, w: 1.3, points: [[18.0, -2.75], [18.0, -2.0], [18.0, -1.2]] }, // porch steps down to the garden gate
-  { stone: true, w: 1.0, points: [[17.6, -2.3], [16.4, -2.3], [15.0, -2.28]] }, // along the porch, near the steps
-  { w: 0.95, points: [[15.4, -2.28], [12.6, -2.25], [10.5, -2.2], [9.4, -1.7], [9.15, -0.6]] }, // along the porch, west to Hazel's corner
+  { stone: true, w: 1.5, points: [[18.0, -2.75], [18.0, -2.0], [18.0, -1.2]] }, // flagstones from the porch steps down to the garden gate
+  { w: 0.95, points: [[17.4, -2.3], [15.4, -2.28], [12.6, -2.25], [10.5, -2.2], [9.4, -1.7], [9.15, -0.6]] }, // along the porch, west to Hazel's corner
   { w: 0.95, points: [[9.15, -0.6], [9.2, 1.5], [9.3, 3.2], [9.25, 4.8], [9.45, 6.3], [10.1, 7.1], [11.2, 7.3]] }, // down past Otis to the pond
   { w: 1.0, points: [[11.0, 7.3], [13.5, 7.25], [15.6, 7.2], [17.3, 7.15], [18.0, 7.1]] }, // along the bottom, past the trading post
   { w: 1.1, points: [[18.0, -1.3], [18.0, 1.5], [18.0, 4.6], [18.0, 6.2], [18.0, 7.1]] }, // through the garden, out of its bottom gate
