@@ -303,6 +303,7 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Honest limits: skill parts (landing a fish in the green zone) happen in the browser, so a cheater could always land, but only as fast as the pond allows. Chats, emotes and dances counts are capped per minute. The social one-time achievements could be claimed without doing them (30 of them, worth 340 crumbs in all, once).
   - Moving over: the first time someone logs in on 0.63, the bank starts from their cloud save, so nothing is lost. Pages still on 0.62 keep working the old way until they update.
   - Rain in the garden: the server checks the hometown's weather itself now (every 15 minutes) and waters the beds when it rains.
+  - The lawn garden north of the hallway is laid out properly now: a birdbath in the middle with a flower bed on each side, a low hedge along the house, and a tree in each far corner.
   - New files: `bank.js` (the page's side of the bank) and `catalog.js` (the raccoons' stock and the achievements list, moved out of shop.js and achievements.js so the server can read them). Price changes now need the server copies updated too (see server/README.md).
 
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)

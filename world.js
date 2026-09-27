@@ -298,16 +298,16 @@ const BASE_FURNITURE = [
   { kind: "readingTable", x: 0.45, y: -2.2, w: 1.6, h: 0.6 },
   { kind: "chair", x: 0.95, y: -1.45, w: 0.6, h: 0.6, facing: "up", sit: true, solid: false, seat: "#7a5238", back: "#5c3d2a" },
   { kind: "fern", x: 5.2, y: -1.8, w: 0.6, h: 0.6 },
-  // A little garden on the lawn north of the hallway (outside, seen past
-  // the Library): flower beds along the house, a few bushes and wildflowers.
-  { kind: "flowerBed", x: 8.4, y: -2.7, w: 4.0, h: 0.5 },
-  { kind: "flowerBed", x: 15.6, y: -2.7, w: 4.0, h: 0.5 },
-  { kind: "bush", x: 6.9, y: -2.8, w: 0.9, h: 0.55, n: 1 },
-  { kind: "bush", x: 22.4, y: -2.9, w: 0.9, h: 0.55, n: 2 },
-  { kind: "bush", x: 13.4, y: -4.4, w: 0.9, h: 0.55, n: 3 },
-  { kind: "wildflowers", x: 8.2, y: -3.6, w: 1.1, h: 0.3, solid: false },
-  { kind: "wildflowers", x: 17.6, y: -4.2, w: 1.0, h: 0.3, solid: false },
-  { kind: "wildflowers", x: 12.8, y: -3.3, w: 0.8, h: 0.3, solid: false },
+  // A little garden on the lawn north of the hallway (outside, past the
+  // Library): a birdbath in the middle with a flower bed on each side, a
+  // low hedge along the house, and a tree in each far corner.
+  { kind: "birdbath", x: 15.0, y: -4.1, w: 0.6, h: 0.4 },
+  { kind: "flowerBed", x: 10.6, y: -4.05, w: 3.6, h: 0.5 },
+  { kind: "flowerBed", x: 16.4, y: -4.05, w: 3.6, h: 0.5 },
+  ...[7.4, 8.3, 9.2, 10.1, 11.0, 11.9, 12.8, 13.7, 16.1, 17.0, 17.9, 18.8, 19.7, 20.6, 21.5, 22.4].map((x, i) => ({ kind: "bush", x, y: -2.75, w: 0.9, h: 0.5, n: i })),
+  { kind: "yardTree", x: 7.0, y: -4.5, w: 1.0, h: 0.55, n: 4 },
+  { kind: "yardTree", x: 22.5, y: -4.5, w: 1.0, h: 0.55, n: 5 },
+  { kind: "wildflowers", x: 14.4, y: -2.95, w: 1.7, h: 0.3, solid: false },
 
   // Elevator lobby (downstairs): brass elevator doors on the back wall
   // (walk up and press E), a lamp, a round rug, a bench and a palm.
