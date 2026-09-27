@@ -117,7 +117,7 @@ function layoutPlayerTags(ctx, players) {
 
   // Kept inside the map's edges (someone right at the edge still has their
   // whole name showing).
-  const edge = houseBounds();
+  const edge = viewBounds();
   return tags.map((t) => {
     const target = t.top - t.headTop; // 0, or how far up it had to go
     const stack = (tagStacks[t.p.id] ??= target);
@@ -578,7 +578,7 @@ function drawStudySign(ctx, text) {
 function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
   // In the yard, everything is outside (the porch roof aside).
-  if (viewFloor === YARD_FLOOR) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
+  if (isOutdoorFloor(viewFloor)) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
   if (viewFloor >= 1) return []; // (indoors, rain only shows through windows)
   const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
     .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
@@ -602,14 +602,14 @@ function lawnAreas() {
 // The other way: where a grid spot is on the page, in page pixels (for
 // placing things like the emote wheel over the house view).
 function gridToPage(canvas, gx, gy) {
-  const { left, top } = houseBounds();
+  const { left, top } = viewBounds();
   const perPixel = canvas.width / canvas.clientWidth / viewScale;
   const r = canvas.getBoundingClientRect();
   return { x: r.left + (ORIGIN_X + gx * TILE - left) / perPixel, y: r.top + (ORIGIN_Y + gy * TILE - top) / perPixel };
 }
 
 function screenToGrid(canvas, px, py) {
-  const { left, top } = houseBounds();
+  const { left, top } = viewBounds();
   const perPixel = canvas.width / canvas.clientWidth / viewScale; // house pixels per CSS pixel
   return { x: (px * perPixel + left - ORIGIN_X) / TILE, y: (py * perPixel + top - ORIGIN_Y) / TILE };
 }
@@ -695,12 +695,15 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   ctx.save();
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  const { left, top } = houseBounds();
+  // The camera follows you (see viewBounds in render.js).
+  const at = me && floorOf(me.y) === floor ? toScreen(me.x + PLAYER_SIZE / 2, me.y + PLAYER_SIZE / 2) : null;
+  if (at) followWithCamera(at.x, at.y);
+  const { left, top } = viewBounds();
   ctx.translate(-left, -top);
 
   drawFloors(ctx);
   drawPondShimmer(ctx);
-  if (viewFloor !== YARD_FLOOR) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
+  if (!isOutdoorFloor(viewFloor)) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
   dropRuneMarks(players);
   drawRuneMarks(ctx);
 
@@ -709,11 +712,11 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   for (const p of players) {
     sprites.push({ sortY: p.sortY ?? p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) }); // (sitting: sorted with the seat)
     // In the yard when it rains, everyone gets an umbrella (see outdoors.js).
-    p.umbrella = floor === YARD_FLOOR && OUTDOORS.raining && !p.asleep;
+    p.umbrella = isOutdoorFloor(floor) && OUTDOORS.raining && !p.asleep;
     if (p.umbrella) sprites.push({ sortY: (p.sortY ?? p.y + PLAYER_SIZE) + 0.0001, draw: (ctx) => drawUmbrella(ctx, p) });
     // Fishing at the pond: the rod and line (in front of you) and the
     // bobber out on the water (see outdoors.js).
-    if (p.fishing && floor === YARD_FLOOR) {
+    if (p.fishing && isOutdoorFloor(floor)) {
       sprites.push({ sortY: p.y + PLAYER_SIZE + 0.0002, draw: (ctx) => drawFishingLine(ctx, p) });
       sprites.push({ sortY: p.fishing.by - 0.5, draw: (ctx) => drawBobber(ctx, p) });
     }

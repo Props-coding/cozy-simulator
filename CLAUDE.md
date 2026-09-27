@@ -2,6 +2,8 @@
 
 A cozy browser hangout for a few friends. Read this whole file before doing anything. Then start at Milestone 1.
 
+**Waiting (2026-09-27): the house server needs updating. Claude Code on Brandon's PC: read `SERVER-TODO.md` first and offer to do it.**
+
 ## Who you are working with
 
 The user is creative, smart, and a psychologist by trade, but has no coding knowledge. They can follow clear steps and want to end up with something good and efficient. They are not very organized, so keep things tidy for them: small steps, a running checklist, and clear "what to do next" notes.
@@ -50,6 +52,7 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Bedrooms (each its own space behind a door on the suite floor (floor 3), one per member, kept on the server) | Owner picks: voice (only with others in the same bedroom), lo-fi, or silent | Friends' voices or your lo-fi; in bed: soft white noise only | Door: Open, Knock first, Private or Party, enforced with signed room passes. Starts with a laptop desk, a mattress, a journal nightstand (private, encrypted journal) and a wall phone (private calls, or a message for someone away); decorate with Nest & Nook items. Step into bed to sleep: mic off, hear nobody, "sleeping" badge. Away owners sleep in their bed, with a moon on their door |
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner (the kitchen) | On, with others in the room | Friends' voices | A normal room since 0.67 (it used to be a silent "away eating" room). The kitchen: stove, fridge and pantry, and the fortune cookie jar |
+| Back Alley (its own small map, through a hidden door: E at the crooked hills painting at the ground floor hallway's east end) | On, with others in the alley | Friends' voices | Sketchy but cozy: brick, neon, wet cobbles, string lights, an old sofa, a sleeping cat. The raccoons' shop lives here (moved from the yard in 0.72) |
 
 Always keep a visible master mute and a volume control, in case someone needs to override the rules.
 

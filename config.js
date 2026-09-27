@@ -50,6 +50,8 @@ const CONFIG = {
     pond: "Pond",
     campfire: "Campfire",
     busStop: "Bus Stop",
+    lake: "Willow Lake",
+    alley: "Back Alley",
   },
 
   // --- Outdoors (Update 4) ---
@@ -125,6 +127,15 @@ const CONFIG = {
     levels: [0, 30, 80, 150, 250, 400, 600, 850, 1150, 1500, 2000, 2600, 3300, 4100, 5000],
     tankSize: 6, // how many fish fit in a bedroom fish tank
     castReach: 4.5, // how far you can aim a cast (click the pond), in steps
+
+    // Where the fish are. The pond at home is for beginners: only fish up
+    // to `maxRarity` (1 common, 2 uncommon, 3 rare, 4 epic, 5 legendary)
+    // live there. Willow Lake (by bus) has every fish, more shadows, and
+    // bigger ones (`bigger` makes large shadows more common).
+    waters: {
+      pond: { maxRarity: 2, shadowCount: 5 },
+      lake: { maxRarity: 5, shadowCount: 11, bigger: 0.18 },
+    },
 
     // Fish shadows swimming in the pond (the same for everyone). Cast
     // near one: a bigger shadow is a better, bigger fish. `reach` is how
@@ -230,7 +241,7 @@ const CONFIG = {
   ],
 
   // Junk you might reel in instead. The raccoons buy it for `junkPrice`
-  // crumbs a piece (talk to them by the bins).
+  // crumbs a piece (talk to them in the back alley).
   junkPrice: 3,
   junk: [
     { id: "boot", name: "Old Boot" },
@@ -370,6 +381,17 @@ const CONFIG = {
       { id: "brassGlobe", kind: "decor", ref: "brassGlobe", price: 90, limit: 1 },
       { id: "spyglass", kind: "decor", ref: "spyglass", price: 120, limit: 1 },
     ],
+  },
+
+  // --- The camera ---
+  // The view is `zoom` times closer than the whole ground floor and
+  // follows you around (`follow` is how quickly it catches up each frame:
+  // 0.05 lazy, 0.3 snappy). Press `mapKey` for the map, the whole floor at
+  // once. Bedrooms always show whole. zoom: 1 turns the close-up off.
+  camera: {
+    zoom: 1.8,
+    follow: 0.12,
+    mapKey: "m",
   },
 
   // --- Residents' requests (Update 6) ---
@@ -734,6 +756,7 @@ const CONFIG = {
       // Outside (Update 4)
       garden: { name: "Garden" },
       pond: { name: "Pond" },
+      lake: { name: "Willow Lake" },
       campfire: { name: "Campfire" },
       porch: { name: "Porch" },
     },

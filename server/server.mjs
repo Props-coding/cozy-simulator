@@ -641,7 +641,7 @@ let GAME = null;
 async function loadGame() {
   const files = ["config.js", "catalog.js", "world.js"];
   const code = (await Promise.all(files.map((f) => readFile(join(GAME_DIR, f), "utf8")))).join("\n;\n");
-  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond })", {}, { timeout: 5000 });
+  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond, waterAt, waterShadows, waterById })", {}, { timeout: 5000 });
   const byId = (list) => Object.fromEntries(list.map((x) => [x.id, x]));
   GAME = {
     CONFIG: g.CONFIG,
@@ -658,6 +658,9 @@ async function loadGame() {
     RECIPES: byId(g.CONFIG.kitchen.recipes),
     pondShadows: g.pondShadows,
     inPond: g.inPond,
+    waterAt: g.waterAt, // (the pond or the Lake, from world.js)
+    waterShadows: g.waterShadows,
+    waterById: g.waterById,
     TRACKS: g.CONFIG.tieredAchievements ?? [],
     TIERS: g.CONFIG.achievementTiers ?? [],
   };
@@ -747,6 +750,10 @@ function fillWallet(w) {
   w.residents.hearts ??= {}; // friendship points with each resident
   w.residents.chatDay ??= {}; // the last day you chatted with each (the first chat of a day counts)
   w.residents.giftDay ??= {}; // the last day you gave each a gift
+  // Otis's fishing lesson: "none" (no rod yet), "started" (he gave you
+  // one) or "done" (you've landed your first fish). Anyone who has caught
+  // a fish before counts as done.
+  w.fishing.lesson ??= Object.keys(w.fishing.log ?? {}).length ? "done" : "none";
   return w;
 }
 
@@ -803,8 +810,8 @@ function tasteOf(id, item) {
 
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
-  const { rods, rod, bait, xp, log } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  const { rods, rod, bait, xp, log, lesson } = w.fishing;
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -958,11 +965,14 @@ function fishBiting(fish) {
 // What bites, from the bait, the rod and the shadow that came to the
 // bobber ("small", "medium" or "large": bigger shadows bring the rarer of
 // the bait's fish more often).
-function pickCatch(bait, rod, shadow = "small") {
+function pickCatch(bait, rod, shadow = "small", maxRarity = 5, noJunk = false) {
   const junk = GAME.CONFIG.junk;
-  if (Math.random() < GAME.CONFIG.fishing.junkChance) return { junk: junk[Math.floor(Math.random() * junk.length)].id };
+  if (!noJunk && Math.random() < GAME.CONFIG.fishing.junkChance) return { junk: junk[Math.floor(Math.random() * junk.length)].id };
   const rarer = GAME.CONFIG.fishing.shadows[shadow]?.rarer ?? 0;
-  const tiers = [...bait.catches].sort((a, b) => a - b);
+  // Only fish that live in this water (the pond at home tops out at
+  // uncommon; Willow Lake has everything).
+  let tiers = [...bait.catches].sort((a, b) => a - b).filter((t) => t <= maxRarity);
+  if (!tiers.length) tiers = [Math.min(maxRarity, Math.min(...bait.catches))];
   const weights = tiers.map((_, i) => (i === 0 ? 1 : 0.35 + rod.luck + rarer));
   let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
   let tier = tiers[0];
@@ -987,8 +997,9 @@ function pickCatch(bait, rod, shadow = "small") {
 function shadowAtBobber(id, spot, from, to) {
   if (!spot || !Number.isInteger(id)) return "small";
   const reach = GAME.CONFIG.fishing.shadows.reach + 0.35; // (a little slack for timing)
+  const water = GAME.waterById(spot.water ?? "pond") ?? GAME.waterById("pond");
   for (let t = from; t <= to; t += 250) {
-    const s = GAME.pondShadows(t).find((x) => x.id === id);
+    const s = GAME.waterShadows(water, t).find((x) => x.id === id);
     if (s && Math.hypot(s.x - spot.bx, s.y - spot.by) <= reach) return s.size;
   }
   return "small";
@@ -1165,6 +1176,16 @@ const BANK = {
   },
 
   // --- Otis and the pond ---
+  // Otis's lesson begins: he lends you his old twig rod (and a few worms).
+  startLesson(w) {
+    const f = w.fishing;
+    if (f.lesson !== "none") return {};
+    f.lesson = "started";
+    if (!f.rods.includes("twig")) f.rods.push("twig");
+    f.rod = "twig";
+    putIn(w, "bait:worm", 3);
+    return {};
+  },
   useRod(w, b) {
     if (!w.fishing.rods.includes(b.id)) throw new Oops(409, "You don't have that rod.");
     w.fishing.rod = b.id;
@@ -1203,9 +1224,11 @@ const BANK = {
   // shadow that bites is the one that really swam up to it.
   cast(w, b) {
     const bx = Number(b.bx), by = Number(b.by);
-    if (!Number.isFinite(bx) || !Number.isFinite(by) || !GAME.inPond(bx, by)) throw new Oops(400, "That's not on the pond.");
+    const water = Number.isFinite(bx) && Number.isFinite(by) ? GAME.waterAt(bx, by) : null;
+    if (!water) throw new Oops(400, "That's not on the water.");
+    if (w.fishing.lesson === "none") throw new Oops(409, "You don't have a fishing rod yet. Otis, by the pond, will lend you one.");
     w.fishing.castAt = Date.now();
-    w.fishing.castSpot = { bx, by };
+    w.fishing.castSpot = { bx, by, water: water.id };
     w.fishing.pending = null;
     return {};
   },
@@ -1220,7 +1243,9 @@ const BANK = {
     if (bait.price) takeOut(w, `bait:${bait.id}`, 1);
     const rod = rodOf(w);
     const shadow = shadowAtBobber(b.shadow, f.castSpot, castAt, now);
-    const caught = pickCatch(bait, boosted(w, "lucky") ? { ...rod, luck: rod.luck + 0.3 } : rod, shadow);
+    const maxRarity = GAME.CONFIG.fishing.waters?.[f.castSpot?.water ?? "pond"]?.maxRarity ?? 5;
+    // Your very first catch (Otis's lesson) is always a common fish, never junk.
+    const caught = f.lesson === "started" ? pickCatch(GAME.BAIT.none, rod, "small", 1, true) : pickCatch(bait, boosted(w, "lucky") ? { ...rod, luck: rod.luck + 0.3 } : rod, shadow, maxRarity);
     f.pending = { ...caught, shadow, at: now };
     const fish = caught.fish ? GAME.FISH[caught.fish] : null;
     return { rarity: fish ? fish.rarity : 1, junk: !!caught.junk, pull: fish?.pull ?? "steady", shadow };
@@ -1228,8 +1253,13 @@ const BANK = {
   land(w, b, ev, { user }) {
     const f = w.fishing;
     const p = f.pending;
-    if (!p || Date.now() - p.at > 60_000) throw new Oops(409, "It got away.");
+    // (Your first fish, in Otis's lesson, waits as long as you need.)
+    if (!p || Date.now() - p.at > (f.lesson === "started" ? 600_000 : 60_000)) throw new Oops(409, "It got away.");
     f.pending = null;
+    if (f.lesson === "started" && p.fish) {
+      f.lesson = "done"; // (Otis heads off to Willow Lake)
+      ev.push({ type: "lesson" });
+    }
     const levelBefore = fishingLevel(f.xp);
     if (p.junk) {
       putIn(w, `junk:${p.junk}`, 1);
@@ -1588,6 +1618,11 @@ const BANK = {
       plot.waters = plot.waters.map((t) => t - back);
     }
     if (db.garden) db.garden.version++;
+    return {};
+  },
+  // (Testing) Otis's lesson again, from the start.
+  adminLesson(w) {
+    w.fishing.lesson = "none";
     return {};
   },
   adminFishXp(w, b) {

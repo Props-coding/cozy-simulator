@@ -39,6 +39,7 @@ import {
   playRoomChangeSound,
   playClickSound,
   playElevatorDing,
+  playSecretDoor,
   playHourlyChime,
   playKnockSound,
   playTimerChime,
@@ -90,11 +91,12 @@ import { startWeather } from "./weather.js";
 import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
 import { isNpcOpen } from "./npc.js";
 import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
-import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank, castAt } from "./fishing.js";
+import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openBaitBox, openFishTank, castAt } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
+import { initTravel, isTraveling } from "./travel.js";
 import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
@@ -387,7 +389,16 @@ joinButton.addEventListener("click", async () => {
   startMail();
   startWeather(); // the hometown's real sky, outside and through the windows
   // The shared garden in the yard (beds kept on the house server).
-  initBus({ outside: () => floorOf(player.y) === YARD_FLOOR });
+  initBus({ outside: () => floorOf(player.y) <= YARD_FLOOR });
+  // Bus trips (travel.js): arriving puts you at the other stop.
+  initTravel({
+    arrive: (spot) => {
+      if (mySeat) standUp();
+      if (isFishing()) stopFishing(null);
+      Object.assign(player, spot);
+      for (const k in keysDown) keysDown[k] = false;
+    },
+  });
   // Fishing at the pond: big catches are shared in the house chat.
   initFishing({
     notice: (text, ms = 5000) => showNotice(text, ms),
@@ -514,6 +525,8 @@ function gatherClaims(kind, peers) {
 // your floor's corridor (the bedroom hall, if you were in a bedroom).
 function spawnPoint(floor) {
   if (floor === YARD_FLOOR) return { ...YARD_SPAWN };
+  if (floor === LAKE_FLOOR) return { ...LAKE_SPAWN };
+  if (floor === ALLEY_FLOOR) return { ...ALLEY_SPAWN };
   return { x: 8.7, y: [0, BUSINESS, SUITE][Math.min(floor, 2)] + 1.2 };
 }
 
@@ -658,7 +671,8 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
   if (nearestInteraction(player) === "hazel") return "Press E to talk to Hazel: seeds for sale, and she buys your harvest.";
   if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
-  if (nearestInteraction(player) === "otis") return "Press E to talk to Otis: rods, bait, selling fish and your fish log.";
+  if (nearestInteraction(player) === "otis") return OTIS.atLake ? "Press E to talk to Otis: rods, bait, selling fish and your fish log." : "Press E to talk to Otis. He'll teach you to fish.";
+  if (nearestInteraction(player) === "baitBox") return "Press E to open Otis's bait box: worms, crickets, and a slot to sell your fish.";
   if (nearestInteraction(player) === "fishTank") return "Your fish tank. Press E to add or take out fish.";
   if (nearestInteraction(player) === "stove") return "Press E to cook: your recipes, or experiment and see what happens.";
   if (nearestInteraction(player) === "fridge") return "Press E to open the fridge and pantry: eggs, milk, flour, sugar and more.";
@@ -666,7 +680,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
-  if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint();
+  if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
   if (nearestInteraction(player) === "bedroomDoor") {
@@ -700,6 +714,8 @@ function roomHintFor(room) {
   }
   if (ride) return "";
   if (nearestInteraction(player) === "elevator") return "Press E to call the elevator.";
+  // The hidden door (Update 7): a hint, not a sign. From the alley, the way back is plain.
+  if (nearestInteraction(player) === "hiddenDoor") return hiddenDoorNear(player) === "hall" ? "That painting of the hills is hanging a little crooked... (E to straighten it)" : "Press E to slip back into the house.";
   const yardDoor = yardDoorNear(player);
   if (yardDoor) return floorOf(player.y) === YARD_FLOOR ? `Walk through the ${yardDoor.name.toLowerCase()} to go back inside.` : "Walk through the door to go out to the yard.";
   if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
@@ -747,6 +763,14 @@ window.addEventListener("keydown", (e) => {
   if (key === "e" && nearestInteraction(player) === "elevator" && !ride) {
     for (const k in keysDown) keysDown[k] = false;
     openElevatorPanel(elevatorInReach(player));
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "hiddenDoor" && !secretRide) {
+    for (const k in keysDown) keysDown[k] = false;
+    if (mySeat) standUp();
+    secretRide = { side: hiddenDoorNear(player), t: 0, arrived: false };
+    playSecretDoor();
     return;
   }
 
@@ -799,6 +823,13 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
+  if (key === "e" && nearestInteraction(player) === "baitBox") {
+    for (const k in keysDown) keysDown[k] = false;
+    stopFishing(null);
+    openBaitBox();
+    return;
+  }
+
   // Residents (Update 6): Clover and Mortimer.
   if (key === "e" && nearestInteraction(player)?.startsWith("resident:")) {
     for (const k in keysDown) keysDown[k] = false;
@@ -836,7 +867,7 @@ window.addEventListener("keydown", (e) => {
   // The bus is waiting and you're by its door: talk to the driver.
   if (key === "e" && !nearestInteraction(player) && !mySeat && nearWaitingBus(player)) {
     for (const k in keysDown) keysDown[k] = false;
-    talkToDriver();
+    talkToDriver(player);
     return;
   }
 
@@ -880,6 +911,14 @@ window.addEventListener("keydown", (e) => {
 
   // Number keys 1 to 5: emotes.
   if (Object.hasOwn(EMOTE_KEYS, key)) startEmote(EMOTE_KEYS[key]);
+
+  // M: the map (the whole floor at once), and back to the close-up view.
+  if (key === CONFIG.camera.mapKey && !e.repeat) {
+    setMapView(!isMapView());
+    playClickSound();
+    showNotice(isMapView() ? "The map: the whole floor. Press M to go back." : "", isMapView() ? 2500 : 0);
+    fitHouse();
+  }
 
   // Open or close the whiteboard in the Conference Room.
   if (key === "b" && getCurrentRoom(player).id === "conference") {
@@ -985,6 +1024,7 @@ const SIDEBAR_SPACE = 230 + 20; // sidebar width plus the gap
 const FRAME = 8; // the house frame's border, both sides together
 
 let lastDrawnFloor = 0;
+let lastView = { w: 0, h: 0 }; // the view's size when it was last fitted
 function fitHouse() {
   if (gameScreen.hidden) return;
   const { w, h } = houseViewSize();
@@ -1667,7 +1707,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
+  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride || !!secretRide;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again
@@ -1823,6 +1863,30 @@ window.addEventListener("keydown", (e) => {
 // can't walk while it's moving.
 const DOORS_OPEN = 0.45, STEP_IN = 0.6, DOORS_CLOSE = 0.7; // seconds
 let ride = null; // { from: floor, to: floor, t: seconds so far, arrived }
+
+// Going through the hidden door (Update 7): the side you're on swings
+// open, you slip through, and it swings shut behind you on the other side.
+// secretRide: { side: "hall" or "alley" (where you started), t, arrived }.
+let secretRide = null;
+const SECRET_OPEN = 0.45, SECRET_STEP = 0.6, SECRET_CLOSE = 0.7; // seconds
+function updateSecretDoor(dt) {
+  if (!secretRide) return;
+  secretRide.t += dt;
+  const from = secretRide.side, to = from === "hall" ? "alley" : "hall";
+  if (!secretRide.arrived) {
+    HIDDEN_DOOR.open[from] = Math.min(1, secretRide.t / SECRET_OPEN);
+    if (secretRide.t >= SECRET_STEP) {
+      Object.assign(player, hiddenDoorArrival(from));
+      secretRide.arrived = true;
+      secretRide.t = 0;
+      HIDDEN_DOOR.open[from] = 0;
+      HIDDEN_DOOR.open[to] = 1;
+    }
+    return;
+  }
+  HIDDEN_DOOR.open[to] = Math.max(0, 1 - secretRide.t / SECRET_CLOSE);
+  if (secretRide.t >= SECRET_CLOSE) secretRide = null;
+}
 function updateElevator(dt) {
   if (!ride) return;
   ride.t += dt;
@@ -2553,7 +2617,21 @@ let lastSidebar = "";
 let visiblePeers = []; // friends you're allowed to see (see peerAllowed), updated each frame
 let lofiPlaying = false;
 
+// One frame of the game. If anything in a frame goes wrong, the problem
+// is reported (the admin panel's Server tab lists it) and the next frame
+// carries on, so one bad moment can't freeze the whole house.
+let frameErrors = 0;
 function tick(now) {
+  try {
+    frame(now);
+  } catch (err) {
+    if (frameErrors++ < 3) reportError(err?.message ?? err, "frame: " + String(err?.stack ?? "").split("\n")[1]?.trim());
+    console.error(err);
+  }
+  requestAnimationFrame(tick);
+}
+
+function frame(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05); // cap so a tab-switch pause doesn't teleport the player
   lastTime = now;
 
@@ -2576,6 +2654,7 @@ function tick(now) {
     playClickSound();
   }
   updateElevator(dt);
+  updateSecretDoor(dt);
   checkLeftBedroom();
   visiblePeers = getPeers().filter(peerAllowed);
   showDanceCooldown();
@@ -2657,15 +2736,16 @@ function tick(now) {
   scenePlayers.push({ id: "me", pet: myPet, x: myAt.x, y: myAt.y, moving: dx !== 0 || dy !== 0, color: myColor, hat: myHat, shoes: myShoes, glasses: myGlasses, face: myFace, ...myAccessories, title: titleText(myTitle), name: myName, badge: inCall() ? "on the phone" : statusBadge(currentRoom.id, myBed, myName), bubble: bubbleFor("me"), emote: myBed ? sleepingEmote() : emoteNow(myEmote), typing: amTyping(), asleep: myBed && { color: myBed.color, facing: myBed.facing }, aura: myAura(), admin: checkBadge(myBadge(), myName), seated: mySeat?.face ?? null, seatLift: mySeat?.lift ?? 0, sortY: mySeat?.sortY, speaking: mySpeaking, whisper: whisperTarget() ? whisperLean(player.x, whisperTarget()) : null, fishing: fishingLine() });
   updateChatTabs(currentRoom);
   drawScene(ctx, scenePlayers, studySignText(), updatePets(scenePlayers, dt), floorOf(player.y), heldPiece(), player);
-  // Walked into (or out of) a bedroom: its view is zoomed in, so fit it to the window again.
-  if (floorOf(player.y) !== lastDrawnFloor) {
+  // The view changed size (the map, a bedroom, another floor): fit it to
+  // the window again.
+  const view = houseViewSize();
+  if (floorOf(player.y) !== lastDrawnFloor || Math.abs(view.w - lastView.w) > 0.5 || Math.abs(view.h - lastView.h) > 0.5) {
     lastDrawnFloor = floorOf(player.y);
+    lastView = view;
     fitHouse();
   }
 
   updateSidebar(currentRoom.name);
-
-  requestAnimationFrame(tick);
 }
 
 // --- Updates without refreshing ---

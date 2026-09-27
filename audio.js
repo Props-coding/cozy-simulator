@@ -7,7 +7,7 @@
 // room; a bedroom's owner can also pick lo-fi or silence instead). main.js
 // passes "asleep" as the room while you're in bed, which isn't a voice
 // room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire", "dinner"];
+const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire", "dinner", "lake", "alley"];
 
 function isVoiceRoom(roomId) {
   if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
@@ -92,6 +92,9 @@ const ROOM_CHIME_NOTES = {
   pond: [392, 587.33],
   campfire: [392, 587.33],
   busStop: [392, 587.33],
+  lake: [392, 587.33],
+  // The back alley: Eb4, Ab4, a little shady.
+  alley: [311.13, 415.3],
 };
 
 export function playRoomChangeSound(roomId) {
@@ -179,6 +182,31 @@ export function playCoatWhoosh() {
   filter.connect(gain);
   gain.connect(toneContext.destination);
   noise.start(now);
+}
+
+// The hidden door: a click, then a slow wooden creak as it swings.
+export function playSecretDoor() {
+  playTone(1400, 0, { gain: 0.05, duration: 0.03, type: "square" });
+  if (!toneContext || isSilentSpot() || masterMuted) return;
+  const now = toneContext.currentTime + 0.08;
+  const osc = toneContext.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(210, now);
+  osc.frequency.linearRampToValueAtTime(150, now + 0.25);
+  osc.frequency.linearRampToValueAtTime(190, now + 0.45);
+  const filter = toneContext.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = 700;
+  filter.Q.value = 6;
+  const gain = toneContext.createGain();
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.06 * masterVolume, now + 0.06);
+  gain.gain.linearRampToValueAtTime(0, now + 0.5);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(toneContext.destination);
+  osc.start(now);
+  osc.stop(now + 0.55);
 }
 
 // The elevator arriving: a soft two-note "ding-dong".

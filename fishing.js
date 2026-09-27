@@ -45,6 +45,18 @@ registerItems({
 // --- Your fishing progress (the bank's latest copy) ---
 const mine = () => myWallet().fishing;
 
+// --- Otis's lesson ---
+// New fishers find Otis at the pond. He lends you his twig rod and talks
+// you through your first catch, which can't get away. After that he's at
+// Willow Lake (for you), and a bait box stands in his spot at the pond.
+// The server keeps where you are with it: mine().lesson is "none", "started"
+// or "done".
+const lesson = () => mine().lesson ?? "done";
+const inLesson = () => lesson() === "started";
+window.addEventListener("bank-changed", () => {
+  OTIS.atLake = lesson() === "done";
+});
+
 // Your fishing level (1 and up), from your XP.
 export function fishingLevel(xp = mine().xp) {
   let level = 1;
@@ -68,6 +80,8 @@ function baitInUse() {
 function whenText(fish) {
   const when = fish.when ?? {};
   const parts = [];
+  // (Rarer fish than the pond has only live at Willow Lake.)
+  if (fish.rarity > (CONFIG.fishing.waters?.pond?.maxRarity ?? 5)) parts.push("at Willow Lake");
   if (when.night === true) parts.push("at night");
   if (when.night === false) parts.push("by day");
   if (when.rain) parts.push("in the rain");
@@ -105,11 +119,23 @@ export function fishingLine() {
   return state ? { bx: state.bx, by: state.by, bite: ["bite", "hooking", "reeling"].includes(state.phase), nibble: state.phase === "nibble" && performance.now() < (state.twitchUntil ?? 0) } : null;
 }
 
-export function fishingHint() {
+export function fishingHint(spot) {
+  if (lesson() === "none") return "You'll need a fishing rod. Otis, the otter by the pond, will lend you one.";
+  // Otis's lesson: every step, spelled out.
+  if (inLesson()) {
+    if (!state) return "Otis: \"Stand at the water's edge (or on the dock) and press E to cast!\"";
+    if (state.phase === "waiting") return "Otis: \"Now we wait. See those shadows? One will swim up to your bobber.\"";
+    if (state.phase === "nibble") return "Otis: \"Easy... that's just a nibble. Wait for the big splash!\"";
+    if (state.phase === "bite") return "Otis: \"That's a bite! Press E!\"";
+  }
   if (!state) {
     const bait = baitInUse();
     const baitText = bait.price ? `${bait.name} ×${basketCount(`bait:${bait.id}`)}` : "no bait";
-    return `Press E to cast your ${myRod().name.toLowerCase()} (${baitText}), or click the pond to aim at a fish.`;
+    const where = spot?.water === "lake" ? "the lake" : "the pond";
+    // Fancy bait at the beginners' pond: say where those fish really are.
+    const pondMax = CONFIG.fishing.waters?.pond?.maxRarity ?? 5;
+    if (spot?.water === "pond" && Math.min(...bait.catches) > pondMax) return `Only common and uncommon fish live in the pond. Your ${bait.name.toLowerCase()} is for rarer fish: take the bus to Willow Lake!`;
+    return `Press E to cast your ${myRod().name.toLowerCase()} (${baitText}), or click ${where} to aim at a fish.`;
   }
   if (state.phase === "waiting") return "Waiting for a fish to swim over... (E or walking reels your line back in)";
   if (state.phase === "nibble") return "Something's nibbling... wait for the real bite!";
@@ -120,8 +146,11 @@ export function fishingHint() {
 // Press E at the water: cast straight out, strike on a bite, or (too
 // soon) spook it.
 export function useFishing(spot) {
+  if (lesson() === "none") return hooks.notice("You don't have a fishing rod yet. Otis, by the pond, will lend you one.");
   if (!state) return spot && castAt(spot);
   if (state.phase === "bite") return hook();
+  // (In the lesson, striking too soon doesn't scare the fish off.)
+  if (state.phase === "nibble" && inLesson()) return hooks.notice("Otis: \"Not yet! Wait for the real bite.\"");
   if (state.phase === "nibble") return stopFishing("Too soon! That was only a nibble, and the fish swam off. Cast again.");
   if (state.phase === "waiting") stopFishing("You reeled your line back in.");
 }
@@ -129,8 +158,9 @@ export function useFishing(spot) {
 // Cast to a spot on the pond ({ bx, by }): E casts straight out; clicking
 // the pond (main.js) aims.
 export function castAt(spot) {
-  if (state || !inPond(spot.bx, spot.by)) return false;
-  state = { phase: "waiting", bx: spot.bx, by: spot.by, castAt: Date.now(), shadow: null };
+  const water = waterAt(spot.bx, spot.by);
+  if (state || !water) return false;
+  state = { phase: "waiting", bx: spot.bx, by: spot.by, water, castAt: Date.now(), shadow: null };
   bank("cast", { bx: spot.bx, by: spot.by });
   playWaterSound();
   clearTimeout(timer);
@@ -151,7 +181,7 @@ function watch() {
   const [low, high] = CONFIG.fishing.biteSeconds;
   const waited = (Date.now() - state.castAt) / 1000;
   if (waited >= low * biteScale()) {
-    const near = pondShadows(Date.now()).find((s) => Math.hypot(s.x - state.bx, s.y - state.by) <= CONFIG.fishing.shadows.reach);
+    const near = waterShadows(state.water, Date.now()).find((s) => Math.hypot(s.x - state.bx, s.y - state.by) <= CONFIG.fishing.shadows.reach);
     if (near || waited >= high * biteScale()) return startNibbles(near ?? null);
   }
   timer = setTimeout(watch, 250);
@@ -160,7 +190,7 @@ function watch() {
 function startNibbles(shadow) {
   state.phase = "nibble";
   state.shadow = shadow?.id ?? null;
-  POND_VIEW.locked = shadow ? { id: shadow.id, x: state.bx, y: state.by, size: shadow.size } : { id: -1, x: state.bx, y: state.by, size: "small" };
+  POND_VIEW.locked = { ...(shadow ? { id: shadow.id, size: shadow.size } : { id: -1, size: "small" }), x: state.bx, y: state.by, water: state.water.id };
   const [few, most] = CONFIG.fishing.nibbles;
   let left = few + Math.floor(Math.random() * (most - few + 1));
   const next = () => {
@@ -179,7 +209,8 @@ function bite() {
   if (!state) return;
   state.phase = "bite";
   playTug();
-  timer = setTimeout(() => stopFishing("It got away! Press E faster when the ! pops up."), CONFIG.fishing.hookSeconds * 1000);
+  // (In the lesson, the fish waits for you.)
+  if (!inLesson()) timer = setTimeout(() => stopFishing("It got away! Press E faster when the ! pops up."), CONFIG.fishing.hookSeconds * 1000);
 }
 
 // Hooked! The server uses up the bait, checks which shadow came to the
@@ -228,7 +259,9 @@ function startReel(caught) {
   const R = CONFIG.fishing.reel;
   const pull = CONFIG.fishing.pulls[caught.pull] ? caught.pull : "steady";
   reel = { progress: R.start, tension: 0.3, slack: 0, pull, strength: caught.junk ? 0.6 : 1 + R.rarityPull * (caught.rarity - 1), nextTug: 0, tugUntil: 0, holding: false, last: performance.now(), t: 0 };
-  reelSay.textContent = `${caught.junk ? "Something's on the line." : PULL_WORDS[pull]} Hold Space to reel in, let go to give it line.`;
+  reelSay.textContent = inLesson()
+    ? "Otis: \"Hold Space to reel in. If the line gets tight (red), let go for a moment. Keep it green!\""
+    : `${caught.junk ? "Something's on the line." : PULL_WORDS[pull]} Hold Space to reel in, let go to give it line.`;
   // Something on the line (you don't know what until it's landed): a
   // fish, or a question mark for junk; a bit bigger for a rare one.
   if (caught.junk) setPicture(fishMark, "unknown", 20);
@@ -267,6 +300,13 @@ function stepReel(now) {
   }
   reel.tension = Math.max(0, Math.min(1.05, reel.tension));
   reel.slack = reel.tension < R.slackAt ? reel.slack + dt : 0;
+  // Your first fish (Otis's lesson) can't get away: the line never quite
+  // snaps, never goes slack for long, and the fish can't take all of it.
+  if (inLesson()) {
+    reel.tension = Math.min(reel.tension, 0.97);
+    reel.slack = Math.min(reel.slack, R.slackSeconds * 0.5);
+    reel.progress = Math.max(reel.progress, 0.03);
+  }
   showReel();
   const what = state.catch.junk ? "Whatever it was" : `The ${RARITY[state.catch.rarity].toLowerCase()} fish`;
   if (reel.tension >= 1) return failReel(`Snap! The line was too tight. ${what} got away.`);
@@ -295,8 +335,10 @@ function failReel(message) {
 // Landed: the server puts it in your basket and says what it was, and how
 // it measures up (your best, and the house's best).
 async function land() {
+  const wasLesson = inLesson();
   const caught = await bank("land");
   if (!caught) return;
+  if (wasLesson && caught.fish) setTimeout(lessonDone, 2600);
   if (caught.junk) {
     const junk = CONFIG.junk.find((j) => j.id === caught.junk);
     playClickSound();
@@ -335,6 +377,8 @@ window.addEventListener("keydown", (e) => {
     setHolding(true);
   } else if (key === "escape") {
     e.preventDefault();
+    // (Not your first fish: Otis won't hear of it.)
+    if (inLesson()) return hooks.notice("Otis: \"Don't let it go! Keep reeling, you've got this.\"");
     failReel("You let it go.");
   }
 });
@@ -345,25 +389,92 @@ window.addEventListener("blur", () => setHolding(false));
 
 // --- Otis the otter ---
 const OTIS_HELLO = [
-  "ahoy! otis here. rods, bait, and i'll buy whatever you pull out of that pond.",
+  "ahoy! otis here. rods, bait, and i'll buy whatever you pull out of this lake.",
   "fish are biting today. probably. they usually are.",
   "back for more? the big ones come out at night, you know.",
   "rain's the best time. the eels love it.",
+  "the lake's where the real monsters live. the pond's for tiddlers.",
+];
+
+// The four steps of Otis's lesson, as rows in his window.
+const LESSON_STEPS = [
+  { icon: "rod:twig", name: "1. Cast", note: "Stand at the water's edge (or on the little dock) and press E. You can also click the water to aim at a fish shadow." },
+  { icon: "unknown", name: "2. Wait", note: "Fish shadows swim about. Sooner or later one comes over to your bobber." },
+  { icon: "bait:worm", name: "3. Don't strike on a nibble", note: "The bobber twitches a few times first. Wait for the big splash and the \"!\", then press E." },
+  { icon: "fish:bluegill", name: "4. Reel it in", note: "Hold Space to reel. If the line bar turns red, let go for a moment. Your first fish can't get away, so take your time!" },
 ];
 
 export function talkToOtis() {
+  const base = { name: "Otis", portrait: { f: "otis", w: 0.55, h: 0.4 }, color: "#5a7aa0", pitch: 280 };
+  // Brand new: he lends you his twig rod and starts the lesson.
+  if (lesson() === "none") {
+    return openNpc({
+      ...base,
+      hello: "oh, a new face! i'm otis. never fished before? here, borrow my old twig rod. keep it, actually. i'll show you how.",
+      tabs: [
+        {
+          id: "lesson",
+          label: "Fishing lesson",
+          items: () => [
+            {
+              icon: "rod:twig",
+              name: "Otis's twig rod, and 3 worms",
+              note: "Free! Otis will talk you through your very first catch.",
+              actions: [{ label: "Take it", run: startLesson }],
+            },
+          ],
+        },
+      ],
+    });
+  }
+  // Mid-lesson: the steps again.
+  if (inLesson()) {
+    return openNpc({
+      ...base,
+      hello: ["go on, give it a cast! i'm right here.", "the water's that way! stand at the edge and press E.", "don't worry, your first one won't get away. otis promise."],
+      tabs: [{ id: "lesson", label: "Lesson", items: () => LESSON_STEPS }],
+    });
+  }
   openNpc({
-    name: "Otis",
-    portrait: { f: "otis", w: 0.55, h: 0.4 },
-    color: "#5a7aa0",
-    pitch: 280,
-    hello: Object.keys(mine().log).length === 0 ? "oh, a new face! i'm otis. here's a twig rod, on the house. grab some worms and give it a go!" : OTIS_HELLO,
+    ...base,
+    hello: OTIS_HELLO,
     tabs: [
       { id: "rods", label: "Rods", items: rodRows },
       { id: "bait", label: "Bait", items: baitRows },
-      { id: "sell", label: "Sell fish", items: fishToSell, empty: "No fish to sell yet. Cast a line at the pond!" },
+      { id: "sell", label: "Sell fish", items: fishToSell, empty: "No fish to sell yet. Cast a line in the lake!" },
       { id: "log", label: "Fish log", items: logRows, onOpen: loadRecords },
       { id: "recipes", label: "Recipes", items: () => recipeShopRows("otis", "an old otter family secret. don't tell anyone.") },
+    ],
+  });
+}
+
+async function startLesson() {
+  if (!(await bank("startLesson"))) return null;
+  playAchievementSound();
+  hooks.notice("Otis gave you his twig rod and 3 worms. Stand at the water's edge and press E to cast!", 7000);
+  // (His window now shows the lesson's steps.)
+  setTimeout(talkToOtis, 0);
+  return null;
+}
+
+// Your first fish is in the basket: Otis cheers, and heads off to the lake.
+function lessonDone() {
+  playAchievementSound();
+  hooks.notice("Otis: \"You did it, your first fish! Keep the rod. I'm off to Willow Lake, where the big ones are. Take the bus by the gate and come find me! I've left a bait box here by the pond.\"", 12000);
+}
+
+// --- Otis's bait box (at the pond, once he's moved to the lake) ---
+// Worms and crickets for beginners, and a slot to sell your fish.
+export function openBaitBox() {
+  openNpc({
+    name: "Otis's bait box",
+    portrait: { f: "baitBox", w: 0.6, h: 0.45 },
+    color: "#8a6a44",
+    pitch: 280,
+    hello: ["(a note, in wobbly otter writing) \"gone to the lake! worms and crickets inside. leave your fish in the slot and i'll pay you. -otis\"", "(the note says) \"pond fish only get so big. the lake's got the fancy ones! bus is by the gate. -o\""],
+    tabs: [
+      { id: "bait", label: "Bait", items: () => baitRows(["none", "worm", "cricket"]) },
+      { id: "sell", label: "Sell fish", items: fishToSell, empty: "No fish to sell yet. Cast a line in the pond!" },
     ],
   });
 }
@@ -406,10 +517,11 @@ async function buyRod(rod) {
   return `the ${rod.name.toLowerCase()}! treat her well and she'll treat you well.`;
 }
 
-function baitRows() {
+// (`only`: just these kinds, for the bait box.)
+function baitRows(only) {
   const level = fishingLevel();
   // (The traveling merchant's bait only shows once you have some.)
-  return CONFIG.bait.filter((bait) => !bait.merchant || basketCount(`bait:${bait.id}`) > 0 || mine().bait === bait.id).map((bait) => {
+  return CONFIG.bait.filter((bait) => !only || only.includes(bait.id)).filter((bait) => !bait.merchant || basketCount(`bait:${bait.id}`) > 0 || mine().bait === bait.id).map((bait) => {
     const have = bait.price ? basketCount(`bait:${bait.id}`) : null;
     const locked = level < bait.level;
     const using = mine().bait === bait.id;

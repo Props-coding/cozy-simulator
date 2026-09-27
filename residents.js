@@ -93,7 +93,17 @@ const WHO = {
         },
       },
       {
+        name: "What's in the basket?",
+        where: "yard",
+        say: () => pick([
+          "bread rolls! still warm. i'm taking some to hazel, and one for me. fine, two for me.",
+          "a little of everything. rolls, a muffin, and a very squashed cinnamon bun. don't tell anyone.",
+          "lunch! i like to eat it on the porch steps and watch the garden grow. it's slow. i'm patient.",
+        ]),
+      },
+      {
         name: "What are you baking?",
+        where: "kitchen",
         say: () => pick([
           "sourdough, mostly. my starter's name is doug. he's twelve years old and very moody.",
           "honey oat loaves! the honey's from the pantry. the oats are from... also the pantry.",
@@ -264,6 +274,12 @@ export function heartToast(e) {
   return { kind: "tier", picture: "heart", label: "Friendship!", name: `${name}: ${e.hearts} ${e.hearts === 1 ? "heart" : "hearts"}`, desc, crumbs: 0 };
 }
 
+// Where a resident is right now, roughly: "yard" or "kitchen" (indoors).
+function whereIs(r) {
+  const state = residentState(r);
+  return state && floorOf(state.y) === YARD_FLOOR ? "yard" : "kitchen";
+}
+
 // Opens a resident's window (main.js calls this when you press E by one).
 export function talkToResident(id) {
   const r = RESIDENTS.find((x) => x.id === id);
@@ -305,7 +321,9 @@ export function talkToResident(id) {
         id: "chat",
         label: "Chat",
         items: () => [
-          ...who.topics.map((topic) => ({
+          // (Some topics only make sense in one place: no "what are you
+          // baking?" while she's out in the yard.)
+          ...who.topics.filter((topic) => !topic.where || topic.where === whereIs(r)).map((topic) => ({
             name: topic.name,
             actions: [{ label: "Ask", soft: true, run: async () => (await chatted(), topic.say()) }],
           })),

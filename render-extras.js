@@ -1315,8 +1315,8 @@ function drawLamp(ctx, x, y) {
 // aren't cut off by things drawn after them.
 function drawLights(ctx) {
   drawSunPatches(ctx); // sunlight on the floor in front of windows, on sunny days (outdoors.js)
-  if (viewFloor === YARD_FLOOR) {
-    drawOutdoorLight(ctx); // daylight, dusk and night in the yard (outdoors.js)
+  if (isOutdoorFloor(viewFloor)) {
+    drawOutdoorLight(ctx); // daylight, dusk and night outdoors (the yard, the Lake: outdoors.js)
     return;
   }
   // Study, Dinner and the Hallway get a soft golden wash, like rooms lit

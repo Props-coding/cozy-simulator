@@ -1173,8 +1173,17 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // Hung on a wall face: a framed painting.
   picture(ctx, f) {
+    // (The crooked one hangs on the hidden door: it swings away with it.)
+    if (f.crooked && HIDDEN_DOOR.open.hall > 0.05) return;
     const a = toScreen(f.x, f.y);
     const x = a.x, y = a.y - WALL_HEIGHT + 5, w = f.w * TILE, h = 22;
+    ctx.save();
+    if (f.crooked) {
+      // Hanging a little crooked from its nail.
+      ctx.translate(x + w / 2, y);
+      ctx.rotate(0.09);
+      ctx.translate(-(x + w / 2), -y);
+    }
     // Flat on the wall with a thin gold frame (windows have deep frames,
     // sills and curtains, so the two never look alike).
     ctx.fillStyle = "rgba(40, 25, 10, 0.15)";
@@ -1187,6 +1196,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.rect(ix, iy, iw, ih);
     ctx.clip();
     PICTURE_ART[f.art](ctx, ix, iy, iw, ih);
+    ctx.restore();
     ctx.restore();
   },
 

@@ -2,7 +2,8 @@
 //
 // You earn crumbs just for being in the house (see config.js), and spend
 // them on hats, shoes, glasses, scarves, backpacks, earrings and pets sold by three raccoons in a trenchcoat who lurk
-// out in the yard, by the bins (they lived in the hallway until Update 4).
+// in the back alley, through a hidden door at the hallway's east end (they
+// lived in the hallway until Update 4, then by the yard's bins until Update 7).
 // They also buy junk you fish out of the pond. Talking to them opens a chatty speech box: their words
 // type out letter by letter with a babbling voice. Then the coat swings
 // open to show the wares.
@@ -232,6 +233,14 @@ function mainChoices() {
         ["pip", "definitely NOT three raccoons."],
         ["bean", "...three raccoons."],
         ["reginald", "BEAN."],
+      ], mainChoices);
+    }],
+    ["Why the alley?", () => {
+      say([
+        ["reginald", "the yard had too much... daylight."],
+        ["pip", "and a hedgehog kept asking to see our business license."],
+        ["reginald", "we are not a business. it says so on the dumpster."],
+        ["bean", "the cat lets us stay."],
       ], mainChoices);
     }],
     ["Want some pond junk?", sellJunk],

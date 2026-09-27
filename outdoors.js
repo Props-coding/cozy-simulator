@@ -27,7 +27,7 @@ const GRASS = {
 
 // Points every `step` grid units along a smooth curve through `points`
 // (yard spots), as screen positions.
-function pathSamples(points, step = 0.1) {
+function pathSamples(points, step = 0.1, base = YARD) {
   const out = [];
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i - 1] ?? points[i], p1 = points[i], p2 = points[i + 1], p3 = points[i + 2] ?? p2;
@@ -39,11 +39,11 @@ function pathSamples(points, step = 0.1) {
     }
   }
   out.push(points[points.length - 1]);
-  return out.map(([x, y]) => toScreen(x, YARD + y));
+  return out.map(([x, y]) => toScreen(x, base + y));
 }
 
-function paintPaths(ctx) {
-  const paths = YARD_PATHS.map((path, n) => ({ ...path, n, at: pathSamples(path.points) }));
+function paintPaths(ctx, list = YARD_PATHS, base = YARD) {
+  const paths = list.map((path, n) => ({ ...path, n, at: pathSamples(path.points, 0.1, base) }));
   // How wide a path is at sample i: its width, give or take a little.
   const radius = (path, i) => (path.w * TILE * (1 + 0.07 * Math.sin(i * 0.23 + path.n * 2.1) + 0.04 * (noise(path.n * 31 + i) - 0.5))) / 2;
   // 1. Trodden grass along the edges (one stroke, so crossings don't darken).
@@ -232,9 +232,9 @@ function paintPond(ctx) {
 
 // The street along the bottom of the yard: a sidewalk, then the road with
 // a dashed line down the middle.
-function paintStreet(ctx) {
+function paintStreet(ctx, base = YARD) {
   const { left, right, bottom } = houseBounds();
-  const walk = toScreen(0, YARD + 9.5).y, road = toScreen(0, YARD + 10.4).y;
+  const walk = toScreen(0, base + 9.5).y, road = toScreen(0, base + 10.4).y;
   ctx.fillStyle = "#cfc8bb";
   ctx.fillRect(left - 20, walk, right - left + 40, road - walk);
   ctx.fillStyle = "rgba(120, 110, 95, 0.35)";
@@ -315,6 +315,8 @@ function paintFrontSteps(ctx) {
 // Little ripple rings and sparkles drifting over the pond, drawn every
 // frame (flat on the ground, under everything standing).
 function drawPondShimmer(ctx) {
+  if (viewFloor === LAKE_FLOOR) return drawLakeShimmer(ctx); // (render-lake.js)
+  if (viewFloor === ALLEY_FLOOR) return drawAlleyLife(ctx); // (render-alley.js)
   if (viewFloor !== YARD_FLOOR) return;
   const t = performance.now() / 1000;
   const c = toScreen(POND.cx, POND.cy);
@@ -346,11 +348,12 @@ function drawFishShadows(ctx) {
   const now = Date.now();
   const locked = POND_VIEW.locked;
   const t = performance.now() / 1000;
+  const mine = locked && locked.water !== "lake" ? locked : null; // (the Lake draws its own)
   for (const s of pondShadows(now)) {
-    if (locked && locked.id === s.id) continue;
+    if (mine && mine.id === s.id) continue;
     drawFishShadow(ctx, s.x, s.y, s.angle, CONFIG.fishing.shadows[s.size].scale, t + s.id);
   }
-  if (locked) drawFishShadow(ctx, locked.x - 0.25, locked.y + 0.12, 0, CONFIG.fishing.shadows[locked.size].scale, t * 3);
+  if (mine) drawFishShadow(ctx, locked.x - 0.25, locked.y + 0.12, 0, CONFIG.fishing.shadows[locked.size].scale, t * 3);
 }
 
 function drawFishShadow(ctx, x, y, angle, scale, wiggle) {
@@ -405,9 +408,11 @@ function yardGlows() {
 }
 
 function drawOutdoorLight(ctx) {
-  const level = outdoorNightLevel();
+  // (The back alley is shady even by day, so its lights always show a little.)
+  const level = viewFloor === ALLEY_FLOOR ? Math.max(0.35, outdoorNightLevel()) : outdoorNightLevel();
   const { left, right, top, bottom } = houseBounds();
-  const whole = [{ x: -WALL_THICKNESS - 2, y: YARD - 8, w: HOUSE_WIDTH + 4, h: 21 }];
+  const base = viewFloor * UPSTAIRS; // (the yard's, or the Lake's)
+  const whole = [{ x: -WALL_THICKNESS - 2, y: base - 8, w: HOUSE_WIDTH + 4, h: 21 }];
   if (level <= 0.001) {
     drawOutsideWeather(ctx, whole);
     return;
@@ -416,11 +421,12 @@ function drawOutdoorLight(ctx) {
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
-  for (const [x, y, r, strength] of yardGlows()) {
+  const glows = viewFloor === LAKE_FLOOR ? lakeGlows() : viewFloor === ALLEY_FLOOR ? alleyGlows() : yardGlows();
+  for (const [x, y, r, strength, color = "255, 185, 95"] of glows) {
     const p = toScreen(x, y);
     const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-    glow.addColorStop(0, `rgba(255, 185, 95, ${0.55 * strength * level})`);
-    glow.addColorStop(1, "rgba(255, 190, 100, 0)");
+    glow.addColorStop(0, `rgba(${color}, ${0.55 * strength * level})`);
+    glow.addColorStop(1, `rgba(${color}, 0)`);
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
@@ -428,15 +434,17 @@ function drawOutdoorLight(ctx) {
   }
   ctx.restore();
   // A few stars over the roof line (when the sky is clear enough).
-  const starry = OUTDOORS.clouds < 0.6 && !OUTDOORS.rain && !OUTDOORS.snow && OUTDOORS.sky !== "fog";
+  const starry = viewFloor !== ALLEY_FLOOR && OUTDOORS.clouds < 0.6 && !OUTDOORS.rain && !OUTDOORS.snow && OUTDOORS.sky !== "fog";
   ctx.fillStyle = `rgba(255, 250, 225, ${0.8 * level})`;
-  const roofTop = toScreen(0, YARD - 5.8).y - WALL_HEIGHT;
+  const roofTop = toScreen(0, base - 5.8).y - WALL_HEIGHT;
   for (let i = 0; i < (starry ? 26 : 0); i++) {
     const twinkle = 0.5 + 0.5 * Math.sin(performance.now() / 700 + i * 2.1);
     ctx.globalAlpha = level * (0.4 + 0.6 * twinkle);
     ctx.fillRect(left + noise(i * 3.3) * (right - left), top + noise(i * 5.9) * (roofTop - top - 4), 1.8, 1.8);
   }
   ctx.globalAlpha = 1;
+  if (viewFloor === LAKE_FLOOR) drawLakeFireflies(ctx, level); // (render-lake.js)
+  if (viewFloor === ALLEY_FLOOR) drawAlleyOverhead(ctx, level); // (render-alley.js)
   drawOutsideWeather(ctx, whole); // rain or snow falls in front of the lights
 }
 
@@ -1366,7 +1374,7 @@ for (const kind of WINDOW_KINDS) FURNITURE_DRAWERS[kind] = drawWindow;
 // night, at dusk, or when it's grey or wet outside). Drawn over
 // everything, in the light pass (see drawLights in render.js).
 function drawSunPatches(ctx) {
-  if (!sunnyNow() || viewFloor === YARD_FLOOR) return;
+  if (!sunnyNow() || isOutdoorFloor(viewFloor)) return;
   const strength = 1 - outdoorNightLevel();
   for (const f of FURNITURE) {
     if (!WINDOW_KINDS.has(f.kind) || floorOf(f.y) !== viewFloor) continue;
@@ -1739,7 +1747,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 
-  // --- Reginald's corner: the raccoons' new spot by the bins ---
+  // --- The bins (the yard's), which the raccoons also keep in their alley ---
 
   // Two metal trash cans with lids (one lid slightly askew).
   trashCans(ctx, f) {
@@ -1845,8 +1853,10 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillStyle = "#4a3222";
     ctx.font = "700 6.5px 'Quicksand', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("totally normal", 0, -1.5);
-    ctx.fillText("trash", 0, 5);
+    // (Its words: "totally normal trash", unless it says otherwise.)
+    const [one, two] = f.lines ?? ["totally normal", "trash"];
+    ctx.fillText(one, 0, -1.5);
+    ctx.fillText(two, 0, 5);
     ctx.restore();
     ctx.textAlign = "left";
   },
@@ -2003,7 +2013,49 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // Otis the otter: sleek and brown with a cream face, a yellow rain hat
   // and a little fish in his paws.
+  // Otis's self-serve bait box at the pond (once he's moved to the Lake):
+  // a little wooden box on a post, a jar for crumbs, and his note.
+  baitBox(ctx, f) {
+    if (!OTIS.atLake) return;
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "#6b4a30";
+    ctx.fillRect(b.x - 2.5, b.y - 20, 5, 20);
+    const box = ctx.createLinearGradient(0, b.y - 40, 0, b.y - 20);
+    box.addColorStop(0, "#b8844e");
+    box.addColorStop(1, "#8a6038");
+    ctx.fillStyle = box;
+    roundRectPath(ctx, b.x - 13, b.y - 40, 26, 20, 3);
+    ctx.fill();
+    ctx.fillStyle = "#6b4426";
+    ctx.fillRect(b.x - 14, b.y - 42, 28, 4);
+    ctx.fillStyle = "#f2e2c0";
+    ctx.fillRect(b.x - 9, b.y - 35, 18, 9);
+    // (A little pink worm painted on its label.)
+    ctx.strokeStyle = "#d9788a";
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i <= 12; i++) ctx[i ? "lineTo" : "moveTo"](b.x - 6 + i, b.y - 30.5 + Math.sin(i * 0.9) * 1.6);
+    ctx.stroke();
+    // The honesty jar, and Otis's note pinned to the post.
+    ctx.fillStyle = "rgba(200, 225, 235, 0.7)";
+    roundRectPath(ctx, b.x + 9, b.y - 48, 7, 8, 2);
+    ctx.fill();
+    ctx.fillStyle = "#e3a954";
+    ctx.fillRect(b.x + 10, b.y - 44, 5, 3);
+    ctx.fillStyle = "#fbf6ea";
+    ctx.save();
+    ctx.translate(b.x - 1, b.y - 15);
+    ctx.rotate(-0.08);
+    ctx.fillRect(-6, 0, 12, 9);
+    ctx.fillStyle = "rgba(90, 70, 50, 0.5)";
+    for (const y of [2.5, 5, 7]) ctx.fillRect(-4.5, y, 9, 0.8);
+    ctx.restore();
+  },
+
   otis(ctx, f) {
+    if (f.place && !otisHere(f)) return; // (at the pond or the Lake: see OTIS in world.js)
     const t = performance.now() / 1000;
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
@@ -2306,28 +2358,12 @@ FURNITURE_DRAWERS.porchSwing = (ctx, f) => {
 };
 
 // --- The bus stop (Update 4, step 7) ---
-// Where the bus is right now. Everyone's clock agrees (it's worked out from
-// the time of day), so friends see the bus at the same moment.
-// Returns { phase: "away" | "arriving" | "waiting" | "leaving", x (the
-// bus's left end, grid units), untilNext (seconds until it next arrives),
-// leavesIn (seconds, while waiting) }.
 const BUS_LENGTH = 4.4;
 const BUS_STOP_X = 14.8; // where its left end stops: just left of the shelter (not in front of it), its door by the gate
-const BUS_DRIVE = 7; // seconds to drive in (or out)
-function busState(now = Date.now()) {
-  const period = Math.max(2, CONFIG.bus.everyMinutes) * 60;
-  const wait = CONFIG.bus.waitSeconds;
-  const t = (now / 1000) % period;
-  const ease = (k) => 1 - (1 - k) ** 3; // slowing down as it pulls in
-  if (t < BUS_DRIVE) {
-    return { phase: "arriving", x: -BUS_LENGTH - 1 + (BUS_STOP_X + BUS_LENGTH + 1) * ease(t / BUS_DRIVE), untilNext: 0 };
-  }
-  if (t < BUS_DRIVE + wait) return { phase: "waiting", x: BUS_STOP_X, untilNext: 0, leavesIn: BUS_DRIVE + wait - t };
-  if (t < BUS_DRIVE * 2 + wait) {
-    const k = (t - BUS_DRIVE - wait) / BUS_DRIVE;
-    return { phase: "leaving", x: BUS_STOP_X + (HOUSE_WIDTH + 1 - BUS_STOP_X) * k * k, untilNext: period - t };
-  }
-  return { phase: "away", x: null, untilNext: period - t };
+// The bus is always parked at the stop now (trips to the Lake and the
+// Farm leave whenever you like), so it's simply "waiting", with its door open.
+function busState() {
+  return { phase: "waiting", x: BUS_STOP_X };
 }
 
 Object.assign(FURNITURE_DRAWERS, {
@@ -2335,9 +2371,8 @@ Object.assign(FURNITURE_DRAWERS, {
   // a door in the middle (open while it waits), and headlights at night.
   bus(ctx, f) {
     const bus = busState();
-    if (bus.x === null) return;
     const t = performance.now() / 1000;
-    const a = toScreen(bus.x, f.y + f.h);
+    const a = toScreen(f.stopX ?? bus.x, f.y + f.h); // (stopX: where it parks at the Lake)
     const w = BUS_LENGTH * TILE, h = 50;
     const moving = bus.phase !== "waiting";
     const bob = moving ? Math.sin(t * 18) * 0.8 : 0;
@@ -2423,7 +2458,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillStyle = "#f2c94c";
     ctx.font = "700 7.5px 'Quicksand', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("TRIPS SOON", x + w / 2, top - 1);
+    ctx.fillText(floorOf(f.y) === LAKE_FLOOR ? "HOME" : "LAKE · FARM", x + w / 2, top - 1);
     ctx.textAlign = "left";
   },
 
@@ -2494,9 +2529,8 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.font = "800 8px 'Quicksand', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("BUS", b.x, b.y - 69);
-    // Timetable board.
-    const bus = busState();
-    const text = bus.phase === "waiting" ? "Here now!" : bus.phase === "arriving" ? "Arriving..." : `Next: ${Math.max(1, Math.ceil(bus.untilNext / 60))} min`;
+    // The board: where the bus goes.
+    const text = "Trips";
     ctx.fillStyle = "#2b2b30";
     roundRectPath(ctx, b.x - 22, b.y - 52, 44, 22, 3);
     ctx.fill();
@@ -2505,7 +2539,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillText(text, b.x, b.y - 43);
     ctx.fillStyle = "#c8c8d0";
     ctx.font = "600 6px 'Quicksand', sans-serif";
-    ctx.fillText("Trips coming soon", b.x, b.y - 34);
+    ctx.fillText(floorOf(f.y) === LAKE_FLOOR ? "Home" : "Lake · Farm", b.x, b.y - 34);
     ctx.textAlign = "left";
   },
 });
