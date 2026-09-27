@@ -66,6 +66,7 @@ const ICONS = {
   pondScholar: { pic: "book" },
   fullTank: { f: "fishTank", w: 1.0, h: 0.5 },
   junkDealer: { pic: "junk:boot" },
+  downTheDrain: { f: "manhole", w: 0.8, h: 0.5 },
   firstDish: { pic: "dish:omelette" },
   burntOffering: { pic: "junk:burnt" },
   wellFed: { pic: "dish:pancakes" },

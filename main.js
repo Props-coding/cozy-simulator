@@ -718,8 +718,8 @@ function roomHintFor(room) {
   }
   if (ride) return "";
   if (nearestInteraction(player) === "elevator") return "Press E to call the elevator.";
-  // The hidden door (Update 7): a hint, not a sign. From the alley, the way back is plain.
-  if (nearestInteraction(player) === "hiddenDoor") return hiddenDoorNear(player) === "hall" ? "That painting of the hills is hanging a little crooked... (E to straighten it)" : "Press E to slip back into the house.";
+  // The manholes to and from the back alley (Update 7).
+  if (nearestInteraction(player) === "manhole") return manholeNear(player) === "yard" ? 'A manhole cover, a little off its seat. A note taped on it says "Moved. -R" (E to climb down)' : "Press E to climb back up to the yard.";
   const yardDoor = yardDoorNear(player);
   if (yardDoor) return floorOf(player.y) === YARD_FLOOR ? `Walk through the ${yardDoor.name.toLowerCase()} to go back inside.` : "Walk through the door to go out to the yard.";
   if (room.id.startsWith("elevator")) return "Walk up to the elevator doors.";
@@ -770,11 +770,15 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (key === "e" && nearestInteraction(player) === "hiddenDoor" && !secretRide) {
+  // Climbing down the yard's manhole to the back alley, or back up.
+  if (key === "e" && nearestInteraction(player) === "manhole") {
     for (const k in keysDown) keysDown[k] = false;
     if (mySeat) standUp();
-    secretRide = { side: hiddenDoorNear(player), t: 0, arrived: false };
+    const side = manholeNear(player);
     playSecretDoor();
+    Object.assign(player, manholeArrival(side));
+    if (side === "yard") unlock("downTheDrain");
+    showNotice(side === "yard" ? "You climb down the ladder... and up into a back alley. It smells like rain and hot dogs." : "You climb back up into the yard.");
     return;
   }
 
@@ -1711,7 +1715,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride || !!secretRide;
+  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again
@@ -1868,29 +1872,6 @@ window.addEventListener("keydown", (e) => {
 const DOORS_OPEN = 0.45, STEP_IN = 0.6, DOORS_CLOSE = 0.7; // seconds
 let ride = null; // { from: floor, to: floor, t: seconds so far, arrived }
 
-// Going through the hidden door (Update 7): the side you're on swings
-// open, you slip through, and it swings shut behind you on the other side.
-// secretRide: { side: "hall" or "alley" (where you started), t, arrived }.
-let secretRide = null;
-const SECRET_OPEN = 0.45, SECRET_STEP = 0.6, SECRET_CLOSE = 0.7; // seconds
-function updateSecretDoor(dt) {
-  if (!secretRide) return;
-  secretRide.t += dt;
-  const from = secretRide.side, to = from === "hall" ? "alley" : "hall";
-  if (!secretRide.arrived) {
-    HIDDEN_DOOR.open[from] = Math.min(1, secretRide.t / SECRET_OPEN);
-    if (secretRide.t >= SECRET_STEP) {
-      Object.assign(player, hiddenDoorArrival(from));
-      secretRide.arrived = true;
-      secretRide.t = 0;
-      HIDDEN_DOOR.open[from] = 0;
-      HIDDEN_DOOR.open[to] = 1;
-    }
-    return;
-  }
-  HIDDEN_DOOR.open[to] = Math.max(0, 1 - secretRide.t / SECRET_CLOSE);
-  if (secretRide.t >= SECRET_CLOSE) secretRide = null;
-}
 function updateElevator(dt) {
   if (!ride) return;
   ride.t += dt;
@@ -2658,7 +2639,6 @@ function frame(now) {
     playClickSound();
   }
   updateElevator(dt);
-  updateSecretDoor(dt);
   checkLeftBedroom();
   visiblePeers = getPeers().filter(peerAllowed);
   showDanceCooldown();

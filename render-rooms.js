@@ -1173,8 +1173,6 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // Hung on a wall face: a framed painting.
   picture(ctx, f) {
-    // (The crooked one hangs on the hidden door: it swings away with it.)
-    if (f.crooked && HIDDEN_DOOR.open.hall > 0.05) return;
     const a = toScreen(f.x, f.y);
     const x = a.x, y = a.y - WALL_HEIGHT + 5, w = f.w * TILE, h = 22;
     ctx.save();

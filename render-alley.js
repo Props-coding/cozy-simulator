@@ -22,39 +22,40 @@ function paintAlleyGround(ctx) {
   const a = alleyFoot(-WALL_THICKNESS), b = toScreen(ALLEY_W + WALL_THICKNESS, ALLEY + ALLEY_H);
   const houseEnd = alleyFoot(HOUSE_SIDE_W).x;
 
-  // Beyond the alley: dusky rooftops against the sky, and shadow.
-  const sky = ctx.createLinearGradient(0, top, 0, a.y - BRICK_WALL_PX);
-  sky.addColorStop(0, "#8fa7bd");
-  sky.addColorStop(1, "#c7cfd2");
-  ctx.fillStyle = sky;
-  ctx.fillRect(left - 20, top - 20, right - left + 40, a.y - top + 20);
-  ctx.fillStyle = "#5d6470"; // far rooftops
-  for (let i = 0; i < 14; i++) {
-    const x = left + i * ((right - left) / 13) - 20, w = 50 + noise(i * 3.1 + 700) * 40, h = 20 + noise(i * 5.3 + 701) * 30;
-    ctx.fillRect(x, a.y - BRICK_WALL_PX - h + 30, w, h + 40);
-  }
-  ctx.fillStyle = "#34323a";
-  ctx.fillRect(left - 20, a.y - 60, right - left + 40, bottom - a.y + 80);
+  // Around the alley: plain dark, like the space around the house's other
+  // floors (the alley reads as one clean scene in the middle).
+  ctx.fillStyle = "#15131b";
+  ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
 
-  paintCobbles(ctx, a.x, a.y, b.x, b.y);
-  paintAlleyWalls(ctx, a, houseEnd, b);
+  paintAlleyStreet(ctx, a, b);
+  paintCobbles(ctx, alleyFoot(ALLEY_CURB).x, a.y, b.x, b.y);
+  paintAlleyWalls(ctx, alleyFoot(ALLEY_CURB), houseEnd, b);
   paintAlleyEnds(ctx, a, b);
 
-  // The low brick ledge along the south side.
+  // The low brick ledge along the south side, with two poles for the
+  // lights strung across the alley.
+  const x0 = alleyFoot(ALLEY_CURB).x;
   const ledgeTop = b.y - 4;
   ctx.fillStyle = "#6e3e32";
-  ctx.fillRect(a.x, ledgeTop, b.x - a.x, 16);
+  ctx.fillRect(x0, ledgeTop, b.x - x0, 16);
   ctx.fillStyle = "#8a5242";
-  ctx.fillRect(a.x, ledgeTop - 6, b.x - a.x, 7);
+  ctx.fillRect(x0, ledgeTop - 6, b.x - x0, 7);
   ctx.fillStyle = "rgba(255, 220, 190, 0.15)";
-  ctx.fillRect(a.x, ledgeTop - 6, b.x - a.x, 1.5);
+  ctx.fillRect(x0, ledgeTop - 6, b.x - x0, 1.5);
   ctx.fillStyle = "rgba(30, 15, 10, 0.35)";
-  for (let x = a.x + 6; x < b.x; x += 22) ctx.fillRect(x, ledgeTop - 6, 1, 7);
-  for (let x = a.x + 17; x < b.x; x += 22) ctx.fillRect(x, ledgeTop + 2, 1, 8);
-  ctx.fillRect(a.x, ledgeTop + 1, b.x - a.x, 1);
+  for (let x = x0 + 6; x < b.x; x += 22) ctx.fillRect(x, ledgeTop - 6, 1, 7);
+  for (let x = x0 + 17; x < b.x; x += 22) ctx.fillRect(x, ledgeTop + 2, 1, 8);
+  ctx.fillRect(x0, ledgeTop + 1, b.x - x0, 1);
+  for (const gx of ALLEY_LIGHT_POLES) {
+    const p = toScreen(gx, ALLEY + ALLEY_H);
+    ctx.fillStyle = "#2c2a30";
+    ctx.fillRect(p.x - 1.5, p.y - 74, 3, 72);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fillRect(p.x - 1.5, p.y - 74, 1, 72);
+  }
   // Weeds poking up from the cracks along the ledge.
-  for (let i = 0; i < 16; i++) {
-    const x = a.x + 10 + noise(i * 7.7 + 720) * (b.x - a.x - 20);
+  for (let i = 0; i < 14; i++) {
+    const x = x0 + 10 + noise(i * 7.7 + 720) * (b.x - x0 - 20);
     ctx.strokeStyle = noise(i + 721) > 0.5 ? "#5f7f48" : "#7a9a58";
     ctx.lineWidth = 1.3;
     ctx.beginPath();
@@ -66,17 +67,50 @@ function paintAlleyGround(ctx) {
   }
 }
 
-// Wet cobblestones, a gutter down the middle with a drain, puddles, a
-// trail of chalk paw prints from the hidden door to the raccoons, and a
-// few bits of litter.
+// Where the lights strung across the alley are tied off on the ledge.
+const ALLEY_LIGHT_POLES = [4.2, 9.2];
+
+// The sliver of street past the alley's west end: asphalt with a painted
+// line, a curb, and (drawn as furniture) the streetlight on the corner.
+function paintAlleyStreet(ctx, a, b) {
+  const curb = alleyFoot(ALLEY_CURB).x;
+  const top = a.y - 40;
+  // (Fading into the dark at its top and bottom: it's only a glimpse.)
+  const road = ctx.createLinearGradient(0, top - 30, 0, b.y + 30);
+  road.addColorStop(0, "rgba(40, 40, 48, 0)");
+  road.addColorStop(0.2, "#2c2c34");
+  road.addColorStop(0.85, "#2c2c34");
+  road.addColorStop(1, "rgba(40, 40, 48, 0)");
+  ctx.fillStyle = road;
+  ctx.fillRect(a.x - 30, top - 30, curb - a.x + 30, b.y - top + 60);
+  for (let i = 0; i < 60; i++) {
+    ctx.fillStyle = i % 2 ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.15)";
+    ctx.fillRect(a.x - 30 + noise(i * 3.3 + 900) * (curb - a.x + 20), top + noise(i * 5.1 + 901) * (b.y - top), 2, 2);
+  }
+  // A dashed yellow line down the road.
+  ctx.fillStyle = "rgba(230, 190, 70, 0.55)";
+  const lx = a.x + 6;
+  for (let y = top + 4; y < b.y; y += 24) ctx.fillRect(lx, y, 3, 13);
+  // The curb: a pale stone edge, a little raised.
+  ctx.fillStyle = "#8e8a86";
+  ctx.fillRect(curb - 6, top, 6, b.y - top + 10);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.fillRect(curb - 6, top, 1.5, b.y - top + 10);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ctx.fillRect(curb, top, 2, b.y - top + 10);
+}
+
+// Wet cobblestones, the storm drain at the curb, puddles in the low spots
+// (by the drain, along the curb, under the gutter pipes), paw prints from
+// the dumpster to Reginald's door, and a few bits of litter.
 function paintCobbles(ctx, x0, y0, x1, y1) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(x0, y0, x1 - x0, y1 - y0);
   ctx.clip(); // (the stones stop at the alley's edges)
-  ctx.fillStyle = "#4a4852";
+  ctx.fillStyle = "#3e3c46";
   ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-  const stones = ["#6d6a72", "#76727a", "#646068", "#7c7470", "#6a6670"];
+  const stones = ["#5f5c66", "#67636e", "#57545e", "#6c6562", "#5c5864"];
   let row = 0;
   for (let y = y0 + 2; y < y1 - 2; y += 11, row++) {
     for (let x = x0 - (row % 2) * 9; x < x1; x += 18) {
@@ -84,52 +118,46 @@ function paintCobbles(ctx, x0, y0, x1, y1) {
       ctx.fillStyle = stones[Math.floor(n * stones.length)];
       roundRectPath(ctx, x + 1, y, 16, 9, 4);
       ctx.fill();
-      ctx.fillStyle = "rgba(255, 255, 255, 0.07)"; // a wet sheen on top
+      ctx.fillStyle = "rgba(255, 255, 255, 0.06)"; // a wet sheen on top
       ctx.fillRect(x + 4, y + 1.5, 8, 1.5);
     }
   }
-  // The gutter: a shallow channel of flat stones down the middle.
-  const g = toScreen(0, ALLEY + 3.05).y;
-  ctx.fillStyle = "rgba(25, 25, 35, 0.35)";
-  ctx.fillRect(x0, g - 4, x1 - x0, 8);
-  ctx.fillStyle = "rgba(140, 150, 170, 0.12)";
-  ctx.fillRect(x0, g - 4, x1 - x0, 1);
-  // A drain grate in it.
-  const d = toScreen(7.6, ALLEY + 3.05);
-  ctx.fillStyle = "#2a2a30";
-  roundRectPath(ctx, d.x - 13, d.y - 6, 26, 12, 2);
+  // The storm drain, set in the curb's edge.
+  const d = toScreen(ALLEY_CURB + 0.22, ALLEY + 2.1);
+  ctx.fillStyle = "#1e1e24";
+  roundRectPath(ctx, d.x - 6, d.y - 14, 12, 28, 2);
   ctx.fill();
-  ctx.fillStyle = "#55555e";
-  for (let i = 0; i < 5; i++) ctx.fillRect(d.x - 11 + i * 5, d.y - 4.5, 2.5, 9);
-  // Puddles (their shine is drawn every frame, see drawAlleyLife).
+  ctx.fillStyle = "#4e4e56";
+  for (let i = 0; i < 5; i++) ctx.fillRect(d.x - 4, d.y - 12 + i * 5.5, 8, 2.2);
+  // Puddles (their shine and reflections move: see drawAlleyLife).
   for (const p of ALLEY_PUDDLES) {
     const c = toScreen(p.x, p.y);
-    ctx.fillStyle = "#3a3c4a";
+    ctx.fillStyle = "#2c2e3a";
     ctx.beginPath();
     ctx.ellipse(c.x, c.y, p.rx * TILE, p.ry * TILE, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(160, 170, 190, 0.25)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(190, 200, 225, 0.45)"; // a light wet edge
+    ctx.lineWidth = 1.2;
     ctx.stroke();
   }
-  // Chalk paw prints, from the hidden door over to the raccoons.
-  ctx.fillStyle = "rgba(240, 236, 226, 0.4)";
-  for (let i = 0; i < 9; i++) {
-    const t = i / 8;
-    const gx = 2.0 + t * 6.3, gy = ALLEY + 0.95 + Math.sin(t * Math.PI) * 0.9 + t * 0.4;
-    const p = toScreen(gx, gy + (i % 2 ? 0.12 : -0.12));
+  // Paw prints, from the dumpster over to Reginald's back door.
+  ctx.fillStyle = "rgba(235, 228, 215, 0.35)";
+  for (let i = 0; i < 5; i++) {
+    const t = i / 4;
+    const p = toScreen(9.35 - t * 1.0, ALLEY + 0.95 + (i % 2 ? 0.1 : -0.06) - t * 0.15);
     ctx.beginPath();
-    ctx.ellipse(p.x, p.y, 3.2, 2.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(p.x, p.y, 2.8, 2.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    for (const [dx, dy] of [[-3, -3.5], [-1, -4.6], [1.4, -4.6], [3.4, -3.5]]) {
+    for (const [dx, dy] of [[-2.6, -3.1], [-0.9, -4.1], [1.2, -4.1], [3, -3.1]]) {
       ctx.beginPath();
-      ctx.arc(p.x + dx, p.y + dy, 1, 0, Math.PI * 2);
+      ctx.arc(p.x + dx, p.y + dy, 0.9, 0, Math.PI * 2);
       ctx.fill();
     }
   }
-  // Litter: a paper scrap, a bottle cap, a few leaves blown in.
-  for (let i = 0; i < 12; i++) {
-    const p = toScreen(0.4 + noise(i * 5.1 + 760) * (ALLEY_W - 0.8), ALLEY + 0.9 + noise(i * 2.7 + 761) * (ALLEY_H - 1.4));
+  // Litter: a paper scrap, a bottle cap, a few leaves blown in (along the edges).
+  for (let i = 0; i < 10; i++) {
+    const edge = i % 2 ? 0.75 + noise(i + 763) * 0.3 : ALLEY_WALK - 0.25 - noise(i + 764) * 0.3;
+    const p = toScreen(ALLEY_CURB + 0.4 + noise(i * 5.1 + 760) * (ALLEY_W - ALLEY_CURB - 0.8), ALLEY + edge);
     ctx.fillStyle = ["#b88a4a", "#9a6a3a", "#c8a060", "#d8d0c0"][i % 4];
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -141,19 +169,22 @@ function paintCobbles(ctx, x0, y0, x1, y1) {
   }
   // Soft shadow along the foot of the walls.
   const shade = ctx.createLinearGradient(0, y0, 0, y0 + 26);
-  shade.addColorStop(0, "rgba(15, 10, 20, 0.4)");
-  shade.addColorStop(1, "rgba(15, 10, 20, 0)");
+  shade.addColorStop(0, "rgba(10, 6, 16, 0.45)");
+  shade.addColorStop(1, "rgba(10, 6, 16, 0)");
   ctx.fillStyle = shade;
   ctx.fillRect(x0, y0, x1 - x0, 26);
   ctx.restore();
 }
 
-// Where the puddles lie (grid spots and sizes).
+// The puddles, only in the low spots, and which light each one shows:
+// the streetlight (by the drain and along the curb), the warm string
+// lights (under the house's drainpipe), and the neon (under the building's
+// pipe, below the sign).
 const ALLEY_PUDDLES = [
-  { x: 8.4, y: ALLEY + 2.75, rx: 0.75, ry: 0.28 }, // under the neon sign: it shows pink in here
-  { x: 3.9, y: ALLEY + 4.55, rx: 0.55, ry: 0.2 },
-  { x: 10.6, y: ALLEY + 3.7, rx: 0.45, ry: 0.17 },
-  { x: 1.3, y: ALLEY + 2.4, rx: 0.35, ry: 0.13 },
+  { x: ALLEY_CURB + 0.75, y: ALLEY + 2.2, rx: 0.5, ry: 0.19, light: "street" },
+  { x: ALLEY_CURB + 0.45, y: ALLEY + 0.95, rx: 0.3, ry: 0.12, light: "street" },
+  { x: HOUSE_SIDE_W + 0.12, y: ALLEY + 0.95, rx: 0.4, ry: 0.15, light: "warm" },
+  { x: 9.3, y: ALLEY + 1.05, rx: 0.55, ry: 0.2, light: "neon" },
 ];
 
 // The walls along the top: the house's side (siding, an eave, a little
@@ -269,18 +300,27 @@ function paintAlleyWalls(ctx, a, houseEnd, b) {
     ctx.fillStyle = "#55595e";
     ctx.fillRect(pipe - 4, yy, 8, 3);
   }
-  const box = alleyFoot(5.05);
+  // A grey electric box mounted on the bricks (its conduit runs up the
+  // wall), with the yellow warning sign on its door.
+  const box = alleyFoot(5.1);
+  ctx.fillStyle = "#3a3a40";
+  ctx.fillRect(box.x - 1.5, y - BRICK_WALL_PX, 3, BRICK_WALL_PX - 74);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.fillRect(box.x - 10, y - 72, 22, 28);
   ctx.fillStyle = "#8c9296";
-  ctx.fillRect(box.x - 9, y - 58, 18, 22);
+  ctx.fillRect(box.x - 11, y - 74, 22, 28);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.fillRect(box.x - 11, y - 74, 22, 2);
   ctx.fillStyle = "#f2c94c";
   ctx.beginPath();
-  ctx.moveTo(box.x, y - 54);
-  ctx.lineTo(box.x - 4, y - 46);
-  ctx.lineTo(box.x + 4, y - 46);
+  ctx.moveTo(box.x, y - 68);
+  ctx.lineTo(box.x - 6, y - 57);
+  ctx.lineTo(box.x + 6, y - 57);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#3a3a40";
-  ctx.fillRect(box.x - 1.5, y - 36, 3, 36); // its conduit, down to the ground
+  ctx.fillStyle = "#2a2a30";
+  ctx.fillRect(box.x - 0.8, y - 65, 1.6, 5);
+  ctx.fillRect(box.x - 0.8, y - 59, 1.6, 1.4);
   // A little tag sprayed low on the bricks: a raccoon's masked face.
   const tag = alleyFoot(11.55);
   ctx.strokeStyle = "rgba(150, 120, 210, 0.75)";
@@ -347,25 +387,29 @@ function paintFireEscape(ctx, y) {
   }
 }
 
-// The alley's two ends: a wooden fence (west) and a chain-link gate onto
-// the street (east), with the street's lamplight beyond it.
+// The alley's two ends: at the west, a striped barrier across the mouth
+// (past it, the street); at the east, the padlocked chain-link fence
+// (a way on, one day).
 function paintAlleyEnds(ctx, a, b) {
   const w = TILE * WALL_THICKNESS;
-  // West: fence boards seen from above, with a loose one.
-  ctx.fillStyle = "#6e5038";
-  ctx.fillRect(a.x, a.y - 60, w, b.y - a.y + 60);
-  ctx.fillStyle = "#86644a";
-  for (let yy = a.y - 60; yy < b.y; yy += 12) ctx.fillRect(a.x + 2, yy, w - 4, 10);
-  // East: the street beyond, lit by a lamp, then the chain-link gate.
+  // West: a sawhorse barrier, orange and white, across the alley's mouth.
+  const bx = alleyFoot(ALLEY_CURB).x + 3;
+  const y0 = toScreen(0, ALLEY + 0.35).y, y1 = toScreen(0, ALLEY + ALLEY_WALK - 0.1).y;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ctx.fillRect(bx + 3, y0 + 4, 6, y1 - y0);
+  for (let y = y0; y < y1; y += 10) {
+    ctx.fillStyle = Math.floor((y - y0) / 10) % 2 ? "#f2ede4" : "#e0782e";
+    ctx.fillRect(bx, y, 7, Math.min(10, y1 - y));
+  }
+  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.fillRect(bx, y0, 1.5, y1 - y0);
+  ctx.fillStyle = "#3a3a40"; // its feet
+  for (const y of [y0, y1 - 4]) ctx.fillRect(bx - 4, y, 15, 4);
+  // East: the chain-link fence, with dark beyond it, and a padlock.
   const ex = toScreen(ALLEY_W, 0).x;
-  const glow = ctx.createRadialGradient(ex + 30, a.y + 60, 0, ex + 30, a.y + 60, 140);
-  glow.addColorStop(0, "rgba(255, 210, 140, 0.45)");
-  glow.addColorStop(1, "rgba(255, 210, 140, 0)");
-  ctx.fillStyle = "#56555c";
-  ctx.fillRect(ex, a.y - 60, 200, b.y - a.y + 80);
-  ctx.fillStyle = glow;
-  ctx.fillRect(ex, a.y - 80, 200, b.y - a.y + 160);
-  ctx.strokeStyle = "rgba(190, 195, 200, 0.75)";
+  ctx.fillStyle = "#1e1c24";
+  ctx.fillRect(ex, a.y - 60, 60, b.y - a.y + 80);
+  ctx.strokeStyle = "rgba(170, 175, 185, 0.7)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let yy = a.y - 60; yy < b.y - 6; yy += 6) {
@@ -378,8 +422,7 @@ function paintAlleyEnds(ctx, a, b) {
   ctx.fillStyle = "#8a9096";
   ctx.fillRect(ex - 1, a.y - 62, 3, b.y - a.y + 58);
   ctx.fillRect(ex + w - 2, a.y - 62, 3, b.y - a.y + 58);
-  // A padlock and a little sign on the gate.
-  const mid = toScreen(ALLEY_W, ALLEY + 2.4).y;
+  const mid = toScreen(ALLEY_W, ALLEY + 1.6).y;
   ctx.fillStyle = "#c8a040";
   roundRectPath(ctx, ex + w / 2 - 4, mid, 8, 7, 1.5);
   ctx.fill();
@@ -400,32 +443,29 @@ function drawAlleyLife(ctx) {
   ctx.fillStyle = `rgba(150, 190, 255, ${flick})`;
   ctx.fillRect(win.x - 8, y - 130, 16, 13);
   ctx.fillRect(win.x - 8, y - 115, 16, 13);
-  // The neon sign and its pink reflection in the puddle below.
   drawNeonSign(ctx, t);
-  const p = ALLEY_PUDDLES[0], c = toScreen(p.x, p.y);
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(c.x, c.y, p.rx * TILE - 2, p.ry * TILE - 1.5, 0, 0, Math.PI * 2);
-  ctx.clip();
+  // Each puddle mirrors the light nearest it: pink and teal neon, the warm
+  // string lights, or the streetlight's pale gold.
   const on = neonOn(t);
-  ctx.fillStyle = `rgba(255, 110, 190, ${on ? 0.35 : 0.12})`;
-  for (let i = 0; i < 4; i++) ctx.fillRect(c.x - 18 + Math.sin(t * 2 + i) * 2, c.y - 6 + i * 3, 30, 1.6);
-  ctx.fillStyle = `rgba(120, 230, 220, ${on ? 0.3 : 0.1})`;
-  ctx.fillRect(c.x + 6 + Math.sin(t * 1.7) * 2, c.y - 3, 10, 1.4);
-  ctx.restore();
-  // A glint on the other puddles, and rings when it rains.
   for (const q of ALLEY_PUDDLES) {
-    const qc = toScreen(q.x, q.y);
-    ctx.fillStyle = "rgba(220, 230, 255, 0.25)";
-    ctx.fillRect(qc.x - q.rx * TILE * 0.4, qc.y - 1, q.rx * TILE * 0.5, 1.2);
-    if (OUTDOORS.raining) {
-      const ph = (t * 1.3 + q.x) % 1;
-      ctx.strokeStyle = `rgba(220, 230, 255, ${0.5 * (1 - ph)})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.ellipse(qc.x + Math.sin(q.x * 9 + Math.floor(t * 1.3 + q.x)) * q.rx * TILE * 0.5, qc.y, 2 + ph * 8, 1 + ph * 3, 0, 0, Math.PI * 2);
-      ctx.stroke();
+    const c = toScreen(q.x, q.y), rx = q.rx * TILE, ry = q.ry * TILE;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, rx - 1.5, ry - 1, 0, 0, Math.PI * 2);
+    ctx.clip();
+    if (q.light === "neon") {
+      ctx.fillStyle = `rgba(255, 110, 190, ${on ? 0.45 : 0.14})`;
+      for (let i = 0; i < 4; i++) ctx.fillRect(c.x - rx * 0.6 + Math.sin(t * 2 + i) * 2, c.y - ry * 0.6 + i * 3, rx * 1.1, 1.6);
+      ctx.fillStyle = `rgba(120, 230, 220, ${on ? 0.4 : 0.14})`;
+      ctx.fillRect(c.x + rx * 0.15 + Math.sin(t * 1.7) * 2, c.y - 2, rx * 0.5, 1.4);
+    } else {
+      const color = q.light === "warm" ? "255, 200, 120" : "255, 228, 170";
+      ctx.fillStyle = `rgba(${color}, 0.4)`;
+      ctx.fillRect(c.x - rx * 0.5 + Math.sin(t * 1.3 + q.x) * 1.5, c.y - 1.5, rx * 0.8, 1.6);
+      ctx.fillStyle = `rgba(${color}, 0.22)`;
+      ctx.fillRect(c.x - rx * 0.3, c.y + 2, rx * 0.5, 1.2);
     }
+    ctx.restore();
   }
   // Drips from the air conditioner.
   const ac = alleyFoot(10.9);
@@ -438,13 +478,16 @@ function drawAlleyLife(ctx) {
     const mc = toScreen(m.x + m.w / 2, m.y + m.h / 2);
     for (let i = 0; i < 6; i++) {
       const ph = (t * 0.25 + i / 6) % 1;
-      ctx.fillStyle = `rgba(230, 230, 240, ${0.28 * Math.sin(ph * Math.PI)})`;
+      ctx.fillStyle = `rgba(230, 230, 240, ${0.26 * Math.sin(ph * Math.PI)})`;
       ctx.beginPath();
       ctx.arc(mc.x + Math.sin(t * 0.8 + i * 2) * 6 * ph, mc.y - 4 - ph * 46, 5 + ph * 10, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 }
+
+// Where the raccoons' neon sign hangs (grid x), over their dumpster.
+const NEON_X = 9.8;
 
 // The neon's "N" flickers now and then (it's not a good sign. or it is).
 function neonOn(t) {
@@ -454,7 +497,7 @@ function neonOn(t) {
 
 // A raccoon face in teal over "OPEN" in pink, on the bricks above the raccoons.
 function drawNeonSign(ctx, t) {
-  const p = alleyFoot(8.85), y = p.y - 62;
+  const p = alleyFoot(NEON_X), y = p.y - 62;
   const on = neonOn(t);
   ctx.save();
   // The backing board and its little bracket.
@@ -503,122 +546,248 @@ function drawNeonSign(ctx, t) {
   ctx.textAlign = "left";
 }
 
-// Over everything: the string lights along the walls (their bulbs glow
-// warmer as it gets dark), and the neon's pink haze.
+// Over everything: the string lights along the walls and strung across
+// the alley to poles on the ledge (bright bulbs, with a soft glow), and the
+// neon's pink haze.
 function drawAlleyOverhead(ctx, level) {
   const y = alleyFoot(0).y;
   const t = performance.now() / 1000;
+  const ledge = toScreen(0, ALLEY + ALLEY_H).y - 74; // the poles' tops
+  // [x0, y0, x1, y1, sag]: along the house's eave, along the brick wall,
+  // and two strands across the alley from the brick wall to the poles.
   const strands = [
-    [alleyFoot(-0.3).x, y - HOUSE_WALL_PX + 6, alleyFoot(HOUSE_SIDE_W - 0.1).x, y - HOUSE_WALL_PX + 6, 10],
-    [alleyFoot(HOUSE_SIDE_W + 0.1).x, y - 112, alleyFoot(ALLEY_W + 0.3).x, y - 112, 16],
+    [alleyFoot(ALLEY_CURB + 0.1).x, y - HOUSE_WALL_PX + 6, alleyFoot(HOUSE_SIDE_W - 0.1).x, y - HOUSE_WALL_PX + 6, 10],
+    [alleyFoot(HOUSE_SIDE_W + 0.1).x, y - 112, alleyFoot(ALLEY_W + 0.2).x, y - 112, 16],
+    [alleyFoot(5.4).x, y - 112, toScreen(ALLEY_LIGHT_POLES[0], 0).x, ledge, 18],
+    [alleyFoot(10.6).x, y - 112, toScreen(ALLEY_LIGHT_POLES[1], 0).x, ledge, 18],
   ];
   for (const [x0, y0, x1, y1, sag] of strands) {
-    const n = Math.round((x1 - x0) / 22);
-    ctx.strokeStyle = "#2e2a26";
+    const n = Math.max(4, Math.round(Math.hypot(x1 - x0, y1 - y0) / 22));
+    const at = (u) => ({ x: x0 + (x1 - x0) * u, y: y0 + (y1 - y0) * u + Math.sin(u * Math.PI) * sag });
+    ctx.strokeStyle = "#2a2622";
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let i = 0; i <= 40; i++) {
-      const u = i / 40;
-      const px = x0 + (x1 - x0) * u, py = y0 + (y1 - y0) * u + Math.sin(u * Math.PI * Math.max(1, Math.round(n / 5))) ** 2 * sag;
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      const p = at(i / 40);
+      i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
     }
     ctx.stroke();
     for (let i = 1; i < n; i++) {
-      const u = i / n;
-      const px = x0 + (x1 - x0) * u, py = y0 + (y1 - y0) * u + Math.sin(u * Math.PI * Math.max(1, Math.round(n / 5))) ** 2 * sag + 3;
+      const p = at(i / n);
       const warm = ["255, 205, 120", "255, 170, 110", "255, 225, 160"][i % 3];
       const tw = 0.85 + 0.15 * Math.sin(t * 2 + i * 1.9);
-      if (level > 0.05) {
-        const g = ctx.createRadialGradient(px, py, 0, px, py, 14);
-        g.addColorStop(0, `rgba(${warm}, ${0.5 * level * tw})`);
-        g.addColorStop(1, `rgba(${warm}, 0)`);
-        ctx.fillStyle = g;
-        ctx.fillRect(px - 14, py - 14, 28, 28);
-      }
-      ctx.fillStyle = `rgba(${warm}, ${0.75 + 0.25 * level})`;
+      const g = ctx.createRadialGradient(p.x, p.y + 3, 0, p.x, p.y + 3, 16);
+      g.addColorStop(0, `rgba(${warm}, ${0.6 * level * tw})`);
+      g.addColorStop(1, `rgba(${warm}, 0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(p.x - 16, p.y - 13, 32, 32);
+      ctx.fillStyle = `rgb(${warm})`;
       ctx.beginPath();
-      ctx.ellipse(px, py, 2.2, 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(p.x, p.y + 3, 2.3, 3.1, 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
   // The neon's glow on the bricks and cobbles around it.
-  const p = alleyFoot(8.85);
+  const p = alleyFoot(NEON_X);
   const on = neonOn(t);
-  const haze = ctx.createRadialGradient(p.x, p.y - 60, 0, p.x, p.y - 60, 120);
-  haze.addColorStop(0, `rgba(255, 90, 180, ${(on ? 0.22 : 0.08) * (0.4 + 0.6 * level)})`);
+  const haze = ctx.createRadialGradient(p.x, p.y - 60, 0, p.x, p.y - 60, 130);
+  haze.addColorStop(0, `rgba(255, 90, 180, ${on ? 0.28 : 0.1})`);
   haze.addColorStop(1, "rgba(255, 90, 180, 0)");
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
   ctx.fillStyle = haze;
-  ctx.fillRect(p.x - 120, p.y - 180, 240, 240);
+  ctx.fillRect(p.x - 130, p.y - 190, 260, 260);
   ctx.restore();
 }
 
-// Warm (and pink) lights in the alley at night: [x, y (grid), radius, strength, color].
+// The alley's pools of light: [x, y (grid), radius, strength, color]. The
+// streetlight on the corner, the caged bulb over Reginald's door, the neon
+// (pink), the candle, the lit window, and soft pools under the string lights.
 function alleyGlows() {
   const glows = [];
   for (const f of FURNITURE) {
     if (floorOf(f.y) !== ALLEY_FLOOR) continue;
-    if (f.kind === "cagedLamp") glows.push([f.x, f.y - 0.9, 80, 1]);
+    if (f.kind === "cagedLamp") glows.push([f.x, f.y + 0.3, 75, 1]);
     if (f.kind === "cableSpool") glows.push([f.x + f.w / 2, f.y, 45, 0.8]); // (the candle)
-    if (f.kind === "alleyDoor" && HIDDEN_DOOR.open.alley > 0.05) glows.push([f.x + f.w / 2, f.y + 0.2, 60, HIDDEN_DOOR.open.alley]);
+    if (f.kind === "streetLamp") glows.push([f.x + 0.45, f.y + 1.0, 105, 0.6, "255, 225, 170"]);
   }
+  glows.push([NEON_X, ALLEY + 0.9, 95, neonOn(performance.now() / 1000) ? 0.9 : 0.35, "255, 90, 180"]);
   glows.push([5.75, ALLEY - 2.5, 40, 0.5]); // the lit window
-  glows.push([ALLEY_W + 0.7, ALLEY + 1.2, 110, 0.9]); // the street lamp past the gate
+  for (const [x, y] of [[2.9, 0.5], [4.2, 1.6], [6.6, 0.8], [7.5, 2.2], [9.2, 1.9], [11.2, 0.7]]) glows.push([x, ALLEY + y, 55, 0.45]); // under the string lights
   return glows;
 }
 
 // --- The alley's furniture ---
 Object.assign(FURNITURE_DRAWERS, {
-  // The hidden door, from the alley: a plain door in the house's siding
-  // with no handle, just a little paw print scratched by the hinge. It
-  // swings in (open) to show the warm hallway.
-  alleyDoor(ctx, f) {
-    const a = toScreen(f.x, f.y), w = f.w * TILE, h = 56;
-    const open = HIDDEN_DOOR.open.alley;
-    // A worn concrete step in front of it.
-    ctx.fillStyle = "rgba(20, 15, 20, 0.3)";
+  // Reginald's back door, in the brick wall: dark reddish wood (not the
+  // house's pale siding), iron straps, a brass knob, and a little brass
+  // paw print plaque. A worn step in front.
+  reginaldDoor(ctx, f) {
+    const a = toScreen(f.x, f.y), w = f.w * TILE, h = 58;
+    ctx.fillStyle = "rgba(20, 15, 20, 0.35)";
     ctx.fillRect(a.x - 6, a.y + 2, w + 12, 9);
-    ctx.fillStyle = "#8e8a86";
+    ctx.fillStyle = "#7e7a76";
     ctx.fillRect(a.x - 6, a.y - 1, w + 12, 9);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
     ctx.fillRect(a.x - 6, a.y - 1, w + 12, 1.5);
-    ctx.fillStyle = "#4e3422"; // frame
+    ctx.fillStyle = "#2e2420"; // frame
     ctx.fillRect(a.x - 3, a.y - h - 3, w + 6, h + 3);
-    if (open > 0) {
-      const g = ctx.createLinearGradient(0, a.y - h, 0, a.y);
-      g.addColorStop(0, "#f2d49a");
-      g.addColorStop(1, "#d8a868");
-      ctx.fillStyle = g;
-      ctx.fillRect(a.x, a.y - h, w, h);
-      ctx.fillStyle = "rgba(255, 220, 150, 0.25)"; // light spilling out
+    const wood = ctx.createLinearGradient(0, a.y - h, 0, a.y);
+    wood.addColorStop(0, "#6e3326");
+    wood.addColorStop(1, "#4e2219");
+    ctx.fillStyle = wood;
+    ctx.fillRect(a.x, a.y - h, w, h);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)"; // planks
+    for (let x = a.x + w / 4; x < a.x + w - 2; x += w / 4) ctx.fillRect(x, a.y - h, 1, h);
+    ctx.fillStyle = "rgba(255, 210, 180, 0.12)"; // light on its top edge
+    ctx.fillRect(a.x, a.y - h, w, 2);
+    ctx.fillStyle = "#2a2426"; // iron straps
+    for (const yy of [a.y - h + 9, a.y - 14]) ctx.fillRect(a.x, yy, w, 3);
+    ctx.fillStyle = "#d9b04a"; // the knob
+    ctx.beginPath();
+    ctx.arc(a.x + w - 7, a.y - 28, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    // The brass plaque with a paw print.
+    const px = a.x + w / 2, py = a.y - h + 20;
+    ctx.fillStyle = "#c8a040";
+    roundRectPath(ctx, px - 8, py - 7, 16, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = "#5a3a1e";
+    ctx.beginPath();
+    ctx.ellipse(px, py + 2, 3, 2.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const [dx, dy] of [[-3, -1.8], [-1, -3.2], [1.1, -3.2], [3.1, -1.8]]) {
       ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(a.x + w, a.y);
-      ctx.lineTo(a.x + w + 10 * open, a.y + 22 * open);
-      ctx.lineTo(a.x - 10 * open, a.y + 22 * open);
-      ctx.closePath();
+      ctx.arc(px + dx, py + dy, 1, 0, Math.PI * 2);
       ctx.fill();
-    }
-    // The door leaf itself, narrowing as it swings in on its left hinge.
-    const lw = w * (1 - open * 0.85);
-    ctx.fillStyle = "#8a6848";
-    ctx.fillRect(a.x, a.y - h, lw, h);
-    ctx.fillStyle = "rgba(60, 35, 15, 0.25)";
-    for (let yy = a.y - h + 6; yy < a.y - 2; yy += 7) ctx.fillRect(a.x, yy, lw, 1.5);
-    ctx.fillStyle = "rgba(255, 235, 200, 0.15)"; // light catching its top edge
-    ctx.fillRect(a.x, a.y - h, lw, 2);
-    if (open < 0.2) {
-      // A little paw print, low by the edge.
-      ctx.fillStyle = "rgba(60, 40, 25, 0.55)";
-      const px = a.x + w - 9, py = a.y - 12;
-      ctx.beginPath();
-      ctx.ellipse(px, py, 2.4, 1.8, 0, 0, Math.PI * 2);
-      ctx.fill();
-      for (const [dx, dy] of [[-2.4, -2.6], [-0.8, -3.4], [0.9, -3.4], [2.5, -2.6]]) ctx.fillRect(px + dx - 0.6, py + dy - 0.6, 1.2, 1.2);
     }
     ctx.fillStyle = "rgba(40, 20, 10, 0.3)";
     ctx.fillRect(a.x - 3, a.y - 3, w + 6, 3);
+  },
+
+  // Two recycling bins against the wall: blue for paper, green for glass.
+  recyclingBins(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const half = f.w / 2 - 0.03;
+    for (const [i, color, lid] of [[0, "#3f6f9f", "#335d86"], [1, "#4f7a48", "#41683b"]]) {
+      const box = drawBlock(ctx, f.x + i * (half + 0.06), f.y, half, f.h, 26, color);
+      ctx.fillStyle = lid;
+      ctx.fillRect(box.top.x - 1, box.top.y - 2, box.top.w + 2, 4);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.85)"; // the recycling arrows, simply
+      ctx.beginPath();
+      ctx.arc(box.face.x + box.face.w / 2, box.face.y + box.face.h / 2, 4, 0.3, Math.PI * 1.7);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.stroke();
+    }
+  },
+
+  // Wooden pallets leaning on the ledge, one on top of another.
+  pallets(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y + f.h), w = f.w * TILE;
+    for (const [dx, lean] of [[0, 0], [6, -4]]) {
+      ctx.save();
+      ctx.translate(a.x + dx, a.y);
+      ctx.transform(1, 0, lean / 30, 1, 0, 0);
+      ctx.fillStyle = "#9a7a54";
+      for (let i = 0; i < 4; i++) ctx.fillRect(0, -30 + i * 8, w - 6, 5);
+      ctx.fillStyle = "#7a5c3c";
+      for (const x of [2, w / 2 - 4, w - 12]) ctx.fillRect(x, -32, 5, 32);
+      ctx.fillStyle = "rgba(255, 235, 200, 0.12)";
+      ctx.fillRect(0, -30, w - 6, 1.5);
+      ctx.restore();
+    }
+  },
+
+  // An old bicycle leaning on the ledge (a basket on the front).
+  alleyBike(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y + f.h), w = f.w * TILE;
+    const back = a.x + 10, front = a.x + w - 10, hub = a.y - 11;
+    ctx.strokeStyle = "#2a2a30";
+    ctx.lineWidth = 2;
+    for (const x of [back, front]) {
+      ctx.beginPath();
+      ctx.arc(x, hub, 10, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "#3f7a8a"; // the frame
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(back, hub);
+    ctx.lineTo(a.x + w * 0.45, hub);
+    ctx.lineTo(a.x + w * 0.4, hub - 16);
+    ctx.lineTo(front - 4, hub - 18);
+    ctx.lineTo(front, hub);
+    ctx.moveTo(a.x + w * 0.45, hub);
+    ctx.lineTo(front - 4, hub - 18);
+    ctx.moveTo(back, hub);
+    ctx.lineTo(a.x + w * 0.4, hub - 16);
+    ctx.stroke();
+    ctx.fillStyle = "#2a2a30"; // seat and handlebars
+    ctx.fillRect(a.x + w * 0.4 - 5, hub - 20, 10, 3);
+    ctx.fillRect(front - 8, hub - 23, 10, 2.5);
+    ctx.fillStyle = "#b08a50"; // a wicker basket
+    ctx.fillRect(front - 2, hub - 26, 10, 8);
+  },
+
+  // A stack of old pipes lying along the ledge.
+  pipeStack(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const a = toScreen(f.x, f.y + f.h), w = f.w * TILE;
+    for (const [dy, dx, r, color] of [[-5, 0, 5, "#6e7278"], [-5, 12, 5, "#7a7e84"], [-14, 6, 5, "#5f6368"], [-5, 24, 4, "#8a5a3a"]]) {
+      ctx.fillStyle = color;
+      ctx.fillRect(a.x + dx, a.y + dy - r, w - 30, r * 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.fillRect(a.x + dx, a.y + dy - r, w - 30, 1.5);
+      ctx.fillStyle = "#2a2a30"; // the open end
+      ctx.beginPath();
+      ctx.ellipse(a.x + dx + w - 30, a.y + dy, 2.5, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  // The streetlight on the corner past the barrier: a tall pole, an arm
+  // reaching over the street, and a lamp.
+  streetLamp(ctx, f) {
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, 7, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2c2e34";
+    ctx.fillRect(b.x - 2.5, b.y - 120, 5, 120);
+    ctx.fillRect(b.x - 5, b.y - 6, 10, 6);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fillRect(b.x - 2.5, b.y - 120, 1.2, 120);
+    ctx.fillRect(b.x, b.y - 120, 22, 3); // the arm
+    ctx.fillStyle = "#2c2e34";
+    ctx.fillRect(b.x, b.y - 120, 22, 3);
+    ctx.fillStyle = "#3a3c44"; // the lamp head
+    roundRectPath(ctx, b.x + 14, b.y - 121, 16, 6, 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff0c8";
+    ctx.fillRect(b.x + 16, b.y - 115, 12, 2.5);
+  },
+
+  // A faint trail of muddy paw prints across the grass (the raccoons went
+  // this way). Its `points` are yard spots, like the paths.
+  pawTrail(ctx, f) {
+    ctx.fillStyle = "rgba(90, 65, 40, 0.38)";
+    const pts = f.points.map(([x, y]) => toScreen(x, YARD + y));
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const side = i % 2 ? 4 : -4;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + side, 3, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      for (const [dx, dy] of [[-2.8, -3.2], [-1, -4.3], [1.2, -4.3], [3, -3.2]]) {
+        ctx.beginPath();
+        ctx.arc(p.x + dx, p.y + side + dy, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   },
 
   // A caged bulb on a bracket over the door.
@@ -765,12 +934,33 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // A plastic milk crate turned over for a seat (sit on it).
+  // A plastic milk crate turned over for a seat (sit on it): open slats on
+  // its sides, a rim, and a grid on top.
   milkCrate(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 13, "#4a78a0");
-    ctx.fillStyle = "rgba(20, 30, 50, 0.4)";
-    for (let i = 0; i < 3; i++) ctx.fillRect(box.face.x + 3 + i * ((box.face.w - 6) / 3), box.face.y + 3, (box.face.w - 6) / 3 - 2, 6);
+    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 14, "#4a78a0");
+    // The side: slots between the slats, showing the dark inside.
+    ctx.fillStyle = "rgba(15, 22, 40, 0.7)";
+    const slot = (box.face.w - 6) / 4;
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(box.face.x + 3 + i * slot, box.face.y + 3, slot - 2.5, box.face.h - 7);
+    }
+    ctx.fillStyle = "#5a8ab4"; // the rim along the bottom
+    ctx.fillRect(box.face.x, box.face.y + box.face.h - 3, box.face.w, 3);
+    // The top: a grid of little squares.
+    ctx.strokeStyle = "rgba(20, 35, 60, 0.55)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 1; i < 4; i++) {
+      const x = box.top.x + (box.top.w * i) / 4;
+      ctx.moveTo(x, box.top.y + 1);
+      ctx.lineTo(x, box.top.y + box.top.h - 1);
+    }
+    ctx.moveTo(box.top.x + 1, box.top.y + box.top.h / 2);
+    ctx.lineTo(box.top.x + box.top.w - 1, box.top.y + box.top.h / 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#6a9ac4";
+    ctx.strokeRect(box.top.x + 0.5, box.top.y + 0.5, box.top.w - 1, box.top.h - 1);
   },
 
   // A rolling clothes rack of hats and scarves: the raccoons' "stock".
@@ -890,7 +1080,16 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // A round iron manhole cover set in the cobbles (steam: drawAlleyLife).
   manhole(ctx, f) {
-    const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    let c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    if (f.tilt) {
+      // (In the yard: nudged off its seat, showing a dark crescent of the
+      // hole underneath.)
+      ctx.fillStyle = "#0e0c10";
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, (f.w * TILE) / 2, (f.h * TILE) / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      c = { x: c.x + 5, y: c.y + 2 };
+    }
     ctx.fillStyle = "#2e2c34";
     ctx.beginPath();
     ctx.ellipse(c.x, c.y, (f.w * TILE) / 2, (f.h * TILE) / 2, 0, 0, Math.PI * 2);
@@ -906,45 +1105,22 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.moveTo(c.x - (f.w * TILE) / 2.6, c.y);
     ctx.lineTo(c.x + (f.w * TILE) / 2.6, c.y);
     ctx.stroke();
+    if (f.note) {
+      // A scrap of paper taped on top: "Moved. -R"
+      ctx.save();
+      ctx.translate(c.x - 2, c.y - 1);
+      ctx.rotate(-0.12);
+      ctx.fillStyle = "#f4ecd8";
+      ctx.fillRect(-14, -6, 28, 12);
+      ctx.fillStyle = "rgba(230, 220, 170, 0.8)"; // the tape
+      ctx.fillRect(-4, -8, 8, 4);
+      ctx.fillStyle = "#3a2a20";
+      ctx.font = "700 6.5px 'Quicksand', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(f.note, 0, 2.5);
+      ctx.restore();
+      ctx.textAlign = "left";
+    }
   },
 
-  // The hidden door, from the hallway: the wall panel under the crooked
-  // hills painting. Shut, you'd only spot two faint seams and a scuff at
-  // the bottom; it swings open (away from you) onto the alley's night.
-  hiddenPanel(ctx, f) {
-    const a = toScreen(f.x, f.y), w = f.w * TILE, h = WALL_HEIGHT;
-    const open = HIDDEN_DOOR.open.hall;
-    if (open > 0) {
-      const g = ctx.createLinearGradient(0, a.y - h, 0, a.y);
-      g.addColorStop(0, "#1e2236");
-      g.addColorStop(1, "#3a2a44");
-      ctx.fillStyle = g;
-      ctx.fillRect(a.x, a.y - h, w, h);
-      ctx.fillStyle = "rgba(255, 110, 190, 0.35)"; // a hint of neon from out there
-      ctx.fillRect(a.x + w * 0.55, a.y - h + 6, 6, h - 10);
-      ctx.fillStyle = "rgba(160, 110, 200, 0.2)"; // and on the floor
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(a.x + w, a.y);
-      ctx.lineTo(a.x + w + 8 * open, a.y + 20 * open);
-      ctx.lineTo(a.x - 8 * open, a.y + 20 * open);
-      ctx.closePath();
-      ctx.fill();
-      // The panel itself, swinging away on its right-hand hinge.
-      const lw = w * (1 - open * 0.85);
-      ctx.fillStyle = "#b08a60";
-      ctx.fillRect(a.x + w - lw, a.y - h, lw, h);
-      ctx.fillStyle = WOOD_DARK;
-      ctx.fillRect(a.x + w - lw, a.y - 5, lw, 5);
-      return;
-    }
-    // Shut: faint seams, and a scuff low down where it's been pushed.
-    ctx.fillStyle = "rgba(40, 25, 10, 0.3)";
-    ctx.fillRect(a.x, a.y - h + 2, 1, h - 2);
-    ctx.fillRect(a.x + w - 1, a.y - h + 2, 1, h - 2);
-    ctx.fillStyle = "rgba(40, 25, 10, 0.18)";
-    ctx.beginPath();
-    ctx.ellipse(a.x + w * 0.35, a.y - 8, 6, 2.5, -0.3, 0, Math.PI * 2);
-    ctx.fill();
-  },
 });

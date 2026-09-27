@@ -408,8 +408,10 @@ function yardGlows() {
 }
 
 function drawOutdoorLight(ctx) {
-  // (The back alley is shady even by day, so its lights always show a little.)
-  const level = viewFloor === ALLEY_FLOOR ? Math.max(0.35, outdoorNightLevel()) : outdoorNightLevel();
+  // (The back alley is always dusk, whatever the weather: darker, with its
+  // own lights glowing, and no rain or haze.)
+  const alley = viewFloor === ALLEY_FLOOR;
+  const level = alley ? 0.85 : outdoorNightLevel();
   const { left, right, top, bottom } = houseBounds();
   const base = viewFloor * UPSTAIRS; // (the yard's, or the Lake's)
   const whole = [{ x: -WALL_THICKNESS - 2, y: base - 8, w: HOUSE_WIDTH + 4, h: 21 }];
@@ -417,7 +419,7 @@ function drawOutdoorLight(ctx) {
     drawOutsideWeather(ctx, whole);
     return;
   }
-  ctx.fillStyle = `rgba(14, 22, 62, ${0.55 * level})`;
+  ctx.fillStyle = alley ? "rgba(18, 12, 40, 0.58)" : `rgba(14, 22, 62, ${0.55 * level})`;
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -444,7 +446,7 @@ function drawOutdoorLight(ctx) {
   }
   ctx.globalAlpha = 1;
   if (viewFloor === LAKE_FLOOR) drawLakeFireflies(ctx, level); // (render-lake.js)
-  if (viewFloor === ALLEY_FLOOR) drawAlleyOverhead(ctx, level); // (render-alley.js)
+  if (alley) return drawAlleyOverhead(ctx, level); // (render-alley.js; no weather back there)
   drawOutsideWeather(ctx, whole); // rain or snow falls in front of the lights
 }
 

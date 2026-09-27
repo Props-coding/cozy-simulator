@@ -34,30 +34,23 @@ const SUITE = 2 * UPSTAIRS + 3; // the suite floor's hall, with the bedroom door
 // The front door, at the bottom of the ground floor's elevator lobby (and
 // in the house's back wall, seen from the yard): its left edge and width.
 const FRONT_DOOR_X = 20.2, FRONT_DOOR_W = 1.6;
-// The hidden door to the back alley (Update 7): a wall panel under the
-// crooked hills painting at the hallway's east end, and (in the alley) a
-// plain door in the house's side wall. `open` is how far each one has
-// swung open (0 shut, 1 wide open), for the drawing; main.js swings them.
-const HIDDEN_DOOR_HALL = { x: 22.9, w: 0.95 };
-const HIDDEN_DOOR_ALLEY = { x: 1.4, w: 1.0 };
-const HIDDEN_DOOR = { open: { hall: 0, alley: 0 } };
-
-// "hall" or "alley" if you're standing right by the hidden door (on that
-// side), or null.
-function hiddenDoorNear(player) {
+// The way to the back alley (Update 7): a manhole in the yard, where the
+// raccoons' dumpster used to be, and a matching one in the alley. Press E
+// on either to climb through. Returns "yard" or "alley" if you're standing
+// by one, or null.
+function manholeNear(player) {
   const cx = player.x + 0.3, cy = player.y + 0.3; // (the player's middle)
   const floor = floorOf(player.y);
-  const d = floor === 0 ? HIDDEN_DOOR_HALL : floor === ALLEY_FLOOR ? HIDDEN_DOOR_ALLEY : null;
-  if (!d) return null;
-  const top = floor === 0 ? 0 : ALLEY;
-  if (cx < d.x - 0.35 || cx > d.x + d.w + 0.35 || cy > top + 1.15) return null;
-  return floor === 0 ? "hall" : "alley";
+  if (floor !== YARD_FLOOR && floor !== ALLEY_FLOOR) return null;
+  const m = FURNITURE.find((f) => f.kind === "manhole" && f.way && floorOf(f.y) === floor);
+  if (!m) return null;
+  const d = Math.hypot(Math.max(m.x - cx, 0, cx - m.x - m.w), Math.max(m.y - cy, 0, cy - m.y - m.h));
+  return d < 0.75 ? (floor === YARD_FLOOR ? "yard" : "alley") : null;
 }
 
-// Where you come out on the other side of the hidden door.
-function hiddenDoorArrival(side) {
-  const d = side === "hall" ? HIDDEN_DOOR_ALLEY : HIDDEN_DOOR_HALL; // (going from this side to the other)
-  return { x: d.x + d.w / 2 - 0.3, y: (side === "hall" ? ALLEY : 0) + 0.4 };
+// Where you come out after climbing through (beside the other manhole).
+function manholeArrival(side) {
+  return side === "yard" ? { ...ALLEY_SPAWN } : { x: 14.35, y: YARD + 8.05 };
 }
 
 // Which floor a grid y position is on: 0 the ground floor, 1 business,
@@ -232,10 +225,7 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 17.1, y: 0, solid: false },
   { kind: "weatherWindow", x: 20.5, y: 0, w: 1.2, solid: false }, // (shows the real weather outside, see weather.js)
   { kind: "sconce", x: 22.3, y: 0, solid: false },
-  // The hills painting hangs a little crooked... it's on the hidden door
-  // to the back alley (press E by it to straighten it; see HIDDEN_DOOR).
-  { kind: "hiddenPanel", x: HIDDEN_DOOR_HALL.x, y: 0, w: HIDDEN_DOOR_HALL.w, solid: false },
-  { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", crooked: true, solid: false },
+  { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", solid: false },
   { kind: "fiddleFig", x: 23.3, y: 2.05, w: 0.6, h: 0.6 },
   { kind: "umbrellaStand", x: 21.85, y: 0.12, w: 0.5, h: 0.4 },
 
@@ -832,10 +822,13 @@ const YARD_FURNITURE = [
   { kind: "baitBox", x: 10.8, y: YARD + 5.0, w: 0.6, h: 0.45, solid: false }, // (once Otis has gone to the Lake)
 
   // The house's bins, where the raccoons used to lurk. They've moved to
-  // the back alley (Update 7) and left a sign with a clue.
+  // the back alley (Update 7): where their dumpster stood there's now a
+  // manhole cover, a little off its seat, with a note taped on top and a
+  // faint trail of paw prints leading to it. Press E on it to climb down.
   { kind: "trashCans", x: 11.85, y: YARD + 8.15, w: 0.8, h: 0.45 },
-  { kind: "trashBags", x: 12.85, y: YARD + 8.4, w: 0.6, h: 0.35, solid: false },
-  { kind: "shadySign", x: 14.2, y: YARD + 8.6, w: 0.3, h: 0.15, lines: ["we moved.", "ask the hills."] },
+  { kind: "trashBags", x: 12.6, y: YARD + 8.45, w: 0.6, h: 0.35, solid: false },
+  { kind: "pawTrail", x: 13.7, y: YARD + 7.6, w: 2.4, h: 0.5, points: [[16.0, 7.65], [15.4, 7.8], [14.85, 7.95], [14.35, 8.1]], solid: false },
+  { kind: "manhole", x: 13.35, y: YARD + 8.0, w: 0.8, h: 0.5, solid: false, way: "down", tilt: true, note: "Moved. -R" },
 
   // The bus stop by the road: a shelter with a bench (press E to sit and
   // wait), the bus stop sign with its timetable, and the bus itself, which
@@ -961,54 +954,67 @@ const LAKE_SPAWN = { x: 16.8, y: LAKE + 8.7 };
 
 // --- The back alley (Update 7) ---
 // A narrow cobbled alley behind the house, where the raccoons moved their
-// not-a-shop. On its own small map (floor -3), shown whole like a bedroom.
-// Along the top: the house's wooden side wall with the hidden door (the
-// way back in), then the tall brick back of the building next door, with a
-// fire escape and the raccoons' pink neon sign. A wooden fence closes the
-// west end, a chain-link gate the east end, a low brick ledge the south.
-// Sketchy, but it belongs: string lights overhead, herbs growing in tin
-// cans, an old sofa someone dragged out, a stray cat asleep on the crates.
+// not-a-shop. On its own small map (floor -3), shown whole. You get there
+// down the manhole in the yard (and come up out of the matching one here:
+// it's where the alley's steam comes from).
+// Along the top: the house's wooden side wall, then the tall brick back of
+// the building next door, with a fire escape, Reginald's back door and the
+// raccoons' pink neon sign. The west end opens onto a sliver of street (a
+// streetlight on the corner, a barrier across the alley's mouth); the east
+// end is a padlocked chain-link fence (one day, maybe). Clutter lines the
+// edges (pallets, a bike, pipes, crates with a cat asleep on them), and
+// the middle stays clear to walk. It's always dusk back here.
 // Voice is on. x runs 0 to ALLEY_W, y from ALLEY (the foot of the walls).
-const ALLEY_W = 12, ALLEY_H = 5.4;
+const ALLEY_W = 12, ALLEY_H = 3.9;
+const ALLEY_CURB = 1.25; // the street's curb: west of it, the street (not walkable)
+const ALLEY_WALK = 3.2; // the walkway's south edge (the clutter and a low brick ledge beyond)
 const ALLEY_AREA = { id: "alley", name: CONFIG.roomNames.alley, rect: { x: 0, y: ALLEY, w: ALLEY_W, h: ALLEY_H }, outdoor: true };
 const HOUSE_SIDE_W = 4.6; // where the house's side wall ends and the brick building begins
 
 const ALLEY_WALLS = [
   { x: -WALL_THICKNESS, y: ALLEY - 0.5, w: ALLEY_W + 2 * WALL_THICKNESS, h: 0.5, hidden: true }, // the walls along the top
-  { x: -WALL_THICKNESS, y: ALLEY - 0.5, w: WALL_THICKNESS, h: ALLEY_H + 1, hidden: true }, // the fence (west)
-  { x: ALLEY_W, y: ALLEY - 0.5, w: WALL_THICKNESS, h: ALLEY_H + 1, hidden: true }, // the gate (east)
-  { x: -WALL_THICKNESS, y: ALLEY + ALLEY_H, w: ALLEY_W + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true }, // the ledge (south)
+  { x: ALLEY_CURB, y: ALLEY - 0.5, w: 0.25, h: ALLEY_H + 1, hidden: true }, // the barrier at the street
+  { x: ALLEY_W, y: ALLEY - 0.5, w: WALL_THICKNESS, h: ALLEY_H + 1, hidden: true }, // the padlocked fence (east)
+  { x: ALLEY_CURB, y: ALLEY + ALLEY_WALK, w: ALLEY_W - ALLEY_CURB, h: 1.2, hidden: true }, // the clutter and the ledge (south)
 ];
 
 const ALLEY_FURNITURE = [
-  // The house's side: the hidden door (from out here, a plain door with no
-  // handle), a caged bulb over it, and herbs growing in old tin cans.
-  { kind: "alleyDoor", x: HIDDEN_DOOR_ALLEY.x, y: ALLEY, w: HIDDEN_DOOR_ALLEY.w, solid: false },
-  { kind: "cagedLamp", x: HIDDEN_DOOR_ALLEY.x + HIDDEN_DOOR_ALLEY.w + 0.2, y: ALLEY, solid: false },
-  { kind: "herbCans", x: 0.1, y: ALLEY + 0.05, w: 1.1, h: 0.35 },
-  // An old sofa someone dragged out (sit on it), under the drainpipe.
-  { kind: "alleySofa", x: 2.85, y: ALLEY + 0.1, w: 1.6, h: 0.6 },
-  // A hangout in the middle: a cable spool for a table, with a candle in a
-  // bottle, and milk crates to sit on.
-  { kind: "cableSpool", x: 5.35, y: ALLEY + 2.25, w: 0.8, h: 0.55 },
-  { kind: "milkCrate", x: 4.55, y: ALLEY + 2.3, w: 0.5, h: 0.45, solid: false },
-  { kind: "milkCrate", x: 6.45, y: ALLEY + 2.3, w: 0.5, h: 0.45, solid: false },
-  // The raccoons' corner: a rolling rack of hats (their "stock"), the
-  // raccoons themselves, their NOT A SHOP dumpster, the bins and bags.
-  { kind: "hatRack", x: 6.6, y: ALLEY + 0.2, w: 1.3, h: 0.4 },
-  { kind: "raccoons", x: 8.55, y: ALLEY + 1.05, w: 0.65, h: 0.45 },
+  // Along the house's side: herbs in old tin cans, and an old sofa someone
+  // dragged out (sit on it), by the drainpipe.
+  { kind: "herbCans", x: 1.55, y: ALLEY + 0.05, w: 1.1, h: 0.35 },
+  { kind: "alleySofa", x: 2.8, y: ALLEY + 0.1, w: 1.6, h: 0.6 },
+  // Along the brick building: recycling bins, the raccoons' rolling rack
+  // of hats (their "stock"), Reginald's back door with a caged bulb over
+  // it, the raccoons themselves, their NOT A SHOP dumpster, the bins, and
+  // their "totally normal trash" sign beside them.
+  { kind: "recyclingBins", x: 4.9, y: ALLEY + 0.1, w: 1.15, h: 0.5 },
+  { kind: "hatRack", x: 6.25, y: ALLEY + 0.2, w: 1.3, h: 0.4 },
+  { kind: "reginaldDoor", x: 7.8, y: ALLEY, w: 0.95, solid: false },
+  { kind: "cagedLamp", x: 8.27, y: ALLEY, solid: false },
+  { kind: "raccoons", x: 7.95, y: ALLEY + 0.95, w: 0.65, h: 0.45 },
   { kind: "dumpster", x: 9.4, y: ALLEY + 0.1, w: 1.5, h: 0.7 },
   { kind: "trashCans", x: 11.05, y: ALLEY + 0.2, w: 0.8, h: 0.45 },
-  { kind: "trashBags", x: 11.2, y: ALLEY + 4.45, w: 0.6, h: 0.35, solid: false },
-  { kind: "shadySign", x: 8.0, y: ALLEY + 2.0, w: 0.3, h: 0.15 },
-  // Stacked crates by the fence, with a stray cat asleep on top.
-  { kind: "crateStack", x: 0.1, y: ALLEY + 3.75, w: 0.95, h: 0.6 },
-  // A steaming manhole cover (flat on the ground).
-  { kind: "manhole", x: 3.0, y: ALLEY + 3.6, w: 0.8, h: 0.5, solid: false },
+  { kind: "shadySign", x: 11.35, y: ALLEY + 0.72, w: 0.3, h: 0.15 },
+  // A little hangout at the walkway's south edge: a cable spool for a
+  // table, with a candle in a bottle, and milk crates to sit on.
+  { kind: "cableSpool", x: 6.15, y: ALLEY + 2.5, w: 0.8, h: 0.55 },
+  { kind: "milkCrate", x: 5.4, y: ALLEY + 2.6, w: 0.5, h: 0.45, solid: false },
+  { kind: "milkCrate", x: 7.2, y: ALLEY + 2.6, w: 0.5, h: 0.45, solid: false },
+  // Clutter along the south edge, past the walkway.
+  { kind: "pallets", x: 1.6, y: ALLEY + 3.3, w: 1.2, h: 0.4 },
+  { kind: "alleyBike", x: 3.05, y: ALLEY + 3.35, w: 1.25, h: 0.3 },
+  { kind: "crateStack", x: 4.5, y: ALLEY + 3.25, w: 0.95, h: 0.55 },
+  { kind: "pipeStack", x: 8.2, y: ALLEY + 3.35, w: 1.6, h: 0.35 },
+  { kind: "trashBags", x: 10.15, y: ALLEY + 3.35, w: 0.6, h: 0.35, solid: false },
+  { kind: "pallets", x: 10.85, y: ALLEY + 3.3, w: 1.0, h: 0.4 },
+  // The manhole you climb up out of (and back down), steaming a little.
+  { kind: "manhole", x: 3.2, y: ALLEY + 1.8, w: 0.8, h: 0.5, solid: false, way: "up" },
+  // The streetlight on the street corner past the barrier.
+  { kind: "streetLamp", x: 0.45, y: ALLEY + 0.3, w: 0.3, h: 0.2, solid: false },
 ];
 
-// Where you pop back to in the alley: just outside the hidden door.
-const ALLEY_SPAWN = { x: HIDDEN_DOOR_ALLEY.x + HIDDEN_DOOR_ALLEY.w / 2 - 0.3, y: ALLEY + 0.45 };
+// Where you come up in the alley: beside the manhole.
+const ALLEY_SPAWN = { x: 4.1, y: ALLEY + 1.8 };
 
 // Is it night outside? Update 4's weather (weather.js) fills in OUTDOORS
 // from the real sky over the hometown; until it has, night is guessed from
@@ -1982,7 +1988,7 @@ function nearestInteraction(player) {
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (myPhoneInReach(player)) options.push(["phone", 0.05]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
-  if (hiddenDoorNear(player)) options.push(["hiddenDoor", 0.3]);
+  if (manholeNear(player)) options.push(["manhole", 0.3]);
   if (bedroomDoorInReach(player)) options.push(["bedroomDoor", 0]);
   // The Workshop's corkboard: stand below it.
   const cork = FURNITURE.find((f) => f.kind === "kanbanBoard");

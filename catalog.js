@@ -169,6 +169,7 @@ const ACHIEVEMENT_LIST = [
   { id: "pondScholar", name: "Pond Scholar", desc: "Catch 10 different kinds of fish.", crumbs: 25, server: true },
   { id: "fullTank", name: "Full Tank", desc: "Fill a fish tank in your bedroom.", crumbs: 15, server: true },
   { id: "junkDealer", name: "One Raccoon's Trash", desc: "Sell pond junk to the raccoons.", crumbs: 10, server: true },
+  { id: "downTheDrain", name: "Down the Drain", desc: "Climb down the manhole in the yard.", crumbs: 10 },
 
   // Kitchen & Trade (Update 5)
   { id: "firstDish", name: "Home Cooking", desc: "Cook your first dish.", crumbs: 10, server: true },

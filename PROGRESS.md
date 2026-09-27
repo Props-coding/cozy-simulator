@@ -374,6 +374,14 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - No server change needed for this one (the server doesn't care where the raccoons stand).
   - Tested on the local test copy: the hint, the door both ways (opening, arriving, closing), the raccoons' shop in the alley, the yard sign, and the alley by night.
 
+- Build 0.73: Reginald's alley, logic and polish.
+  - Getting there: the hidden door is gone (the hills painting hangs straight again). In the yard, where the raccoons' dumpster stood, there's a manhole cover a little off its seat, a faint trail of paw prints leading to it, and a note taped on top: "Moved. -R". Press E to climb down; you come up out of the matching manhole in the alley (the one that steams), and leave the same way. First time down: "Down the Drain" (a new achievement).
+  - Layout: the alley is narrow now (a walkway with clutter along the edges: pallets, a bike, pipes, crates with the cat, recycling bins, and the middle clear). The west end is a sliver of street with a streetlight on the corner, behind an orange-and-white barrier; the east end keeps the padlocked chain-link fence for later. Lights are strung across the alley to two poles on the ledge.
+  - Reginald's back door is in the brick wall: dark reddish wood with iron straps, a brass paw print plaque and a caged bulb over it; paw prints lead to it from the dumpster. The raccoons stand by it.
+  - Fixes: the "totally normal trash" sign stands beside the bins; the warning sign is on an electric box mounted on the wall; the milk crates have proper slats; puddles only lie in the low spots (by the storm drain at the curb, along the curb, under each gutter pipe) with light edges and reflections of the nearest light (streetlight, string lights, or the pink and teal neon).
+  - Lighting: always dusk back there, whatever the weather; darker, with bright string lights, neon and soft pools of light under them; no grey haze and no rain; clean dark framing around it like the indoor floors.
+  - Needs the server's copies of config.js, catalog.js and world.js updated (for the new achievement).
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 
