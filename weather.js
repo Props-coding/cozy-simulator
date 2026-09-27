@@ -91,7 +91,7 @@ function showChip() {
   chip.querySelector(".weather-icon").textContent = icon;
   chip.querySelector(".weather-temp").textContent = temp;
   const place = CONFIG.weather.hometown.name;
-  chip.title = `Weather in ${place}: ${OUTDOORS.words || "Clear"}${temp ? ", " + temp : ""}${OUTDOORS.night ? ", night" : ""}. It shows in the yard and through the windows. Weather data by Open-Meteo.com (CC BY 4.0).`;
+  chip.dataset.tip = `Weather in ${place}: ${OUTDOORS.words || "Clear"}${temp ? ", " + temp : ""}${OUTDOORS.night ? ", night" : ""}. It shows in the yard and through the windows. Weather data by Open-Meteo.com (CC BY 4.0).`;
 }
 
 async function fetchWeather() {

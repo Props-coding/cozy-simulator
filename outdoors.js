@@ -17,23 +17,122 @@ const GRASS = {
   winter: { ground: "#a7b394", dark: "rgba(90, 105, 85, 0.4)", light: "rgba(235, 240, 235, 0.6)" },
 };
 
-// A patch of dirt path: soft rounded edges and a few pebbles.
-function paintPath(ctx, box) {
-  const a = toScreen(box.x, YARD + box.y), b = toScreen(box.x + box.w, YARD + box.y + box.h);
-  const w = b.x - a.x, h = b.y - a.y;
-  ctx.fillStyle = "#c9ab80";
-  roundRectPath(ctx, a.x, a.y, w, h, Math.min(w, h) / 2);
-  ctx.fill();
-  ctx.fillStyle = "rgba(120, 90, 55, 0.18)";
-  roundRectPath(ctx, a.x + 2, a.y + h - 5, w - 4, 4, 2);
-  ctx.fill();
-  const seed = Math.round(box.x * 7 + box.y * 13);
-  for (let i = 0; i < (w * h) / 120; i++) {
-    ctx.fillStyle = i % 3 ? "rgba(150, 120, 85, 0.5)" : "rgba(235, 220, 195, 0.7)";
-    const px = a.x + 4 + noise(seed + i * 1.7) * (w - 8), py = a.y + 3 + noise(seed + i * 3.1) * (h - 6);
-    ctx.beginPath();
-    ctx.ellipse(px, py, 1.6, 1.1, 0, 0, Math.PI * 2);
-    ctx.fill();
+// --- The yard's paths (world.js: YARD_PATHS) ---
+// Each path is a line of points, smoothed into gentle curves. They're
+// painted in layers over every path at once, so where two meet they blend
+// into one wider patch instead of two strips crossing: a soft band of
+// trodden grass along the edges, then the path itself (a little wider
+// here, narrower there), then its stones or dirt, then pebbles and grass
+// tufts along the borders.
+
+// Points every `step` grid units along a smooth curve through `points`
+// (yard spots), as screen positions.
+function pathSamples(points, step = 0.1) {
+  const out = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i], p1 = points[i], p2 = points[i + 1], p3 = points[i + 2] ?? p2;
+    const n = Math.max(1, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+    for (let k = 0; k < n; k++) {
+      const t = k / n, t2 = t * t, t3 = t2 * t;
+      const f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+      out.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]);
+    }
+  }
+  out.push(points[points.length - 1]);
+  return out.map(([x, y]) => toScreen(x, YARD + y));
+}
+
+function paintPaths(ctx) {
+  const paths = YARD_PATHS.map((path, n) => ({ ...path, n, at: pathSamples(path.points) }));
+  // How wide a path is at sample i: its width, give or take a little.
+  const radius = (path, i) => (path.w * TILE * (1 + 0.07 * Math.sin(i * 0.23 + path.n * 2.1) + 0.04 * (noise(path.n * 31 + i) - 0.5))) / 2;
+  // 1. Trodden grass along the edges (one stroke, so crossings don't darken).
+  const edge = new Path2D();
+  for (const path of paths) {
+    edge.moveTo(path.at[0].x, path.at[0].y);
+    for (const p of path.at) edge.lineTo(p.x, p.y);
+  }
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "rgba(205, 190, 130, 0.35)";
+  ctx.lineWidth = 1.35 * TILE;
+  ctx.stroke(edge);
+  ctx.restore();
+  // 2. The paths themselves: stone near the house, packed earth further out.
+  for (const path of paths) {
+    ctx.fillStyle = path.stone ? "#b8b0a2" : "#c9ab80";
+    path.at.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius(path, i), 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  // 3. Their surface: flat stones set in the stone paths, and specks of
+  //    grit in the dirt ones.
+  for (const path of paths) {
+    const seed = path.n * 101;
+    if (path.stone) {
+      path.at.forEach((p, i) => {
+        if (i % 3) return;
+        const next = path.at[Math.min(i + 1, path.at.length - 1)], prev = path.at[Math.max(i - 1, 0)];
+        const dx = next.x - prev.x, dy = next.y - prev.y, len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len, ny = dx / len; // across the path
+        const r = radius(path, i);
+        for (const k of [-0.55, 0, 0.55]) {
+          const j = noise(seed + i * 3 + k * 7);
+          const sx = p.x + nx * r * (k + (j - 0.5) * 0.2), sy = p.y + ny * r * (k + (j - 0.5) * 0.2);
+          ctx.fillStyle = ["#cfc8ba", "#c4bcad", "#d8d2c6"][Math.floor(j * 3)];
+          ctx.beginPath();
+          ctx.ellipse(sx, sy, 7 + j * 2, 4.5 + j, j * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(110, 100, 85, 0.35)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      });
+    } else {
+      path.at.forEach((p, i) => {
+        const r = radius(path, i) * 0.8;
+        for (let k = 0; k < 2; k++) {
+          const a = noise(seed + i * 5 + k) * Math.PI * 2, d = Math.sqrt(noise(seed + i * 7 + k * 3)) * r;
+          ctx.fillStyle = (i + k) % 3 ? "rgba(150, 120, 85, 0.45)" : "rgba(235, 220, 195, 0.65)";
+          ctx.beginPath();
+          ctx.ellipse(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d * 0.7, 1.6, 1.1, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+  }
+  // 4. Along the borders: a few pebbles and tufts of grass.
+  const g = GRASS[yardSeason()] ?? GRASS.summer;
+  for (const path of paths) {
+    path.at.forEach((p, i) => {
+      if (i % 5 || i === 0 || i === path.at.length - 1) return;
+      const next = path.at[i + 1], prev = path.at[i - 1];
+      const dx = next.x - prev.x, dy = next.y - prev.y, len = Math.hypot(dx, dy) || 1;
+      const side = noise(path.n * 13 + i) > 0.5 ? 1 : -1;
+      const r = radius(path, i) + 3;
+      const x = p.x + (-dy / len) * r * side, y = p.y + (dx / len) * r * side;
+      if (noise(path.n * 17 + i * 3) > 0.55) {
+        ctx.fillStyle = "#a8a298";
+        ctx.beginPath();
+        ctx.ellipse(x, y, 2.4, 1.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.fillRect(x - 1.2, y - 1.2, 1.4, 0.8);
+      } else {
+        ctx.strokeStyle = g.dark;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x - 3, y + 1);
+        ctx.lineTo(x - 1, y - 4);
+        ctx.lineTo(x, y + 1);
+        ctx.lineTo(x + 2, y - 3.5);
+        ctx.lineTo(x + 3, y + 1);
+        ctx.stroke();
+      }
+    });
   }
 }
 
@@ -131,7 +230,7 @@ function paintYardGround(ctx) {
   const g1 = toScreen(13.0, YARD - 1.2), g2 = toScreen(23.6, YARD + 4.4);
   ctx.fillStyle = "rgba(120, 150, 80, 0.35)";
   ctx.fillRect(g1.x, g1.y, g2.x - g1.x, g2.y - g1.y);
-  for (const path of YARD_PATHS) paintPath(ctx, path);
+  paintPaths(ctx);
   paintPond(ctx);
   paintStreet(ctx);
 }
@@ -804,16 +903,27 @@ function drawSnowIn(ctx, x0, y0, w, h, amount, seed) {
   }
 }
 
-// Soft cloud shadows sliding slowly across the ground.
+// Soft cloud shadows sliding slowly across the ground: faint, and fading
+// out toward their edges.
 function drawCloudShadows(ctx, x0, y0, w, h, amount) {
   const t = performance.now() / 1000;
-  ctx.fillStyle = `rgba(40, 55, 70, ${0.08 + 0.06 * amount})`;
+  const alpha = 0.035 + 0.035 * amount;
   for (let i = 0; i < 4; i++) {
     const x = x0 - 200 + ((t * 9 + noise(i * 3.1) * 2000) % (w + 400));
     const y = y0 + noise(i * 7.3) * h;
+    const rx = 120 + noise(i) * 60, ry = 45 + noise(i * 2) * 20;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1, ry / rx);
+    const soft = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    soft.addColorStop(0, `rgba(40, 55, 70, ${alpha})`);
+    soft.addColorStop(0.6, `rgba(40, 55, 70, ${alpha * 0.8})`);
+    soft.addColorStop(1, "rgba(40, 55, 70, 0)");
+    ctx.fillStyle = soft;
     ctx.beginPath();
-    ctx.ellipse(x, y, 110 + noise(i) * 60, 40 + noise(i * 2) * 20, 0, 0, Math.PI * 2);
+    ctx.arc(0, 0, rx, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -1377,9 +1487,20 @@ Object.assign(FURNITURE_DRAWERS, {
     const plot = globalThis.gardenView?.beds?.[f.bed] ?? null;
     ctx.fillStyle = plot && !plot.dry ? "#4a3020" : "#6b4a32";
     ctx.fillRect(box.top.x + 3, box.top.y + 3, box.top.w - 6, box.top.h - 5);
-    // Furrows.
+    // Furrows (and on an empty bed, neat tilled rows ready for seeds).
     ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
     for (let i = 1; i < 3; i++) ctx.fillRect(box.top.x + 5, box.top.y + 3 + ((box.top.h - 5) * i) / 3, box.top.w - 10, 1.5);
+    if (!plot && yardSeason() !== "winter") {
+      const rows = 4, rowH = (box.top.h - 7) / rows;
+      for (let i = 0; i < rows; i++) {
+        const y = box.top.y + 4 + i * rowH;
+        ctx.fillStyle = "rgba(160, 118, 82, 0.55)"; // the ridge, catching the light
+        roundRectPath(ctx, box.top.x + 5, y, box.top.w - 10, rowH * 0.45, 1.5);
+        ctx.fill();
+        ctx.fillStyle = "rgba(30, 18, 10, 0.22)"; // the furrow beside it
+        ctx.fillRect(box.top.x + 5, y + rowH * 0.55, box.top.w - 10, 1.2);
+      }
+    }
     if (plot && !plot.dry) {
       ctx.fillStyle = "rgba(120, 170, 220, 0.16)";
       ctx.fillRect(box.top.x + 3, box.top.y + 3, box.top.w - 6, box.top.h - 5);
@@ -2136,7 +2257,7 @@ FURNITURE_DRAWERS.porchSwing = (ctx, f) => {
 // bus's left end, grid units), untilNext (seconds until it next arrives),
 // leavesIn (seconds, while waiting) }.
 const BUS_LENGTH = 4.4;
-const BUS_STOP_X = 18.8; // where its left end stops, by the shelter
+const BUS_STOP_X = 14.8; // where its left end stops: just left of the shelter (not in front of it), its door by the gate
 const BUS_DRIVE = 7; // seconds to drive in (or out)
 function busState(now = Date.now()) {
   const period = Math.max(2, CONFIG.bus.everyMinutes) * 60;

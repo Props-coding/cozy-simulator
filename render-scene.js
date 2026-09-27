@@ -87,11 +87,16 @@ function layoutPlayerTags(ctx, players) {
     placed.push(t);
   }
 
+  // Kept inside the map's edges (someone right at the edge still has their
+  // whole name showing).
+  const edge = houseBounds();
   return tags.map((t) => {
     const target = t.top - t.headTop; // 0, or how far up it had to go
     const stack = (tagStacks[t.p.id] ??= target);
     tagStacks[t.p.id] = stack + (target - stack) * step;
-    return { p: t.p, cx: t.cx, headTop: t.headTop + tagStacks[t.p.id] };
+    const cx = Math.min(Math.max(t.cx, edge.left + t.width / 2 + 4), edge.right - t.width / 2 - 4);
+    const headTop = Math.max(t.headTop + tagStacks[t.p.id], edge.top + t.height + 4);
+    return { p: t.p, cx, headTop };
   });
 }
 

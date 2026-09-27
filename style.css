@@ -873,46 +873,6 @@ canvas {
   gap: 20px;
 }
 
-/* Emote buttons: round, with their number key in a little badge. */
-#emote-bar {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-#emote-bar button {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  font-size: 1.15em;
-  border-radius: 50%;
-  border: 2px solid #eadcc6;
-  background: white;
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.1s ease;
-}
-
-#emote-bar button:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-}
-
-#emote-bar button span {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  min-width: 15px;
-  height: 15px;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 15px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: white;
-}
-
 /* The sidebar and the chat card, stacked in one column the sidebar's width. */
 #side-column {
   display: flex;
@@ -921,10 +881,10 @@ canvas {
   width: 230px;
 }
 
-/* Chat card: same cream card style as the sidebar. */
+/* Chat card: same cream card style as the sidebar. It's only as tall as
+   its messages need (up to a limit, then they scroll). */
 #chat-card {
-  flex: 1; /* fills the rest of the column's height */
-  min-height: 0; /* ...but never pushes the column taller */
+  flex: none;
   display: flex;
   flex-direction: column;
   text-align: left;
@@ -980,8 +940,6 @@ canvas {
    itself, so the page never gets longer however much people chat. */
 .chat-log-wrap {
   position: relative;
-  flex: 1;
-  min-height: 90px;
   display: flex;
   margin: 0 0 8px;
 }
@@ -992,6 +950,8 @@ canvas {
   padding: 6px 8px;
   flex: 1;
   min-width: 0;
+  min-height: 48px;
+  max-height: min(42vh, 360px);
   overflow-y: auto;
   overflow-x: hidden;
   background: #f7eddc;
@@ -1114,8 +1074,8 @@ canvas {
   flex: 1;
   min-width: 0;
   font-family: inherit;
-  font-size: 0.9em;
-  padding: 6px 10px;
+  font-size: 0.95em;
+  padding: 10px 12px;
   border-radius: 999px;
   border: 2px solid #eadcc6;
   background: white;
@@ -1148,11 +1108,9 @@ canvas {
     align-items: center;
   }
 
-  /* Under the house there's no house height to match, so the message
-     area just gets a comfortable fixed height. */
-  .chat-log-wrap {
-    flex: none;
-    height: 220px;
+  /* Under the house the message area can be a little taller. */
+  #chat-log {
+    max-height: 300px;
   }
 }
 
@@ -1204,6 +1162,8 @@ canvas {
   white-space: nowrap;
 }
 
+/* A friend's color. A thin dark ring keeps even the palest colors
+   visible on the cream card. */
 .peer-dot {
   display: inline-block;
   width: 10px;
@@ -1211,7 +1171,44 @@ canvas {
   border-radius: 50%;
   margin-right: 8px;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 1.5px rgba(74, 58, 44, 0.45);
+}
+
+/* Asleep: a smaller heading, and one short line per friend. */
+.asleep-heading {
+  margin-top: 4px !important;
+  font-size: 0.85em !important;
+  color: #9c8770 !important;
+}
+
+#asleep-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 6px;
+  font-size: 0.82em;
+  color: #8a7560;
+}
+
+#asleep-list li {
+  display: flex;
+  align-items: center;
+  padding: 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+#asleep-list li::after {
+  content: "💤";
+  margin-left: 5px;
+  font-size: 0.85em;
+}
+
+#asleep-list .peer-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
 }
 
 hr {
@@ -5229,5 +5226,45 @@ canvas.house-icon {
   #loading-screen.lit .porch-light .glow {
     opacity: 1;
   }
+}
+
+/* Hover tooltips on the header's icons (data-tip): a little dark label
+   under the icon, in the house's style. */
+.header-right [data-tip] {
+  position: relative;
+}
+
+.header-right [data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 40;
+  width: max-content;
+  max-width: 220px;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 9px;
+  background: var(--wood-dark);
+  color: #fffaf3;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  box-shadow: 0 6px 16px rgba(60, 40, 20, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s 0.25s;
+}
+
+.header-right [data-tip]:hover::after,
+.header-right [data-tip]:focus-visible::after {
+  opacity: 1;
+}
+
+/* (No tooltip over an open panel or dropdown.) */
+.header-right [aria-expanded="true"]::after {
+  display: none;
 }
 

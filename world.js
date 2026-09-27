@@ -531,15 +531,24 @@ function fenceRun(x1, y1, x2, y2, style = "picket") {
     : { kind: "fenceSide", style, x: x1 - 0.1, y: YARD + Math.min(y1, y2), w: 0.2, h: Math.abs(y2 - y1) };
 }
 
-// Flat things painted on the ground: paths (rectangles with rounded ends,
-// in yard spots), the road and sidewalk, and the pond (see outdoors.js).
+// Flat things painted on the ground: the paths, the road and sidewalk, and
+// the pond (see outdoors.js). The paths make one loop with no dead ends:
+// the porch steps, through the garden, down past the bus stop, west past
+// the trading post to the pond, up past Hazel, and back along the porch.
+// Short spurs lead into the campfire ring, onto the dock, and out through
+// the fence gate to the bus shelter. Each is a line of points (yard spots:
+// x, and y from the yard's top) drawn as a smooth curve `w` wide; `stone`
+// ones (near the house) are laid with stones, the rest are dirt.
 const YARD_PATHS = [
-  { x: 17.2, y: -2.9, w: 1.6, h: 1.5 }, // porch steps down to the garden gate
-  { x: 7.0, y: -2.8, w: 10.4, h: 0.9 }, // along the front of the porch, west to the campfire
-  { x: 8.9, y: -2.4, w: 0.9, h: 8.2 }, // down to the pond's dock
-  { x: 17.4, y: 4.6, w: 1.2, h: 2.6 }, // out of the garden's bottom gate
-  { x: 9.2, y: 6.6, w: 14.2, h: 0.9 }, // along the bottom, from the pond to the bus stop
-  { x: 17.4, y: 7.2, w: 1.2, h: 2.5 }, // through the gate in the fence to the sidewalk
+  { stone: true, w: 1.3, points: [[18.0, -2.75], [18.0, -2.0], [18.0, -1.2]] }, // porch steps down to the garden gate
+  { stone: true, w: 1.0, points: [[17.6, -2.3], [16.4, -2.3], [15.0, -2.28]] }, // along the porch, near the steps
+  { w: 0.95, points: [[15.4, -2.28], [12.6, -2.25], [10.5, -2.2], [9.4, -1.7], [9.15, -0.6]] }, // along the porch, west to Hazel's corner
+  { w: 0.95, points: [[9.15, -0.6], [9.2, 1.5], [9.3, 3.2], [9.25, 4.8], [9.45, 6.3], [10.1, 7.1], [11.2, 7.3]] }, // down past Otis to the pond
+  { w: 1.0, points: [[11.0, 7.3], [13.5, 7.25], [15.6, 7.2], [17.3, 7.15], [18.0, 7.1]] }, // along the bottom, past the trading post
+  { w: 1.1, points: [[18.0, -1.3], [18.0, 1.5], [18.0, 4.6], [18.0, 6.2], [18.0, 7.1]] }, // through the garden, out of its bottom gate
+  { w: 1.1, points: [[18.0, 7.1], [18.0, 8.5], [18.0, 9.6]] }, // through the fence gate to the bus stop
+  { w: 0.85, points: [[9.15, -1.15], [7.8, -1.05], [6.5, -1.2], [5.8, -1.4]] }, // into the campfire ring
+  { w: 0.8, points: [[9.35, 5.9], [8.5, 5.9]] }, // onto the dock
 ];
 
 // The garden beds (yard spots): [x, local y], each 1.7 wide and 1.0 deep.
@@ -690,7 +699,7 @@ const YARD_FURNITURE = [
   { kind: "pineTree", x: 11.2, y: YARD + 2.6, w: 0.9, h: 0.5, n: 2 },
   { kind: "yardTree", x: 0.6, y: YARD + 8.3, w: 1.0, h: 0.55, n: 3 },
   { kind: "pineTree", x: 23.0, y: YARD + 5.9, w: 0.9, h: 0.5, n: 6 },
-  { kind: "bush", x: 12.9, y: YARD + 5.4, w: 0.9, h: 0.55, n: 1 },
+  { kind: "bush", x: 14.3, y: YARD + 5.4, w: 0.9, h: 0.55, n: 1 },
   { kind: "bush", x: 4.1, y: YARD + 1.4, w: 0.9, h: 0.55, n: 2 },
   { kind: "bush", x: 20.6, y: YARD + 5.3, w: 0.9, h: 0.55, n: 3 },
   { kind: "wildflowers", x: 3.1, y: YARD + 8.7, w: 1.1, h: 0.3, solid: false },
@@ -699,9 +708,9 @@ const YARD_FURNITURE = [
   // mailbox by the gate in the bottom right.
   { kind: "wildflowers", x: 2.0, y: YARD + 2.3, w: 1.1, h: 0.3, solid: false },
   { kind: "pondStones", x: 5.4, y: YARD + 2.6, w: 0.7, h: 0.35 },
-  { kind: "mailbox", x: 20.85, y: YARD + 8.55, w: 0.4, h: 0.3 },
+  { kind: "mailbox", x: 19.9, y: YARD - 2.5, w: 0.4, h: 0.3 }, // by the porch steps
   { kind: "wildflowers", x: 19.8, y: YARD + 8.75, w: 0.9, h: 0.3, solid: false },
-  { kind: "birdbath", x: 21.5, y: YARD + 8.05, w: 0.6, h: 0.4 },
+  { kind: "birdbath", x: 21.6, y: YARD + 6.9, w: 0.6, h: 0.4 },
   { kind: "pondStones", x: 23.1, y: YARD + 7.8, w: 0.7, h: 0.35 },
   { kind: "wildflowers", x: 12.2, y: YARD + 3.6, w: 0.5, h: 0.3, solid: false },
   { kind: "wildflowers", x: 21.3, y: YARD + 6.0, w: 1.0, h: 0.3, solid: false },
@@ -748,17 +757,17 @@ const YARD_FURNITURE = [
   // Kitchen & Trade (Update 5): the trading post stall below the garden,
   // facing the path, and where Juniper the traveling merchant sets out her
   // blanket of wares by the bus stop on her day (drawn only then).
-  { kind: "tradingPost", x: 14.4, y: YARD + 5.85, w: 1.9, h: 0.6 },
-  { kind: "merchantWares", x: 18.95, y: YARD + 8.0, w: 1.6, h: 0.5, solid: false },
-  { kind: "juniper", x: 18.3, y: YARD + 8.3, w: 0.55, h: 0.4, solid: false },
+  { kind: "tradingPost", x: 11.7, y: YARD + 6.0, w: 1.9, h: 0.6 },
+  { kind: "merchantWares", x: 19.7, y: YARD + 8.0, w: 1.6, h: 0.5, solid: false },
+  { kind: "juniper", x: 19.0, y: YARD + 8.25, w: 0.55, h: 0.4, solid: false },
   { kind: "busSign", x: 22.6, y: YARD + 10.0, w: 0.3, h: 0.2 },
   { kind: "bus", x: 0, y: YARD + 10.7, w: HOUSE_WIDTH, h: 0.5, solid: false },
 
   // Signposts, so you know where you are.
-  { kind: "signpost", x: 8.3, y: YARD - 1.4, w: 0.3, h: 0.2, text: "Campfire", point: "left" },
+  { kind: "signpost", x: 8.0, y: YARD - 0.4, w: 0.3, h: 0.2, text: "Campfire", point: "left" },
   { kind: "signpost", x: 10.05, y: YARD + 3.4, w: 0.3, h: 0.2, text: "Pond", point: "left" },
   { kind: "signpost", x: 19.1, y: YARD - 1.9, w: 0.3, h: 0.2, text: "Garden", point: "down" },
-  { kind: "signpost", x: 16.3, y: YARD + 7.7, w: 0.3, h: 0.2, text: "Bus Stop", point: "right" },
+  { kind: "signpost", x: 16.9, y: YARD + 8.1, w: 0.3, h: 0.2, text: "Bus Stop", point: "right" },
 ];
 
 // Where you pop back to in the yard (say the area you were in vanished):

@@ -20,8 +20,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.67" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.67">
+       build, change every "v=0.68" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.68">
 </head>
 <body>
   <!-- The loading screen: a dark front porch at night. The porch light
@@ -336,16 +336,16 @@
       <header id="game-header">
         <h1>Porchlight</h1>
         <div class="header-right">
-          <span id="crumb-pill" title="Crumbs: you earn them by hanging out, and spend them at the raccoons' shop out in the yard (by the bins)">
+          <span id="crumb-pill" data-tip="Your crumbs: earned by hanging out, spent in the shops">
             <svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>
             <span id="crumb-count">0</span>
           </span>
           <!-- The boost from the last dish you ate (kitchen.js): hover for what it does. -->
           <span id="boost-bar" hidden></span>
-          <button id="basket-button" type="button" title="Your basket: seeds, harvest and more" aria-label="Your basket">🧺</button>
-          <span id="weather-chip" hidden><span class="weather-icon">☀️</span><span class="weather-temp"></span></span>
-          <span id="room-label">📍 Hallway</span>
-          <button id="admin-button" type="button" title="Admin tools" aria-label="Admin tools" aria-expanded="false" hidden>🛠️</button>
+          <button id="basket-button" type="button" data-tip="Your basket: seeds, harvest, fish and dishes" aria-label="Your basket">🧺</button>
+          <span id="weather-chip" data-tip="The weather in the hometown" hidden><span class="weather-icon">☀️</span><span class="weather-temp"></span></span>
+          <span id="room-label" data-tip="Where you are">📍 Hallway</span>
+          <button id="admin-button" type="button" data-tip="Admin tools" aria-label="Admin tools" aria-expanded="false" hidden>🛠️</button>
           <!-- Admin tools (admin.js), only for admin accounts. -->
           <div id="admin-panel" hidden>
             <div class="admin-head">
@@ -356,8 +356,8 @@
             <div id="admin-body"></div>
             <p id="admin-status" class="admin-status" aria-live="polite"></p>
           </div>
-          <button id="trophy-button" type="button" title="Your achievements" aria-label="Your achievements">🏆</button>
-          <button id="settings-button" type="button" title="Sound settings" aria-label="Sound settings" aria-expanded="false">
+          <button id="trophy-button" type="button" data-tip="Your profile and achievements" aria-label="Your achievements">🏆</button>
+          <button id="settings-button" type="button" data-tip="Sound settings" aria-label="Sound settings" aria-expanded="false">
             <svg class="gear-icon" aria-hidden="true"><use href="#gear-icon"></use></svg>
           </button>
           <!-- Sound settings, in a little card that drops down from the cog. -->
@@ -721,27 +721,20 @@
           </div>
         </div>
         <p id="action-hint"></p>
-        <p class="hint">Move with the arrow keys or WASD.</p>
+        <p id="move-hint" class="hint">Move with the arrow keys or WASD.</p>
       </div>
       <div id="side-column">
       <div id="sidebar">
-        <h2>Who's here</h2>
+        <h2>Online</h2>
         <ul id="peer-list"></ul>
+        <!-- Friends who are away, asleep in their rooms: one short line each. -->
+        <h2 id="asleep-heading" class="asleep-heading" hidden>Asleep</h2>
+        <ul id="asleep-list"></ul>
         <p id="mic-status" class="hint" hidden>
           Your mic is off, so friends can't hear you (you can still hear them).
           To fix it, click the icon at the left of the address bar, allow the
           microphone, then reload the page.
         </p>
-        <hr>
-        <h2>Emotes</h2>
-        <!-- Emote buttons (or press the number keys). -->
-        <div id="emote-bar">
-          <button type="button" data-emote="wave" title="Wave (press 1)">👋<span>1</span></button>
-          <button type="button" data-emote="heart" title="Heart (press 2)">❤️<span>2</span></button>
-          <button type="button" data-emote="laugh" title="Laugh (press 3)">😂<span>3</span></button>
-          <button type="button" data-emote="dance" title="Dance! Pick your style in your wardrobe (press 4)">🕺<span>4</span></button>
-          <button type="button" data-emote="sleepy" title="Sleepy (press 5)">💤<span>5</span></button>
-        </div>
       </div>
 
       <!-- Chat: "House" goes to everyone, "Room" only to people in the
@@ -814,67 +807,67 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.67</p>
+  <p id="version-tag">build 0.68</p>
 
-  <script src="config.js?v=0.67"></script>
-  <script src="catalog.js?v=0.67"></script>
-  <script src="world.js?v=0.67"></script>
-  <script src="render.js?v=0.67"></script>
-  <script src="render-furniture.js?v=0.67"></script>
-  <script src="render-rooms.js?v=0.67"></script>
-  <script src="render-extras.js?v=0.67"></script>
-  <script src="render-characters.js?v=0.67"></script>
-  <script src="render-scene.js?v=0.67"></script>
-  <script src="outdoors.js?v=0.67"></script>
+  <script src="config.js?v=0.68"></script>
+  <script src="catalog.js?v=0.68"></script>
+  <script src="world.js?v=0.68"></script>
+  <script src="render.js?v=0.68"></script>
+  <script src="render-furniture.js?v=0.68"></script>
+  <script src="render-rooms.js?v=0.68"></script>
+  <script src="render-extras.js?v=0.68"></script>
+  <script src="render-characters.js?v=0.68"></script>
+  <script src="render-scene.js?v=0.68"></script>
+  <script src="outdoors.js?v=0.68"></script>
   <script>
     // The page's code is here (the loading screen's first step).
     Loading.step("code");
     Loading.nextTip();
     // Keep the game's files on this computer, so coming back is quicker
     // (sw.js). Each build keeps its own copy, so an update always loads fresh.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.67").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.68").catch(() => {});
   </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.67",
-        "./network.js": "./network.js?v=0.67",
-        "./audio.js": "./audio.js?v=0.67",
-        "./theater.js": "./theater.js?v=0.67",
-        "./whiteboard.js": "./whiteboard.js?v=0.67",
-        "./shop.js": "./shop.js?v=0.67",
-        "./emoji.js": "./emoji.js?v=0.67",
-        "./achievements.js": "./achievements.js?v=0.67",
-        "./home.js": "./home.js?v=0.67",
-        "./turntable.js": "./turntable.js?v=0.67",
-        "./wardrobe.js": "./wardrobe.js?v=0.67",
-        "./kanban.js": "./kanban.js?v=0.67",
-        "./rooms.js": "./rooms.js?v=0.67",
-        "./journal.js": "./journal.js?v=0.67",
-        "./phone.js": "./phone.js?v=0.67",
-        "./laptop.js": "./laptop.js?v=0.67",
-        "./news.js": "./news.js?v=0.67",
-        "./account.js": "./account.js?v=0.67",
-        "./profile.js": "./profile.js?v=0.67",
-        "./icons.js": "./icons.js?v=0.67",
-        "./reputation.js": "./reputation.js?v=0.67",
-        "./titles.js": "./titles.js?v=0.67",
-        "./admin.js": "./admin.js?v=0.67",
-        "./updater.js": "./updater.js?v=0.67",
-        "./weather.js": "./weather.js?v=0.67",
-        "./basket.js": "./basket.js?v=0.67",
-        "./npc.js": "./npc.js?v=0.67",
-        "./bank.js": "./bank.js?v=0.67",
-        "./kitchen.js": "./kitchen.js?v=0.67",
-        "./market.js": "./market.js?v=0.67",
-        "./menu.js": "./menu.js?v=0.67",
-        "./garden.js": "./garden.js?v=0.67",
-        "./fishing.js": "./fishing.js?v=0.67",
-        "./bus.js": "./bus.js?v=0.67"
+        "./main.js": "./main.js?v=0.68",
+        "./network.js": "./network.js?v=0.68",
+        "./audio.js": "./audio.js?v=0.68",
+        "./theater.js": "./theater.js?v=0.68",
+        "./whiteboard.js": "./whiteboard.js?v=0.68",
+        "./shop.js": "./shop.js?v=0.68",
+        "./emoji.js": "./emoji.js?v=0.68",
+        "./achievements.js": "./achievements.js?v=0.68",
+        "./home.js": "./home.js?v=0.68",
+        "./turntable.js": "./turntable.js?v=0.68",
+        "./wardrobe.js": "./wardrobe.js?v=0.68",
+        "./kanban.js": "./kanban.js?v=0.68",
+        "./rooms.js": "./rooms.js?v=0.68",
+        "./journal.js": "./journal.js?v=0.68",
+        "./phone.js": "./phone.js?v=0.68",
+        "./laptop.js": "./laptop.js?v=0.68",
+        "./news.js": "./news.js?v=0.68",
+        "./account.js": "./account.js?v=0.68",
+        "./profile.js": "./profile.js?v=0.68",
+        "./icons.js": "./icons.js?v=0.68",
+        "./reputation.js": "./reputation.js?v=0.68",
+        "./titles.js": "./titles.js?v=0.68",
+        "./admin.js": "./admin.js?v=0.68",
+        "./updater.js": "./updater.js?v=0.68",
+        "./weather.js": "./weather.js?v=0.68",
+        "./basket.js": "./basket.js?v=0.68",
+        "./npc.js": "./npc.js?v=0.68",
+        "./bank.js": "./bank.js?v=0.68",
+        "./kitchen.js": "./kitchen.js?v=0.68",
+        "./market.js": "./market.js?v=0.68",
+        "./menu.js": "./menu.js?v=0.68",
+        "./garden.js": "./garden.js?v=0.68",
+        "./fishing.js": "./fishing.js?v=0.68",
+        "./bus.js": "./bus.js?v=0.68"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.67"></script>
+  <script type="module" src="main.js?v=0.68"></script>
 </body>
 </html>

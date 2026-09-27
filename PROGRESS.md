@@ -336,6 +336,10 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - All the numbers are in config.js (fishing: shadows, nibbles, reel, pulls, castReach; each fish's `pull`).
   - The Dinner room is a normal room now: voice chat is on (like the Lounge), no more "eating" badge, sounds and chimes play there, and the phone doesn't count you as away. The old silent-room code is gone.
   - The locked green side door by the campfire is gone (a window in its place, like the others).
+- Build 0.68: yard paths and layout, and interface tidying (pushed without a visual test, near the session limit: check it).
+  - Paths: one loop with no dead ends (porch steps, through the garden, down past the bus stop, west past the trading post to the pond, up past Hazel, back along the porch), with spurs into the campfire ring, onto the dock, and through the fence gate to the bus shelter. Smooth curves, blended junctions, slight width changes, stone near the porch and dirt further out, trodden-grass edging with pebbles and tufts. The stretch past the bus stop is gone.
+  - Yard: the bus stops just left of the shelter (its door by the gate); the trading post moved beside the bottom path; the mailbox is by the porch steps and the birdbath on the east lawn; Juniper stands beside the bus spur. Softer cloud shadows, tilled rows on empty garden beds, and name tags stay inside the map.
+  - Interface: tooltips on every header icon; "Who's here" is now Online and Asleep (one short line each); every color dot has a thin ring; the chat box is bigger and the message area grows with the messages; the movement hint goes away once you've walked around; the emote buttons are gone from the sidebar (number keys and the Q wheel still work).
 
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.

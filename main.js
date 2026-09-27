@@ -1541,19 +1541,18 @@ onEmote((id, peerId) => {
   if (isDance(id)) playDanceTune(id, danceVolumeFor(peer));
 });
 
-for (const button of document.querySelectorAll("#emote-bar button")) {
-  button.addEventListener("click", () => {
-    startEmote(button.dataset.emote);
-    button.blur(); // give the keyboard back to walking
-  });
-}
-
 // --- The emote wheel ---
 // Hold CONFIG.emoteWheel.key (Q) to open a wheel of emotes around your
-// character, point the mouse at one, and let go to do it. (The buttons
-// and number keys still work too.) Escape closes it without choosing.
+// character, point the mouse at one, and let go to do it. (The number
+// keys 1 to 5 still work too.) Escape closes it without choosing.
 const wheel = document.getElementById("emote-wheel");
-const WHEEL_EMOTES = [...document.querySelectorAll("#emote-bar button")].map((b) => ({ id: b.dataset.emote, icon: b.firstChild.textContent, title: b.title }));
+const WHEEL_EMOTES = [
+  { id: "wave", icon: "👋", title: "Wave (press 1)" },
+  { id: "heart", icon: "❤️", title: "Heart (press 2)" },
+  { id: "laugh", icon: "😂", title: "Laugh (press 3)" },
+  { id: "dance", icon: "🕺", title: "Dance! Pick your style in your wardrobe (press 4)" },
+  { id: "sleepy", icon: "💤", title: "Sleepy (press 5)" },
+];
 let wheelChoice = null;
 let wheelCenter = { x: 0, y: 0 };
 const wheelSlots = WHEEL_EMOTES.map(({ id, icon, title }, i) => {
@@ -1615,16 +1614,12 @@ window.addEventListener("keyup", (e) => {
   if (e.key.toLowerCase() === CONFIG.emoteWheel.key) closeWheel(true);
 });
 
-// The dance slot (in the wheel and the sidebar) shows the cooldown as a
-// ring filling back up.
-const danceButton = document.querySelector('#emote-bar button[data-emote="dance"]');
+// The wheel's dance slot shows the cooldown as a ring filling back up.
 function showDanceCooldown() {
   const left = danceCooldownLeft();
-  const fill = `${Math.round((1 - left) * 360)}deg`;
-  for (const el of [danceButton, wheel.querySelector(".dance-slot")]) {
-    el?.style.setProperty("--cooldown", fill);
-    el?.classList.toggle("cooling", left > 0);
-  }
+  const el = wheel.querySelector(".dance-slot");
+  el?.style.setProperty("--cooldown", `${Math.round((1 - left) * 360)}deg`);
+  el?.classList.toggle("cooling", left > 0);
 }
 
 // --- Whiteboard ---
@@ -2496,6 +2491,10 @@ peerList.addEventListener("mousedown", (e) => {
 // to friends, so anyone on an older version shows up as "needs refresh".
 const MY_BUILD = document.getElementById("version-tag").textContent.replace("build", "").trim();
 
+// "Online": you and everyone in the house. "Asleep": friends who are away,
+// asleep in their rooms, one short line each.
+const asleepList = document.getElementById("asleep-list");
+const asleepHeading = document.getElementById("asleep-heading");
 function updateSidebar(myRoomName) {
   let rows = peerRow(myColor, `${myName} (you) · ${amAsleep ? "💤 " : ""}${myRoomName} · ${formatLocalTime(myTimeZone)}`, false, myName);
   for (const peer of visiblePeers) {
@@ -2503,11 +2502,40 @@ function updateSidebar(myRoomName) {
     const roomName = (bedAt(peer) ? "💤 " : "") + roomNameFor(peer.room);
     rows += peerRow(peer.color, `${peer.name} · ${roomName}${time ? " · " + time : ""}`, peer.build !== MY_BUILD, peer.name);
   }
-  for (const { door } of sleepers()) rows += peerRow(door.color, `${door.owner} · 💤 asleep in their room`, false, door.owner);
+  let asleep = "";
+  for (const { door } of sleepers()) asleep += peerRow(door.color, door.owner, false, door.owner);
   // (Built every frame, but only put on the page when something changed.)
-  if (rows === lastSidebar) return;
-  lastSidebar = rows;
+  if (rows + asleep === lastSidebar) return;
+  lastSidebar = rows + asleep;
   peerList.innerHTML = rows;
+  asleepList.innerHTML = asleep;
+  asleepHeading.hidden = !asleep;
+}
+asleepList.addEventListener("mousedown", (e) => {
+  const name = e.target.closest("li[data-name]")?.dataset.name;
+  if (name) openProfile(name);
+});
+
+// The "Move with the arrow keys or WASD" hint is for new players: once
+// you've walked around for a little while, it's gone for good.
+const MOVE_HINT_KEY = "cozy-house-walked";
+const moveHint = document.getElementById("move-hint");
+let walkedSeconds = 0;
+try {
+  moveHint.hidden = localStorage.getItem(MOVE_HINT_KEY) === "1";
+} catch {
+  // (storage blocked: the hint just stays)
+}
+function noteWalking(dt) {
+  if (moveHint.hidden) return;
+  walkedSeconds += dt;
+  if (walkedSeconds < 20) return;
+  moveHint.hidden = true;
+  try {
+    localStorage.setItem(MOVE_HINT_KEY, "1");
+  } catch {
+    // (storage blocked)
+  }
 }
 let lastSidebar = "";
 
@@ -2526,6 +2554,7 @@ function tick(now) {
   } else if (dx !== 0 || dy !== 0) {
     if (isFishing()) stopFishing("You reeled your line back in.");
     movePlayer(player, dx, dy);
+    noteWalking(dt);
     stopMyEmote(); // walking off ends an emote
   }
   checkMySeat();
