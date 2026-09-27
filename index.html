@@ -20,8 +20,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.65" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.65">
+       build, change every "v=0.66" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.66">
 </head>
 <body>
   <!-- The loading screen: a dark front porch at night. The porch light
@@ -810,67 +810,67 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.65</p>
+  <p id="version-tag">build 0.66</p>
 
-  <script src="config.js?v=0.65"></script>
-  <script src="catalog.js?v=0.65"></script>
-  <script src="world.js?v=0.65"></script>
-  <script src="render.js?v=0.65"></script>
-  <script src="render-furniture.js?v=0.65"></script>
-  <script src="render-rooms.js?v=0.65"></script>
-  <script src="render-extras.js?v=0.65"></script>
-  <script src="render-characters.js?v=0.65"></script>
-  <script src="render-scene.js?v=0.65"></script>
-  <script src="outdoors.js?v=0.65"></script>
+  <script src="config.js?v=0.66"></script>
+  <script src="catalog.js?v=0.66"></script>
+  <script src="world.js?v=0.66"></script>
+  <script src="render.js?v=0.66"></script>
+  <script src="render-furniture.js?v=0.66"></script>
+  <script src="render-rooms.js?v=0.66"></script>
+  <script src="render-extras.js?v=0.66"></script>
+  <script src="render-characters.js?v=0.66"></script>
+  <script src="render-scene.js?v=0.66"></script>
+  <script src="outdoors.js?v=0.66"></script>
   <script>
     // The page's code is here (the loading screen's first step).
     Loading.step("code");
     Loading.nextTip();
     // Keep the game's files on this computer, so coming back is quicker
     // (sw.js). Each build keeps its own copy, so an update always loads fresh.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.65").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.66").catch(() => {});
   </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.65",
-        "./network.js": "./network.js?v=0.65",
-        "./audio.js": "./audio.js?v=0.65",
-        "./theater.js": "./theater.js?v=0.65",
-        "./whiteboard.js": "./whiteboard.js?v=0.65",
-        "./shop.js": "./shop.js?v=0.65",
-        "./emoji.js": "./emoji.js?v=0.65",
-        "./achievements.js": "./achievements.js?v=0.65",
-        "./home.js": "./home.js?v=0.65",
-        "./turntable.js": "./turntable.js?v=0.65",
-        "./wardrobe.js": "./wardrobe.js?v=0.65",
-        "./kanban.js": "./kanban.js?v=0.65",
-        "./rooms.js": "./rooms.js?v=0.65",
-        "./journal.js": "./journal.js?v=0.65",
-        "./phone.js": "./phone.js?v=0.65",
-        "./laptop.js": "./laptop.js?v=0.65",
-        "./news.js": "./news.js?v=0.65",
-        "./account.js": "./account.js?v=0.65",
-        "./profile.js": "./profile.js?v=0.65",
-        "./icons.js": "./icons.js?v=0.65",
-        "./reputation.js": "./reputation.js?v=0.65",
-        "./titles.js": "./titles.js?v=0.65",
-        "./admin.js": "./admin.js?v=0.65",
-        "./updater.js": "./updater.js?v=0.65",
-        "./weather.js": "./weather.js?v=0.65",
-        "./basket.js": "./basket.js?v=0.65",
-        "./npc.js": "./npc.js?v=0.65",
-        "./bank.js": "./bank.js?v=0.65",
-        "./kitchen.js": "./kitchen.js?v=0.65",
-        "./market.js": "./market.js?v=0.65",
-        "./menu.js": "./menu.js?v=0.65",
-        "./garden.js": "./garden.js?v=0.65",
-        "./fishing.js": "./fishing.js?v=0.65",
-        "./bus.js": "./bus.js?v=0.65"
+        "./main.js": "./main.js?v=0.66",
+        "./network.js": "./network.js?v=0.66",
+        "./audio.js": "./audio.js?v=0.66",
+        "./theater.js": "./theater.js?v=0.66",
+        "./whiteboard.js": "./whiteboard.js?v=0.66",
+        "./shop.js": "./shop.js?v=0.66",
+        "./emoji.js": "./emoji.js?v=0.66",
+        "./achievements.js": "./achievements.js?v=0.66",
+        "./home.js": "./home.js?v=0.66",
+        "./turntable.js": "./turntable.js?v=0.66",
+        "./wardrobe.js": "./wardrobe.js?v=0.66",
+        "./kanban.js": "./kanban.js?v=0.66",
+        "./rooms.js": "./rooms.js?v=0.66",
+        "./journal.js": "./journal.js?v=0.66",
+        "./phone.js": "./phone.js?v=0.66",
+        "./laptop.js": "./laptop.js?v=0.66",
+        "./news.js": "./news.js?v=0.66",
+        "./account.js": "./account.js?v=0.66",
+        "./profile.js": "./profile.js?v=0.66",
+        "./icons.js": "./icons.js?v=0.66",
+        "./reputation.js": "./reputation.js?v=0.66",
+        "./titles.js": "./titles.js?v=0.66",
+        "./admin.js": "./admin.js?v=0.66",
+        "./updater.js": "./updater.js?v=0.66",
+        "./weather.js": "./weather.js?v=0.66",
+        "./basket.js": "./basket.js?v=0.66",
+        "./npc.js": "./npc.js?v=0.66",
+        "./bank.js": "./bank.js?v=0.66",
+        "./kitchen.js": "./kitchen.js?v=0.66",
+        "./market.js": "./market.js?v=0.66",
+        "./menu.js": "./menu.js?v=0.66",
+        "./garden.js": "./garden.js?v=0.66",
+        "./fishing.js": "./fishing.js?v=0.66",
+        "./bus.js": "./bus.js?v=0.66"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.65"></script>
+  <script type="module" src="main.js?v=0.66"></script>
 </body>
 </html>

@@ -7,6 +7,24 @@
   --wood-dark: #5c4530;
 }
 
+/* No accidental text selection anywhere in the game (menus, panels,
+   shops, buttons, the header): double-clicks and quick clicks don't
+   highlight anything. Every new menu gets this automatically. Text you
+   can type in (the chat box, the journal, every text box) and chat
+   messages can still be selected, for copy and paste. */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+#chat-log {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 body {
   font-family: 'Quicksand', sans-serif;
   background: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(217, 164, 65, 0.18), transparent 60%),
