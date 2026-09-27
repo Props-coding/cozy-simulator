@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.71",
+    title: "Bus trips: Willow Lake, and Otis's fishing lesson",
+    text: "The little bus is always parked at the stop now. Walk up to its door and press E to talk to Gus and pick a trip. First stop: Willow Lake, a big lake in the pines with a long pier, rowboats, a bait shack, benches and lamps, fireflies at night and voice on for everyone there. The lake is where the rare, epic and legendary fish live; the pond at home is for beginners (common and uncommon fish only). New to fishing? Otis waits by the pond, lends you his twig rod and talks you through your first catch, which can't get away. After that he moves to the lake, and leaves a bait box by the pond for worms, crickets and selling fish. The Farm trip is coming soon.",
+  },
+  {
     build: "0.70",
     title: "A closer camera, and a map",
     text: "The house is drawn closer now, like the bedrooms, and the view follows you as you walk. Press M any time for the map: the whole floor at once (press M again to go back). Also: Clover talks about what she's actually doing (no baking chat while she's out in the yard), her and Mortimer's portraits are centered, the admin wrench is redrawn, and the basket and trophy tooltips behave. If something ever goes wrong for a moment, the house now keeps going instead of freezing.",

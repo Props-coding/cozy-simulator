@@ -50,6 +50,7 @@ const CONFIG = {
     pond: "Pond",
     campfire: "Campfire",
     busStop: "Bus Stop",
+    lake: "Willow Lake",
   },
 
   // --- Outdoors (Update 4) ---
@@ -125,6 +126,15 @@ const CONFIG = {
     levels: [0, 30, 80, 150, 250, 400, 600, 850, 1150, 1500, 2000, 2600, 3300, 4100, 5000],
     tankSize: 6, // how many fish fit in a bedroom fish tank
     castReach: 4.5, // how far you can aim a cast (click the pond), in steps
+
+    // Where the fish are. The pond at home is for beginners: only fish up
+    // to `maxRarity` (1 common, 2 uncommon, 3 rare, 4 epic, 5 legendary)
+    // live there. Willow Lake (by bus) has every fish, more shadows, and
+    // bigger ones (`bigger` makes large shadows more common).
+    waters: {
+      pond: { maxRarity: 2, shadowCount: 5 },
+      lake: { maxRarity: 5, shadowCount: 11, bigger: 0.18 },
+    },
 
     // Fish shadows swimming in the pond (the same for everyone). Cast
     // near one: a bigger shadow is a better, bigger fish. `reach` is how
@@ -745,6 +755,7 @@ const CONFIG = {
       // Outside (Update 4)
       garden: { name: "Garden" },
       pond: { name: "Pond" },
+      lake: { name: "Willow Lake" },
       campfire: { name: "Campfire" },
       porch: { name: "Porch" },
     },

@@ -90,11 +90,12 @@ import { startWeather } from "./weather.js";
 import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
 import { isNpcOpen } from "./npc.js";
 import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
-import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openFishTank, castAt } from "./fishing.js";
+import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openBaitBox, openFishTank, castAt } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
+import { initTravel, isTraveling } from "./travel.js";
 import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
@@ -388,6 +389,15 @@ joinButton.addEventListener("click", async () => {
   startWeather(); // the hometown's real sky, outside and through the windows
   // The shared garden in the yard (beds kept on the house server).
   initBus({ outside: () => floorOf(player.y) <= YARD_FLOOR });
+  // Bus trips (travel.js): arriving puts you at the other stop.
+  initTravel({
+    arrive: (spot) => {
+      if (mySeat) standUp();
+      if (isFishing()) stopFishing(null);
+      Object.assign(player, spot);
+      for (const k in keysDown) keysDown[k] = false;
+    },
+  });
   // Fishing at the pond: big catches are shared in the house chat.
   initFishing({
     notice: (text, ms = 5000) => showNotice(text, ms),
@@ -514,6 +524,7 @@ function gatherClaims(kind, peers) {
 // your floor's corridor (the bedroom hall, if you were in a bedroom).
 function spawnPoint(floor) {
   if (floor === YARD_FLOOR) return { ...YARD_SPAWN };
+  if (floor === LAKE_FLOOR) return { ...LAKE_SPAWN };
   return { x: 8.7, y: [0, BUSINESS, SUITE][Math.min(floor, 2)] + 1.2 };
 }
 
@@ -658,7 +669,8 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
   if (nearestInteraction(player) === "hazel") return "Press E to talk to Hazel: seeds for sale, and she buys your harvest.";
   if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
-  if (nearestInteraction(player) === "otis") return "Press E to talk to Otis: rods, bait, selling fish and your fish log.";
+  if (nearestInteraction(player) === "otis") return OTIS.atLake ? "Press E to talk to Otis: rods, bait, selling fish and your fish log." : "Press E to talk to Otis. He'll teach you to fish.";
+  if (nearestInteraction(player) === "baitBox") return "Press E to open Otis's bait box: worms, crickets, and a slot to sell your fish.";
   if (nearestInteraction(player) === "fishTank") return "Your fish tank. Press E to add or take out fish.";
   if (nearestInteraction(player) === "stove") return "Press E to cook: your recipes, or experiment and see what happens.";
   if (nearestInteraction(player) === "fridge") return "Press E to open the fridge and pantry: eggs, milk, flour, sugar and more.";
@@ -666,7 +678,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
-  if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint();
+  if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
   if (nearestInteraction(player) === "wardrobe") return "Press E to open your wardrobe.";
   if (nearestInteraction(player) === "kanban") return "Press E to open the Workshop boards.";
   if (nearestInteraction(player) === "bedroomDoor") {
@@ -796,6 +808,13 @@ window.addEventListener("keydown", (e) => {
     for (const k in keysDown) keysDown[k] = false;
     stopFishing(null);
     talkToOtis();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "baitBox") {
+    for (const k in keysDown) keysDown[k] = false;
+    stopFishing(null);
+    openBaitBox();
     return;
   }
 
@@ -1676,7 +1695,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
+  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again

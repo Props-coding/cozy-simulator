@@ -792,6 +792,8 @@ canvas {
 /* Prompts like "Press E to build your office". Keeps its height when
    empty so the house doesn't jump up and down as prompts come and go. */
 #action-hint {
+  /* (A long message wraps under the house instead of widening the page.) */
+  contain: inline-size;
   min-height: 1.3em;
   margin: 10px 0 0;
   font-weight: 700;
@@ -5312,6 +5314,98 @@ canvas.item-picture {
   }
   #loading-screen.lit .porch-light .glow {
     opacity: 1;
+  }
+}
+
+/* --- Bus trips (travel.js): a themed loading screen while the bus drives,
+   styled like the first one (a scene, the title, a bar and a tip). --- */
+.trip-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 20px;
+  background: #141a2e;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.trip-screen.shown {
+  opacity: 1;
+}
+
+.trip-screen.gone {
+  opacity: 0;
+  transition-duration: 0.7s;
+  pointer-events: none;
+}
+
+.trip-scene {
+  width: min(520px, 92vw);
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.trip-screen.lit .porch-light .lamp {
+  fill: #ffe08a;
+  animation: porch-flicker 0.9s steps(1) forwards;
+}
+
+.trip-screen.lit .porch-light .glow {
+  animation: porch-flicker-glow 0.9s steps(1) forwards;
+}
+
+/* Fireflies: a soft blink as they drift. */
+.firefly {
+  animation: moth-flutter 3.4s ease-in-out infinite, firefly-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes firefly-blink {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+/* The lake's slow ripples and the moon's shimmering path. */
+.trip-scene .ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lake-ripple 3.5s ease-out infinite;
+}
+
+.trip-scene .ripple.r2 {
+  animation-delay: -1.2s;
+}
+
+.trip-scene .ripple.r3 {
+  animation-delay: -2.4s;
+}
+
+@keyframes lake-ripple {
+  from { transform: scale(0.4); opacity: 0.9; }
+  to { transform: scale(1.4); opacity: 0; }
+}
+
+.trip-scene .moon-shimmer {
+  animation: moon-shimmer 2.2s ease-in-out infinite;
+}
+
+@keyframes moon-shimmer {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .firefly,
+  .trip-scene .ripple,
+  .trip-scene .moon-shimmer,
+  .trip-screen.lit .porch-light .lamp,
+  .trip-screen.lit .porch-light .glow {
+    animation: none;
   }
 }
 

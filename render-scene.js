@@ -578,7 +578,7 @@ function drawStudySign(ctx, text) {
 function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
   // In the yard, everything is outside (the porch roof aside).
-  if (viewFloor === YARD_FLOOR) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
+  if (isOutdoorFloor(viewFloor)) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
   if (viewFloor >= 1) return []; // (indoors, rain only shows through windows)
   const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
     .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
@@ -703,7 +703,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
 
   drawFloors(ctx);
   drawPondShimmer(ctx);
-  if (viewFloor !== YARD_FLOOR) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
+  if (!isOutdoorFloor(viewFloor)) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
   dropRuneMarks(players);
   drawRuneMarks(ctx);
 
@@ -712,11 +712,11 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   for (const p of players) {
     sprites.push({ sortY: p.sortY ?? p.y + PLAYER_SIZE, draw: (ctx) => drawPlayerBody(ctx, p) }); // (sitting: sorted with the seat)
     // In the yard when it rains, everyone gets an umbrella (see outdoors.js).
-    p.umbrella = floor === YARD_FLOOR && OUTDOORS.raining && !p.asleep;
+    p.umbrella = isOutdoorFloor(floor) && OUTDOORS.raining && !p.asleep;
     if (p.umbrella) sprites.push({ sortY: (p.sortY ?? p.y + PLAYER_SIZE) + 0.0001, draw: (ctx) => drawUmbrella(ctx, p) });
     // Fishing at the pond: the rod and line (in front of you) and the
     // bobber out on the water (see outdoors.js).
-    if (p.fishing && floor === YARD_FLOOR) {
+    if (p.fishing && isOutdoorFloor(floor)) {
       sprites.push({ sortY: p.y + PLAYER_SIZE + 0.0002, draw: (ctx) => drawFishingLine(ctx, p) });
       sprites.push({ sortY: p.fishing.by - 0.5, draw: (ctx) => drawBobber(ctx, p) });
     }

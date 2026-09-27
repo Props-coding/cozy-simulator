@@ -348,6 +348,10 @@ function paintYard(ctx) {
     paintYardGround(ctx); // the yard itself (Update 4, see outdoors.js)
     return;
   }
+  if (viewFloor === LAKE_FLOOR) {
+    paintLakeGround(ctx); // Willow Lake (render-lake.js)
+    return;
+  }
   if (viewFloor >= 1) {
     paintIndoorBackdrop(ctx);
     return;
