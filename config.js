@@ -51,6 +51,7 @@ const CONFIG = {
     campfire: "Campfire",
     busStop: "Bus Stop",
     lake: "Willow Lake",
+    alley: "Back Alley",
   },
 
   // --- Outdoors (Update 4) ---
@@ -240,7 +241,7 @@ const CONFIG = {
   ],
 
   // Junk you might reel in instead. The raccoons buy it for `junkPrice`
-  // crumbs a piece (talk to them by the bins).
+  // crumbs a piece (talk to them in the back alley).
   junkPrice: 3,
   junk: [
     { id: "boot", name: "Old Boot" },

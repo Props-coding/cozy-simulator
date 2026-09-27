@@ -352,6 +352,10 @@ function paintYard(ctx) {
     paintLakeGround(ctx); // Willow Lake (render-lake.js)
     return;
   }
+  if (viewFloor === ALLEY_FLOOR) {
+    paintAlleyGround(ctx); // the back alley (render-alley.js)
+    return;
+  }
   if (viewFloor >= 1) {
     paintIndoorBackdrop(ctx);
     return;
@@ -502,6 +506,9 @@ function houseBounds() {
 function measureHouseBounds() {
   const bedroom = viewedBedroom();
   if (bedroom) return fitBounds(bedroom.rect, 1.6);
+  // The back alley: small, so it's shown whole, at the camera's usual
+  // closeness (the same size as the view), with its tall walls in view.
+  if (viewFloor === ALLEY_FLOOR) return alleyBounds();
   // Other indoor floors: fitted to all their rooms together.
   if (viewFloor >= 1) {
     const rects = ROOMS.filter((r) => floorOf(r.rect.y) === viewFloor).map((r) => r.rect);
@@ -516,6 +523,17 @@ function measureHouseBounds() {
     top: toScreen(0, base + houseTopY).y - WALL_HEIGHT - 14,
     bottom: toScreen(0, base + 11 + WALL_THICKNESS).y + 6,
   };
+}
+
+// The back alley's view: a window the size of the camera's, centered on
+// the alley and its walls.
+function alleyBounds() {
+  const ground = groundSize();
+  const zoom = Math.max(1, CONFIG.camera?.zoom ?? 1);
+  const w = ground.w / zoom, h = ground.h / zoom;
+  const a = toScreen(-WALL_THICKNESS, ALLEY), b = toScreen(ALLEY_W + WALL_THICKNESS, ALLEY + ALLEY_H + 0.4);
+  const cx = (a.x + b.x) / 2, cy = (a.y - BRICK_WALL_PX - 10 + b.y) / 2;
+  return { left: cx - w / 2, right: cx + w / 2, top: cy - h / 2, bottom: cy + h / 2 };
 }
 
 // On an indoor floor, the view zooms in to fit it: the same shape as the

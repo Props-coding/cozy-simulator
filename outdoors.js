@@ -316,6 +316,7 @@ function paintFrontSteps(ctx) {
 // frame (flat on the ground, under everything standing).
 function drawPondShimmer(ctx) {
   if (viewFloor === LAKE_FLOOR) return drawLakeShimmer(ctx); // (render-lake.js)
+  if (viewFloor === ALLEY_FLOOR) return drawAlleyLife(ctx); // (render-alley.js)
   if (viewFloor !== YARD_FLOOR) return;
   const t = performance.now() / 1000;
   const c = toScreen(POND.cx, POND.cy);
@@ -407,7 +408,8 @@ function yardGlows() {
 }
 
 function drawOutdoorLight(ctx) {
-  const level = outdoorNightLevel();
+  // (The back alley is shady even by day, so its lights always show a little.)
+  const level = viewFloor === ALLEY_FLOOR ? Math.max(0.35, outdoorNightLevel()) : outdoorNightLevel();
   const { left, right, top, bottom } = houseBounds();
   const base = viewFloor * UPSTAIRS; // (the yard's, or the Lake's)
   const whole = [{ x: -WALL_THICKNESS - 2, y: base - 8, w: HOUSE_WIDTH + 4, h: 21 }];
@@ -419,11 +421,12 @@ function drawOutdoorLight(ctx) {
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
-  for (const [x, y, r, strength] of viewFloor === LAKE_FLOOR ? lakeGlows() : yardGlows()) {
+  const glows = viewFloor === LAKE_FLOOR ? lakeGlows() : viewFloor === ALLEY_FLOOR ? alleyGlows() : yardGlows();
+  for (const [x, y, r, strength, color = "255, 185, 95"] of glows) {
     const p = toScreen(x, y);
     const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-    glow.addColorStop(0, `rgba(255, 185, 95, ${0.55 * strength * level})`);
-    glow.addColorStop(1, "rgba(255, 190, 100, 0)");
+    glow.addColorStop(0, `rgba(${color}, ${0.55 * strength * level})`);
+    glow.addColorStop(1, `rgba(${color}, 0)`);
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
@@ -431,7 +434,7 @@ function drawOutdoorLight(ctx) {
   }
   ctx.restore();
   // A few stars over the roof line (when the sky is clear enough).
-  const starry = OUTDOORS.clouds < 0.6 && !OUTDOORS.rain && !OUTDOORS.snow && OUTDOORS.sky !== "fog";
+  const starry = viewFloor !== ALLEY_FLOOR && OUTDOORS.clouds < 0.6 && !OUTDOORS.rain && !OUTDOORS.snow && OUTDOORS.sky !== "fog";
   ctx.fillStyle = `rgba(255, 250, 225, ${0.8 * level})`;
   const roofTop = toScreen(0, base - 5.8).y - WALL_HEIGHT;
   for (let i = 0; i < (starry ? 26 : 0); i++) {
@@ -441,6 +444,7 @@ function drawOutdoorLight(ctx) {
   }
   ctx.globalAlpha = 1;
   if (viewFloor === LAKE_FLOOR) drawLakeFireflies(ctx, level); // (render-lake.js)
+  if (viewFloor === ALLEY_FLOOR) drawAlleyOverhead(ctx, level); // (render-alley.js)
   drawOutsideWeather(ctx, whole); // rain or snow falls in front of the lights
 }
 
@@ -1743,7 +1747,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 
-  // --- Reginald's corner: the raccoons' new spot by the bins ---
+  // --- The bins (the yard's), which the raccoons also keep in their alley ---
 
   // Two metal trash cans with lids (one lid slightly askew).
   trashCans(ctx, f) {
@@ -1849,8 +1853,10 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillStyle = "#4a3222";
     ctx.font = "700 6.5px 'Quicksand', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("totally normal", 0, -1.5);
-    ctx.fillText("trash", 0, 5);
+    // (Its words: "totally normal trash", unless it says otherwise.)
+    const [one, two] = f.lines ?? ["totally normal", "trash"];
+    ctx.fillText(one, 0, -1.5);
+    ctx.fillText(two, 0, 5);
     ctx.restore();
     ctx.textAlign = "left";
   },

@@ -34,12 +34,37 @@ const SUITE = 2 * UPSTAIRS + 3; // the suite floor's hall, with the bedroom door
 // The front door, at the bottom of the ground floor's elevator lobby (and
 // in the house's back wall, seen from the yard): its left edge and width.
 const FRONT_DOOR_X = 20.2, FRONT_DOOR_W = 1.6;
+// The hidden door to the back alley (Update 7): a wall panel under the
+// crooked hills painting at the hallway's east end, and (in the alley) a
+// plain door in the house's side wall. `open` is how far each one has
+// swung open (0 shut, 1 wide open), for the drawing; main.js swings them.
+const HIDDEN_DOOR_HALL = { x: 22.9, w: 0.95 };
+const HIDDEN_DOOR_ALLEY = { x: 1.4, w: 1.0 };
+const HIDDEN_DOOR = { open: { hall: 0, alley: 0 } };
+
+// "hall" or "alley" if you're standing right by the hidden door (on that
+// side), or null.
+function hiddenDoorNear(player) {
+  const cx = player.x + 0.3, cy = player.y + 0.3; // (the player's middle)
+  const floor = floorOf(player.y);
+  const d = floor === 0 ? HIDDEN_DOOR_HALL : floor === ALLEY_FLOOR ? HIDDEN_DOOR_ALLEY : null;
+  if (!d) return null;
+  const top = floor === 0 ? 0 : ALLEY;
+  if (cx < d.x - 0.35 || cx > d.x + d.w + 0.35 || cy > top + 1.15) return null;
+  return floor === 0 ? "hall" : "alley";
+}
+
+// Where you come out on the other side of the hidden door.
+function hiddenDoorArrival(side) {
+  const d = side === "hall" ? HIDDEN_DOOR_ALLEY : HIDDEN_DOOR_HALL; // (going from this side to the other)
+  return { x: d.x + d.w / 2 - 0.3, y: (side === "hall" ? ALLEY : 0) + 0.4 };
+}
 
 // Which floor a grid y position is on: 0 the ground floor, 1 business,
 // 2 the bedroom hall, and 3 and up for the bedrooms (each is its own
 // little map, see bedroomSpot).
 function floorOf(y) {
-  return Math.max(LAKE_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
+  return Math.max(ALLEY_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
 }
 
 // The yard (Update 4): the outdoors behind the house, on its own map one
@@ -53,7 +78,12 @@ const YARD = YARD_FLOOR * UPSTAIRS; // add this to a yard spot's y (so "YARD + 2
 // grid (floor -2), the same size as the yard. See "Willow Lake" below.
 const LAKE_FLOOR = -2;
 const LAKE = LAKE_FLOOR * UPSTAIRS; // add this to a lake spot's y
-// Outdoor maps (the yard and the Lake): weather, day and night, umbrellas.
+// The back alley (Update 7): a narrow alley behind the house, where the
+// raccoons keep their not-a-shop. Its own small map (floor -3), reached
+// through a hidden door at the hallway's east end. See "The back alley" below.
+const ALLEY_FLOOR = -3;
+const ALLEY = ALLEY_FLOOR * UPSTAIRS; // add this to an alley spot's y
+// Outdoor maps (the yard, the Lake and the alley): weather, day and night, umbrellas.
 function isOutdoorFloor(floor) {
   return floor <= YARD_FLOOR;
 }
@@ -202,9 +232,12 @@ const BASE_FURNITURE = [
   { kind: "sconce", x: 17.1, y: 0, solid: false },
   { kind: "weatherWindow", x: 20.5, y: 0, w: 1.2, solid: false }, // (shows the real weather outside, see weather.js)
   { kind: "sconce", x: 22.3, y: 0, solid: false },
-  { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", solid: false },
+  // The hills painting hangs a little crooked... it's on the hidden door
+  // to the back alley (press E by it to straighten it; see HIDDEN_DOOR).
+  { kind: "hiddenPanel", x: HIDDEN_DOOR_HALL.x, y: 0, w: HIDDEN_DOOR_HALL.w, solid: false },
+  { kind: "picture", x: 23.0, y: 0, w: 0.75, art: "hills", crooked: true, solid: false },
   { kind: "fiddleFig", x: 23.3, y: 2.05, w: 0.6, h: 0.6 },
-  { kind: "umbrellaStand", x: 23.2, y: 0.12, w: 0.5, h: 0.4 },
+  { kind: "umbrellaStand", x: 21.85, y: 0.12, w: 0.5, h: 0.4 },
 
   // Conference Room (on the business floor, north of its corridor): a
   // rolling whiteboard at the front, a big table with
@@ -798,13 +831,11 @@ const YARD_FURNITURE = [
   { kind: "otis", x: 10.25, y: YARD + 5.2, w: 0.55, h: 0.4, place: "pond" }, // (only for new fishers: see OTIS)
   { kind: "baitBox", x: 10.8, y: YARD + 5.0, w: 0.6, h: 0.45, solid: false }, // (once Otis has gone to the Lake)
 
-  // Reginald's corner: the raccoons moved out of the hallway to a shady
-  // spot by the bins, down past the garden (walk up and press E; see shop.js).
+  // The house's bins, where the raccoons used to lurk. They've moved to
+  // the back alley (Update 7) and left a sign with a clue.
   { kind: "trashCans", x: 11.85, y: YARD + 8.15, w: 0.8, h: 0.45 },
-  { kind: "dumpster", x: 12.8, y: YARD + 7.95, w: 1.5, h: 0.7 },
-  { kind: "trashBags", x: 14.3, y: YARD + 8.65, w: 0.6, h: 0.35, solid: false },
-  { kind: "raccoons", x: 15.0, y: YARD + 8.15, w: 0.65, h: 0.45 },
-  { kind: "shadySign", x: 11.3, y: YARD + 8.95, w: 0.3, h: 0.15 },
+  { kind: "trashBags", x: 12.85, y: YARD + 8.4, w: 0.6, h: 0.35, solid: false },
+  { kind: "shadySign", x: 14.2, y: YARD + 8.6, w: 0.3, h: 0.15, lines: ["we moved.", "ask the hills."] },
 
   // The bus stop by the road: a shelter with a bench (press E to sit and
   // wait), the bus stop sign with its timetable, and the bus itself, which
@@ -927,6 +958,57 @@ const otisHere = (f) => (f.place === "lake") === OTIS.atLake;
 
 // Where you step off the bus at the Lake.
 const LAKE_SPAWN = { x: 16.8, y: LAKE + 8.7 };
+
+// --- The back alley (Update 7) ---
+// A narrow cobbled alley behind the house, where the raccoons moved their
+// not-a-shop. On its own small map (floor -3), shown whole like a bedroom.
+// Along the top: the house's wooden side wall with the hidden door (the
+// way back in), then the tall brick back of the building next door, with a
+// fire escape and the raccoons' pink neon sign. A wooden fence closes the
+// west end, a chain-link gate the east end, a low brick ledge the south.
+// Sketchy, but it belongs: string lights overhead, herbs growing in tin
+// cans, an old sofa someone dragged out, a stray cat asleep on the crates.
+// Voice is on. x runs 0 to ALLEY_W, y from ALLEY (the foot of the walls).
+const ALLEY_W = 12, ALLEY_H = 5.4;
+const ALLEY_AREA = { id: "alley", name: CONFIG.roomNames.alley, rect: { x: 0, y: ALLEY, w: ALLEY_W, h: ALLEY_H }, outdoor: true };
+const HOUSE_SIDE_W = 4.6; // where the house's side wall ends and the brick building begins
+
+const ALLEY_WALLS = [
+  { x: -WALL_THICKNESS, y: ALLEY - 0.5, w: ALLEY_W + 2 * WALL_THICKNESS, h: 0.5, hidden: true }, // the walls along the top
+  { x: -WALL_THICKNESS, y: ALLEY - 0.5, w: WALL_THICKNESS, h: ALLEY_H + 1, hidden: true }, // the fence (west)
+  { x: ALLEY_W, y: ALLEY - 0.5, w: WALL_THICKNESS, h: ALLEY_H + 1, hidden: true }, // the gate (east)
+  { x: -WALL_THICKNESS, y: ALLEY + ALLEY_H, w: ALLEY_W + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true }, // the ledge (south)
+];
+
+const ALLEY_FURNITURE = [
+  // The house's side: the hidden door (from out here, a plain door with no
+  // handle), a caged bulb over it, and herbs growing in old tin cans.
+  { kind: "alleyDoor", x: HIDDEN_DOOR_ALLEY.x, y: ALLEY, w: HIDDEN_DOOR_ALLEY.w, solid: false },
+  { kind: "cagedLamp", x: HIDDEN_DOOR_ALLEY.x + HIDDEN_DOOR_ALLEY.w + 0.2, y: ALLEY, solid: false },
+  { kind: "herbCans", x: 0.1, y: ALLEY + 0.05, w: 1.1, h: 0.35 },
+  // An old sofa someone dragged out (sit on it), under the drainpipe.
+  { kind: "alleySofa", x: 2.85, y: ALLEY + 0.1, w: 1.6, h: 0.6 },
+  // A hangout in the middle: a cable spool for a table, with a candle in a
+  // bottle, and milk crates to sit on.
+  { kind: "cableSpool", x: 5.35, y: ALLEY + 2.25, w: 0.8, h: 0.55 },
+  { kind: "milkCrate", x: 4.55, y: ALLEY + 2.3, w: 0.5, h: 0.45, solid: false },
+  { kind: "milkCrate", x: 6.45, y: ALLEY + 2.3, w: 0.5, h: 0.45, solid: false },
+  // The raccoons' corner: a rolling rack of hats (their "stock"), the
+  // raccoons themselves, their NOT A SHOP dumpster, the bins and bags.
+  { kind: "hatRack", x: 6.6, y: ALLEY + 0.2, w: 1.3, h: 0.4 },
+  { kind: "raccoons", x: 8.55, y: ALLEY + 1.05, w: 0.65, h: 0.45 },
+  { kind: "dumpster", x: 9.4, y: ALLEY + 0.1, w: 1.5, h: 0.7 },
+  { kind: "trashCans", x: 11.05, y: ALLEY + 0.2, w: 0.8, h: 0.45 },
+  { kind: "trashBags", x: 11.2, y: ALLEY + 4.45, w: 0.6, h: 0.35, solid: false },
+  { kind: "shadySign", x: 8.0, y: ALLEY + 2.0, w: 0.3, h: 0.15 },
+  // Stacked crates by the fence, with a stray cat asleep on top.
+  { kind: "crateStack", x: 0.1, y: ALLEY + 3.75, w: 0.95, h: 0.6 },
+  // A steaming manhole cover (flat on the ground).
+  { kind: "manhole", x: 3.0, y: ALLEY + 3.6, w: 0.8, h: 0.5, solid: false },
+];
+
+// Where you pop back to in the alley: just outside the hidden door.
+const ALLEY_SPAWN = { x: HIDDEN_DOOR_ALLEY.x + HIDDEN_DOOR_ALLEY.w / 2 - 0.3, y: ALLEY + 0.45 };
 
 // Is it night outside? Update 4's weather (weather.js) fills in OUTDOORS
 // from the real sky over the hometown; until it has, night is guessed from
@@ -1165,6 +1247,9 @@ const SEATS = {
   logSeat: [{ x: 0.28, y: 0.8, face: "own", lift: 4 }, { x: 0.72, y: 0.8, face: "own", lift: 4 }],
   // The Lake's benches face the water (away from us): the backrest hides your lower back.
   parkBench: [{ x: 0.28, y: 0.55, face: "up", lift: 5 }, { x: 0.72, y: 0.55, face: "up", lift: 5 }],
+  // The back alley's old sofa and milk crates.
+  alleySofa: [{ x: 0.3, y: 0.92, face: "front", lift: 6 }, { x: 0.7, y: 0.92, face: "front", lift: 6 }],
+  milkCrate: [{ x: 0.5, y: 0.85, face: "front", lift: 7 }],
   // Beds: sit on the edge, at the foot.
   bed: [{ x: 0.3, y: 0.98, face: "down", lift: 6 }, { x: 0.7, y: 0.98, face: "down", lift: 6 }],
   canopyBed: [{ x: 0.3, y: 0.98, face: "down", lift: 6 }, { x: 0.7, y: 0.98, face: "down", lift: 6 }],
@@ -1266,8 +1351,8 @@ function buildHouse(offices, doors = []) {
   lastBuild = [offices, doors];
   const t = WALL_THICKNESS;
   const rooms = [...BASE_ROOMS, ...YARD_ROOMS];
-  const walls = [...BASE_WALLS, ...YARD_WALLS, ...LAKE_WALLS];
-  const furniture = [...BASE_FURNITURE, ...seasonalFurniture(), ...YARD_FURNITURE, ...LAKE_FURNITURE];
+  const walls = [...BASE_WALLS, ...YARD_WALLS, ...LAKE_WALLS, ...ALLEY_WALLS];
+  const furniture = [...BASE_FURNITURE, ...seasonalFurniture(), ...YARD_FURNITURE, ...LAKE_FURNITURE, ...ALLEY_FURNITURE];
 
   // A corridor's top wall, from x -t to the east end, with gaps for its doorways.
   const corridorWall = (y, doorways) => {
@@ -1370,6 +1455,7 @@ function buildHouse(offices, doors = []) {
   rooms.push({ id: "suite", name: CONFIG.roomNames.suite, rect: { x: 0, y: SUITE, w: HOUSE_WIDTH, h: 3 } });
   rooms.push(YARD_AREA);
   rooms.push(LAKE_AREA);
+  rooms.push(ALLEY_AREA);
 
   furniture.push(...seasonalWallDecor(walls, furniture));
   ROOMS = rooms;
@@ -1847,6 +1933,7 @@ function lockedDoorInFront(player) {
 // True if the player is close enough to the raccoons to talk to them.
 function isNearRaccoons(player) {
   const r = FURNITURE.find((f) => f.kind === "raccoons");
+  if (floorOf(r.y) !== floorOf(player.y)) return false;
   const dx = player.x + PLAYER_SIZE / 2 - (r.x + r.w / 2);
   const dy = player.y + PLAYER_SIZE / 2 - (r.y + r.h / 2);
   return Math.hypot(dx, dy) < 1.4;
@@ -1895,6 +1982,7 @@ function nearestInteraction(player) {
   if (isNearMyNightstand(player)) options.push(["journal", 0.1]);
   if (myPhoneInReach(player)) options.push(["phone", 0.05]);
   if (elevatorInReach(player) >= 0) options.push(["elevator", 0]);
+  if (hiddenDoorNear(player)) options.push(["hiddenDoor", 0.3]);
   if (bedroomDoorInReach(player)) options.push(["bedroomDoor", 0]);
   // The Workshop's corkboard: stand below it.
   const cork = FURNITURE.find((f) => f.kind === "kanbanBoard");
@@ -1960,5 +2048,6 @@ function getCurrentRoom(player) {
   if (room) return room;
   if (floorOf(cy) === YARD_FLOOR) return YARD_AREA;
   if (floorOf(cy) === LAKE_FLOOR) return LAKE_AREA;
+  if (floorOf(cy) === ALLEY_FLOOR) return ALLEY_AREA;
   return ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "suite")); // (a bedroom's doorway counts as the suite floor's hall)
 }

@@ -20,8 +20,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.71" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.71">
+       build, change every "v=0.72" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.72">
 </head>
 <body>
   <!-- The loading screen: a dark front porch at night. The porch light
@@ -1069,73 +1069,74 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.71</p>
+  <p id="version-tag">build 0.72</p>
 
-  <script src="config.js?v=0.71"></script>
-  <script src="catalog.js?v=0.71"></script>
-  <script src="world.js?v=0.71"></script>
-  <script src="render.js?v=0.71"></script>
-  <script src="render-furniture.js?v=0.71"></script>
-  <script src="render-rooms.js?v=0.71"></script>
-  <script src="render-extras.js?v=0.71"></script>
-  <script src="render-characters.js?v=0.71"></script>
-  <script src="render-scene.js?v=0.71"></script>
-  <script src="outdoors.js?v=0.71"></script>
-  <script src="render-lake.js?v=0.71"></script>
-  <script src="render-residents.js?v=0.71"></script>
+  <script src="config.js?v=0.72"></script>
+  <script src="catalog.js?v=0.72"></script>
+  <script src="world.js?v=0.72"></script>
+  <script src="render.js?v=0.72"></script>
+  <script src="render-furniture.js?v=0.72"></script>
+  <script src="render-rooms.js?v=0.72"></script>
+  <script src="render-extras.js?v=0.72"></script>
+  <script src="render-characters.js?v=0.72"></script>
+  <script src="render-scene.js?v=0.72"></script>
+  <script src="outdoors.js?v=0.72"></script>
+  <script src="render-lake.js?v=0.72"></script>
+  <script src="render-alley.js?v=0.72"></script>
+  <script src="render-residents.js?v=0.72"></script>
   <script>
     // The page's code is here (the loading screen's first step).
     Loading.step("code");
     Loading.nextTip();
     // Keep the game's files on this computer, so coming back is quicker
     // (sw.js). Each build keeps its own copy, so an update always loads fresh.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.71").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.72").catch(() => {});
   </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.71",
-        "./network.js": "./network.js?v=0.71",
-        "./audio.js": "./audio.js?v=0.71",
-        "./theater.js": "./theater.js?v=0.71",
-        "./whiteboard.js": "./whiteboard.js?v=0.71",
-        "./shop.js": "./shop.js?v=0.71",
-        "./emoji.js": "./emoji.js?v=0.71",
-        "./achievements.js": "./achievements.js?v=0.71",
-        "./home.js": "./home.js?v=0.71",
-        "./residents.js": "./residents.js?v=0.71",
-        "./ui-icons.js": "./ui-icons.js?v=0.71",
-        "./travel.js": "./travel.js?v=0.71",
-        "./pictures.js": "./pictures.js?v=0.71",
-        "./turntable.js": "./turntable.js?v=0.71",
-        "./wardrobe.js": "./wardrobe.js?v=0.71",
-        "./kanban.js": "./kanban.js?v=0.71",
-        "./rooms.js": "./rooms.js?v=0.71",
-        "./journal.js": "./journal.js?v=0.71",
-        "./phone.js": "./phone.js?v=0.71",
-        "./laptop.js": "./laptop.js?v=0.71",
-        "./news.js": "./news.js?v=0.71",
-        "./account.js": "./account.js?v=0.71",
-        "./profile.js": "./profile.js?v=0.71",
-        "./icons.js": "./icons.js?v=0.71",
-        "./reputation.js": "./reputation.js?v=0.71",
-        "./titles.js": "./titles.js?v=0.71",
-        "./admin.js": "./admin.js?v=0.71",
-        "./updater.js": "./updater.js?v=0.71",
-        "./weather.js": "./weather.js?v=0.71",
-        "./basket.js": "./basket.js?v=0.71",
-        "./npc.js": "./npc.js?v=0.71",
-        "./bank.js": "./bank.js?v=0.71",
-        "./kitchen.js": "./kitchen.js?v=0.71",
-        "./market.js": "./market.js?v=0.71",
-        "./menu.js": "./menu.js?v=0.71",
-        "./garden.js": "./garden.js?v=0.71",
-        "./fishing.js": "./fishing.js?v=0.71",
-        "./bus.js": "./bus.js?v=0.71"
+        "./main.js": "./main.js?v=0.72",
+        "./network.js": "./network.js?v=0.72",
+        "./audio.js": "./audio.js?v=0.72",
+        "./theater.js": "./theater.js?v=0.72",
+        "./whiteboard.js": "./whiteboard.js?v=0.72",
+        "./shop.js": "./shop.js?v=0.72",
+        "./emoji.js": "./emoji.js?v=0.72",
+        "./achievements.js": "./achievements.js?v=0.72",
+        "./home.js": "./home.js?v=0.72",
+        "./residents.js": "./residents.js?v=0.72",
+        "./ui-icons.js": "./ui-icons.js?v=0.72",
+        "./travel.js": "./travel.js?v=0.72",
+        "./pictures.js": "./pictures.js?v=0.72",
+        "./turntable.js": "./turntable.js?v=0.72",
+        "./wardrobe.js": "./wardrobe.js?v=0.72",
+        "./kanban.js": "./kanban.js?v=0.72",
+        "./rooms.js": "./rooms.js?v=0.72",
+        "./journal.js": "./journal.js?v=0.72",
+        "./phone.js": "./phone.js?v=0.72",
+        "./laptop.js": "./laptop.js?v=0.72",
+        "./news.js": "./news.js?v=0.72",
+        "./account.js": "./account.js?v=0.72",
+        "./profile.js": "./profile.js?v=0.72",
+        "./icons.js": "./icons.js?v=0.72",
+        "./reputation.js": "./reputation.js?v=0.72",
+        "./titles.js": "./titles.js?v=0.72",
+        "./admin.js": "./admin.js?v=0.72",
+        "./updater.js": "./updater.js?v=0.72",
+        "./weather.js": "./weather.js?v=0.72",
+        "./basket.js": "./basket.js?v=0.72",
+        "./npc.js": "./npc.js?v=0.72",
+        "./bank.js": "./bank.js?v=0.72",
+        "./kitchen.js": "./kitchen.js?v=0.72",
+        "./market.js": "./market.js?v=0.72",
+        "./menu.js": "./menu.js?v=0.72",
+        "./garden.js": "./garden.js?v=0.72",
+        "./fishing.js": "./fishing.js?v=0.72",
+        "./bus.js": "./bus.js?v=0.72"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.71"></script>
+  <script type="module" src="main.js?v=0.72"></script>
 </body>
 </html>
