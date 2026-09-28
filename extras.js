@@ -10,8 +10,8 @@
 // - Pixel art: blank canvases, posters and rugs from Nest & Nook's art
 //   aisle. Walk up to one in your bedroom and press E to paint it.
 // They all open in one panel over the house (#extras-panel).
-import { bank, myWallet } from "./bank.js";
-import { serverApi, accountName } from "./account.js";
+import { bank, myWallet, applyBank } from "./bank.js";
+import { serverApi, accountName, isAdmin } from "./account.js";
 import { playClickSound, playCrumbSound, playWaterSound } from "./audio.js";
 import { itemInfo } from "./basket.js";
 import { showToast } from "./achievements.js";
@@ -28,6 +28,7 @@ const panel = document.getElementById("extras-panel");
 const panelTitle = document.getElementById("extras-title");
 const panelBody = document.getElementById("extras-body");
 let onClose = null;
+let showing = ""; // which one is open: "tv", "library", "paint" or ""
 
 export function isExtrasOpen() {
   return !panel.hidden;
@@ -45,6 +46,7 @@ function openPanel(title, build, closing = null) {
 export function closeExtras() {
   if (panel.hidden) return;
   panel.hidden = true;
+  showing = "";
   onClose?.();
   onClose = null;
   document.activeElement?.blur();
@@ -117,6 +119,7 @@ const CHANNELS = [
 let tvChannel = "cooking";
 
 export function openTv() {
+  showing = "tv";
   openPanel("The Lounge TV", (el) => {
     const row = make("div", "tv-channels");
     const screen = make("div", "tv-screen");
@@ -145,7 +148,7 @@ async function showChannel(id) {
 async function cookingChannel(screen) {
   screen.appendChild(make("p", "tv-small", "Tuning in..."));
   const got = await bank("tvCooking");
-  if (tvChannel !== "cooking" || !screen.isConnected) return;
+  if (tvChannel !== "cooking" || !screen.isConnected || showing !== "tv") return;
   screen.textContent = "";
   const recipe = got?.recipe ? CONFIG.kitchen.recipes.find((r) => r.id === got.recipe) : null;
   if (!recipe) {
@@ -167,7 +170,7 @@ function weatherChannel(screen) {
   const w = weatherNow();
   screen.appendChild(make("p", "tv-small", "The Porchlight weather report"));
   screen.appendChild(make("h3", "", w ? `${w.words ?? "Weather"}, ${Math.round(w.temp)}°` : "The weather van is stuck in traffic."));
-  const night = w ? w.night : new Date().getHours() >= 20 || new Date().getHours() < 6;
+  const night = isNightOutside(); // (world.js: the same night the house uses)
   const raining = isReallyRaining();
   const season = typeof yardSeason === "function" ? yardSeason() : null;
   const biting = CONFIG.fish.filter((fish) => {
@@ -179,8 +182,12 @@ function weatherChannel(screen) {
     return Object.keys(when).length > 0; // (only the picky ones are news)
   });
   const tips = make("ul", "tv-list");
-  tips.appendChild(make("li", "", biting.length ? `Biting now: ${biting.slice(0, 4).map((f) => f.name).join(", ")}.` : "No picky fish about right now; the usual crowd is biting."));
-  tips.appendChild(make("li", "", raining ? "It's raining: the garden beds are getting watered for free." : "No rain today: remember to water your garden beds."));
+  const pondMax = CONFIG.fishing.waters?.pond?.maxRarity ?? 5;
+  const where = (list) => list.slice(0, 4).map((f) => f.name).join(", ");
+  const pond = biting.filter((f) => f.rarity <= pondMax), lake = biting.filter((f) => f.rarity > pondMax);
+  tips.appendChild(make("li", "", pond.length ? `Biting in the pond now: ${where(pond)}.` : "No picky fish in the pond right now; the usual crowd is biting."));
+  if (lake.length) tips.appendChild(make("li", "", `Out at Willow Lake: ${where(lake)}.`));
+  tips.appendChild(make("li", "", raining ? "It's raining right now: the garden beds are getting watered for free." : "It isn't raining right now: remember to water your garden beds."));
   tips.appendChild(make("li", "", night ? "It's night: the big ones come out after dark." : "Daytime: a good time for the pond and the garden."));
   screen.appendChild(tips);
 }
@@ -193,9 +200,9 @@ async function newsChannel(screen) {
   const [records, market, books] = await Promise.all([
     serverApi("GET", "/api/fish-records").catch(() => null),
     serverApi("GET", "/api/market").catch(() => null),
-    serverApi("GET", "/api/books").catch(() => null),
+    serverApi("GET", "/api/books?titles=1").catch(() => null),
   ]);
-  if (tvChannel !== "news" || !screen.isConnected) return;
+  if (tvChannel !== "news" || !screen.isConnected || showing !== "tv") return;
   const recs = Object.entries(records?.records ?? {}).sort(([, a], [, b]) => (b.at ?? 0) - (a.at ?? 0)).slice(0, 3);
   for (const [id, r] of recs) items.push(`${r.name} holds the house record for ${(CONFIG.fish.find((f) => f.id === id)?.name ?? id).toLowerCase()}: ${r.size} cm.`);
   const listings = market?.listings ?? [];
@@ -216,9 +223,10 @@ async function newsChannel(screen) {
 const KINDS = { story: "Story", guide: "Guide", lore: "Lore", poem: "Poem", diary: "Diary" };
 
 export async function openLibrary() {
+  showing = "library";
   openPanel("The Library shelves", (el) => el.appendChild(make("p", "tv-small", "Taking books off the shelf...")));
   const got = await serverApi("GET", "/api/books").catch(() => null);
-  if (panel.hidden) return;
+  if (showing !== "library") return;
   showShelf(got?.books ?? []);
 }
 
@@ -252,7 +260,7 @@ function readBook(book, books) {
   panelBody.appendChild(page);
   const row = make("div", "book-top");
   row.appendChild(button("Back to the shelves", () => showShelf(books), true));
-  const mine = !book.fixed && String(book.author).toLowerCase() === String(accountName() ?? "").toLowerCase();
+  const mine = !book.fixed && (book.by === String(accountName() ?? "").toLowerCase() || isAdmin());
   if (mine) {
     row.appendChild(
       button("Take it back", async () => {
@@ -288,7 +296,7 @@ function writeBook(books) {
     button("Back", () => showShelf(books), true),
     button("Put it on the shelf", async () => {
       try {
-        await serverApi("POST", "/api/books", { title: title.value, kind: kind.value, text: text.value });
+        applyBank(await serverApi("POST", "/api/books", { title: title.value, kind: kind.value, text: text.value })); // (the Published badge)
         playCrumbSound();
         hooks.notice(`"${title.value.trim()}" is on the Library shelves.`);
         openLibrary();
@@ -308,6 +316,7 @@ function writeBook(books) {
 export function openPaint(f) {
   const placed = myHome().placed;
   const index = placedIndex(f, placed);
+  showing = "paint";
   const piece = placed[index];
   if (!piece || piece.item !== f.decor.item) return;
   const palette = CONFIG.extras.palette;

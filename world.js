@@ -383,9 +383,9 @@ const BASE_FURNITURE = [
   { kind: "teaCart", x: 15.3, y: BUSINESS + 3.35, w: 1.2, h: 0.6 },
   { kind: "arcade", x: 16.9, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
   { kind: "lavaLamp", x: 14.4, y: BUSINESS + 7.3, w: 0.4, h: 0.4 },
-  // The TV (Update 7), facing the loveseat: cooking, weather and news
-  // channels (press E).
-  { kind: "tvSet", x: 9.05, y: BUSINESS + 7.1, w: 1.3, h: 0.5 },
+  // The TV (Update 7), in front of the loveseat and the coffee table:
+  // cooking, weather and news channels (press E).
+  { kind: "tvSet", x: 9.35, y: BUSINESS + 7.1, w: 1.3, h: 0.5 },
   { kind: "monstera", x: 8.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
   { kind: "palm", x: 17.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
 
@@ -1952,7 +1952,7 @@ function tidyDecor(size, placed) {
     const clean = { item: String(piece?.item), x: Number(piece?.x), y: Number(piece?.y) };
     if (piece?.r === 1 || piece?.r === 3) clean.r = piece.r; // turned to face right or left
     if (Array.isArray(piece?.fish) && piece.fish.length) clean.fish = piece.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12); // (a fish tank's fish)
-    if (typeof piece?.pixels === "string" && /^[0-9a-f]{256}$/.test(piece.pixels)) clean.pixels = piece.pixels; // (pixel art painted on it)
+    if (ART_KINDS.includes(clean.item) && typeof piece?.pixels === "string" && /^[0-9a-f]{256}$/.test(piece.pixels)) clean.pixels = piece.pixels; // (pixel art painted on it)
     if (decorFits(size, kept, clean)) kept.push(clean);
   }
   if (!kept.some((p) => p.item === "starterNightstand")) {

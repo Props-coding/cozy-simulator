@@ -814,9 +814,17 @@ export function movePiece(index) {
   return true;
 }
 
+// (A painted canvas, poster or rug asks first: storing it wipes the
+// painting. Store it again within a few seconds to go ahead.)
+let storeWarned = { index: -1, until: 0 };
 export function storePiece(index) {
   const piece = home.placed[index];
   if (!piece) return false;
+  if (piece.pixels && !(storeWarned.index === index && performance.now() < storeWarned.until)) {
+    storeWarned = { index, until: performance.now() + 6000 };
+    hooks.notice("Storing it wipes the painting. Choose Store again to go ahead, or Move it instead.");
+    return false;
+  }
   if (DECOR[piece.item].keep) {
     hooks.notice(`Your ${DECOR[piece.item].name.toLowerCase()} has to stay in your room, but you can move it anywhere.`);
     return false;

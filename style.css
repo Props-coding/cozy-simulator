@@ -5644,10 +5644,10 @@ canvas.item-picture {
   line-height: 1.6;
   max-height: 340px;
   overflow-y: auto;
-  white-space: pre-wrap;
 }
 .book-page p {
   margin: 0 0 10px;
+  white-space: pre-line; /* (single line breaks stay: lists, poems) */
 }
 .book-form {
   display: flex;

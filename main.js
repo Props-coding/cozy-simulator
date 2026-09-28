@@ -1191,8 +1191,9 @@ function furnitureMenu(f, at) {
   items.push({ label: "Inspect", icon: "magnifier", run: () => openMenu(at, pieceName(f), [], pieceLines(f)) });
   const room = getCurrentRoom(player);
   if (f.decor?.mine && room.owned?.mine && room.owned.kind === "bedroom") {
-    items.push({ label: "Move", icon: "move", run: () => movePiece(f.decor.index) });
-    items.push({ label: "Store", icon: "box", run: () => storePiece(f.decor.index) });
+    const index = placedIndex(f, myHome().placed); // (world.js)
+    items.push({ label: "Move", icon: "move", run: () => movePiece(index) });
+    items.push({ label: "Store", icon: "box", run: () => storePiece(index) });
   }
   return items;
 }

@@ -518,7 +518,7 @@ function cleanPiece(p) {
   if (p.r === 1 || p.r === 3) piece.r = p.r;
   // Pixel art painted on a canvas, poster or rug (Update 7): 16 by 16
   // squares, each a palette color from 0 to f.
-  if (typeof p.pixels === "string" && /^[0-9a-f]{256}$/.test(p.pixels)) piece.pixels = p.pixels;
+  if (["artCanvas", "artPoster", "artRug"].includes(p.item) && typeof p.pixels === "string" && /^[0-9a-f]{256}$/.test(p.pixels)) piece.pixels = p.pixels;
   // The fish swimming in a fish tank (Update 4): a few fish names.
   if (Array.isArray(p.fish)) {
     const fish = p.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12);
@@ -2327,6 +2327,8 @@ const routes = {
   "GET /api/books": async (req) => {
     const { user } = currentUser(req);
     if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    // (?titles=1: just the titles and authors, for the TV's news.)
+    if (new URL(req.url, "http://x").searchParams.get("titles")) return { books: (db.books ?? []).map(({ text, ...rest }) => rest) };
     return { books: db.books ?? [] };
   },
   "POST /api/books": async (req) => {
@@ -2345,9 +2347,12 @@ const routes = {
     if (db.books.length >= 300) throw new Oops(409, "The Library's shelves are full.");
     const book = { id: newId(), title, kind, text, author: user.name, by: key, at: Date.now() };
     db.books.push(book);
-    grant(ensureWallet(user, key), "author", []);
+    const w = ensureWallet(user, key);
+    const ev = [];
+    grant(w, "author", ev);
+    checkTiers(w, ev);
     await saveDb();
-    return { book };
+    return { book, wallet: publicWallet(w), events: ev };
   },
   "POST /api/books/remove": async (req) => {
     const { user, key } = currentUser(req);
