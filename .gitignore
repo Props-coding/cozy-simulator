@@ -4,3 +4,4 @@ playwright-report/
 tests/.data/
 tests/.data-server-tests/
 tests/gallery/
+tests/looks/

@@ -614,10 +614,53 @@ function screenToGrid(canvas, px, py) {
   return { x: (px * perPixel + left - ORIGIN_X) / TILE, y: (py * perPixel + top - ORIGIN_Y) / TILE };
 }
 
+// Rule 14's soft darker outline, for every object at once: the browser
+// draws a thin dark halo around whatever the object draws (so each part
+// of it reads crisply against the floor and its neighbors). Things hung on
+// a wall (no depth: f.h unset) also cast a small soft shadow down onto it.
+// Flat things on the ground, and glowing things, go without.
+const OUTLINE_FILTER = "drop-shadow(0 0 0.8px rgba(35, 22, 12, 0.6))";
+const WALL_FILTER = OUTLINE_FILTER + " drop-shadow(0 3px 1.5px rgba(30, 18, 8, 0.28))";
+const NO_OUTLINE = new Set(["rug", "doormat", "merchantWares", "wildflowers", "reeds", "pawTrail", "manhole", "lights", "neonSign", "heartNeon", "fairyCurtain", "aisleLights", "sconce", "lakePier", "dock", "lakePlatform", "porchSteps"]);
+// The outlines cost a little drawing time, so a computer that's really
+// struggling turns them off for itself: when frames (the drawing work, or
+// the time between frames, whichever is longer) average over 28 ms (under
+// about 35 a second) for 3 seconds straight. Not counted: the first few
+// seconds after loading, while the tab's hidden, and odd one-off stalls
+// (each frame counts as 50 ms at most). CONFIG.art.outlines: false turns
+// them off for everyone.
+let outlinesOn = CONFIG.art?.outlines !== false;
+let averageFrameMs = 0;
+let lastFrameAt = 0;
+let slowSince = 0;
+function noteFrameTime(workMs, now) {
+  const gap = lastFrameAt ? now - lastFrameAt : 16;
+  lastFrameAt = now;
+  if (!outlinesOn || document.hidden || now < 8000) return;
+  const sample = Math.min(50, Math.max(workMs, gap));
+  averageFrameMs = averageFrameMs ? averageFrameMs * 0.95 + sample * 0.05 : sample;
+  if (averageFrameMs <= 28) {
+    slowSince = 0;
+    return;
+  }
+  slowSince ||= now;
+  if (now - slowSince > 3000) {
+    outlinesOn = false;
+    console.info("Porchlight: object outlines off on this computer, to keep things smooth.");
+  }
+}
+function drawOutlined(ctx, f) {
+  if (!outlinesOn || NO_OUTLINE.has(f.kind)) return FURNITURE_DRAWERS[f.kind](ctx, f);
+  ctx.save();
+  ctx.filter = f.h === undefined ? WALL_FILTER : OUTLINE_FILTER;
+  FURNITURE_DRAWERS[f.kind](ctx, f);
+  ctx.restore();
+}
+
 // Draws any furniture piece (or rug).
 function drawPiece(ctx, f) {
   if (f.kind === "rug") drawRug(ctx, f);
-  else if (FURNITURE_DRAWERS[f.kind]) FURNITURE_DRAWERS[f.kind](ctx, f);
+  else if (FURNITURE_DRAWERS[f.kind]) drawOutlined(ctx, f);
 }
 
 // While decorating: the piece you're holding, see-through, with its

@@ -9,7 +9,8 @@
     "test:server": "node --test \"tests/server/*.test.mjs\"",
     "test:pictures": "playwright test --project=pictures",
     "test:pictures:update": "playwright test --project=pictures --update-snapshots",
-    "gallery": "playwright test --project=gallery"
+    "gallery": "playwright test --project=gallery",
+    "look": "playwright test --project=look"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

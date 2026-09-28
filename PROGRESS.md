@@ -417,6 +417,14 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
 - Workflow tools (2026-09-28, nothing players see): the GitHub command-line tool installed; test accounts that start with things in them; the object gallery (every object in one set of pictures); a grid overlay for placing things (admin panel, Debug); tests for the server's money rules (also run by GitHub); checks before every push; nightly server backups at 09:30 UTC, kept 30 days (server/cozy-backup.*); and a reviewer helper for a fresh-eyes check before updates go live.
   - Open question: the nightly backups live on the droplet itself. For a copy somewhere else too, DigitalOcean's own weekly backups cost about 20% of the droplet's price (roughly $1 a month); the owner can switch them on in the DigitalOcean dashboard.
 
+- Build 0.77 (overnight, 2026-09-28): the art detail pass, and voice everywhere.
+  - Voice is on in every room except the Study (the hallway, the Library, the elevator lobbies, the corridors and the yard included). Inside a room, voices fade with distance: full volume within 3 steps, down to 20% by 12 steps (`voice` in config.js). The yard's areas (porch, garden, pond, campfire, bus stop) count as one space, so distance decides who you hear out there. Unchanged: asleep in bed you hear nobody, and a bedroom owner's lo-fi or silent choice still applies. (Needs a real test with two people and headphones.)
+  - The detail standard (rule 14) for every object: a soft darker outline around everything, drawn by the browser (so all 272 kinds got it at once, and new ones will too), and things hung on walls cast a small soft shadow onto the wall. Flat things on the ground and glowing things go without. The sign by the raccoons' bins got a ground shadow. (Earlier builds already gave boxes, plants, pines and stones their shading and texture.)
+  - The outlines cost a little drawing time (on this PC, 2 to 9 ms a frame, still well under the 16 ms that stays smooth). A computer that averages over 12 ms turns them off for itself; `art.outlines: false` in config.js turns them off for everyone.
+  - New tool: `npm run look` takes pictures of chosen spots.
+  - From the review: a friend who has just connected no longer counts as standing in the hallway (so nobody hears them until their real position arrives); the carried piece while decorating gets its outline too; the autumn tree by the campfire moved left so it no longer hides the Campfire sign; old notes about the voice rules updated.
+  - No server changes: nothing to deploy for this build.
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 
@@ -430,7 +438,7 @@ Friend test night waits until these are in.
 ## Next
 - Real test with friends on the new build (accounts, phrase, voice through the new relay).
 - Test with friends: chat (house and office), knocking, the shared focus timer, seeing each other's hats, and reconnecting after a refresh (the relay fix).
-- Still in the backlog: seasonal decorations, distance voice, a guestbook. (Weather station, porch, fireplace room, music room and leaderboards were scrapped for now, 0.40.)
+- Still in the backlog: seasonal decorations, a guestbook. (Distance voice: done in 0.77.) (Weather station, porch, fireplace room, music room and leaderboards were scrapped for now, 0.40.)
 
 ## Open questions
 - Trystero library is loaded from a pinned CDN link (esm.sh) rather than a local copy, because its build files need a CDN to resolve some internal pieces. If that CDN ever has an outage, movement/voice would pause until it's back (rest of the site stays up). You approved this tradeoff already.

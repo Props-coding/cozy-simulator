@@ -30,7 +30,14 @@ const CONFIG = {
     "Checking under the bed for dust bunnies...",
   ],
 
-  // Room names shown on screen. Change these if you want different labels.
+  // --- Art ---
+  // outlines: a soft darker outline around every object (the detail
+  // standard). Computers that struggle turn them off for themselves;
+  // false turns them off for everyone.
+  art: {
+    outlines: true,
+  },
+
   // --- Voices ---
   // Voice chat is on in every room except the Study. Inside a room, the
   // further away a friend stands, the quieter they sound: full volume
@@ -42,6 +49,7 @@ const CONFIG = {
     quietest: 0.2,
   },
 
+  // Room names shown on screen. Change these if you want different labels.
   roomNames: {
     hallway: "Hallway",
     theater: "Theater",

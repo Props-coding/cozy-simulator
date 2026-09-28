@@ -1957,6 +1957,10 @@ Object.assign(FURNITURE_DRAWERS, {
   // A wonky cardboard sign on a stick: "totally normal trash".
   shadySign(ctx, f) {
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    ctx.fillStyle = "rgba(20, 15, 10, 0.3)"; // its shadow
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, 6, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#8a6444";
     ctx.fillRect(b.x - 1.5, b.y - 22, 3, 22);
     ctx.save();

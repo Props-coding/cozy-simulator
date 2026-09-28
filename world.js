@@ -322,7 +322,7 @@ const BASE_FURNITURE = [
   // armchair turned to the window, a beanbag, each with a floor lamp).
   // Below: a bookshelf on each side of the aisle up from the door, and a
   // reading table with green banker's lamps on a deep green rug, with a
-  // seat. Quiet, no voice.
+  // seat. Soft rain on the windows (voice on, like everywhere but the Study).
   { kind: "rainWindow", x: 0.35, y: -5.4, w: 1.15, solid: false },
   { kind: "clock", x: 3.0, y: -5.4, solid: false },
   { kind: "rainWindow", x: 4.45, y: -5.4, w: 1.15, solid: false },
@@ -786,7 +786,7 @@ const YARD_FURNITURE = [
   fenceRun(18.8, 9.3, 23.9, 9.3, "rail"),
 
   // Trees (big and leafy, or pines), bushes and a few flowers.
-  { kind: "yardTree", x: 6.7, y: YARD + 1.0, w: 1.0, h: 0.55, n: 0 },
+  { kind: "yardTree", x: 6.2, y: YARD + 1.0, w: 1.0, h: 0.55, n: 0 }, // (clear of the Campfire sign)
   { kind: "yardTree", x: 1.0, y: YARD + 0.55, w: 1.0, h: 0.55, n: 1 },
   { kind: "pineTree", x: 11.2, y: YARD + 2.6, w: 0.9, h: 0.5, n: 2 },
   { kind: "yardTree", x: 0.6, y: YARD + 8.3, w: 1.0, h: 0.55, n: 3 },

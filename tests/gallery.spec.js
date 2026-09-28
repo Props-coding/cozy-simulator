@@ -40,18 +40,19 @@ test("every object, side by side", async ({ page }) => {
         f.x ??= 0;
         f.y ??= 0;
         f.w ??= 1;
-        f.h ??= 0.6;
+        if (!f.wall && f.h === undefined && !FURNITURE.some((x) => x.kind === kind)) f.h = 0.6;
         f.color ??= "#d98a6a"; // (beds and desks take their owner's color)
         f.screen ??= f.color;
+        f.kind = kind;
         ctx.save();
         ctx.beginPath();
         ctx.rect(cx, cy, CELL, CELL - 16);
         ctx.clip();
-        const foot = toScreen(f.x + f.w / 2, f.y + f.h);
+        const foot = toScreen(f.x + f.w / 2, f.y + (f.h ?? 0.6)); // (wall things: as if 0.6 deep, so they sit in the tile)
         ctx.translate(cx + CELL / 2 - foot.x, cy + CELL - 30 - foot.y);
         try {
           viewFloor = floorOf(f.y);
-          FURNITURE_DRAWERS[kind](ctx, f);
+          drawOutlined(ctx, f);
         } catch (err) {
           failed.push(`${kind}: ${err.message}`);
         }

@@ -29,6 +29,7 @@ export default defineConfig({
   projects: [
     { name: "checks", testMatch: /checks\.spec\.js/ },
     { name: "gallery", testMatch: /gallery\.spec\.js/ }, // (every object side by side: tests/gallery/)
+    { name: "look", testMatch: /look\.spec\.js/ }, // (pictures of chosen spots: tests/looks/)
     {
       name: "pictures",
       testMatch: /pictures\.spec\.js/,

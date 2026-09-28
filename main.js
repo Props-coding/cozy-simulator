@@ -2636,7 +2636,11 @@ function tick(now) {
       frame(now);
       window.porchlightTest.frameMs.push(performance.now() - started);
       if (window.porchlightTest.frameMs.length > 240) window.porchlightTest.frameMs.shift();
-    } else frame(now);
+    } else {
+      const started = performance.now();
+      frame(now);
+      noteFrameTime(performance.now() - started, now); // (a slow computer drops the object outlines: render-scene.js)
+    }
   } catch (err) {
     if (frameErrors++ < 3) reportError(err?.message ?? err, "frame: " + String(err?.stack ?? "").split("\n")[1]?.trim());
     console.error(err);

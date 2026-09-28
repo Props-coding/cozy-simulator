@@ -281,8 +281,9 @@ export function connectToRoom(myName, myColor) {
 
   room.onPeerJoin = (peerId) => {
     // Placeholder spot in the middle of the hallway (grid units), until
-    // their first real position message arrives a moment later.
-    peers[peerId] = { name: "...", color: "#999", x: 8.7, y: 1.2, room: "hallway" };
+    // their first real position message arrives a moment later. (No room
+    // yet, so nobody hears them until we know where they really are.)
+    peers[peerId] = { name: "...", color: "#999", x: 8.7, y: 1.2, room: "" };
     // addLocalStream only reaches friends who were already here, so
     // anyone arriving later needs their lines sent to them directly.
     if (localStream) sendMicLines(peerId);

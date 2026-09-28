@@ -21,7 +21,7 @@ The user is creative, smart, and a psychologist by trade, but has no coding know
 11. **No em dashes** in anything written for the user, including docs, chat replies, and on-screen text.
 12. **Be honest about uncertainty.** If something might not work (for example voice on a strict network), say so early rather than hiding it.
 13. **No emoji as icons (decided 2026-09-27).** Emoji look generic and give the game an "AI vibe". Icons, pictures and badges in the interface are drawn in the house's own style instead: the small SVG icons at the top of `index.html` (used with `uiIcon()` from `ui-icons.js`), or canvas drawings (`icons.js`, and the house's own furniture and character drawings). Chat notices are plain words. Emoji only appear where friends type them in chat.
-14. **Detail standard for every object (decided 2026-09-28).** No object made of only a few flat shapes. Every object gets a soft darker outline, shading on the side away from the light, a highlight on the lit side, and some surface texture. Plants (bushes, trees, flowers) are built from many small overlapping clusters, darker at the bottom and lighter on top, with a few stray leaves at the edges, and each one a slightly different color (`drawLeafClump` in render.js, `leafVariant` and `drawStone` in outdoors.js). Boxes built with `drawBlock` get the outline, shading and texture automatically.
+14. **Detail standard for every object (decided 2026-09-28).** No object made of only a few flat shapes. Every object gets a soft darker outline, shading on the side away from the light, a highlight on the lit side, and some surface texture. Plants (bushes, trees, flowers) are built from many small overlapping clusters, darker at the bottom and lighter on top, with a few stray leaves at the edges, and each one a slightly different color (`drawLeafClump` in render.js, `leafVariant` and `drawStone` in outdoors.js). Boxes built with `drawBlock` get the outline, shading and texture automatically, and every object gets a soft outline (and wall things a small shadow on the wall) from `drawOutlined` in render-scene.js; flat and glowing things are listed in its NO_OUTLINE. A computer that struggles drops the outlines for itself (`art.outlines` in config.js).
 
 ## The goal
 
@@ -134,6 +134,7 @@ Do these in order. Stop after each one for the user to test.
   - A push runs all of these first and stops if any fails (`.githooks/pre-push`, turned on with `git config core.hooksPath .githooks`). On Windows the browser tests use the installed Edge.
   - **Test accounts with things in them:** `seed(page, { crumbs, basket: {...}, fishing: { lesson } })` in `tests/helpers.js` sets up the test account on the throwaway server (a test-only route that only exists when the server runs with TEST_SEED=1, never on the real one). Use it instead of playing the game to get somewhere.
   - **The object gallery:** `npm run gallery` draws every object side by side into `tests/gallery/page-N.png` (not committed). Use it for art passes and to check new objects against the detail standard (rule 14).
+  - **Quick pictures:** `SHOTS="name:x:y;name:x:y" npm run look` (y can use YARD, ALLEY...; DUSK=1 for evening) saves pictures of those spots to `tests/looks/` (not committed).
   - **The grid overlay:** admin panel, Debug, "Grid" (or `DEBUG_OVERLAYS.grid = true` in a test): grid spots numbered the way world.js writes them, and every object's name and footprint. Use it when placing things.
   - **The reviewer** (`.claude/agents/reviewer.md`): before a push, hand it what changed, what was asked and the screenshots; it checks with fresh eyes and reports what's wrong.
   - The page has a small test hook, only on localhost (see "For the automated tests" in main.js): `window.porchlightTest.go(x, y)` jumps to a spot, and it records drawing errors and frame times. Use it for screenshots instead of fighting the spawn rules.
@@ -180,16 +181,15 @@ Suggested order, since later ideas build on earlier ones: 1 and 2 first (they re
 - **Fireplace room:** ambient crackle in a room with no agenda (the Props lake-house office already has a fireplace)
 - **Music room:** a shared jukebox
 - **Seasonal decorations**
-- **Distance-based voice** within a room, where volume fades with distance
 
 ## Definition of done for v1
 
 - [ ] Live on a public GitHub Pages address
 - [ ] 3 to 4 friends can join from different homes
 - [ ] They see each other walking around
-- [ ] Gaming room: they can hear each other
+- [ ] Voice rooms (everywhere but the Study): they can hear each other, quieter further away
 - [ ] Study room: lo-fi plays and nobody's voice is heard
-- [ ] Dinner room: everything is silent
+- [ ] Asleep in bed: everything is silent
 - [ ] Master mute and volume work
 - [ ] Rendering reads clearly (shadows, correct draw order, floor tiles, consistent shading)
 - [ ] Settings are easy to change in `config.js`

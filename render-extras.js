@@ -1495,7 +1495,7 @@ function getStaticSprites() {
       ...ROOMS.filter((room) => room.sign).map((room) => ({ sortY: room.sign.y + WALL_THICKNESS / 2 + 0.002, draw: (ctx) => drawRoomSign(ctx, room) })),
       ...FURNITURE.filter((f) => FURNITURE_DRAWERS[f.kind]).map((f) => ({
         sortY: f.h === undefined ? f.y + 0.001 : seatCoversSitter(f) ? f.y + f.h + 0.05 : f.solid === false ? f.y : f.y + f.h,
-        draw: (ctx) => FURNITURE_DRAWERS[f.kind](ctx, f),
+        draw: (ctx) => drawOutlined(ctx, f),
       })),
     ].filter((sprite) => floorOf(sprite.sortY) === viewFloor);
     spritesVersion = version;
