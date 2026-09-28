@@ -461,6 +461,33 @@ function leafColors(n = 0) {
   return ["#3f6b3c", "#57874a", "#7fb46a"];
 }
 
+// One stone: a soft dark outline, darker underneath, a lit top, and a few
+// flecks in the rock.
+function drawStone(ctx, x, y, rx, ry, color, seed = 0) {
+  const oval = (cx, cy, a, b) => {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, a, b, 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  ctx.fillStyle = shadeColor(color, -70);
+  oval(x, y + 0.5, rx + 1.2, ry + 1.2);
+  ctx.fillStyle = shadeColor(color, -28);
+  oval(x, y, rx, ry);
+  ctx.fillStyle = color;
+  oval(x - rx * 0.08, y - ry * 0.22, rx * 0.86, ry * 0.72);
+  ctx.fillStyle = shadeColor(color, 30);
+  oval(x - rx * 0.3, y - ry * 0.5, rx * 0.35, ry * 0.2);
+  ctx.fillStyle = shadeColor(color, -45);
+  for (let i = 0; i < 3; i++) ctx.fillRect(x + (noise(seed + i * 2.7) - 0.5) * rx, y + (noise(seed + i * 4.9) - 0.3) * ry * 0.8, 1.4, 1);
+}
+
+// Leaf colors nudged a little for one plant: a touch lighter or darker,
+// yellower or bluer, so no two bushes or trees look copy-pasted.
+function leafVariant(colors, seed) {
+  const v = noise(seed * 3.7 + 0.5) - 0.5, w = noise(seed * 5.1 + 0.3) - 0.5;
+  return colors.map((c) => shadeColor(c, Math.round(v * 18 + w * 10), Math.round(v * 16), Math.round(v * 12 - w * 16)));
+}
+
 // A big leafy tree: a trunk and a round, puffy crown made of overlapping
 // balls of leaves, darker underneath and lighter on top (light from above).
 function drawYardTree(ctx, f) {
@@ -480,34 +507,30 @@ function drawYardTree(ctx, f) {
   ctx.fill();
   ctx.fillStyle = "#5e412a";
   ctx.fillRect(base.x + 2, base.y - 44, 3, 40);
-  const [dark, mid, light] = leafColors(f.n);
+  // Bark: a darker outline, a lit stripe on the left, and a few grooves.
+  ctx.strokeStyle = "#4a3220";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 225, 180, 0.22)";
+  ctx.fillRect(base.x - 6, base.y - 44, 2, 38);
+  ctx.strokeStyle = "rgba(60, 38, 22, 0.55)";
+  ctx.beginPath();
+  for (const [dx, y0, y1] of [[-2, 8, 22], [1, 26, 38], [-3, 30, 42]]) {
+    ctx.moveTo(base.x + dx, base.y - y0);
+    ctx.lineTo(base.x + dx + 0.5, base.y - y1);
+  }
+  ctx.stroke();
+  // The crown: many small leaf clusters (each tree its own green).
+  const colors = leafVariant(leafColors(f.n), f.x + f.y * 0.37);
   const sway = Math.sin(performance.now() / 1600 + (f.n ?? 0)) * 1.2;
   const cy = base.y - 72;
-  const balls = [[-24, 8, 22], [24, 8, 22], [0, 12, 24], [-14, -12, 24], [14, -12, 24], [0, -24, 22]];
-  ctx.fillStyle = dark;
-  for (const [dx, dy, r] of balls) {
-    ctx.beginPath();
-    ctx.arc(base.x + dx + sway * 0.5, cy + dy + 3, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = mid;
-  for (const [dx, dy, r] of balls) {
-    ctx.beginPath();
-    ctx.arc(base.x + dx + sway, cy + dy - 1, r - 4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = light;
-  for (const [dx, dy, r] of balls.slice(3)) {
-    ctx.beginPath();
-    ctx.arc(base.x + dx + sway - 4, cy + dy - 7, r * 0.45, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  drawLeafClump(ctx, base.x + sway, cy - 6, 48, 40, colors, f.x * 1.7 + (f.n ?? 0), 42);
   if (yardSeason() === "winter") {
-    // Snow resting on top.
+    // Snow resting on the top clusters.
     ctx.fillStyle = "#f7fafc";
-    for (const [dx, dy, r] of balls.slice(3)) {
+    for (const [dx, dy, r] of [[-16, -30, 15], [14, -32, 16], [0, -42, 14]]) {
       ctx.beginPath();
-      ctx.ellipse(base.x + dx + sway, cy + dy - r + 8, r * 0.7, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(base.x + dx + sway, cy + dy, r, 4.5, 0, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -522,54 +545,96 @@ function drawPineTree(ctx, f) {
   ctx.fill();
   ctx.fillStyle = "#6b4a30";
   ctx.fillRect(base.x - 5, base.y - 18, 10, 18);
+  // Bark: an outline and a lit left edge.
+  ctx.fillStyle = "#4a3220";
+  ctx.fillRect(base.x - 6, base.y - 18, 1.2, 18);
+  ctx.fillRect(base.x + 4.8, base.y - 18, 1.2, 18);
+  ctx.fillStyle = "rgba(255, 225, 180, 0.22)";
+  ctx.fillRect(base.x - 4.5, base.y - 18, 2, 18);
   const snow = yardSeason() === "winter";
+  const v = noise(f.x * 2.3 + f.y) - 0.5; // (each pine its own green)
+  const tint = (c) => shadeColor(c, Math.round(v * 16), Math.round(v * 14), Math.round(v * 8));
+  const dark = tint("#2f5a3c"), lit = tint("#3f7449");
   const layers = [[0, 34, 30], [-26, 28, 26], [-50, 21, 22]];
   for (const [dy, half, height] of layers) {
-    const y = base.y - 14 + dy;
-    ctx.fillStyle = "#2f5a3c";
+    const y = base.y - 14 + dy, tip = y - height - 16;
+    // The layer: a soft dark outline, the shaded body, and the lit left half.
     ctx.beginPath();
     ctx.moveTo(base.x - half, y);
     ctx.lineTo(base.x + half, y);
-    ctx.lineTo(base.x, y - height - 16);
+    ctx.lineTo(base.x, tip);
     ctx.closePath();
+    ctx.fillStyle = dark;
     ctx.fill();
-    ctx.fillStyle = "#3f7449";
+    ctx.strokeStyle = shadeColor(dark, -30);
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = lit;
     ctx.beginPath();
     ctx.moveTo(base.x - half + 6, y - 4);
     ctx.lineTo(base.x, y - 4);
-    ctx.lineTo(base.x, y - height - 14);
+    ctx.lineTo(base.x, tip + 2);
     ctx.closePath();
+    ctx.fill();
+    // A ragged lower edge of needle tips, and needle strokes on the body.
+    ctx.fillStyle = shadeColor(dark, -12);
+    for (let x = base.x - half + 3; x < base.x + half - 2; x += 6) {
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y - 1);
+      ctx.lineTo(x, y + 3);
+      ctx.lineTo(x + 3, y - 1);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "rgba(20, 45, 28, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 7; i++) {
+      const u = noise(f.x + dy + i * 3.1), w = noise(f.y + dy + i * 1.7);
+      const nx = base.x + (u - 0.5) * half * 1.3 * (0.4 + w * 0.6), ny = y - 6 - w * (height - 4);
+      ctx.moveTo(nx, ny);
+      ctx.lineTo(nx + (nx < base.x ? -3 : 3), ny + 3);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "rgba(200, 240, 190, 0.3)"; // light catching the tip
+    ctx.beginPath();
+    ctx.moveTo(base.x, tip + 1);
+    ctx.lineTo(base.x - 4, tip + 10);
+    ctx.lineTo(base.x, tip + 9);
     ctx.fill();
     if (snow) {
       ctx.fillStyle = "#f4f8fb";
       ctx.beginPath();
       ctx.moveTo(base.x - half * 0.45, y - height * 0.55);
       ctx.lineTo(base.x + half * 0.45, y - height * 0.55);
-      ctx.lineTo(base.x, y - height - 16);
+      ctx.lineTo(base.x, tip);
       ctx.closePath();
       ctx.fill();
     }
   }
 }
 
-// A round bush, with berries or blossoms depending on the season.
+// A round bush made of many small leaf clusters (each bush its own shade
+// of green), with berries or blossoms depending on the season.
 function drawBush(ctx, f) {
   drawShadow(ctx, f.x, f.y, f.w, f.h);
   const b = toScreen(f.x + f.w / 2, f.y + f.h);
-  const [dark, mid, light] = leafColors(f.n + 1);
-  for (const [dx, dy, r, color] of [[-10, -12, 12, dark], [10, -12, 12, dark], [0, -18, 14, mid], [-6, -22, 7, light], [7, -20, 6, light]]) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(b.x + dx, b.y + dy, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  const rx = (f.w * TILE) / 2 + 1;
+  drawLeafClump(ctx, b.x, b.y - 16, rx, 16, leafVariant(leafColors(f.n + 1), f.x + f.y * 0.61), f.x * 3.1 + f.y, 28);
   const season = yardSeason();
   if (season === "summer" || season === "spring") {
-    ctx.fillStyle = f.n % 2 ? "#f2f0f8" : "#e05a6a";
-    for (let i = 0; i < 6; i++) {
+    const color = f.n % 2 ? "#f2f0f8" : "#e05a6a";
+    for (let i = 0; i < 7; i++) {
+      const x = b.x - 14 + noise(f.n * 7 + i + f.x) * 28, y = b.y - 28 + noise(f.n * 3 + i * 2 + f.x) * 18;
+      ctx.fillStyle = shadeColor(color, -60);
       ctx.beginPath();
-      ctx.arc(b.x - 14 + noise(f.n * 7 + i) * 28, b.y - 26 + noise(f.n * 3 + i * 2) * 18, 1.8, 0, Math.PI * 2);
+      ctx.arc(x, y + 0.6, 2.3, 0, Math.PI * 2);
       ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.fillRect(x - 1, y - 1.2, 1, 1);
     }
   }
 }
@@ -584,18 +649,31 @@ Object.assign(FURNITURE_DRAWERS, {
     if (yardSeason() === "winter") return;
     const a = toScreen(f.x, f.y + f.h);
     const w = f.w * TILE;
+    const petals = [[-1.6, 0], [1.6, 0], [0, -1.5], [0, 1.4]];
     for (let i = 0; i < Math.round(w / 6); i++) {
       const x = a.x + noise(f.x * 3 + i * 1.9) * w, h = 6 + noise(i * 4.3 + f.y) * 7;
-      ctx.strokeStyle = "#5f8a4a";
+      ctx.strokeStyle = "#4f7a3e";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x, a.y);
-      ctx.lineTo(x, a.y - h);
+      ctx.quadraticCurveTo(x - 1, a.y - h / 2, x, a.y - h);
       ctx.stroke();
-      ctx.fillStyle = ["#f2c94c", "#f7f1e6", "#c86bb0", "#e8883a"][i % 4];
+      ctx.fillStyle = "#6a9a4e"; // a leaf on the stem
       ctx.beginPath();
-      ctx.arc(x, a.y - h, 2.2, 0, Math.PI * 2);
+      ctx.ellipse(x + (i % 2 ? 2 : -2), a.y - h * 0.4, 2.2, 1, i % 2 ? -0.5 : 0.5, 0, Math.PI * 2);
       ctx.fill();
+      // The petals: a darker edge, then the petals, then the center.
+      const color = ["#f2c94c", "#f7f1e6", "#c86bb0", "#e8883a"][i % 4];
+      for (const [fill, r] of [[shadeColor(color, -70), 1.9], [color, 1.4]]) {
+        ctx.fillStyle = fill;
+        for (const [dx, dy] of petals) {
+          ctx.beginPath();
+          ctx.arc(x + dx, a.y - h + dy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.fillStyle = i % 4 === 0 ? "#c8782a" : "#e8b43a";
+      ctx.fillRect(x - 0.8, a.y - h - 0.8, 1.6, 1.6);
     }
   },
 
@@ -870,16 +948,20 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // A few smooth stones by the water.
+  // A few smooth stones (by the water, or out in the grass).
   pondStones(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
     for (const [dx, dy, rx, ry, c] of [[-10, -6, 11, 8, "#9a958c"], [8, -4, 9, 6, "#b3aca0"], [0, -12, 7, 6, "#c4beb2"]]) {
-      ctx.fillStyle = c;
-      ctx.beginPath();
-      ctx.ellipse(b.x + dx, b.y + dy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      drawStone(ctx, b.x + dx, b.y + dy, rx, ry, c, f.x + dx);
     }
+  },
+
+  // One small rock on its own in the grass.
+  rock(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    drawStone(ctx, b.x, b.y - 6, (f.w * TILE) / 2, 7, "#a8a298", f.x);
   },
 
   // A wooden signpost with an arrow board.

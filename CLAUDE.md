@@ -21,6 +21,7 @@ The user is creative, smart, and a psychologist by trade, but has no coding know
 11. **No em dashes** in anything written for the user, including docs, chat replies, and on-screen text.
 12. **Be honest about uncertainty.** If something might not work (for example voice on a strict network), say so early rather than hiding it.
 13. **No emoji as icons (decided 2026-09-27).** Emoji look generic and give the game an "AI vibe". Icons, pictures and badges in the interface are drawn in the house's own style instead: the small SVG icons at the top of `index.html` (used with `uiIcon()` from `ui-icons.js`), or canvas drawings (`icons.js`, and the house's own furniture and character drawings). Chat notices are plain words. Emoji only appear where friends type them in chat.
+14. **Detail standard for every object (decided 2026-09-28).** No object made of only a few flat shapes. Every object gets a soft darker outline, shading on the side away from the light, a highlight on the lit side, and some surface texture. Plants (bushes, trees, flowers) are built from many small overlapping clusters, darker at the bottom and lighter on top, with a few stray leaves at the edges, and each one a slightly different color (`drawLeafClump` in render.js, `leafVariant` and `drawStone` in outdoors.js). Boxes built with `drawBlock` get the outline, shading and texture automatically.
 
 ## The goal
 

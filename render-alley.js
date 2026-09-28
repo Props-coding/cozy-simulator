@@ -774,18 +774,21 @@ Object.assign(FURNITURE_DRAWERS, {
   // A faint trail of muddy paw prints across the grass (the raccoons went
   // this way). Its `points` are yard spots, like the paths.
   pawTrail(ctx, f) {
-    ctx.fillStyle = "rgba(90, 65, 40, 0.38)";
     const pts = f.points.map(([x, y]) => toScreen(x, YARD + y));
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
       const side = i % 2 ? 4 : -4;
-      ctx.beginPath();
-      ctx.ellipse(p.x, p.y + side, 3, 2.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      for (const [dx, dy] of [[-2.8, -3.2], [-1, -4.3], [1.2, -4.3], [3, -3.2]]) {
+      // Each print: a darker muddy rim, then the print, fainter further back.
+      for (const [color, grow] of [["rgba(60, 40, 22, 0.35)", 0.7], [`rgba(105, 78, 48, ${0.3 + (i / pts.length) * 0.25})`, 0]]) {
+        ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(p.x + dx, p.y + side + dy, 0.9, 0, Math.PI * 2);
+        ctx.ellipse(p.x, p.y + side, 3 + grow, 2.2 + grow, 0, 0, Math.PI * 2);
         ctx.fill();
+        for (const [dx, dy] of [[-2.8, -3.2], [-1, -4.3], [1.2, -4.3], [3, -3.2]]) {
+          ctx.beginPath();
+          ctx.arc(p.x + dx, p.y + side + dy, 0.9 + grow * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
   },
@@ -1078,46 +1081,96 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillText("z", cx - 14 + z * 4, cy - 16 - z * 14);
   },
 
-  // A round iron manhole cover set in the cobbles (steam: drawAlleyLife).
+  // A round iron manhole cover (steam in the alley: drawAlleyLife): a soft
+  // ground shadow, the iron frame around the hole, and the cover with a
+  // raised rim, a grid of grips and bolts round the edge, lit from above.
+  // In the yard (`tilt`) it's nudged off its seat so its right edge peeks
+  // up over the dark hole, with a note taped beside it (`note`).
   manhole(ctx, f) {
-    let c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
-    if (f.tilt) {
-      // (In the yard: nudged off its seat, showing a dark crescent of the
-      // hole underneath.)
-      ctx.fillStyle = "#0e0c10";
+    const rx = (f.w * TILE) / 2, ry = (f.h * TILE) / 2;
+    const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    const oval = (x, y, a, b) => {
       ctx.beginPath();
-      ctx.ellipse(c.x, c.y, (f.w * TILE) / 2, (f.h * TILE) / 2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      c = { x: c.x + 5, y: c.y + 2 };
-    }
-    ctx.fillStyle = "#2e2c34";
-    ctx.beginPath();
-    ctx.ellipse(c.x, c.y, (f.w * TILE) / 2, (f.h * TILE) / 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, y, a, b, 0, 0, Math.PI * 2);
+    };
+    ctx.fillStyle = "rgba(20, 15, 10, 0.3)";
+    oval(c.x, c.y + 2, rx + 5, ry + 3.5);
     ctx.fill();
-    ctx.strokeStyle = "#55535c";
-    ctx.lineWidth = 1.2;
-    for (const k of [0.8, 0.55, 0.3]) {
-      ctx.beginPath();
-      ctx.ellipse(c.x, c.y, (f.w * TILE * k) / 2, (f.h * TILE * k) / 2, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(c.x - (f.w * TILE) / 2.6, c.y);
-    ctx.lineTo(c.x + (f.w * TILE) / 2.6, c.y);
-    ctx.stroke();
-    if (f.note) {
-      // A scrap of paper taped on top: "Moved. -R"
-      ctx.save();
-      ctx.translate(c.x - 2, c.y - 1);
+    ctx.fillStyle = "#3c3b42"; // the frame, and the hole
+    oval(c.x, c.y, rx + 2.5, ry + 2);
+    ctx.fill();
+    ctx.fillStyle = "#0b0a0e";
+    oval(c.x, c.y, rx, ry);
+    ctx.fill();
+    ctx.save();
+    if (f.tilt) {
+      ctx.translate(c.x + 4, c.y - 1);
       ctx.rotate(-0.12);
+    } else ctx.translate(c.x, c.y);
+    const lift = f.tilt ? 3.5 : 1.5;
+    ctx.fillStyle = "#1e1d23"; // the cover's thickness, showing where it's lifted
+    oval(0, lift, rx, ry);
+    ctx.fill();
+    const iron = ctx.createRadialGradient(-rx * 0.35, -ry * 0.5, 1, 0, 0, rx * 1.1);
+    iron.addColorStop(0, "#8e8e96");
+    iron.addColorStop(1, "#4a4950");
+    ctx.fillStyle = iron;
+    oval(0, 0, rx, ry);
+    ctx.fill();
+    ctx.strokeStyle = "#1a191e"; // outline
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // The raised rim: lit along the top, shaded along the bottom.
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = "rgba(210, 210, 220, 0.55)";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx * 0.84, ry * 0.84, 0, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(20, 20, 26, 0.6)";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx * 0.84, ry * 0.84, 0, Math.PI * 0.05, Math.PI * 0.95);
+    ctx.stroke();
+    // The grid of grips inside the rim: little raised squares.
+    ctx.save();
+    oval(0, 0, rx * 0.72, ry * 0.72);
+    ctx.clip();
+    for (let gx = -rx; gx < rx; gx += 4.2) {
+      for (let gy = -ry; gy < ry; gy += 3.2) {
+        ctx.fillStyle = "rgba(25, 25, 30, 0.55)";
+        ctx.fillRect(gx + 0.6, gy + 0.6, 2.4, 1.8);
+        ctx.fillStyle = "rgba(220, 220, 230, 0.3)";
+        ctx.fillRect(gx, gy, 2.4, 0.8);
+      }
+    }
+    ctx.restore();
+    // Bolts round the edge.
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2, bx = Math.cos(a) * rx * 0.93, by = Math.sin(a) * ry * 0.92;
+      ctx.fillStyle = "#26252b";
+      ctx.fillRect(bx - 0.8, by - 0.4, 1.8, 1.6);
+      ctx.fillStyle = "#b4b4bc";
+      ctx.fillRect(bx - 0.8, by - 0.8, 1.2, 1);
+    }
+    ctx.restore();
+    if (f.note) {
+      // A scrap of paper taped on the ground beside the cover, the tape
+      // reaching over its edge: "Moved. -R"
+      ctx.save();
+      ctx.translate(c.x - rx - 24, c.y + 4);
+      ctx.rotate(-0.1);
+      ctx.fillStyle = "rgba(20, 15, 10, 0.25)";
+      ctx.fillRect(-15, -5, 31, 13);
       ctx.fillStyle = "#f4ecd8";
-      ctx.fillRect(-14, -6, 28, 12);
-      ctx.fillStyle = "rgba(230, 220, 170, 0.8)"; // the tape
-      ctx.fillRect(-4, -8, 8, 4);
+      ctx.fillRect(-16, -7, 31, 13);
+      ctx.strokeStyle = "#b8a888";
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(-16, -7, 31, 13);
+      ctx.fillStyle = "rgba(230, 220, 170, 0.85)"; // the tape
+      ctx.fillRect(12, -5, 13, 4);
       ctx.fillStyle = "#3a2a20";
-      ctx.font = "700 6.5px 'Quicksand', sans-serif";
+      ctx.font = "700 7px 'Quicksand', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(f.note, 0, 2.5);
+      ctx.fillText(f.note, -0.5, 2.5);
       ctx.restore();
       ctx.textAlign = "left";
     }

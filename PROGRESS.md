@@ -388,6 +388,12 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - GitHub runs the mistake checker and the house tests on every change (`.github/workflows/checks.yml`); a red X means something broke.
   - A small test hook in main.js, only active on localhost (never on the live site).
 
+- Build 0.74: yard cleanup and art detail pass.
+  - Reginald's old spot in the yard is cleared: the trash cans and bags are gone, and grass, a few flowers and a small rock have filled in. Only the manhole is left.
+  - The manhole: a round iron cover with a raised rim, a grid of grips and bolts round the edge, shaded grey metal with a soft shadow on the ground, nudged off its seat so one edge peeks up over the dark hole. The "Moved. -R" note is taped on the ground beside it, fully readable, with the paw prints leading to it (each print now has a darker muddy edge).
+  - The detail standard (now rule 14 in CLAUDE.md): every object gets a soft darker outline, shading, a lit highlight and some texture. Done so far: every box-shaped piece of furniture (they share one drawing piece, so they all got an outline, a shaded front, a lit top edge and faint texture at once); every bush and leafy tree (rebuilt from many small leaf clusters, darker below, lighter on top, stray leaves at the edges, each one a slightly different green so none look copy-pasted); the pines (outlines, needle texture, a ragged lower edge, lit tips); wildflowers (leaves on the stems, petals with a darker edge); and the stones.
+  - Still to check against the standard: the hand-drawn objects that don't use the box piece (about 250 across the house, yard, lake and alley). Planned in batches, one area at a time.
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 

@@ -122,12 +122,13 @@ function clipText(text, max, ending = "") {
 }
 
 // Lightens (positive amt) or darkens (negative amt) a "#rrggbb" color.
-function shadeColor(hex, amt) {
+// (Give green and blue their own amounts to shift the color a little too.)
+function shadeColor(hex, amt, amtG = amt, amtB = amt) {
   const num = parseInt(hex.slice(1), 16);
   const clamp = (v) => Math.max(0, Math.min(255, v));
   const r = clamp((num >> 16) + amt);
-  const g = clamp(((num >> 8) & 0xff) + amt);
-  const b = clamp((num & 0xff) + amt);
+  const g = clamp(((num >> 8) & 0xff) + amtG);
+  const b = clamp((num & 0xff) + amtB);
   // As "#rrggbb", so a shaded color can be shaded again.
   return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
@@ -156,6 +157,48 @@ function drawShadow(ctx, gx, gy, w, h) {
   ctx.fill();
 }
 
+// Leaves (bushes, tree crowns): many small overlapping clusters inside an
+// oval, darker at the bottom and lighter on top (light from above), with a
+// soft darker outline, a little leafy texture, and a few stray leaves at
+// the edges. `seed` keeps each plant's clusters the same every frame.
+function drawLeafClump(ctx, cx, cy, rx, ry, [dark, mid, light], seed = 0, count = 24) {
+  const blobs = [];
+  for (let i = 0; i < count; i++) {
+    const a = noise(seed * 7.1 + i * 3.7) * Math.PI * 2, d = Math.sqrt(noise(seed * 5.3 + i * 1.9));
+    const r = Math.min(rx, ry) * (0.3 + noise(seed + i * 2.3) * 0.2);
+    const x = cx + Math.cos(a) * d * (rx - r), y = cy + Math.sin(a) * d * (ry - r);
+    blobs.push({ x, y, r, up: (y - (cy - ry)) / (2 * ry) }); // (up: 0 at the top, 1 at the bottom)
+  }
+  const dot = (x, y, r) => {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  ctx.fillStyle = shadeColor(dark, -38); // the outline
+  for (const b of blobs) dot(b.x, b.y + 0.8, b.r + 1.6);
+  ctx.fillStyle = dark;
+  for (const b of blobs) dot(b.x, b.y, b.r);
+  ctx.fillStyle = mid;
+  for (const b of blobs) if (b.up < 0.8) dot(b.x - b.r * 0.1, b.y - b.r * 0.2, b.r * 0.78);
+  ctx.fillStyle = light;
+  for (const b of blobs) if (b.up < 0.45) dot(b.x - b.r * 0.25, b.y - b.r * 0.4, b.r * 0.42);
+  // Texture: tiny dark leaf gaps across the clusters.
+  ctx.fillStyle = shadeColor(dark, -20);
+  for (let i = 0; i < count; i++) {
+    const b = blobs[i];
+    ctx.fillRect(b.x + (noise(seed + i * 4.1) - 0.5) * b.r, b.y + (noise(seed + i * 5.7) - 0.2) * b.r * 0.6, 1.6, 1);
+  }
+  // Stray leaves poking out around the edge.
+  for (let i = 0; i < 7; i++) {
+    const a = Math.PI * (0.95 + noise(seed * 3.3 + i * 6.1) * 1.1) + (i % 2 ? Math.PI * 0.55 : 0);
+    const x = cx + Math.cos(a) * (rx + 1), y = cy + Math.sin(a) * (ry + 1);
+    ctx.fillStyle = i % 3 ? mid : dark;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 2.6, 1.3, a, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 // Draws something standing on the floor: a footprint (grid units) raised
 // up by `height` pixels. You see its top surface (a little lighter, lit
 // from above) and its front face (the base color, with a darker band
@@ -168,16 +211,35 @@ function drawBlock(ctx, gx, gy, w, h, height, color) {
   const topBox = { x: a.x, y: a.y - height, w: pw, h: b.y - a.y };
   const faceBox = { x: a.x, y: b.y - height, w: pw, h: height };
 
+  // A soft darker outline around the whole shape.
+  ctx.fillStyle = shadeColor(color, -60);
+  ctx.globalAlpha = 0.45;
+  ctx.fillRect(topBox.x - 1, topBox.y - 1, pw + 2, faceBox.y + faceBox.h - topBox.y + 2);
+  ctx.globalAlpha = 1;
   ctx.fillStyle = shadeColor(color, 22);
   ctx.fillRect(topBox.x, topBox.y, topBox.w, topBox.h);
-  ctx.fillStyle = color;
+  // The front face: a touch lighter up top, darker toward the floor.
+  const face = ctx.createLinearGradient(0, faceBox.y, 0, faceBox.y + faceBox.h);
+  face.addColorStop(0, shadeColor(color, 8));
+  face.addColorStop(1, shadeColor(color, -14));
+  ctx.fillStyle = face;
   ctx.fillRect(faceBox.x, faceBox.y, faceBox.w, faceBox.h);
-  // Darker band at the base, and a thin highlight on the top edge.
+  // Darker band at the base, and a highlight on the lit top edge.
   const band = Math.min(4, height / 3);
   ctx.fillStyle = shadeColor(color, -30);
   ctx.fillRect(faceBox.x, faceBox.y + faceBox.h - band, faceBox.w, band);
   ctx.fillStyle = shadeColor(color, 40);
   ctx.fillRect(topBox.x, topBox.y, topBox.w, 1.5);
+  ctx.fillStyle = shadeColor(color, 12);
+  ctx.fillRect(faceBox.x, faceBox.y, faceBox.w, 1);
+  // A little surface texture: faint flecks, the same each frame.
+  const seed = gx * 7.3 + gy * 3.1;
+  for (let i = 0; i < Math.min(14, (pw * (topBox.h + height)) / 90); i++) {
+    ctx.fillStyle = i % 2 ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.08)";
+    const inTop = i % 3 === 0;
+    const box = inTop ? topBox : faceBox;
+    ctx.fillRect(box.x + 2 + noise(seed + i * 1.7) * (box.w - 5), box.y + 2 + noise(seed + i * 2.9) * Math.max(0, box.h - 5), 1.5, 1);
+  }
 
   return { top: topBox, face: faceBox };
 }

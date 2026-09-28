@@ -821,12 +821,14 @@ const YARD_FURNITURE = [
   { kind: "otis", x: 10.25, y: YARD + 5.2, w: 0.55, h: 0.4, place: "pond" }, // (only for new fishers: see OTIS)
   { kind: "baitBox", x: 10.8, y: YARD + 5.0, w: 0.6, h: 0.45, solid: false }, // (once Otis has gone to the Lake)
 
-  // The house's bins, where the raccoons used to lurk. They've moved to
-  // the back alley (Update 7): where their dumpster stood there's now a
-  // manhole cover, a little off its seat, with a note taped on top and a
-  // faint trail of paw prints leading to it. Press E on it to climb down.
-  { kind: "trashCans", x: 11.85, y: YARD + 8.15, w: 0.8, h: 0.45 },
-  { kind: "trashBags", x: 12.6, y: YARD + 8.45, w: 0.6, h: 0.35, solid: false },
+  // Where the raccoons used to lurk. They've moved to the back alley
+  // (Update 7) and taken their bins with them: the grass has grown back,
+  // with a few flowers and a rock, and all that's left is a manhole cover,
+  // a little off its seat, with a note taped beside it and a faint trail of
+  // paw prints leading to it. Press E on it to climb down.
+  { kind: "wildflowers", x: 10.8, y: YARD + 8.25, w: 0.9, h: 0.3, solid: false },
+  { kind: "rock", x: 11.85, y: YARD + 8.55, w: 0.4, h: 0.25, solid: false },
+  { kind: "wildflowers", x: 12.3, y: YARD + 7.55, w: 0.5, h: 0.3, solid: false },
   { kind: "pawTrail", x: 13.7, y: YARD + 7.6, w: 2.4, h: 0.5, points: [[16.0, 7.65], [15.4, 7.8], [14.85, 7.95], [14.35, 8.1]], solid: false },
   { kind: "manhole", x: 13.35, y: YARD + 8.0, w: 0.8, h: 0.5, solid: false, way: "down", tilt: true, note: "Moved. -R" },
 
