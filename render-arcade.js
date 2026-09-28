@@ -290,6 +290,73 @@ Object.assign(FURNITURE_DRAWERS, {
   },
 });
 
+// A mini game's door (Update 10), on the Games floor corridor's north
+// wall: a painted door in the game's color with a little round window, a
+// sign with its name over the top, and a soft glow spilling out under it.
+// Doors for games that aren't ready yet are boarded over, with "SOON".
+FURNITURE_DRAWERS.gamePortal = function gamePortal(ctx, f) {
+  const game = CONFIG.minigames.games.find((g) => g.id === f.game) ?? { name: "?", color: "#888888" };
+  const a = toScreen(f.x, f.y);
+  const w = f.w * TILE, x = a.x, bottom = a.y, top = a.y - WALL_HEIGHT + 3;
+  const dw = w * 0.62, dx = x + (w - dw) / 2, dy = top + 9;
+  // The frame and the door.
+  ctx.fillStyle = "#3a2f4a";
+  ctx.fillRect(dx - 3, dy - 3, dw + 6, bottom - dy + 3);
+  const door = ctx.createLinearGradient(0, dy, 0, bottom);
+  door.addColorStop(0, shadeColor(game.color, 18));
+  door.addColorStop(1, shadeColor(game.color, -30));
+  ctx.fillStyle = door;
+  ctx.fillRect(dx, dy, dw, bottom - dy);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.fillRect(dx, dy, 1.5, bottom - dy);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.fillRect(dx + dw / 2 - 0.5, dy + 3, 1, bottom - dy - 5);
+  // The round window, glowing.
+  ctx.fillStyle = "#2a2438";
+  ctx.beginPath();
+  ctx.arc(dx + dw / 2, dy + 8, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = game.soon ? "#3a3448" : "#fff0c0";
+  ctx.beginPath();
+  ctx.arc(dx + dw / 2, dy + 8, 3.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f2d45c"; // the knob
+  ctx.beginPath();
+  ctx.arc(dx + dw - 3.5, dy + (bottom - dy) * 0.6, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  // The sign over the door.
+  ctx.fillStyle = "#1e1a2a";
+  roundRectPath(ctx, x + 1, top - 2, w - 2, 9, 2);
+  ctx.fill();
+  ctx.fillStyle = game.soon ? "#8a8494" : game.color;
+  ctx.font = "800 5.5px 'Quicksand', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(game.name.toUpperCase(), x + w / 2, top + 4.5);
+  ctx.textAlign = "left";
+  if (game.soon) {
+    // Boarded over, for now.
+    ctx.fillStyle = "#8a6444";
+    ctx.save();
+    ctx.translate(dx + dw / 2, dy + (bottom - dy) / 2);
+    ctx.rotate(-0.35);
+    ctx.fillRect(-dw * 0.6, -2.5, dw * 1.2, 5);
+    ctx.rotate(0.7);
+    ctx.fillRect(-dw * 0.6, -2.5, dw * 1.2, 5);
+    ctx.restore();
+    ctx.fillStyle = "#f2d45c";
+    ctx.font = "800 6px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SOON", dx + dw / 2, bottom - 4);
+    ctx.textAlign = "left";
+  } else {
+    const glow = ctx.createLinearGradient(0, bottom, 0, bottom + 8);
+    glow.addColorStop(0, "rgba(255, 240, 190, 0.35)");
+    glow.addColorStop(1, "rgba(255, 240, 190, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(dx, bottom, dw, 8);
+  }
+};
+
 // A little plush: a round body with stubby arms, a round head with ears,
 // and a face (`face(x, y)` draws it, at the head's middle).
 function drawPlush(ctx, f, color, face) {

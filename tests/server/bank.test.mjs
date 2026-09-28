@@ -274,3 +274,22 @@ test("arcade: the claw and the capsules cost crumbs, and the server decides", as
   await seed("Bruno", { crumbs: 2 });
   assert.equal((await bank("Bruno", "arcadeClaw")).status, 409, "5 crumbs a go");
 });
+
+// --- Mini games (Update 10) ---
+test("mini games: a round's crumbs can't beat the clock, and there's a daily cap", async () => {
+  await seed("Alice", { crumbs: 0, minis: {} });
+  assert.equal((await bank("Alice", "miniStart", { game: "ghostHunt" })).status, 400, "that door doesn't open yet");
+  const { data: start } = await bank("Alice", "miniStart", { game: "crumbRush" });
+  const end = await bank("Alice", "miniEnd", { id: start.result.id, score: 5000 });
+  assert.equal(end.status, 200);
+  assert.ok(end.data.result.score <= 4, `an instant 5000 counts as a few points at most (got ${end.data.result.score})`);
+  assert.ok(end.data.result.crumbs <= 1);
+  assert.equal((await bank("Alice", "miniEnd", { id: start.result.id, score: 5 })).status, 409, "a round only ends once");
+  // Near the day's cap: only what's left of it is paid.
+  await seed("Bruno", { crumbs: 0, minis: { day: 0 } });
+  const { data: s2 } = await bank("Bruno", "miniStart", { game: "scarecrow" });
+  const e2 = await bank("Bruno", "miniEnd", { id: s2.result.id, score: 1 });
+  assert.equal(e2.status, 200);
+  assert.equal(e2.data.result.crumbs, 2, "1 point at The Scarecrow is 2 crumbs");
+  assert.equal(e2.data.wallet.minis.best.scarecrow, 1);
+});

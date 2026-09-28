@@ -97,6 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
+import { initMinigames, openPortal, portalHint } from "./minigames.js";
 import { initArcade, openCabinet, openPrizeCounter, useClaw, useCapsule } from "./arcade.js";
 import { initNight, openToolbox, catchFirefly, fireflyHere, watchSwarm, checkMothSighting, maybeLampVisit, fullMoonHello } from "./night.js";
 import { initExtras, isExtrasOpen, makeWish, wellHint, openTv, openLibrary, openPaint } from "./extras.js";
@@ -700,6 +701,7 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "tvSet") return "Press E to watch TV: cooking, weather and news.";
   if (nearestInteraction(player) === "libraryShelf") return "Press E to browse the shelves: books written by friends (or write one).";
   if (nearestInteraction(player) === "paint") return "Press E to paint it.";
+  if (nearestInteraction(player) === "gamePortal") return portalHint(gamePortalNear(player));
   if (nearestInteraction(player) === "arcadeGame") return `Press E to play ${CONFIG.arcade.games.find((g) => g.id === arcadeCabinetNear(player)?.game)?.name ?? "the cabinet"}.`;
   if (nearestInteraction(player) === "clawMachine") return `Press E for a go on the claw machine (${CONFIG.arcade.claw.cost} crumbs).`;
   if (nearestInteraction(player) === "capsuleMachine") return `Press E for a capsule (${CONFIG.arcade.capsule.cost} crumbs): eight pins to collect.`;
@@ -876,7 +878,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Kitchen & Trade (Update 5).
-  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)), toolbox: openToolbox, porchSwarm: watchSwarm, arcadeGame: () => openCabinet(arcadeCabinetNear(player)), prizeCounter: openPrizeCounter, clawMachine: useClaw, capsuleMachine: useCapsule }[nearestInteraction(player)];
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)), toolbox: openToolbox, porchSwarm: watchSwarm, arcadeGame: () => openCabinet(arcadeCabinetNear(player)), gamePortal: () => openPortal(gamePortalNear(player)), prizeCounter: openPrizeCounter, clawMachine: useClaw, capsuleMachine: useCapsule }[nearestInteraction(player)];
   if (key === "e" && kitchenAction) {
     for (const k in keysDown) keysDown[k] = false;
     kitchenAction();
@@ -2350,6 +2352,7 @@ initKitchen({ notice: (text, ms) => showNotice(text, ms) });
 initExtras({ notice: (text, ms) => showNotice(text, ms) });
 initNight({ notice: (text, ms) => showNotice(text, ms) });
 initArcade({ notice: (text, ms) => showNotice(text, ms) });
+initMinigames({ notice: (text, ms) => showNotice(text, ms), name: () => myName, color: () => myColor });
 
 initAchievements({
   announce: (id) => {

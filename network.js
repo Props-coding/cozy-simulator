@@ -39,6 +39,8 @@ let externalOnChat = null;
 let chatAction = null;
 let externalOnTheater = null;
 let theaterAction = null;
+let gamesAction = null; // (mini games: lobbies, starts and results, Update 10)
+let externalOnGames = null;
 let externalOnBoard = null;
 let boardAction = null;
 let kanbanAction = null;
@@ -133,6 +135,16 @@ export function onTheater(callback) {
 export function sendTheater(message, peerIds) {
   if (!peerIds || peerIds.length === 0) return;
   theaterAction?.send(message, { target: peerIds });
+}
+
+// Mini games messages (Update 10): who's ready at a door, a round
+// starting, and scores at the end (see minigames.js).
+export function onGames(callback) {
+  externalOnGames = callback;
+}
+export function sendGames(message, peerIds) {
+  if (!peerIds || peerIds.length === 0) return;
+  gamesAction?.send(message, { target: peerIds });
 }
 
 // A friend started an emote (or stopped one: id is null).
@@ -264,6 +276,9 @@ export function connectToRoom(myName, myColor) {
 
   gardenAction = room.makeAction("garden");
   gardenAction.onMessage = () => externalOnGarden?.();
+
+  gamesAction = room.makeAction("games");
+  gamesAction.onMessage = (message, { peerId }) => externalOnGames?.(message, peerId);
 
   theaterAction = room.makeAction("theater");
   theaterAction.onMessage = (message, { peerId }) => externalOnTheater?.(message, peerId);

@@ -452,8 +452,10 @@ const BASE_FURNITURE = [
   { kind: "elevatorDoor", x: 21.65, y: SUITE + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 2, solid: false },
 
   // --- The Games floor (Update 9) ---
-  // The corridor: a runner, lamps, plants. Its north wall is kept clear for
-  // the mini games' doors (Update 10).
+  // The corridor: a runner, plants, and along its north wall, the mini
+  // games' doors (Update 10): one for each game in config.js minigames,
+  // press E at one for its lobby.
+  ...CONFIG.minigames.games.map((g, i) => ({ kind: "gamePortal", x: 1.2 + i * 2.6, y: GAMES, w: 1.5, game: g.id, solid: false })),
   { kind: "rug", x: 1.5, y: GAMES + 0.95, w: 21, h: 0.95, color: "#4a4a7a", solid: false },
   { kind: "palm", x: 0.2, y: GAMES + 0.1, w: 0.6, h: 0.6 },
   { kind: "palm", x: 23.2, y: GAMES + 0.1, w: 0.6, h: 0.6 },
@@ -768,6 +770,13 @@ function fishingSpot(player) {
 }
 
 // Your own fish tank, if you're standing within a step of it (in your bedroom).
+// The mini game door you're standing at (Update 10), or null.
+function gamePortalNear(player) {
+  if (floorOf(player.y) !== GAMES_FLOOR) return null;
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.find((f) => f.kind === "gamePortal" && cx > f.x - 0.3 && cx < f.x + f.w + 0.3 && cy - f.y < 1.2) ?? null;
+}
+
 // The Arcade cabinet you're standing at (Update 9), or null.
 function arcadeCabinetNear(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
@@ -2277,6 +2286,7 @@ function nearestInteraction(player) {
   // The Arcade (Update 9): the cabinets, the claw, the capsules and the
   // prize counter.
   near("arcadeGame", 0.8);
+  if (gamePortalNear(player)) options.push(["gamePortal", 0.5]);
   near("clawMachine", 0.9);
   near("capsuleMachine", 0.9);
   near("prizeCounter", 1.0);

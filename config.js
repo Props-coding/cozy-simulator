@@ -288,6 +288,26 @@ const CONFIG = {
   // Put 2 to 4 things in the pot and cook: a known mix makes that dish
   // (and it's added to your recipe book); anything else makes a Burnt
   // Mystery (the raccoons will buy it, as junk).
+  // --- Mini games (Update 10) ---
+  // Each has a door on the Games floor's corridor. `seconds`: how long a
+  // round lasts. Crumbs for a round: `crumbsPerPoint` of your score, up to
+  // `maxCrumbs`, and up to `crumbsPerDay` in all a day. (The house server
+  // checks the score against the time played: no more than `maxPerSecond`
+  // points a second, plus `base`.) `color`: the door's paint.
+  minigames: {
+    crumbsPerDay: 60,
+    games: [
+      { id: "snowball", name: "Snowball Arena", color: "#8fd0f0", seconds: 60, maxPerSecond: 1.5, base: 3, crumbsPerPoint: 0.5, maxCrumbs: 15, blurb: "A snowy courtyard full of cheeky snow critters. Hit them before they hit you!", how: "WASD or arrow keys to move, click to throw a snowball." },
+      { id: "crumbRush", name: "Crumb Rush", color: "#e8b84a", seconds: 45, maxPerSecond: 3, base: 3, crumbsPerPoint: 0.25, maxCrumbs: 15, blurb: "The kitchen floor is covered in crumbs. Grab them all before the robot vacuum does!", how: "WASD or arrow keys to move. Golden crumbs are worth three. Don't get vacuumed." },
+      { id: "treasureDive", name: "Treasure Dive", color: "#3f8ab0", seconds: 60, maxPerSecond: 2, base: 3, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "Dive the pond's deep end for coins and pearls. Mind the jellyfish, and come up for air.", how: "Space (or up) to swim up, left and right to steer. Bubbles refill your air." },
+      { id: "scarecrow", name: "The Scarecrow", color: "#c9a45a", seconds: 60, maxPerSecond: 0.4, base: 1, crumbsPerPoint: 2, maxCrumbs: 15, blurb: "Sneak across the field to the scarecrow. Freeze when it turns around!", how: "Arrow keys or WASD to sneak. If it sees you move, back to the start." },
+      { id: "ghostHunt", name: "Ghost Hunt", color: "#b8a8d8", soon: true },
+      { id: "nightMeadow", name: "Night Meadow", color: "#3a4a6a", soon: true },
+      { id: "kitchenRush", name: "Kitchen Rush", color: "#e05a47", soon: true },
+      { id: "cellarCrawl", name: "Cellar Crawl", color: "#6a5a4a", soon: true },
+    ],
+  },
+
   // --- The Arcade (Update 9) ---
   arcade: {
     // The cabinets. Tickets for a play: `ticketsPerPoint` of your score, up

@@ -780,6 +780,13 @@ function fillWallet(w) {
   w.arcade.cashed ??= 0;
   w.arcade.pins ??= {};
   w.arcade.play ??= null;
+  // Mini games (Update 10): the round going on, today's crumbs from them,
+  // and your best score in each.
+  w.minis ??= {};
+  w.minis.play ??= null;
+  w.minis.day ??= 0;
+  w.minis.earned ??= 0;
+  w.minis.best ??= {};
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -869,7 +876,7 @@ function tasteOf(id, item) {
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log, lesson } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, arcade: { tickets: w.arcade.tickets, won: arcadeToday(w).won, cashed: arcadeToday(w).cashed, pins: w.arcade.pins }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, arcade: { tickets: w.arcade.tickets, won: arcadeToday(w).won, cashed: arcadeToday(w).cashed, pins: w.arcade.pins }, minis: { earned: w.minis.day === hometownDay() ? w.minis.earned : 0, best: w.minis.best }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -1606,6 +1613,35 @@ const BANK = {
     const crop = crops[Math.floor(Math.random() * crops.length)];
     putIn(w, `seed:${crop.id}`, 1);
     return { text, seed: crop.id };
+  },
+
+  // --- Mini games (Update 10) ---
+  // A round starts: the house server notes the game and the time.
+  miniStart(w, b) {
+    const game = GAME.CONFIG.minigames.games.find((g) => g.id === b.game && !g.soon);
+    if (!game) throw new Oops(400, "That door doesn't open yet.");
+    w.minis.play = { game: game.id, at: Date.now(), id: newId() };
+    return { id: w.minis.play.id };
+  },
+  // A round ends: the score (no more than the time allows), crumbs for it
+  // (within the day's cap), and your best.
+  miniEnd(w, b, ev) {
+    const play = w.minis.play;
+    if (!play || play.id !== b.id) throw new Oops(409, "That round isn't running.");
+    w.minis.play = null;
+    const cfg = GAME.CONFIG.minigames;
+    const game = cfg.games.find((g) => g.id === play.game);
+    const seconds = Math.min(game.seconds + 5, (Date.now() - play.at) / 1000);
+    const score = Math.max(0, Math.min(Math.floor(game.base + seconds * game.maxPerSecond), Math.floor(Number(b.score) || 0)));
+    const day = hometownDay();
+    if (w.minis.day !== day) Object.assign(w.minis, { day, earned: 0 });
+    const crumbs = Math.max(0, Math.min(Math.floor(score * game.crumbsPerPoint), game.maxCrumbs, cfg.crumbsPerDay - w.minis.earned));
+    w.minis.earned += crumbs;
+    earn(w, crumbs, ev);
+    const best = score > (w.minis.best[game.id] ?? 0);
+    if (best) w.minis.best = { ...w.minis.best, [game.id]: score };
+    if (seconds >= Math.min(10, game.seconds)) grant(w, "firstMinigame", ev);
+    return { score, crumbs, best, capped: w.minis.earned >= cfg.crumbsPerDay };
   },
 
   // --- The Arcade (Update 9) ---

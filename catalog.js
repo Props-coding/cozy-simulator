@@ -188,6 +188,8 @@ const ACHIEVEMENT_LIST = [
   { id: "author", name: "Published", desc: "Write a book for the Library.", crumbs: 15, server: true },
   { id: "cloverFriend", name: "Best Buns", desc: "Reach 10 hearts with Clover.", crumbs: 50, server: true },
   { id: "mortimerFriend", name: "Night Owls", desc: "Reach 10 hearts with Mortimer.", crumbs: 50, server: true },
+  { id: "firstMinigame", name: "Game On", desc: "Finish a round of a mini game.", crumbs: 5, server: true },
+  { id: "miniChampion", name: "Champion", desc: "Top a round of a mini game played with friends.", crumbs: 15 },
   { id: "firstTickets", name: "Tickets, Please", desc: "Win tickets at an Arcade cabinet.", crumbs: 5, server: true },
   { id: "highScore", name: "High Score", desc: "Top a cabinet's high score board.", crumbs: 20, server: true },
   { id: "clawWin", name: "Claw Master", desc: "Win a plush from the claw machine.", crumbs: 10, server: true },

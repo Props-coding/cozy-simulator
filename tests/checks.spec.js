@@ -192,3 +192,27 @@ test("Arcade: play a cabinet, a go on the claw, and the elevator home", async ({
   expect(await frameErrors(page)).toEqual([]);
   expect(problems).toEqual([]);
 });
+
+test("Mini games: a door's lobby, and a round starting", async ({ page }) => {
+  const problems = await enterHouse(page);
+  await goTo(page, { name: "games corridor", spot: () => {
+    const door = FURNITURE.find((f) => f.kind === "gamePortal" && f.game === "crumbRush");
+    return { x: door.x + door.w / 2 - 0.3, y: door.y + 0.4 };
+  } });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await expect(page.locator("#extras-title")).toHaveText("Crumb Rush");
+  await expect(page.locator(".mini-who li")).toHaveCount(1);
+  await page.click("#extras-body .warm-button"); // Start
+  await expect(page.locator(".mini-screen")).toBeVisible();
+  await page.waitForTimeout(5000); // (the countdown, then playing)
+  await page.locator(".mini-screen").focus();
+  await page.keyboard.down("ArrowRight");
+  await page.waitForTimeout(600);
+  await page.keyboard.up("ArrowRight");
+  await page.locator("#extras-panel").screenshot({ path: "tests/looks/mini-round.png" }).catch(() => {});
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#extras-panel")).toBeHidden();
+  expect(await frameErrors(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});

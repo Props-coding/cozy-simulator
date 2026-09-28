@@ -461,6 +461,19 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - From the review: the camera now shows the whole Games floor (it was cutting off the bottom of the Arcade), outdoor weather and night shading no longer paint over it (one shared "indoor floor" check now), each game has its own longest play for the score check (Moth Catcher 45 seconds), a game can't start behind a closed panel, the empty high score board reads properly, lives show as words, the plushies, prize counter and capsule globe have outlines and texture (plushies on the counter), the corridor's palms stand where you can see them, and the prize counter won't take tickets for a room prize you already have 99 of.
   - **Needs the server deployed** (server.mjs, config.js, catalog.js, world.js).
 
+- Build 0.81 (overnight): Update 10, Mini Games, part 1. (No bus trips: the mini games live on the Games floor, behind doors along its corridor's north wall.)
+  - The frame every game plugs into (minigames.js): the door (press E) opens its lobby (what the game is, how to play, your best, and who's standing at the door with you). Anyone presses Start: everyone at the door gets the same 3-2-1 countdown and plays the same round (the same layout, from one shared seed), each on their own screen, for the highest score. Alone, it's just you. Then the results (everyone's scores for the round, your crumbs, your best), Play again or Back to the floor. Topping a round with friends earns the Champion badge.
+  - Crumbs from the house server: your score (checked against the time played) times the game's rate, up to 15 a round and 60 a day from all the games (`minigames` in config.js). New badges: Game On (finish a round), Champion.
+  - The first four games:
+    - Snowball Arena (60 s): walk a snowy courtyard, click to throw snowballs at cheeky snow critters; they lob snowballs back (a hit freezes you a moment).
+    - Crumb Rush (45 s): grab the crumbs on the kitchen floor (golden ones are worth three) before the robot vacuum hoovers them up, and don't get vacuumed yourself.
+    - Treasure Dive (60 s): swim the deep end for coins and pearls, mind the jellyfish, and come up for air (bubbles help).
+    - The Scarecrow (60 s): red light, green light. Sneak to the scarecrow while it looks away; it wobbles before it turns, and if it sees you move, back to the start.
+  - The other four doors (Ghost Hunt, Night Meadow, Kitchen Rush, Cellar Crawl) are boarded up with "SOON" until part 2.
+  - How "together" works (decided overnight): it's the same round at the same time with the same layout and a shared results board, not a shared screen where you see each other inside the game. That keeps it simple and smooth over friends' connections; a truly shared arena could come later.
+  - Tests: a server test (a round's crumbs can't beat the clock, a round ends once, the payout and your best) and a house test (a door's lobby, starting a round).
+  - **Needs the server deployed** (server.mjs, config.js, catalog.js, world.js).
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 
