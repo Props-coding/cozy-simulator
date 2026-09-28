@@ -25,7 +25,7 @@ import { sendGardenPing, onGardenPing } from "./network.js";
 import { playClickSound, playCrumbSound, playWaterSound, playPlantSound, playHarvestSound } from "./audio.js";
 import { unlock } from "./achievements.js";
 import { playAchievementSound } from "./audio.js";
-import { crumbBalance } from "./shop.js";
+import { crumbBalance, talk, talkChoicesFor } from "./shop.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
 import { bank, applyBank, myWallet } from "./bank.js";
 import { recipeShopRows, dishesToSell } from "./kitchen.js";
@@ -55,14 +55,20 @@ let hooks = { color: () => "#999999", notice: () => {} };
 const serverNow = () => Date.now() + clockOffset;
 
 // --- Hazel's lesson (Update 8) ---
-// "none" (not met her yet), "started" (she gave you a radish seed) or
-// "done" (you've harvested). The house server keeps it. (An older server
-// doesn't say: then everyone counts as done.)
+// Like Otis's fishing lesson: Hazel talks in the speech box (like the
+// raccoons), gives you a radish seed, and coaches you through planting,
+// watering and harvesting it (her tips show in the same box, without
+// stopping you). Then you show her your radishes, she buys one, and she's
+// off to her farm. The house server keeps where you are with it:
+// "none", "started", "harvested" (waiting to show her) or "done". (An
+// older server doesn't say: then everyone counts as done.)
 const lesson = () => myWallet().gardenLesson ?? "done";
 const inLesson = () => lesson() === "started";
+let hazelLingers = false; // (she finishes saying goodbye before she goes)
 window.addEventListener("bank-changed", () => {
-  HAZEL.atFarm = lesson() === "done";
+  HAZEL.atFarm = lesson() === "done" && !hazelLingers;
 });
+const HAZEL_VOICE = { name: "Hazel", color: "#6a9a5a", pitch: 440 };
 // Which beds are where ("yard" or "farm"), and what grows in each.
 const bedPlace = (bed) => GARDEN_BEDS[bed]?.place ?? "yard";
 const growsIn = (crop, bed) => bedPlace(bed) === "farm" || !!crop.starter;
@@ -185,16 +191,7 @@ function timeText(hours) {
 export function gardenHint(bed) {
   const plot = state.plots[bed];
   if (lesson() === "none") return "An empty bed. Hazel, by her seed stand just west of here, will show you how to garden.";
-  if (inLesson()) {
-    // Hazel's lesson, step by step.
-    if (!plot) return myLessonPlot() ? "" : "Hazel: \"That's the one! Press E to plant your radish seed.\"";
-    if (plot.lesson && isMine(plot)) {
-      const g = growthOf(plot);
-      if (g.dry) return "Hazel: \"Now it needs a drink. Press E to water it.\"";
-      if (g.stage < 4) return `Hazel: "Lovely! Now we wait. It'll be ready in about ${timeText(g.hoursLeft)}. (Real crops take longer!)"`;
-      return "Hazel: \"It's ripe! Press E to pull it up.\"";
-    }
-  }
+  if (inLesson() && !plot && !myLessonPlot()) return "An empty starter bed. Press E to plant your radish seed.";
   if (!plot) {
     if (myPlotCount() >= CONFIG.garden.maxPlotsPerPlayer) return `An empty bed. You're already growing in ${CONFIG.garden.maxPlotsPerPlayer} beds, the most at once.`;
     if (basketItems("seed:").length === 0) return bedPlace(bed) === "farm" ? "An empty bed. Hazel sells seeds at her farm stand, up by the barn." : "An empty bed. Seeds are at Hazel's stand, just west of here.";
@@ -241,13 +238,30 @@ async function harvest(bed, plot) {
   const n = result.n;
   playHarvestSound();
   hooks.notice(`You harvested ${n} ${n === 1 ? crop.name.toLowerCase() : plural(crop)}! They're in your basket.`);
-  if (result.lesson) setTimeout(lessonDone, 2600);
+  if (result.lesson) harvestedAt = performance.now();
 }
 
-// Your first harvest: Hazel cheers, and heads off to her farm.
-function lessonDone() {
-  playAchievementSound();
-  hooks.notice("Hazel: \"Your very first harvest! You're a natural. I'm heading back to my farm, where the big fields are: take the bus by the gate and come see me. My seed stand here is self-serve now, for radishes, lettuce and carrots.\"", 12000);
+// What Hazel says while you garden in her lesson: [voice, line] for the
+// speech box (main.js hands it to fishing.js's coach, which shows one
+// character's tip at a time), or null. `bed`: the bed you're at, if any.
+let harvestedAt = 0;
+export function gardenCoachLine(bed) {
+  const say = (line) => [HAZEL_VOICE, line];
+  if (lesson() === "harvested") return performance.now() - harvestedAt < 9000 ? say("look at those! bring them over to me, dear, let's have a look.") : null;
+  if (!inLesson()) return null;
+  const mine = myLessonPlot();
+  if (!mine) return bed >= 0 && bedPlace(bed) === "yard" && !state.plots[bed] ? say("that bed's perfect. press E and plant your radish seed.") : null;
+  const g = growthOf(mine);
+  if (g.dry) return say("see the little droplet? it's thirsty. press E on the bed to water it.");
+  if (g.stage < 4) return bed >= 0 ? say(`lovely! now we wait. it'll be ready in about ${timeText(g.hoursLeft)}. real crops take longer!`) : null;
+  return say("it's ripe! see it sparkle? press E on the bed to pull it up.");
+}
+
+// The hint by Hazel (main.js).
+export function hazelHint() {
+  if (HAZEL.atFarm) return "Press E to talk to Hazel: seeds for sale, and she buys your harvest.";
+  if (lesson() === "harvested") return "Press E to show Hazel your radishes.";
+  return "Press E to talk to Hazel. She'll show you how to garden.";
 }
 
 // "radishes", "strawberries", "tomatoes", "carrots"...
@@ -316,7 +330,7 @@ async function plant(crop) {
   const result = await act({ action: "plant", bed, crop: crop.id, color: hooks.color() }); // (the seed comes out of your basket)
   if (!result?.planted) return;
   playPlantSound();
-  if (result.lesson) return hooks.notice("Hazel: \"Well done! See the little droplet? It's thirsty. Press E on the bed to water it.\"", 7000);
+  if (result.lesson) return; // (Hazel takes it from here: see gardenCoachLine)
   hooks.notice(`You planted ${crop.name.toLowerCase()}. It's watered for now. Come back to check on it!`);
 }
 
@@ -348,39 +362,38 @@ const HAZEL_HELLO = [
 const HAZEL_THANKS = ["plant it somewhere sunny!", "don't forget to water it, dear.", "oh, that one's a favorite of mine.", "grow big, little seed!"];
 const HAZEL_BUY_CROP = ["ooh, lovely! these'll go in a pie.", "look at that! you've got a green thumb.", "fresh from the garden. wonderful.", "i'll take those off your paws. thank you!"];
 
-// The lesson's steps, as rows in Hazel's window.
-const LESSON_STEPS = [
-  { icon: "seed:radish", name: "1. Plant", note: "Walk into the starter patch (the little fenced garden next to Hazel) and press E at an empty bed. Pick your radish seed." },
-  { icon: "watering", name: "2. Water", note: "A droplet over a bed means it's thirsty. Press E on it to water. Anyone can water anyone's bed, and real rain waters them all." },
-  { icon: "crop:radish", name: "3. Wait", note: "Your lesson radish grows in a few minutes. Real crops take from an hour (radishes) to two days (blueberries)." },
-  { icon: "basket", name: "4. Harvest", note: "When it sparkles, it's ripe: press E to pull it up. Crops go in your basket; Hazel buys them." },
-];
-
 export function talkToHazel() {
-  const base = { name: "Hazel", portrait: { f: "hazel", w: 0.55, h: 0.4 }, color: "#6a9a5a", pitch: 440 };
-  // Brand new: she gives you a seed and starts the lesson.
+  const H = HAZEL_VOICE;
+  // Brand new: she offers a seed and to show you how.
   if (lesson() === "none") {
-    return openNpc({
-      ...base,
-      hello: "oh! a new gardener! i'm hazel. never grown anything before? here, take this radish seed. i'll show you how.",
-      tabs: [
-        {
-          id: "lesson",
-          label: "Gardening lesson",
-          items: () => [{ icon: "seed:radish", name: "A radish seed, from Hazel", note: "Free! Hazel will walk you through planting, watering and your first harvest.", actions: [{ label: "Take it", run: startLesson }] }],
-        },
-      ],
-    });
+    return talk([
+      [H, "oh! a new face! i'm hazel. i grow things. well, i help them grow."],
+      [H, "never gardened before? here, take a radish seed. radishes are the quickest, perfect for a first try."],
+    ], () => talkChoicesFor([
+      ["Teach me to garden!", startLesson],
+      ["Maybe later", () => talk([[H, "whenever you're ready, dear. the soil's not going anywhere."]])],
+    ]));
   }
+  // Mid-lesson: how it goes, again.
   if (inLesson()) {
-    return openNpc({
-      ...base,
-      hello: ["go on, dear, the starter patch is right there!", "don't forget to water it. everything's thirstier than you'd think.", "radishes are the quickest. perfect for a first try."],
-      tabs: [{ id: "lesson", label: "Lesson", items: () => LESSON_STEPS }],
-    });
+    return talk([
+      [H, "the starter patch is right there, the little fenced garden. walk up to an empty bed and press E to plant."],
+      [H, "a droplet over a bed means it's thirsty: press E on it to water. anyone can water anyone's bed, and real rain waters them all."],
+      [H, "when it sparkles, it's ripe. press E to pull it up, and bring it here!"],
+    ]);
+  }
+  // Your first harvest is in the basket: show her.
+  if (lesson() === "harvested") {
+    return talk([[H, "ooh, you grew something! let's see!"]], () => talkChoicesFor([
+      ["Here you go", handOverHarvest],
+      ["Not yet", () => talk([[H, "take your time, dear. i'll be right here."]])],
+    ]));
   }
   openNpc({
-    ...base,
+    name: "Hazel",
+    portrait: { f: "hazel", w: 0.55, h: 0.4 },
+    color: H.color,
+    pitch: H.pitch,
     hello: HAZEL_HELLO,
     tabs: [
       { id: "buy", label: "Buy seeds", items: () => seedsForSale() },
@@ -391,11 +404,34 @@ export function talkToHazel() {
 }
 
 async function startLesson() {
-  if (!(await bank("startGardenLesson"))) return null;
+  if (!(await bank("startGardenLesson"))) return;
   playAchievementSound();
-  hooks.notice("Hazel gave you a radish seed. Plant it in the starter patch: walk up to an empty bed and press E.", 7000);
-  setTimeout(talkToHazel, 0); // (her window now shows the lesson's steps)
-  return null;
+  talk([
+    [HAZEL_VOICE, "here you are, one radish seed. it's yours."],
+    [HAZEL_VOICE, "plant it in the starter patch, the little fenced garden right there. walk up to an empty bed and press E."],
+    [HAZEL_VOICE, "i'll be right here, telling you what to do next. it's what i do best."],
+  ]);
+}
+
+// You show Hazel your first harvest: she buys a radish, says goodbye, and
+// heads off to her farm.
+async function handOverHarvest() {
+  hazelLingers = true;
+  const got = await bank("gardenLessonHandIn");
+  if (!got) {
+    hazelLingers = false;
+    return talk([[HAZEL_VOICE, "hm, nothing in your basket? plant another and bring it here, dear."]]);
+  }
+  playCrumbSound();
+  const name = CROPS[got.crop]?.name.toLowerCase() ?? "crop";
+  talk([
+    [HAZEL_VOICE, `a ${name}! crisp and lovely. here, ${got.crumbs} crumbs for it.`],
+    [HAZEL_VOICE, "you've got a green thumb, dear. i'm heading back to my farm, where the big fields are."],
+    [HAZEL_VOICE, "take the bus by the gate and come see me! my stand here is self-serve now, for radishes, lettuce and carrots."],
+  ], () => {
+    hazelLingers = false;
+    HAZEL.atFarm = true;
+  });
 }
 
 // Hazel's seed stand in the yard, once she's moved to her farm: a

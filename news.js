@@ -2,9 +2,9 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
-    build: "0.751",
+    build: "0.761",
     title: "The Farm, and Hazel's gardening lesson",
-    text: "Gus's bus goes to the Farm now! Hazel's farm has a big red barn and silo, her farm stand, a chicken run with a coop and a few busy hens, a windmill, an orchard of apple trees, a pumpkin patch with sunflowers and a scarecrow, a well, a picnic table and a bench, and sixteen shared garden beds. Everything grows at the Farm. The garden at home is now a starter patch of three beds for quick crops (radishes, lettuce and carrots); crops that were already growing in the old beds carry on at the Farm. You can each grow in four beds at once now (it was three). New to gardening? Hazel waits by her seed stand in the yard, gives you a radish seed and shows you how to plant, water and harvest; your lesson radish grows in a few minutes. After that she's at her farm, and her yard stand is self-serve for beginner seeds. Voice is on at the Farm.",
+    text: "Gus's bus goes to the Farm now! Hazel's farm has a big red barn and silo, her farm stand, a chicken run with a coop and a few busy hens, a windmill, an orchard of apple trees, a pumpkin patch with sunflowers and a scarecrow, a well, a picnic table and a bench, and sixteen shared garden beds. Everything grows at the Farm. The garden at home is now a starter patch of three beds for quick crops (radishes, lettuce and carrots); crops that were already growing in the old beds carry on at the Farm. You can each grow in four beds at once now (it was three). New to gardening? Hazel waits by her seed stand in the yard. She gives you a radish seed and talks you through planting, watering and harvesting it (your lesson radish grows in a few minutes), then you show her what you grew. After that she's at her farm, and her yard stand is self-serve for beginner seeds. Voice is on at the Farm.",
   },
   {
     build: "0.72",
@@ -14,7 +14,7 @@ export const NEWS = [
   {
     build: "0.71",
     title: "Bus trips: Willow Lake, and Otis's fishing lesson",
-    text: "The little bus is always parked at the stop now. Walk up to its door and press E to talk to Gus and pick a trip. First stop: Willow Lake, a big lake in the pines with a long pier, rowboats, a bait shack, benches and lamps, fireflies at night and voice on for everyone there. The lake is where the rare, epic and legendary fish live; the pond at home is for beginners (common and uncommon fish only). New to fishing? Otis waits by the pond, lends you his twig rod and talks you through your first catch, which can't get away. After that he moves to the lake, and leaves a bait box by the pond for worms, crickets and selling fish. The Farm trip is coming soon.",
+    text: "The little bus is always parked at the stop now. Walk up to its door and press E to talk to Gus and pick a trip. First stop: Willow Lake, a big lake in the pines with a long pier, rowboats, a bait shack, benches and lamps, fireflies at night and voice on for everyone there. The lake is where the rare, epic and legendary fish live; the pond at home is for beginners (common and uncommon fish only). New to fishing? Otis waits by the pond, lends you his twig rod and talks you through your first catch (hand it to him and he'll pay you for it). After that he moves to the lake, and leaves a bait box by the pond for worms, crickets and selling fish. The Farm trip is coming soon.",
   },
   {
     build: "0.70",

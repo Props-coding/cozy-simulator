@@ -314,9 +314,9 @@ function paintFrontSteps(ctx) {
 // --- Moving water ---
 // Little ripple rings and sparkles drifting over the pond, drawn every
 // frame (flat on the ground, under everything standing).
-function drawPondShimmer(ctx) {
+function drawPondShimmer(ctx, players = []) {
   if (viewFloor === LAKE_FLOOR) return drawLakeShimmer(ctx); // (render-lake.js)
-  if (viewFloor === ALLEY_FLOOR) return drawAlleyLife(ctx); // (render-alley.js)
+  if (viewFloor === ALLEY_FLOOR) return drawAlleyLife(ctx, players); // (render-alley.js; players splash in the puddles)
   if (viewFloor === FARM_FLOOR) return drawFarmLife(ctx); // (render-farm.js)
   if (viewFloor !== YARD_FLOOR) return;
   const t = performance.now() / 1000;

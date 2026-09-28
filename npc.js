@@ -107,14 +107,20 @@ export function refreshNpc() {
     heartsRow.title = `Friendship: ${hearts.have} of ${hearts.max} hearts`;
   }
   for (const b of tabsRow.children) b.classList.toggle("active", b.dataset.tab === tab);
-  list.innerHTML = "";
   const current = npc.tabs.find((t) => t.id === tab);
-  const items = current.items();
+  renderRows(list, current.items(), current.empty, npcSay, refreshNpc);
+}
+
+// Fills `list` with item rows (a picture, a name, a note, a price and
+// buttons). Also used by the Porch Swap website (market.js). `say` gets
+// what a button's action answers; `redraw` runs after it.
+export function renderRows(list, items, empty, say, redraw) {
+  list.innerHTML = "";
   if (items.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "npc-empty";
-    empty.textContent = current.empty ?? "Nothing here right now.";
-    list.appendChild(empty);
+    const none = document.createElement("p");
+    none.className = "npc-empty";
+    none.textContent = empty ?? "Nothing here right now.";
+    list.appendChild(none);
     return;
   }
   for (const item of items) {
@@ -139,8 +145,8 @@ export function refreshNpc() {
       button.addEventListener("click", async () => {
         for (const b of list.querySelectorAll("button")) b.disabled = true;
         const line = await action.run();
-        if (line) npcSay(line);
-        refreshNpc();
+        if (line) say(line);
+        redraw();
       });
       row.appendChild(button);
     }

@@ -22,7 +22,7 @@
 import { uiIcon } from "./ui-icons.js";
 import { setPicture } from "./pictures.js";
 import { playClickSound, playCrumbSound, playWaterSound, playHarvestSound, playAchievementSound } from "./audio.js";
-import { crumbBalance } from "./shop.js";
+import { crumbBalance, talk, talkChoicesFor, coach } from "./shop.js";
 import { registerItems, basketCount, basketItems, itemInfo } from "./basket.js";
 import { bank, myWallet } from "./bank.js";
 import { serverApi } from "./account.js";
@@ -47,15 +47,51 @@ const mine = () => myWallet().fishing;
 
 // --- Otis's lesson ---
 // New fishers find Otis at the pond. He lends you his twig rod and talks
-// you through your first catch, which can't get away. After that he's at
-// Willow Lake (for you), and a bait box stands in his spot at the pond.
-// The server keeps where you are with it: mine().lesson is "none", "started"
-// or "done".
+// you through your first catch (which, quietly, can't get away), in the
+// speech box like the raccoons. Then you hand him the fish, he pays you
+// for it, and he's off: after that he's at Willow Lake (for you), and a
+// bait box stands in his spot at the pond.
+// The server keeps where you are with it: mine().lesson is "none",
+// "started", "caught" (the fish is in your basket, waiting for Otis) or
+// "done".
 const lesson = () => mine().lesson ?? "done";
 const inLesson = () => lesson() === "started";
+let otisLingers = false; // (he finishes saying goodbye before he goes)
 window.addEventListener("bank-changed", () => {
-  OTIS.atLake = lesson() === "done";
+  OTIS.atLake = lesson() === "done" && !otisLingers;
 });
+const OTIS_VOICE = { name: "Otis", color: "#5a7aa0", pitch: 280 };
+
+// What Otis says while you fish your first fish: in the speech box at the
+// top, without stopping you (main.js asks every frame). `spot`: the water
+// you're at, if any. A quick word (nudge) wins for a couple of seconds.
+// `other`: another teacher's [voice, line] (Hazel's, see garden.js), shown
+// when Otis has nothing to say (one tip at a time).
+let nudged = { text: "", until: 0 };
+let caughtAt = 0;
+function nudge(text) {
+  nudged = { text, until: performance.now() + 2500 };
+}
+export function updateLessonCoach(spot, other = null) {
+  let line = "";
+  if (performance.now() < nudged.until) line = nudged.text;
+  else if (inLesson()) {
+    if (!state) line = spot ? "right here's good! press E to cast your line." : "";
+    else if (state.phase === "waiting") line = "now we wait. see those shadows? one will swim up to your bobber.";
+    else if (state.phase === "nibble") line = "easy... that's just a nibble. wait for the big splash!";
+    else if (state.phase === "bite") line = "that's a bite! press E!";
+    else if (state.phase === "reeling") line = "hold space to reel! if the line bar goes red, ease off a moment.";
+  } else if (lesson() === "caught" && performance.now() - caughtAt < 9000) line = "you got one! bring it over here, let's have a look!";
+  if (!line && other) return coach(other[0], other[1]);
+  coach(OTIS_VOICE, line);
+}
+
+// The hint by Otis (main.js).
+export function otisHint() {
+  if (OTIS.atLake) return "Press E to talk to Otis: rods, bait, selling fish and your fish log.";
+  if (lesson() === "caught") return "Press E to show Otis your fish.";
+  return "Press E to talk to Otis. He'll teach you to fish.";
+}
 
 // Your fishing level (1 and up), from your XP.
 export function fishingLevel(xp = mine().xp) {
@@ -121,13 +157,8 @@ export function fishingLine() {
 
 export function fishingHint(spot) {
   if (lesson() === "none") return "You'll need a fishing rod. Otis, the otter by the pond, will lend you one.";
-  // Otis's lesson: every step, spelled out.
-  if (inLesson()) {
-    if (!state) return "Otis: \"Stand at the water's edge (or on the dock) and press E to cast!\"";
-    if (state.phase === "waiting") return "Otis: \"Now we wait. See those shadows? One will swim up to your bobber.\"";
-    if (state.phase === "nibble") return "Otis: \"Easy... that's just a nibble. Wait for the big splash!\"";
-    if (state.phase === "bite") return "Otis: \"That's a bite! Press E!\"";
-  }
+  // (In Otis's lesson, he says it himself: updateLessonCoach.)
+  if (inLesson() && state) return "";
   if (!state) {
     const bait = baitInUse();
     const baitText = bait.price ? `${bait.name} ×${basketCount(`bait:${bait.id}`)}` : "no bait";
@@ -150,7 +181,7 @@ export function useFishing(spot) {
   if (!state) return spot && castAt(spot);
   if (state.phase === "bite") return hook();
   // (In the lesson, striking too soon doesn't scare the fish off.)
-  if (state.phase === "nibble" && inLesson()) return hooks.notice("Otis: \"Not yet! Wait for the real bite.\"");
+  if (state.phase === "nibble" && inLesson()) return nudge("not yet! that's only a nibble. wait for the real bite.");
   if (state.phase === "nibble") return stopFishing("Too soon! That was only a nibble, and the fish swam off. Cast again.");
   if (state.phase === "waiting") stopFishing("You reeled your line back in.");
 }
@@ -338,7 +369,7 @@ async function land() {
   const wasLesson = inLesson();
   const caught = await bank("land");
   if (!caught) return;
-  if (wasLesson && caught.fish) setTimeout(lessonDone, 2600);
+  if (wasLesson && caught.fish) caughtAt = performance.now(); // (Otis wants to see it)
   if (caught.junk) {
     const junk = CONFIG.junk.find((j) => j.id === caught.junk);
     playClickSound();
@@ -378,7 +409,7 @@ window.addEventListener("keydown", (e) => {
   } else if (key === "escape") {
     e.preventDefault();
     // (Not your first fish: Otis won't hear of it.)
-    if (inLesson()) return hooks.notice("Otis: \"Don't let it go! Keep reeling, you've got this.\"");
+    if (inLesson()) return nudge("don't let it go! keep reeling, you've got this.");
     failReel("You let it go.");
   }
 });
@@ -396,47 +427,38 @@ const OTIS_HELLO = [
   "the lake's where the real monsters live. the pond's for tiddlers.",
 ];
 
-// The four steps of Otis's lesson, as rows in his window.
-const LESSON_STEPS = [
-  { icon: "rod:twig", name: "1. Cast", note: "Stand at the water's edge (or on the little dock) and press E. You can also click the water to aim at a fish shadow." },
-  { icon: "unknown", name: "2. Wait", note: "Fish shadows swim about. Sooner or later one comes over to your bobber." },
-  { icon: "bait:worm", name: "3. Don't strike on a nibble", note: "The bobber twitches a few times first. Wait for the big splash and the \"!\", then press E." },
-  { icon: "fish:bluegill", name: "4. Reel it in", note: "Hold Space to reel. If the line bar turns red, let go for a moment. Your first fish can't get away, so take your time!" },
-];
-
 export function talkToOtis() {
-  const base = { name: "Otis", portrait: { f: "otis", w: 0.55, h: 0.4 }, color: "#5a7aa0", pitch: 280 };
-  // Brand new: he lends you his twig rod and starts the lesson.
+  const O = OTIS_VOICE;
+  // Brand new: he offers to lend you his twig rod and show you how.
   if (lesson() === "none") {
-    return openNpc({
-      ...base,
-      hello: "oh, a new face! i'm otis. never fished before? here, borrow my old twig rod. keep it, actually. i'll show you how.",
-      tabs: [
-        {
-          id: "lesson",
-          label: "Fishing lesson",
-          items: () => [
-            {
-              icon: "rod:twig",
-              name: "Otis's twig rod, and 3 worms",
-              note: "Free! Otis will talk you through your very first catch.",
-              actions: [{ label: "Take it", run: startLesson }],
-            },
-          ],
-        },
-      ],
-    });
+    return talk([
+      [O, "oh, a new face! i'm otis. i fish. mostly i fish."],
+      [O, "never fished before? here, you can borrow my old twig rod. and a few worms."],
+    ], () => talkChoicesFor([
+      ["Teach me to fish!", startLesson],
+      ["Maybe later", () => talk([[O, "no rush. the fish aren't going anywhere. well, they are, but slowly."]])],
+    ]));
   }
-  // Mid-lesson: the steps again.
+  // Mid-lesson: how it goes, again.
   if (inLesson()) {
-    return openNpc({
-      ...base,
-      hello: ["go on, give it a cast! i'm right here.", "the water's that way! stand at the edge and press E.", "don't worry, your first one won't get away. otis promise."],
-      tabs: [{ id: "lesson", label: "Lesson", items: () => LESSON_STEPS }],
-    });
+    return talk([
+      [O, "go on, give it a cast! stand at the water's edge, or on the little dock, and press E."],
+      [O, "then wait for a shadow to swim up. the bobber twitches when one nibbles. don't strike yet!"],
+      [O, "when it splashes and the \"!\" pops up, press E. then hold space to reel it in."],
+    ]);
+  }
+  // Your first fish is in the basket: hand it over.
+  if (lesson() === "caught") {
+    return talk([[O, "ooh, you caught one! let's see it!"]], () => talkChoicesFor([
+      ["Here you go", handOverFish],
+      ["Not yet", () => talk([[O, "take your time. i'll be right here. admiring the water."]])],
+    ]));
   }
   openNpc({
-    ...base,
+    name: "Otis",
+    portrait: { f: "otis", w: 0.55, h: 0.4 },
+    color: O.color,
+    pitch: O.pitch,
     hello: OTIS_HELLO,
     tabs: [
       { id: "rods", label: "Rods", items: rodRows },
@@ -449,18 +471,34 @@ export function talkToOtis() {
 }
 
 async function startLesson() {
-  if (!(await bank("startLesson"))) return null;
+  if (!(await bank("startLesson"))) return;
   playAchievementSound();
-  hooks.notice("Otis gave you his twig rod and 3 worms. Stand at the water's edge and press E to cast!", 7000);
-  // (His window now shows the lesson's steps.)
-  setTimeout(talkToOtis, 0);
-  return null;
+  talk([
+    [OTIS_VOICE, "here you go! a twig rod and three worms. keep them."],
+    [OTIS_VOICE, "stand at the water's edge (or on the little dock) and press E to cast. you can click the water to aim at a fish, too."],
+    [OTIS_VOICE, "i'll be right here, telling you what to do. it's what i'm best at."],
+  ]);
 }
 
-// Your first fish is in the basket: Otis cheers, and heads off to the lake.
-function lessonDone() {
-  playAchievementSound();
-  hooks.notice("Otis: \"You did it, your first fish! Keep the rod. I'm off to Willow Lake, where the big ones are. Take the bus by the gate and come find me! I've left a bait box here by the pond.\"", 12000);
+// You hand Otis your first fish: he pays you for it, says goodbye, and
+// heads off to Willow Lake.
+async function handOverFish() {
+  otisLingers = true;
+  const got = await bank("lessonHandIn");
+  if (!got) {
+    otisLingers = false;
+    return talk([[OTIS_VOICE, "hm, no fish in your basket? catch another one and bring it here!"]]);
+  }
+  playCrumbSound();
+  const name = FISH[got.fish]?.name.toLowerCase() ?? "fish";
+  talk([
+    [OTIS_VOICE, `a ${name}! a fine one, too. here, ${got.crumbs} crumbs for it. and keep the rod.`],
+    [OTIS_VOICE, "you're a natural. i'm off to willow lake, where the big ones are."],
+    [OTIS_VOICE, "take the bus by the gate and come find me! i've left a bait box here by the pond."],
+  ], () => {
+    otisLingers = false;
+    OTIS.atLake = true;
+  });
 }
 
 // --- Otis's bait box (at the pond, once he's moved to the lake) ---

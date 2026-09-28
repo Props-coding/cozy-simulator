@@ -50,7 +50,7 @@ function manholeNear(player) {
 
 // Where you come out after climbing through (beside the other manhole).
 function manholeArrival(side) {
-  return side === "yard" ? { ...ALLEY_SPAWN } : { x: 14.35, y: YARD + 8.05 };
+  return side === "yard" ? { ...ALLEY_SPAWN } : { x: 13.7, y: YARD + 9.6 }; // (on the sidewalk, beside it)
 }
 
 // Which floor a grid y position is on: 0 the ground floor, 1 business,
@@ -605,7 +605,7 @@ function fenceRun(x1, y1, x2, y2, style = "picket", base = YARD) {
 // Flat things painted on the ground: the paths, the road and sidewalk, and
 // the pond (see outdoors.js). The paths make one loop with no dead ends:
 // the porch steps, through the garden, down past the bus stop, west past
-// the trading post to the pond, up past Hazel, and back along the porch.
+// the old trading post spot to the pond, up past Hazel, and back along the porch.
 // Short spurs lead into the campfire ring, onto the dock, and out through
 // the fence gate to the bus shelter. Each is a line of points (yard spots:
 // x, and y from the yard's top) drawn as a smooth curve `w` wide; `stone`
@@ -614,7 +614,7 @@ const YARD_PATHS = [
   { stone: true, w: 1.5, points: [[18.0, -2.75], [18.0, -2.0], [18.0, -1.2]] }, // flagstones from the porch steps down to the garden gate
   { w: 0.95, points: [[17.4, -2.3], [15.4, -2.28], [12.6, -2.25], [10.5, -2.2], [9.4, -1.7], [9.15, -0.6]] }, // along the porch, west to Hazel's corner
   { w: 0.95, points: [[9.15, -0.6], [9.2, 1.5], [9.3, 3.2], [9.25, 4.8], [9.45, 6.3], [10.1, 7.1], [11.2, 7.3]] }, // down past Otis to the pond
-  { w: 1.0, points: [[11.0, 7.3], [13.5, 7.25], [15.6, 7.2], [17.3, 7.15], [18.0, 7.1]] }, // along the bottom, past the trading post
+  { w: 1.0, points: [[11.0, 7.3], [13.5, 7.25], [15.6, 7.2], [17.3, 7.15], [18.0, 7.1]] }, // along the bottom, past the bush where the trading post stood
   { w: 1.1, points: [[18.0, -1.3], [18.0, 1.5], [18.0, 4.6], [18.0, 6.2], [18.0, 7.1]] }, // through the garden, out of its bottom gate
   { w: 1.1, points: [[18.0, 7.1], [18.0, 8.5], [18.0, 9.6]] }, // through the fence gate to the bus stop
   { w: 0.85, points: [[9.15, -1.15], [7.8, -1.05], [6.5, -1.2], [5.8, -1.4]] }, // into the campfire ring
@@ -843,23 +843,26 @@ const YARD_FURNITURE = [
 
   // Where the raccoons used to lurk. They've moved to the back alley
   // (Update 7) and taken their bins with them: the grass has grown back,
-  // with a few flowers and a rock, and all that's left is a manhole cover,
-  // a little off its seat, with a note taped beside it and a faint trail of
-  // paw prints leading to it. Press E on it to climb down.
+  // with a few flowers and a rock. Their way down is out on the sidewalk,
+  // west of the bus stop: a manhole cover, a little off its seat, with a note
+  // taped beside it and a faint trail of paw prints leading to it along the
+  // sidewalk. Press E on it to climb down.
   { kind: "wildflowers", x: 10.8, y: YARD + 8.25, w: 0.9, h: 0.3, solid: false },
   { kind: "rock", x: 11.85, y: YARD + 8.55, w: 0.4, h: 0.25, solid: false },
   { kind: "wildflowers", x: 12.3, y: YARD + 7.55, w: 0.5, h: 0.3, solid: false },
-  { kind: "pawTrail", x: 13.7, y: YARD + 7.6, w: 2.4, h: 0.5, points: [[16.0, 7.65], [15.4, 7.8], [14.85, 7.95], [14.35, 8.1]], solid: false },
-  { kind: "manhole", x: 13.35, y: YARD + 8.0, w: 0.8, h: 0.5, solid: false, way: "down", tilt: true, note: "Moved. -R" },
+  { kind: "pawTrail", x: 13.1, y: YARD + 9.5, w: 1.6, h: 0.5, points: [[14.5, 9.95], [14.05, 9.85], [13.6, 9.95], [13.15, 9.85]], solid: false },
+  { kind: "manhole", x: 12.2, y: YARD + 9.55, w: 0.8, h: 0.5, solid: false, way: "down", tilt: true, note: "Moved. -R" },
 
   // The bus stop by the road: a shelter with a bench (press E to sit and
   // wait), the bus stop sign with its timetable, and the bus itself, which
   // drives along the road on a schedule (see outdoors.js and bus.js).
   { kind: "busShelter", x: 19.4, y: YARD + 9.5, w: 2.5, h: 0.75 },
-  // Kitchen & Trade (Update 5): the trading post stall below the garden,
-  // facing the path, and where Juniper the traveling merchant sets out her
-  // blanket of wares by the bus stop on her day (drawn only then).
-  { kind: "tradingPost", x: 11.7, y: YARD + 6.0, w: 1.9, h: 0.6 },
+  // Kitchen & Trade (Update 5): where Juniper the traveling merchant sets
+  // out her blanket of wares by the bus stop on her day (drawn only then).
+  // (The trading post stall stood here; trading moved to Porch Swap, a
+  // website on the bedroom laptop. A bush and flowers where it was.)
+  { kind: "bush", x: 12.3, y: YARD + 5.95, w: 0.9, h: 0.55, n: 4 },
+  { kind: "wildflowers", x: 11.6, y: YARD + 6.35, w: 0.7, h: 0.3, solid: false },
   { kind: "merchantWares", x: 19.7, y: YARD + 8.0, w: 1.6, h: 0.5, solid: false },
   { kind: "juniper", x: 19.0, y: YARD + 8.25, w: 0.55, h: 0.4, solid: false },
   { kind: "busSign", x: 22.6, y: YARD + 10.0, w: 0.3, h: 0.2 },
@@ -1031,8 +1034,8 @@ const ALLEY_FURNITURE = [
   { kind: "pallets", x: 10.85, y: ALLEY + 3.3, w: 1.0, h: 0.4 },
   // The manhole you climb up out of (and back down), steaming a little.
   { kind: "manhole", x: 3.2, y: ALLEY + 1.8, w: 0.8, h: 0.5, solid: false, way: "up" },
-  // The streetlight on the street corner past the barrier.
-  { kind: "streetLamp", x: 0.45, y: ALLEY + 0.3, w: 0.3, h: 0.2, solid: false },
+  // The streetlight on the sidewalk past the barrier.
+  { kind: "streetLamp", x: 0.62, y: ALLEY + 1.3, w: 0.3, h: 0.2, solid: false },
 ];
 
 // Where you come up in the alley: beside the manhole.
@@ -2107,8 +2110,8 @@ function nearestInteraction(player) {
   const otisDistance = otis ? Math.hypot(cx - (otis.x + otis.w / 2), cy - (otis.y + otis.h / 2)) : Infinity;
   if (otisDistance < 1.3) options.push(["otis", otisDistance]);
   if (fishingSpot(player)) options.push(["fishing", 1.35]);
-  // Kitchen & Trade (Update 5): the stove, the fridge, the cookie jar, the
-  // trading post, and Juniper (on her day).
+  // Kitchen & Trade (Update 5): the stove, the fridge, the cookie jar, and
+  // Juniper (on her day).
   const near = (kind, most) => {
     const f = FURNITURE.find((x) => x.kind === kind && floorOf(x.y) === floorOf(player.y));
     if (!f) return;
@@ -2118,9 +2121,8 @@ function nearestInteraction(player) {
   near("stove", 0.9);
   near("fridge", 0.9);
   near("cookieJar", 0.9);
-  near("tradingPost", 1.0);
-  if (OTIS.atLake) near("baitBox", 0.9);
-  if (HAZEL.atFarm) near("seedStand", 0.9); // (Hazel's seed box in the yard, once she's at the Farm) // (Otis's bait box at the pond, once he's at the Lake)
+  if (OTIS.atLake) near("baitBox", 0.9); // (Otis's bait box at the pond, once he's at the Lake)
+  if (HAZEL.atFarm) near("seedStand", 0.9); // (Hazel's seed box in the yard, once she's at the Farm)
   if (MERCHANT.here) near("juniper", 1.1);
   // Residents (Update 6), wherever they are right now.
   const resident = residentInReach(player);

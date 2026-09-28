@@ -88,16 +88,16 @@ import { openMenu, closeMenu, isMenuOpen } from "./menu.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass, initAccountHooks, checkAdminOrder, serverApi } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
-import { startGarden, gardenHint, useGardenBed, talkToHazel, openSeedBox, isSeedPickerOpen } from "./garden.js";
+import { startGarden, gardenHint, useGardenBed, talkToHazel, openSeedBox, isSeedPickerOpen, gardenCoachLine, hazelHint } from "./garden.js";
 import { isNpcOpen } from "./npc.js";
 import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
-import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openBaitBox, openFishTank, castAt } from "./fishing.js";
+import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openBaitBox, openFishTank, castAt, updateLessonCoach, otisHint } from "./fishing.js";
 import { isBasketOpen } from "./basket.js";
 import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from "./kitchen.js";
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
-import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
+import { startMarket, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -412,7 +412,7 @@ joinButton.addEventListener("click", async () => {
     },
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
-  startMarket(); // the trading post, and whether Juniper's here (market.js)
+  startMarket(); // Porch Swap (the trading website), and whether Juniper's here (market.js)
   initAdmin({
     teleport,
     rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)),
@@ -660,6 +660,8 @@ function studySignText() {
 // The short prompt under the room name, like "Press E to build your office".
 // If there's nothing else to say and a pet is close by, it offers a pat.
 function actionHintFor(room) {
+  // (Otis in your first fishing lesson, or Hazel in your first gardening one)
+  updateLessonCoach(isFishing() || nearestInteraction(player) === "fishing" ? fishingSpot(player) : null, gardenCoachLine(gardenBedInReach(player)));
   const hint = roomHintFor(room);
   if (hint || uiBusy()) return hint;
   const pet = petInReach();
@@ -673,16 +675,15 @@ function roomHintFor(room) {
   if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
-  if (nearestInteraction(player) === "hazel") return HAZEL.atFarm ? "Press E to talk to Hazel: seeds for sale, and she buys your harvest." : "Press E to talk to Hazel. She'll show you how to garden.";
+  if (nearestInteraction(player) === "hazel") return hazelHint();
   if (nearestInteraction(player) === "seedStand") return "Press E for Hazel's self-serve seed stand: beginner seeds, and a basket to sell your harvest.";
   if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
-  if (nearestInteraction(player) === "otis") return OTIS.atLake ? "Press E to talk to Otis: rods, bait, selling fish and your fish log." : "Press E to talk to Otis. He'll teach you to fish.";
+  if (nearestInteraction(player) === "otis") return otisHint();
   if (nearestInteraction(player) === "baitBox") return "Press E to open Otis's bait box: worms, crickets, and a slot to sell your fish.";
   if (nearestInteraction(player) === "fishTank") return "Your fish tank. Press E to add or take out fish.";
   if (nearestInteraction(player) === "stove") return "Press E to cook: your recipes, or experiment and see what happens.";
   if (nearestInteraction(player) === "fridge") return "Press E to open the fridge and pantry: eggs, milk, flour, sugar and more.";
   if (nearestInteraction(player) === "cookieJar") return "Press E for today's fortune cookie.";
-  if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
@@ -853,7 +854,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Kitchen & Trade (Update 5).
-  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, tradingPost: openTradingPost, juniper: talkToJuniper }[nearestInteraction(player)];
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper }[nearestInteraction(player)];
   if (key === "e" && kitchenAction) {
     for (const k in keysDown) keysDown[k] = false;
     kitchenAction();

@@ -362,11 +362,8 @@ function applyGarden(body, user, w, ev) {
       putIn(w, `crop:${crop.id}`, n);
       addStat(w, "harvests", n);
       if (crop.id === "pumpkin") grant(w, "greatPumpkin", ev);
-      // Your lesson's first harvest: Hazel heads off to her farm.
-      if (plot.lesson && w.gardenLesson === "started") {
-        w.gardenLesson = "done";
-        ev.push({ type: "gardenLesson" });
-      }
+      // Your lesson's first harvest: now show it to Hazel.
+      if (plot.lesson && w.gardenLesson === "started") w.gardenLesson = "harvested";
       return { crop: plot.crop, n, lesson: !!plot.lesson };
     }
     delete plots[bed];
@@ -768,8 +765,9 @@ function fillWallet(w) {
   // a fish before counts as done.
   w.fishing.lesson ??= Object.keys(w.fishing.log ?? {}).length ? "done" : "none";
   // Hazel's gardening lesson (Update 8), the same way: "none", "started"
-  // (she gave you a radish seed) or "done" (you've harvested). Anyone who
-  // has gardened before counts as done.
+  // (she gave you a radish seed), "harvested" (your radishes are in your
+  // basket, waiting to show her) or "done". Anyone who has gardened before
+  // counts as done.
   w.gardenLesson ??= (w.stats?.harvests ?? 0) > 0 || !!w.unlocked?.firstSeed || Object.keys(w.basket ?? {}).some((id) => /^(seed|crop):/.test(id)) ? "done" : "none";
   return w;
 }
@@ -1089,7 +1087,7 @@ function marketState() {
     const sellerUser = db.users[l.seller];
     if (sellerUser) {
       putIn(ensureWallet(sellerUser, l.seller), l.item, l.n);
-      sendLetter(sellerUser, { from: "Trading Post", subject: `Back from the stall: ${l.n} × ${itemLabel(l.item)}`, body: `Nobody took your ${l.n} × ${itemLabel(l.item)} this week, so it's back in your basket.` });
+      sendLetter(sellerUser, { from: "Porch Swap", subject: `Back from Porch Swap: ${l.n} × ${itemLabel(l.item)}`, body: `Nobody took your ${l.n} × ${itemLabel(l.item)} this week, so it's back in your basket.` });
     }
   }
   db.market.listings = db.market.listings.filter((x) => x.at >= old);
@@ -1206,6 +1204,20 @@ const BANK = {
     return {};
   },
 
+  // You show Hazel your first harvest: she buys a radish, pays you, and
+  // heads off to her farm.
+  gardenLessonHandIn(w, b, ev) {
+    if (w.gardenLesson !== "harvested") throw new Oops(409, "Hazel is waiting for your first harvest.");
+    const id = have(w, "crop:radish") ? "radish" : Object.keys(w.basket).find((k) => k.startsWith("crop:"))?.slice(5);
+    if (!id) throw new Oops(409, "You'll need something you grew to show Hazel. Plant another!");
+    takeOut(w, `crop:${id}`, 1);
+    const crumbs = GAME.CONFIG.garden.lessonReward ?? 15;
+    earn(w, crumbs, ev);
+    w.gardenLesson = "done";
+    ev.push({ type: "gardenLesson" });
+    return { crop: id, crumbs };
+  },
+
   // --- Otis and the pond ---
   // Otis's lesson begins: he lends you his old twig rod (and a few worms).
   startLesson(w) {
@@ -1216,6 +1228,21 @@ const BANK = {
     f.rod = "twig";
     putIn(w, "bait:worm", 3);
     return {};
+  },
+  // Your first fish, handed to Otis: he takes it (that one, or any fish if
+  // it's gone), pays you for it, and heads off to Willow Lake.
+  lessonHandIn(w, b, ev) {
+    const f = w.fishing;
+    if (f.lesson !== "caught") throw new Oops(409, "Otis is waiting for your first fish.");
+    const id = have(w, `fish:${f.lessonFish}`) ? f.lessonFish : Object.keys(w.basket).find((k) => k.startsWith("fish:"))?.slice(5);
+    if (!id) throw new Oops(409, "You'll need a fish to show Otis. Catch another!");
+    takeOut(w, `fish:${id}`, 1);
+    const crumbs = GAME.CONFIG.fishing.lessonReward ?? 25;
+    earn(w, crumbs, ev);
+    f.lesson = "done";
+    delete f.lessonFish;
+    ev.push({ type: "lesson" });
+    return { fish: id, crumbs };
   },
   useRod(w, b) {
     if (!w.fishing.rods.includes(b.id)) throw new Oops(409, "You don't have that rod.");
@@ -1288,8 +1315,8 @@ const BANK = {
     if (!p || Date.now() - p.at > (f.lesson === "started" ? 600_000 : 60_000)) throw new Oops(409, "It got away.");
     f.pending = null;
     if (f.lesson === "started" && p.fish) {
-      f.lesson = "done"; // (Otis heads off to Willow Lake)
-      ev.push({ type: "lesson" });
+      f.lesson = "caught"; // (now you hand it to Otis: lessonHandIn)
+      f.lessonFish = p.fish;
     }
     const levelBefore = fishingLevel(f.xp);
     if (p.junk) {
@@ -1526,7 +1553,7 @@ const BANK = {
     const n = amount(b.n, 1, MAX_STACK);
     if (!knownItem(item)) throw new Oops(400, "That can't be traded.");
     const market = marketState();
-    if (market.listings.filter((l) => l.seller === key).length >= GAME.CONFIG.tradingPost.maxListings) throw new Oops(409, `You can have ${GAME.CONFIG.tradingPost.maxListings} things at the stall at once.`);
+    if (market.listings.filter((l) => l.seller === key).length >= GAME.CONFIG.tradingPost.maxListings) throw new Oops(409, `You can have ${GAME.CONFIG.tradingPost.maxListings} things up on Porch Swap at once.`);
     let price = null, want = null;
     if (b.want) {
       want = { item: String(b.want.item ?? ""), n: amount(b.want.n, 1, MAX_STACK) };
@@ -1544,14 +1571,14 @@ const BANK = {
     market.listings.push({ id: newId(), seller: key, sellerName: user.name, item, n, price, want, at: Date.now(), ...(forKey ? { for: forKey, forName: db.users[forKey].name } : {}) });
     if (forKey) {
       const ask = price !== null ? `${price} crumbs` : `${want.n} × ${itemLabel(want.item)}`;
-      sendLetter(db.users[forKey], { from: user.name, subject: `A trade offer: ${n} × ${itemLabel(item)}`, body: `${user.name} offered you ${n} × ${itemLabel(item)} for ${ask}. It's waiting for you at the trading post (the orange-striped stall in the yard), under "For you".` });
+      sendLetter(db.users[forKey], { from: user.name, subject: `A trade offer: ${n} × ${itemLabel(item)}`, body: `${user.name} offered you ${n} × ${itemLabel(item)} for ${ask}. It's waiting for you on Porch Swap (the website on the laptop in your bedroom), marked "For you".` });
     }
     return {};
   },
   tradeCancel(w, b, ev, { key }) {
     const market = marketState();
     const listing = market.listings.find((l) => l.id === b.id && l.seller === key);
-    if (!listing) throw new Oops(404, "That's not at the stall any more.");
+    if (!listing) throw new Oops(404, "That's not up for trade any more.");
     market.listings = market.listings.filter((l) => l !== listing);
     putIn(w, listing.item, listing.n);
     return {};
@@ -1560,7 +1587,7 @@ const BANK = {
     const market = marketState();
     const listing = market.listings.find((l) => l.id === b.id);
     if (!listing) throw new Oops(404, "Someone got there first.");
-    if (listing.seller === key) throw new Oops(400, "That's yours! Take it back from Your stall instead.");
+    if (listing.seller === key) throw new Oops(400, "That's yours! Take it back from Your things instead.");
     if (listing.for && listing.for !== key) throw new Oops(403, "That offer is for someone else.");
     const sellerUser = db.users[listing.seller];
     if (!sellerUser) throw new Oops(404, "Whoever listed that has left the house.");
@@ -1579,7 +1606,7 @@ const BANK = {
     }
     market.listings = market.listings.filter((l) => l !== listing);
     putIn(w, listing.item, listing.n);
-    sendLetter(sellerUser, { from: "Trading Post", subject: `Sold: ${listing.n} × ${itemLabel(listing.item)}`, body: `${user.name} took your ${listing.n} × ${itemLabel(listing.item)} and paid ${paid}. It's already yours.` });
+    sendLetter(sellerUser, { from: "Porch Swap", subject: `Sold: ${listing.n} × ${itemLabel(listing.item)}`, body: `${user.name} took your ${listing.n} × ${itemLabel(listing.item)} and paid ${paid}. It's already yours.` });
     return { got: listing.item, n: listing.n };
   },
 

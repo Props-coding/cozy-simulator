@@ -401,6 +401,18 @@ canvas {
   animation: pop-in 0.18s ease-out;
 }
 
+/* Tips while you play (Otis coaching your first catch): the same box at
+   the top, not clickable, so your keys and the reeling bar stay free. */
+#talk-box.passive:not([hidden]) {
+  top: 30px;
+  bottom: auto;
+  min-height: 0;
+  padding: 22px 28px 16px;
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
 #talk-name {
   position: absolute;
   top: -17px;
@@ -5459,3 +5471,70 @@ canvas.item-picture {
   display: none;
 }
 
+
+/* Porch Swap: the trading website on the bedroom laptop (market.js).
+   Cream, with the old stall's orange and cream awning. */
+.laptop-page.swap-page:not([hidden]) {
+  position: relative;
+  padding: 0 0 14px;
+  background-color: #fbf4e8;
+  background-image: radial-gradient(rgba(201, 143, 60, 0.14) 1.2px, transparent 1.3px);
+  background-size: 16px 16px;
+}
+
+.swap-awning {
+  height: 24px;
+  background: repeating-linear-gradient(90deg, #e8893a 0 28px, #fbf1e0 28px 56px);
+  box-shadow: 0 3px 3px rgba(120, 70, 20, 0.15);
+}
+
+.swap-sign {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 22px 6px;
+}
+
+.swap-logo .ui-icon {
+  width: 40px;
+  height: 40px;
+  color: #c9702c;
+}
+
+.swap-words {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.swap-words strong {
+  font-size: 1.6em;
+  color: #b0602a;
+  line-height: 1.1;
+}
+
+.swap-words span {
+  color: #8a6a4a;
+  font-size: 0.9em;
+}
+
+.swap-says {
+  margin: 4px 22px 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fffaf2;
+  border: 2px dashed #efd3ae;
+  color: #6a4a30;
+  font-weight: 600;
+}
+
+.swap-tabs button {
+  --tab: #f0c490;
+}
+
+.swap-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 22px;
+}
