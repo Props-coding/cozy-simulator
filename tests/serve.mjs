@@ -20,6 +20,9 @@ const SWAPS = [
   ["config.js", /serverUrl: "[^"]*"/, `serverUrl: "${HOUSE}"`],
   ["index.html", "connect-src 'self'", `connect-src 'self' ${HOUSE}`],
   ["network.js", /"https:\/\/esm\.sh\/trystero@[^"]*"/, `"./tests/fake-trystero.js"`],
+  // (NO_OUTLINES=1: object outlines off. Some cloud computers have no
+  // graphics chip, and there the outline effect takes over a minute a frame.)
+  ...(process.env.NO_OUTLINES ? [["config.js", "outlines: true,", "outlines: false,"]] : []),
 ];
 
 createServer(async (req, res) => {

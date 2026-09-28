@@ -30,6 +30,7 @@ export default defineConfig({
     { name: "checks", testMatch: /checks\.spec\.js/ },
     { name: "gallery", testMatch: /gallery\.spec\.js/ }, // (every object side by side: tests/gallery/)
     { name: "look", testMatch: /look\.spec\.js/ }, // (pictures of chosen spots: tests/looks/)
+    { name: "friends", testMatch: /minigames\.spec\.js/, timeout: 240_000 }, // (two or three friends playing together)
     {
       name: "pictures",
       testMatch: /pictures\.spec\.js/,

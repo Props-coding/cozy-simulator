@@ -10,7 +10,8 @@
     "test:pictures": "playwright test --project=pictures",
     "test:pictures:update": "playwright test --project=pictures --update-snapshots",
     "gallery": "playwright test --project=gallery",
-    "look": "playwright test --project=look"
+    "look": "playwright test --project=look",
+    "test:friends": "playwright test --project=friends"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -97,7 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
-import { initMinigames, openPortal, portalHint } from "./minigames.js";
+import { initMinigames, openPortal, portalHint, isMiniOpen } from "./minigames.js";
 import { initArcade, openCabinet, openPrizeCounter, useClaw, useCapsule } from "./arcade.js";
 import { initNight, openToolbox, catchFirefly, fireflyHere, watchSwarm, checkMothSighting, maybeLampVisit, fullMoonHello } from "./night.js";
 import { initExtras, isExtrasOpen, makeWish, wellHint, openTv, openLibrary, openPaint } from "./extras.js";
@@ -1769,7 +1769,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isExtrasOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
+  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isExtrasOpen() || isMiniOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again
@@ -2352,7 +2352,9 @@ initKitchen({ notice: (text, ms) => showNotice(text, ms) });
 initExtras({ notice: (text, ms) => showNotice(text, ms) });
 initNight({ notice: (text, ms) => showNotice(text, ms) });
 initArcade({ notice: (text, ms) => showNotice(text, ms) });
-initMinigames({ notice: (text, ms) => showNotice(text, ms), name: () => myName, color: () => myColor });
+// (look: how a player is drawn right now, "me" or a friend's peer id,
+// so the mini games show everyone as their real character.)
+initMinigames({ notice: (text, ms) => showNotice(text, ms), name: () => myName, look: (id) => lastScenePlayers.find((p) => p.id === id) ?? null });
 
 initAchievements({
   announce: (id) => {
@@ -2554,6 +2556,7 @@ function readMovement(dt) {
 }
 
 let lastTime = performance.now();
+let pushingDoor = 0; // seconds spent walking into a mini game's door
 let timeSinceLastBroadcast = 0;
 const broadcastInterval = 1 / CONFIG.positionUpdatesPerSecond;
 let previousRoomId = null;
@@ -2701,6 +2704,13 @@ function frame(now) {
     stopMyEmote(); // walking off ends an emote
   }
   checkMySeat();
+  // Walking into a mini game's door (Update 10) opens it, like pressing E.
+  const door = dy < 0 && dx === 0 ? gamePortalNear(player) : null;
+  pushingDoor = door && player.y - door.y < 0.12 ? pushingDoor + dt : 0;
+  if (pushingDoor > 0.25) {
+    pushingDoor = 0;
+    openPortal(door);
+  }
   // Walking through a door between the house and the yard.
   const crossing = doorwayCrossing(player);
   if (crossing) {
