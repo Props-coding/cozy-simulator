@@ -120,6 +120,7 @@ const CONFIG = {
   // Every catch gives fishing XP; `levels` is the total XP for each level
   // (level 1 starts at 0). Your level decides which rods Otis will sell you.
   fishing: {
+    lessonReward: 25, // crumbs Otis pays for your very first fish (you hand it to him)
     biteSeconds: [8, 18],
     hookSeconds: 1.3,
     junkChance: 0.08,

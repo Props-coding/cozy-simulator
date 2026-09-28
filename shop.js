@@ -127,16 +127,20 @@ let lines = []; // what's left to say: [speaker, text] pairs
 let afterLines = null; // what happens once they've finished talking
 let typing = null; // the typewriter currently running, if any
 
-// True while the talking box or the shop is open (the game pauses your
-// walking and game keys meanwhile).
+// True while the talking box (a conversation, not just a tip) or the shop
+// is open (the game pauses your walking and game keys meanwhile).
 export function isShopBusy() {
-  return !talkBox.hidden || !shopPanel.hidden;
+  return (!talkBox.hidden && !talkBox.classList.contains("passive")) || !shopPanel.hidden;
 }
+
+// A speaker: one of the raccoons by name, or anyone else as
+// { name, color, pitch } (Otis uses the box too, see fishing.js).
+const voiceOf = (speaker) => RACCOONS[speaker] ?? speaker;
 
 // Types `text` into `el` a letter at a time, babbling in `speaker`'s voice.
 function typeOut(el, speaker, text, onDone) {
   typing?.stop();
-  typing = typeWithBabble(el, RACCOONS[speaker].pitch, text, () => {
+  typing = typeWithBabble(el, voiceOf(speaker).pitch, text, () => {
     typing = null;
     onDone?.();
   });
@@ -153,14 +157,17 @@ function nextLine() {
     return;
   }
   const [speaker, text] = lines.shift();
-  talkName.textContent = RACCOONS[speaker].name;
-  talkName.style.setProperty("--speaker", RACCOONS[speaker].color);
+  talkName.textContent = voiceOf(speaker).name;
+  talkName.style.setProperty("--speaker", voiceOf(speaker).color);
   talkNext.hidden = true;
   typeOut(talkText, speaker, text, () => (talkNext.hidden = false));
 }
 
-// Queues up some lines, and what to do when they're done.
+// Queues up some lines, and what to do when they're done. (Also used by
+// other characters: exported as talk.)
 function say(newLines, then = null) {
+  talkBox.classList.remove("passive");
+  coaching = "";
   talkBox.hidden = false;
   lines = [...newLines];
   afterLines = then;
@@ -199,6 +206,35 @@ function closeTalk() {
   lines = [];
   talkChoices.innerHTML = "";
   talkBox.hidden = true;
+  talkBox.classList.remove("passive");
+  coaching = "";
+}
+
+// For other characters: a conversation in the speech box (lines of
+// [speaker, text], then what happens next), and answer buttons.
+export const talk = say;
+export const talkChoicesFor = offerChoices;
+
+// A tip in the same speech box that doesn't stop you playing (no arrow,
+// no clicking, your keys still work): Otis coaching you while you fish.
+// An empty text puts it away. A real conversation always wins.
+let coaching = "";
+export function coach(speaker, text) {
+  const passive = talkBox.classList.contains("passive");
+  if (!talkBox.hidden && !passive) return;
+  if (!text) {
+    if (passive) closeTalk();
+    return;
+  }
+  if (text === coaching) return;
+  coaching = text;
+  talkBox.classList.add("passive");
+  talkBox.hidden = false;
+  talkChoices.innerHTML = "";
+  talkNext.hidden = true;
+  talkName.textContent = voiceOf(speaker).name;
+  talkName.style.setProperty("--speaker", voiceOf(speaker).color);
+  typeOut(talkText, speaker, text);
 }
 
 talkBox.addEventListener("click", advance);

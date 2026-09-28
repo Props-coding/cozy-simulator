@@ -401,6 +401,18 @@ canvas {
   animation: pop-in 0.18s ease-out;
 }
 
+/* Tips while you play (Otis coaching your first catch): the same box at
+   the top, not clickable, so your keys and the reeling bar stay free. */
+#talk-box.passive:not([hidden]) {
+  top: 30px;
+  bottom: auto;
+  min-height: 0;
+  padding: 22px 28px 16px;
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
 #talk-name {
   position: absolute;
   top: -17px;

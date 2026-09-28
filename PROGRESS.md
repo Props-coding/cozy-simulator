@@ -402,6 +402,11 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - The lights: no more strands hanging down to poles on the ground. They loop overhead between the walls instead (along the house's eave, across to the bricks, and along the brick wall). The neon's glow stays close to its sign and no longer washes over Reginald.
   - Puddles: irregular blobs in a few sizes, only in low spots (the gutter along the curb, by the storm drain, under the house's drainpipe, in front of the dumpster). Each shows the dusk sky's tint and reflects what's near it (the streetlight, the string lights, the neon), with a lighter wet rim. Drips land now and then (rings spreading out), and walking through one splashes.
 
+- Build 0.76: Otis talks like the raccoons.
+  - Otis's lesson now happens in the on-screen speech box (his name tag, words typed out in his voice) instead of the hint line under the house. While you fish your first fish, his tips show in the same box at the top of the screen without stopping you (cast, wait, nibble, bite, reel).
+  - Nothing tells you any more that the first fish can't get away (it still quietly can't).
+  - After your first catch you bring the fish to Otis and hand it over. He pays you for it (25 crumbs, `fishing.lessonReward` in config.js), says goodbye, and only then heads off to Willow Lake. (The house server has a new step for this: the lesson goes "started", then "caught", then "done".)
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 

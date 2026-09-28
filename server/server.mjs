@@ -1186,6 +1186,21 @@ const BANK = {
     putIn(w, "bait:worm", 3);
     return {};
   },
+  // Your first fish, handed to Otis: he takes it (that one, or any fish if
+  // it's gone), pays you for it, and heads off to Willow Lake.
+  lessonHandIn(w, b, ev) {
+    const f = w.fishing;
+    if (f.lesson !== "caught") throw new Oops(409, "Otis is waiting for your first fish.");
+    const id = have(w, `fish:${f.lessonFish}`) ? f.lessonFish : Object.keys(w.basket).find((k) => k.startsWith("fish:"))?.slice(5);
+    if (!id) throw new Oops(409, "You'll need a fish to show Otis. Catch another!");
+    takeOut(w, `fish:${id}`, 1);
+    const crumbs = GAME.CONFIG.fishing.lessonReward ?? 25;
+    earn(w, crumbs, ev);
+    f.lesson = "done";
+    delete f.lessonFish;
+    ev.push({ type: "lesson" });
+    return { fish: id, crumbs };
+  },
   useRod(w, b) {
     if (!w.fishing.rods.includes(b.id)) throw new Oops(409, "You don't have that rod.");
     w.fishing.rod = b.id;
@@ -1257,8 +1272,8 @@ const BANK = {
     if (!p || Date.now() - p.at > (f.lesson === "started" ? 600_000 : 60_000)) throw new Oops(409, "It got away.");
     f.pending = null;
     if (f.lesson === "started" && p.fish) {
-      f.lesson = "done"; // (Otis heads off to Willow Lake)
-      ev.push({ type: "lesson" });
+      f.lesson = "caught"; // (now you hand it to Otis: lessonHandIn)
+      f.lessonFish = p.fish;
     }
     const levelBefore = fishingLevel(f.xp);
     if (p.junk) {
