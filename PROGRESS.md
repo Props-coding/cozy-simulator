@@ -425,6 +425,15 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - From the review: a friend who has just connected no longer counts as standing in the hallway (so nobody hears them until their real position arrives); the carried piece while decorating gets its outline too; the autumn tree by the campfire moved left so it no longer hides the Campfire sign; old notes about the voice rules updated.
   - No server changes: nothing to deploy for this build.
 
+- Build 0.78 (overnight): Update 7, House Extras.
+  - The wishing well, in the yard where the trading stall used to be (press E): one coin (1 crumb) a day, and the house server picks a small surprise: a few crumbs (most often), a seed packet, worms, a pantry ingredient, or now and then a handful of crumbs. Settings: `extras.wishingWell` in config.js. New badge: Make a Wish.
+  - The Lounge TV (press E), facing the loveseat. Three channels: Cooking (one recipe a day, the same show for everyone, from the recipes you'd otherwise find by experimenting; watching it puts it in your recipe book), Weather (today's hometown weather, which picky fish are biting in it, and garden and night tips that are true right now), and News (a ticker: house fish records, what's up on Porch Swap, the newest Library books).
+  - Library books (press E at a Library shelf, or a tall library shelf in your own room): read books written by friends, or write your own (story, guide, lore, poem or diary; up to 6000 letters; 20 each). Three books are always there (the house's history, Otis's fishing guide, and a memoir by a tall gentleman). Authors can take their books back; admins can too. New badge: Published.
+  - Pixel art: a new Art aisle in Nest & Nook with a Blank Canvas (12), a Blank Poster (18) and a Blank Rug (25). Put one in your room, walk up to it and press E: paint it on a 16 by 16 grid with 16 colors (`extras.palette` in config.js). Everyone who visits your room sees it. Moving the piece keeps the painting.
+  - Fixed along the way: a fish tank (or a painting) in a room whose starter desk hadn't been saved yet could open the wrong piece.
+  - Tests: 4 new server tests (a wish a day, the cooking channel teaches once, only authors take books back, only real pixel art is kept) and 2 new house tests (the well, the TV and the shelves; painting and saving a canvas).
+  - **Needs the server deployed** (server.mjs, and config.js, catalog.js and world.js in the server's game folder) at the same time as this build goes live: the wish, the cooking channel, books and pixel art all need it.
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 

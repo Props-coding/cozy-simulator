@@ -284,6 +284,52 @@ const CONFIG = {
   // Put 2 to 4 things in the pot and cook: a known mix makes that dish
   // (and it's added to your recipe book); anything else makes a Burnt
   // Mystery (the raccoons will buy it, as junk).
+  // --- House extras (Update 7) ---
+  extras: {
+    // The wishing well in the yard: one coin (crumb) a day, and a small
+    // surprise. Each reward's `weight` is how likely it is compared with the
+    // others; crumbs rewards give between `min` and `max`.
+    wishingWell: {
+      cost: 1,
+      rewards: [
+        { kind: "crumbs", min: 2, max: 12, weight: 50 },
+        { kind: "seed", weight: 20 },
+        { kind: "bait", id: "worm", n: 3, weight: 15 },
+        { kind: "food", weight: 10 },
+        { kind: "crumbs", min: 20, max: 30, weight: 5 },
+      ],
+    },
+    // Pixel art (canvases, posters and rugs from Nest & Nook's art aisle):
+    // 16 by 16 squares, painted from these 16 colors (the first is the
+    // blank canvas).
+    palette: ["#f4ecdc", "#2e2a2a", "#7a5c3e", "#c8a27a", "#e05a47", "#f0a05a", "#f2c94c", "#8fc06a", "#3f7a42", "#7fc4d8", "#3a6ea5", "#8a6ab0", "#e89ab8", "#ffffff", "#9a958c", "#5a3a2a"],
+    // Library books: how long a book can be, and how many one person can
+    // have on the shelves.
+    bookLength: 6000,
+    booksEach: 20,
+    // A few books that are always on the Library's shelves.
+    libraryBooks: [
+      {
+        title: "A Short History of This House",
+        author: "Unknown (the handwriting is very neat)",
+        kind: "lore",
+        text: "Nobody remembers who built the house. The deed in the attic lists the owner as \"whoever is home\", which the town clerk accepted, apparently without questions.\n\nThe porch light has never been switched off. Not once. There is no switch.\n\nEvery few years someone finds a new room. Usually it is a closet. Once it was an elevator. Nobody asks where the elevator goes when nobody is in it.",
+      },
+      {
+        title: "Fishing for Beginners",
+        author: "Otis",
+        kind: "guide",
+        text: "hello! otis here.\n\n1. stand at the water's edge and press E. or click the water to aim at a shadow.\n2. wait. the bobber twitches when a fish nibbles. do NOT strike on a nibble. i cannot stress this enough.\n3. big splash and a \"!\"? press E!\n4. hold space to reel. line bar going red? let go a moment.\n\nthe big ones come out at night. the eels love rain. the lake has the fancy fish. the pond has tiddlers and boots.\n\n-o",
+      },
+      {
+        title: "Totally Normal Trash: A Memoir",
+        author: "R. (a tall gentleman)",
+        kind: "story",
+        text: "I have always been a tall gentleman. Ask anyone. Ask my legs.\n\nWe moved to the alley for the atmosphere. The yard had too much daylight and a hedgehog who kept asking about licenses. The alley has a cat, a neon sign, and a dumpster that is, legally speaking, not a shop.\n\nIf you find a note that says \"Moved\", it was probably me. I move a lot. For business reasons. Which I do not have. Because I am not a business.",
+      },
+    ],
+  },
+
   kitchen: {
     pantry: [
       { id: "flour", name: "Flour", price: 3, shelf: "pantry" },

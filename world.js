@@ -383,6 +383,9 @@ const BASE_FURNITURE = [
   { kind: "teaCart", x: 15.3, y: BUSINESS + 3.35, w: 1.2, h: 0.6 },
   { kind: "arcade", x: 16.9, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
   { kind: "lavaLamp", x: 14.4, y: BUSINESS + 7.3, w: 0.4, h: 0.4 },
+  // The TV (Update 7), facing the loveseat: cooking, weather and news
+  // channels (press E).
+  { kind: "tvSet", x: 9.05, y: BUSINESS + 7.1, w: 1.3, h: 0.5 },
   { kind: "monstera", x: 8.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
   { kind: "palm", x: 17.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
 
@@ -709,6 +712,13 @@ function fishingSpot(player) {
 }
 
 // Your own fish tank, if you're standing within a step of it (in your bedroom).
+// Your own canvas, poster or rug (Update 7) within reach, or null.
+const ART_KINDS = ["artCanvas", "artPoster", "artRug"];
+function myArtInReach(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  return FURNITURE.find((f) => ART_KINDS.includes(f.kind) && f.mine && floorOf(f.y) === floorOf(player.y) && Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - (f.h ?? 0.4))) < 0.9) ?? null;
+}
+
 function myFishTankInReach(player) {
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
   return FURNITURE.find((f) => f.kind === "fishTank" && f.mine && floorOf(f.y) === floorOf(player.y) && Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h)) < 0.9) ?? null;
@@ -861,7 +871,8 @@ const YARD_FURNITURE = [
   // out her blanket of wares by the bus stop on her day (drawn only then).
   // (The trading post stall stood here; trading moved to Porch Swap, a
   // website on the bedroom laptop. A bush and flowers where it was.)
-  { kind: "bush", x: 12.3, y: YARD + 5.95, w: 0.9, h: 0.55, n: 4 },
+  // The wishing well (Update 7): one coin a day, a small surprise.
+  { kind: "wishingWell", x: 12.0, y: YARD + 5.75, w: 1.1, h: 0.8 },
   { kind: "wildflowers", x: 11.6, y: YARD + 6.35, w: 0.7, h: 0.3, solid: false },
   { kind: "merchantWares", x: 19.7, y: YARD + 8.0, w: 1.6, h: 0.5, solid: false },
   { kind: "juniper", x: 19.0, y: YARD + 8.25, w: 0.55, h: 0.4, solid: false },
@@ -1847,6 +1858,11 @@ const DECOR = {
   fairyCurtain: { name: "Fairy Light Curtain", tab: "decor", price: 30, kind: "fairyCurtain", w: 1.4, wall: true },
   polaroidWall: { name: "Polaroid String", tab: "decor", price: 18, kind: "polaroidWall", w: 1.4, wall: true },
   tapestry: { name: "Boho Tapestry", tab: "decor", price: 28, kind: "tapestry", w: 1.2, wall: true },
+  // The art aisle (Update 7): blank things you paint yourself (walk up to
+  // one in your room and press E).
+  artCanvas: { name: "Blank Canvas", tab: "art", price: 12, kind: "artCanvas", w: 0.7, wall: true },
+  artPoster: { name: "Blank Poster", tab: "art", price: 18, kind: "artPoster", w: 1.2, wall: true },
+  artRug: { name: "Blank Rug", tab: "art", price: 25, kind: "artRug", w: 1.6, h: 1.2, solid: false },
   neonSign: { name: 'Neon "cozy" Sign', tab: "decor", price: 40, kind: "neonSign", w: 0.9, wall: true },
   heartNeon: { name: "Neon Heart", tab: "decor", price: 35, kind: "heartNeon", w: 0.7, wall: true },
   paintingFlowers: { name: "Flower Painting", tab: "decor", price: 15, kind: "picture", art: "flowers", w: 0.9, wall: true },
@@ -1895,6 +1911,13 @@ function withStarters(placed) {
   return [STARTERS[0], ...(hasBed ? [] : [STARTERS[1]]), ...placed];
 }
 
+// Where a bedroom piece (a furniture entry, f.decor) is in its owner's own
+// list of placed pieces: its number counts the starter desk and bed that
+// withStarters adds at the front when the room doesn't have them saved.
+function placedIndex(f, placed) {
+  return (f?.decor?.index ?? -1) - (withStarters(placed).length - placed.length);
+}
+
 // True if a piece of decor { item, x, y } can go at that spot in a bedroom
 // of this size, given what's already placed (skipping index `skip`, the
 // piece being moved). Pieces must be inside the room, and floor pieces
@@ -1929,6 +1952,7 @@ function tidyDecor(size, placed) {
     const clean = { item: String(piece?.item), x: Number(piece?.x), y: Number(piece?.y) };
     if (piece?.r === 1 || piece?.r === 3) clean.r = piece.r; // turned to face right or left
     if (Array.isArray(piece?.fish) && piece.fish.length) clean.fish = piece.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12); // (a fish tank's fish)
+    if (typeof piece?.pixels === "string" && /^[0-9a-f]{256}$/.test(piece.pixels)) clean.pixels = piece.pixels; // (pixel art painted on it)
     if (decorFits(size, kept, clean)) kept.push(clean);
   }
   if (!kept.some((p) => p.item === "starterNightstand")) {
@@ -1997,6 +2021,7 @@ function decorPiece(piece, x0, top, owner, index) {
     mine: owner.mine, // (the laptop desk opens only for its owner)
     decor: { index, mine: owner.mine, item: piece.item }, // so its owner can pick it back up (and anyone can see what it is)
     ...(piece.fish ? { fish: piece.fish } : {}), // (the fish in a fish tank)
+    ...(piece.pixels ? { pixels: piece.pixels } : {}), // (pixel art painted on it, Update 7)
   };
 }
 
@@ -2121,6 +2146,13 @@ function nearestInteraction(player) {
   near("stove", 0.9);
   near("fridge", 0.9);
   near("cookieJar", 0.9);
+  // House extras (Update 7): the wishing well, the Lounge TV, the Library's
+  // shelves (books by friends; a tall library shelf in your bedroom works
+  // too), and pixel art you can paint (your own).
+  near("wishingWell", 0.9);
+  near("tvSet", 1.0);
+  near("libraryShelf", 0.7);
+  if (myArtInReach(player)) options.push(["paint", 0.25]);
   if (OTIS.atLake) near("baitBox", 0.9); // (Otis's bait box at the pond, once he's at the Lake)
   if (HAZEL.atFarm) near("seedStand", 0.9); // (Hazel's seed box in the yard, once she's at the Farm)
   if (MERCHANT.here) near("juniper", 1.1);

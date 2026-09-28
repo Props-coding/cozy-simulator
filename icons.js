@@ -72,6 +72,8 @@ const ICONS = {
   wellFed: { pic: "dish:pancakes" },
   sharing: { pic: "gift" },
   fortuneTold: { pic: "fortune" },
+  wishMade: { f: "wishingWell", w: 1.1, h: 0.8 },
+  author: { f: "libraryShelf", w: 1.5, h: 0.45 },
   cookbook: { pic: "book" },
   firstTrade: { f: "tradingPost", w: 1.9, h: 0.6 },
   wellTraveled: { f: "juniper", w: 0.55, h: 0.4 },

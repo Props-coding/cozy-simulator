@@ -110,6 +110,15 @@ export function setTankFish(index, fish) {
   store();
 }
 
+// The pixel art painted on one of your placed canvases, posters or rugs
+// (Update 7: extras.js paints it). 256 characters, one color each.
+export function setPixels(index, pixels) {
+  const piece = home.placed[index];
+  if (!piece) return;
+  piece.pixels = pixels;
+  store();
+}
+
 export function tankFish(index) {
   return home.placed[index]?.fish ?? [];
 }
@@ -150,6 +159,7 @@ const STORE_TABS = [
   ["plants", "decor:monstera", "Plants", "Leafy friends, flowers in vases and plants that trail from shelves."],
   ["shelves", "decor:bookshelf", "Shelves", "Somewhere to put books, candles, crystals and mugs."],
   ["decor", "decor:candles", "Decor", "Rugs, lamps, mirrors, lights and things for your walls."],
+  ["art", "decor:artCanvas", "Art aisle", "Blank canvases, posters and rugs. Paint them yourself!"],
   ["upgrades", "tools", "Upgrades", "Make your room itself a little bigger."],
 ];
 // Items added in builds 0.42 and 0.44 get a "New!" ribbon.
@@ -758,7 +768,7 @@ function placeHeld() {
     hooks.notice("That doesn't fit there. Try another spot (it can't block the doorway).");
     return;
   }
-  home.placed.push({ item: held.item, x: held.x, y: held.y, ...(held.r ? { r: held.r } : {}), ...(held.fish?.length ? { fish: held.fish } : {}) });
+  home.placed.push({ item: held.item, x: held.x, y: held.y, ...(held.r ? { r: held.r } : {}), ...(held.fish?.length ? { fish: held.fish } : {}), ...(held.pixels ? { pixels: held.pixels } : {}) });
   held = null;
   store();
   playCrumbSound();
@@ -770,7 +780,7 @@ function placeHeld() {
 // Escape: a piece that was already placed goes back where it was; a new
 // one goes back in the list.
 function cancelHeld() {
-  if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y, ...(held.from.r ? { r: held.from.r } : {}), ...(held.fish?.length ? { fish: held.fish } : {}) });
+  if (held.from) home.placed.push({ item: held.item, x: held.from.x, y: held.from.y, ...(held.from.r ? { r: held.from.r } : {}), ...(held.fish?.length ? { fish: held.fish } : {}), ...(held.pixels ? { pixels: held.pixels } : {}) });
   held = null;
   hooks.changed();
   renderBar();

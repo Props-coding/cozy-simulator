@@ -123,3 +123,53 @@ test("admin tools are for admins only", async () => {
   assert.equal((await bank("Bruno", "adminCrumbs", { n: 1000 })).status, 403);
   assert.equal((await wallet("Bruno")).crumbs, 0);
 });
+
+// --- House extras (Update 7) ---
+test("the wishing well: one coin, once a day, and something back", async () => {
+  await seed("Alice", { crumbs: 5, basket: {}, wishDay: 0 });
+  const wish = await bank("Alice", "wish");
+  assert.equal(wish.status, 200);
+  const r = wish.data.result;
+  assert.ok(r.crumbs > 0 || (r.item && r.n > 0), "a reward came back");
+  if (r.crumbs) assert.equal(wish.data.wallet.crumbs, 5 - 1 + r.crumbs + 5, "paid 1, got the reward and the badge's 5");
+  else assert.equal(wish.data.wallet.basket[r.item], r.n);
+  assert.equal((await bank("Alice", "wish")).status, 409, "only one wish a day");
+  await seed("Bruno", { crumbs: 0, wishDay: 0 });
+  assert.equal((await bank("Bruno", "wish")).status, 409, "no coin, no wish");
+});
+
+test("the cooking channel teaches today's recipe, once", async () => {
+  await seed("Alice", { recipes: [] });
+  const first = await bank("Alice", "tvCooking");
+  assert.equal(first.status, 200);
+  assert.ok(first.data.result.recipe, "a recipe is on");
+  assert.equal(first.data.result.learned, true);
+  assert.ok(first.data.wallet.recipes.includes(first.data.result.recipe));
+  const again = await bank("Alice", "tvCooking");
+  assert.equal(again.data.result.learned, false);
+  assert.equal(again.data.wallet.recipes.length, 1);
+});
+
+test("Library books: write, read, and only the author takes one back", async () => {
+  assert.equal((await call("POST", "/api/books", { title: "", text: "words" }, as("Alice"))).status, 400, "no title");
+  const made = await call("POST", "/api/books", { title: "My Pond Diary", kind: "diary", text: "Caught a boot." }, as("Alice"));
+  assert.equal(made.status, 200);
+  assert.equal(made.data.book.text, "Caught a boot.", "control characters are stripped");
+  const { books } = (await call("GET", "/api/books", undefined, as("Bruno"))).data;
+  assert.ok(books.some((b) => b.id === made.data.book.id && b.author === "Alice"));
+  assert.equal((await call("POST", "/api/books/remove", { id: made.data.book.id }, as("Bruno"))).status, 403, "not Bruno's book");
+  assert.equal((await call("POST", "/api/books/remove", { id: made.data.book.id }, as("Alice"))).status, 200);
+  assert.equal((await call("GET", "/api/books", undefined, as("Bruno"))).data.books.length, 0);
+});
+
+test("pixel art is kept only if it's real pixel art", async () => {
+  await seed("Alice", { crumbs: 100 });
+  assert.equal((await bank("Alice", "buyDecor", { id: "artCanvas" })).status, 200);
+  const good = "0123456789abcdef".repeat(16);
+  const put = await call("PUT", "/api/room/home", { size: "cozy", placed: [{ item: "artCanvas", x: 1, y: 0, pixels: good }] }, as("Alice"));
+  assert.equal(put.status, 200, JSON.stringify(put.data));
+  const mine = async () => (await call("GET", "/api/rooms", undefined, as("Alice"))).data.doors.find((r) => r.owner === "Alice")?.placed ?? [];
+  assert.equal((await mine()).find((p) => p.item === "artCanvas")?.pixels, good);
+  await call("PUT", "/api/room/home", { size: "cozy", placed: [{ item: "artCanvas", x: 1, y: 0, pixels: "<script>" }] }, as("Alice"));
+  assert.equal((await mine()).find((p) => p.item === "artCanvas")?.pixels, undefined, "junk is dropped");
+});

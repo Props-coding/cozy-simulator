@@ -149,6 +149,12 @@ export function previewWeather(pick) {
   apply();
 }
 
+// The last real weather reading (or null if there isn't one yet), for
+// the Lounge TV's weather channel (extras.js).
+export function weatherNow() {
+  return real ? { ...real } : null;
+}
+
 // True if it's really raining in the hometown right now (not just an admin
 // preview), for things like the garden, which the rain waters.
 export function isReallyRaining() {

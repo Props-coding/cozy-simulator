@@ -516,6 +516,9 @@ function cleanPiece(p) {
   if (!p || typeof p.item !== "string" || p.item.length > 40 || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
   const piece = { item: p.item, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000 };
   if (p.r === 1 || p.r === 3) piece.r = p.r;
+  // Pixel art painted on a canvas, poster or rug (Update 7): 16 by 16
+  // squares, each a palette color from 0 to f.
+  if (typeof p.pixels === "string" && /^[0-9a-f]{256}$/.test(p.pixels)) piece.pixels = p.pixels;
   // The fish swimming in a fish tank (Update 4): a few fish names.
   if (Array.isArray(p.fish)) {
     const fish = p.fish.filter((id) => typeof id === "string" && /^[a-zA-Z]{1,24}$/.test(id)).slice(0, 12);
@@ -755,6 +758,7 @@ function fillWallet(w) {
   w.recipes ??= [];
   w.boost ??= null;
   w.cookieDay ??= 0;
+  w.wishDay ??= 0; // (the day of your last wish at the well, Update 7)
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -826,7 +830,7 @@ function tasteOf(id, item) {
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log, lesson } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -1544,6 +1548,44 @@ const BANK = {
     const crop = crops[Math.floor(Math.random() * crops.length)];
     putIn(w, `seed:${crop.id}`, 1);
     return { text, seed: crop.id };
+  },
+
+  // --- House extras (Update 7) ---
+  // The wishing well: one coin a day, and a small surprise (the house
+  // server rolls it, from CONFIG.extras.wishingWell).
+  wish(w, b, ev) {
+    const cfg = GAME.CONFIG.extras.wishingWell;
+    const day = hometownDay();
+    if (w.wishDay === day) throw new Oops(409, "You've made today's wish. The well needs a day to think about it.");
+    spend(w, cfg.cost);
+    w.wishDay = day;
+    grant(w, "wishMade", ev);
+    let roll = Math.random() * cfg.rewards.reduce((sum, r) => sum + r.weight, 0);
+    const reward = cfg.rewards.find((r) => (roll -= r.weight) < 0) ?? cfg.rewards[0];
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+    if (reward.kind === "crumbs") {
+      const crumbs = reward.min + Math.floor(Math.random() * (reward.max - reward.min + 1));
+      earn(w, crumbs, ev);
+      return { crumbs };
+    }
+    const item = reward.kind === "seed" ? `seed:${pick(GAME.CONFIG.crops.filter((c) => !c.merchant)).id}` : reward.kind === "bait" ? `bait:${reward.id}` : `food:${pick(GAME.CONFIG.kitchen.pantry).id}`;
+    const n = reward.n ?? 1;
+    putIn(w, item, n);
+    return { item, n };
+  },
+  // The Lounge TV's cooking channel: one recipe a day (the same show for
+  // everyone), from the ones you'd otherwise find by experimenting.
+  // Watching it puts it in your recipe book.
+  tvCooking(w, b, ev) {
+    const pool = Object.values(GAME.RECIPES).filter((r) => !r.learn);
+    if (!pool.length) return { recipe: null };
+    const recipe = pool[hometownDay() % pool.length];
+    const learned = !w.recipes.includes(recipe.id);
+    if (learned) {
+      w.recipes.push(recipe.id);
+      if (w.recipes.length >= 10) grant(w, "cookbook", ev);
+    }
+    return { recipe: recipe.id, learned };
   },
 
   // --- The trading post (Update 5) ---
@@ -2279,6 +2321,47 @@ const routes = {
     return { wallet: publicWallet(w), events: ev, result };
   },
 
+  // --- Library books written by friends (Update 7) ---
+  // Everyone in the house can read them; anyone can write one (a few
+  // limits keep it tidy); the author (or an admin) can take it back.
+  "GET /api/books": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    return { books: db.books ?? [] };
+  },
+  "POST /api/books": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    if (!allowed("book:" + key, 10)) throw new Oops(429, "That's a lot of writing! Please wait a few minutes.");
+    const body = await readJson(req, 40_000);
+    // (Strips invisible control characters, keeping line breaks and tabs.)
+    // eslint-disable-next-line no-control-regex
+    const clean = (v, most) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").trim().slice(0, most);
+    const title = clean(body.title, 60), text = clean(body.text, GAME.CONFIG.extras.bookLength);
+    const kind = ["story", "guide", "lore", "poem", "diary"].includes(body.kind) ? body.kind : "story";
+    if (!title || !text) throw new Oops(400, "A book needs a title and some words.");
+    db.books ??= [];
+    if (db.books.filter((b) => b.by === key).length >= GAME.CONFIG.extras.booksEach) throw new Oops(409, `You have ${GAME.CONFIG.extras.booksEach} books on the shelves already. Take one back to make room.`);
+    if (db.books.length >= 300) throw new Oops(409, "The Library's shelves are full.");
+    const book = { id: newId(), title, kind, text, author: user.name, by: key, at: Date.now() };
+    db.books.push(book);
+    grant(ensureWallet(user, key), "author", []);
+    await saveDb();
+    return { book };
+  },
+  "POST /api/books/remove": async (req) => {
+    const { user, key } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    const body = await readJson(req, 2_000);
+    const book = (db.books ?? []).find((b) => b.id === body.id);
+    if (!book) throw new Oops(404, "That book isn't on the shelves.");
+    if (book.by !== key && !user.admin) throw new Oops(403, "Only its author can take a book back.");
+    db.books = db.books.filter((b) => b !== book);
+    if (book.by !== key) adminLog(user, "took a book off the Library shelves", book.author, book.title);
+    await saveDb();
+    return {};
+  },
+
   // The biggest of each fish anyone in the house has caught.
   "GET /api/fish-records": async (req) => {
     const { user } = currentUser(req);
@@ -2426,7 +2509,7 @@ const routes = {
   "PUT /api/room/home": async (req) => {
     const { user, key } = currentUser(req);
     if (!user.member) throw new Oops(403, "Enter the house phrase first.");
-    const body = await readJson(req, 20_000);
+    const body = await readJson(req, 80_000); // (room for pixel art on every piece)
     const room = ensureRoom(key, user);
     if (!Array.isArray(body.placed) || !ROOM_SIZES.includes(body.size)) throw new Oops(400, "That doesn't look like a room.");
     const placed = body.placed.slice(0, 80).map(cleanPiece).filter(Boolean);

@@ -2090,6 +2090,7 @@ input[type="range"]::-moz-range-thumb {
 .nook-tab-plants { --tab: #b9d6a4; }
 .nook-tab-shelves { --tab: #e8d3a4; }
 .nook-tab-decor { --tab: #f0bccb; }
+.nook-tab-art { --tab: #f5d39a; }
 .nook-tab-upgrades { --tab: #e6c8ec; }
 
 .nook-section {
@@ -5005,6 +5006,13 @@ canvas.item-picture {
   animation: pop-in 0.15s ease-out;
 }
 
+/* A roomier dialog (the Lounge TV, the Library's books, the painter). */
+.small-dialog.wide-dialog:not([hidden]) {
+  width: min(560px, calc(100% - 40px));
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+}
+
 .small-dialog h3 {
   margin: 0 30px 0 0;
   color: var(--wood-dark);
@@ -5537,4 +5545,152 @@ canvas.item-picture {
   flex-direction: column;
   gap: 6px;
   padding: 0 22px;
+}
+
+/* --- House extras (Update 7, extras.js) --- */
+.tv-channels,
+.book-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.tv-channels {
+  justify-content: flex-start;
+}
+.tv-channels button.active {
+  outline: 3px solid var(--wood);
+}
+/* The TV screen: dark glass with a soft glow, rounded like an old set. */
+.tv-screen {
+  margin-top: 10px;
+  padding: 14px 18px;
+  border-radius: 22px;
+  background: radial-gradient(ellipse at 50% 40%, #3a4a58, #1c2228);
+  color: #eef4f0;
+  min-height: 170px;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.tv-screen h3 {
+  margin: 4px 0 8px;
+  color: #ffe8a8;
+}
+.tv-small {
+  margin: 0 0 6px;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+.tv-note {
+  margin: 8px 0 0;
+  font-weight: 700;
+  color: #b9e6a0;
+}
+.tv-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+.tv-ticker {
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffe8a8;
+  font-weight: 700;
+}
+.tv-ticker span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: tv-ticker 22s linear infinite;
+}
+@keyframes tv-ticker {
+  to {
+    transform: translateX(-100%);
+  }
+}
+/* The Library: a list of spines, a page to read, and a form to write. */
+.book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.book-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 2px solid #efe0c4;
+  border-left: 8px solid #8a5a3a;
+  background: #fffdf8;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.book-row small {
+  color: #8a6a4a;
+}
+.book-page {
+  margin: 8px 0 12px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #fbf4e4;
+  box-shadow: inset 0 0 0 1px #e8d9bf;
+  line-height: 1.6;
+  max-height: 340px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.book-page p {
+  margin: 0 0 10px;
+}
+.book-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.book-form input,
+.book-form select,
+.book-form textarea {
+  font-family: inherit;
+  font-size: 1em;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 2px solid #e8d9bf;
+  background: #fffdf8;
+}
+/* The painter: the 16 by 16 grid, and the palette. */
+.paint-grid {
+  display: block;
+  margin: 8px auto;
+  width: min(320px, 100%);
+  aspect-ratio: 1;
+  border: 3px solid var(--wood);
+  border-radius: 6px;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+.paint-palette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin: 6px 0 10px;
+}
+.paint-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid rgba(60, 40, 20, 0.3);
+  cursor: pointer;
+}
+.paint-swatch.active {
+  border-color: var(--wood-dark);
+  transform: scale(1.15);
 }

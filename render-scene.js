@@ -621,7 +621,7 @@ function screenToGrid(canvas, px, py) {
 // Flat things on the ground, and glowing things, go without.
 const OUTLINE_FILTER = "drop-shadow(0 0 0.8px rgba(35, 22, 12, 0.6))";
 const WALL_FILTER = OUTLINE_FILTER + " drop-shadow(0 3px 1.5px rgba(30, 18, 8, 0.28))";
-const NO_OUTLINE = new Set(["rug", "doormat", "merchantWares", "wildflowers", "reeds", "pawTrail", "manhole", "lights", "neonSign", "heartNeon", "fairyCurtain", "aisleLights", "sconce", "lakePier", "dock", "lakePlatform", "porchSteps"]);
+const NO_OUTLINE = new Set(["rug", "artRug", "doormat", "merchantWares", "wildflowers", "reeds", "pawTrail", "manhole", "lights", "neonSign", "heartNeon", "fairyCurtain", "aisleLights", "sconce", "lakePier", "dock", "lakePlatform", "porchSteps"]);
 // The outlines cost a little drawing time, so a computer that's really
 // struggling turns them off for itself: when frames (the drawing work, or
 // the time between frames, whichever is longer) average over 28 ms (under

@@ -177,6 +177,8 @@ const ACHIEVEMENT_LIST = [
   { id: "wellFed", name: "Well Fed", desc: "Eat a dish for a boost.", crumbs: 5, server: true },
   { id: "sharing", name: "Sharing Is Caring", desc: "Give a dish to a friend.", crumbs: 15, server: true },
   { id: "fortuneTold", name: "Fortune Told", desc: "Open a fortune cookie.", crumbs: 5, server: true },
+  { id: "wishMade", name: "Make a Wish", desc: "Toss a coin in the wishing well.", crumbs: 5, server: true },
+  { id: "author", name: "Published", desc: "Write a book for the Library.", crumbs: 15, server: true },
   { id: "cloverFriend", name: "Best Buns", desc: "Reach 10 hearts with Clover.", crumbs: 50, server: true },
   { id: "mortimerFriend", name: "Night Owls", desc: "Reach 10 hearts with Mortimer.", crumbs: 50, server: true },
   { id: "happyToHelp", name: "Happy to Help", desc: "Bring Clover or Mortimer what they asked for.", crumbs: 10, server: true },

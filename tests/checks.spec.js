@@ -77,3 +77,52 @@ test("Otis: hand him your first fish, he pays you and leaves", async ({ page }) 
   expect(await page.evaluate("OTIS.atLake"), "Otis waits until he's said goodbye").toBe(false);
   expect(problems).toEqual([]);
 });
+
+test("House extras: a wish at the well, the TV, and the Library shelves", async ({ page }) => {
+  const problems = await enterHouse(page);
+  await seed(page, { crumbs: 10, wishDay: 0 });
+  await goTo(page, { name: "yard", spot: () => ({ x: 12.3, y: YARD + 6.75 }) });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await expect.poll(async () => page.evaluate(async () => (await import("./bank.js")).myWallet().wishDay)).toBeGreaterThan(0);
+  await goTo(page, { name: "lounge", spot: () => ({ x: 9.4, y: BUSINESS + 6.3 }) });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await expect(page.locator("#extras-panel")).toBeVisible();
+  await expect(page.locator(".tv-screen h3")).not.toBeEmpty();
+  await page.keyboard.press("Escape");
+  await goTo(page, { name: "library", spot: () => ({ x: 1.0, y: -2.6 }) });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await expect(page.locator(".book-row").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  expect(await frameErrors(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
+test("Pixel art: paint a canvas in your room and save it", async ({ page }) => {
+  const problems = await enterHouse(page);
+  await seed(page, { crumbs: 100 });
+  await page.evaluate(async () => {
+    const { bank } = await import("./bank.js");
+    await bank("buyDecor", { id: "artCanvas" });
+    const home = await import("./home.js");
+    home.myHome().placed.push({ item: "artCanvas", x: 2.4, y: 0 });
+    home.setPixels(home.myHome().placed.length - 1, "0".repeat(256));
+  });
+  await page.waitForTimeout(1500);
+  await page.evaluate(async () => {
+    const f = FURNITURE.find((x) => x.kind === "artCanvas" && x.mine);
+    (await import("./extras.js")).openPaint(f);
+  });
+  await page.waitForTimeout(800);
+  const grid = page.locator(".paint-grid");
+  await page.click(".paint-swatch >> nth=4");
+  const box = await grid.boundingBox();
+  for (let i = 0; i < 16; i++) await page.mouse.click(box.x + 10 + i * (box.width / 16), box.y + box.height / 2);
+  await page.click("#extras-body .warm-button");
+  await page.waitForTimeout(1500);
+  const pixels = await page.evaluate(async () => (await import("./home.js")).myHome().placed.find((p) => p.item === "artCanvas").pixels);
+  expect(pixels.slice(128, 144)).toBe("4".repeat(16));
+  expect(problems).toEqual([]);
+});

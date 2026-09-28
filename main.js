@@ -97,6 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
+import { initExtras, isExtrasOpen, makeWish, wellHint, openTv, openLibrary, openPaint } from "./extras.js";
 import { startMarket, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
@@ -684,6 +685,10 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "stove") return "Press E to cook: your recipes, or experiment and see what happens.";
   if (nearestInteraction(player) === "fridge") return "Press E to open the fridge and pantry: eggs, milk, flour, sugar and more.";
   if (nearestInteraction(player) === "cookieJar") return "Press E for today's fortune cookie.";
+  if (nearestInteraction(player) === "wishingWell") return wellHint();
+  if (nearestInteraction(player) === "tvSet") return "Press E to watch TV: cooking, weather and news.";
+  if (nearestInteraction(player) === "libraryShelf") return "Press E to browse the shelves: books written by friends (or write one).";
+  if (nearestInteraction(player) === "paint") return "Press E to paint it.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
@@ -854,7 +859,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Kitchen & Trade (Update 5).
-  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper }[nearestInteraction(player)];
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)) }[nearestInteraction(player)];
   if (key === "e" && kitchenAction) {
     for (const k in keysDown) keysDown[k] = false;
     kitchenAction();
@@ -1124,7 +1129,7 @@ canvas.addEventListener("contextmenu", (e) => {
 // there wins; otherwise something standing up, whose top half reaches over
 // the spot (the front-most). Flat things (rugs, mats) only count in your
 // own room, where you can move them: elsewhere they're just floor.
-const FLAT_KINDS = new Set(["rug", "doormat", "merchantWares", "pondStones", "wildflowers", "reeds", "flowerBed"]);
+const FLAT_KINDS = new Set(["rug", "artRug", "doormat", "merchantWares", "pondStones", "wildflowers", "reeds", "flowerBed"]);
 function furnitureAt(g) {
   const floor = floorOf(player.y);
   let under = null, above = null;
@@ -1737,7 +1742,7 @@ function cleanFishing(f, at) {
 }
 
 function uiBusy() {
-  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
+  return isTraveling() || isShopBusy() || isNpcOpen() || isReeling() || isSeedPickerOpen() || isBasketOpen() || isLaptopOpen() || isDecorating() || isProfileOpen() || isTurntableOpen() || isWardrobeOpen() || isKanbanOpen() || isDoorPanelOpen() || isJournalOpen() || isPhonePanelOpen() || isGiftOpen() || isTradeDialogOpen() || isExtrasOpen() || isMenuOpen() || !elevatorPanel.hidden || !!ride;
 }
 
 // Going into a bedroom (E at its door on the suite floor), and out again
@@ -2317,6 +2322,7 @@ initBank({
 });
 
 initKitchen({ notice: (text, ms) => showNotice(text, ms) });
+initExtras({ notice: (text, ms) => showNotice(text, ms) });
 
 initAchievements({
   announce: (id) => {

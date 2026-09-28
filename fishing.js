@@ -28,7 +28,7 @@ import { bank, myWallet } from "./bank.js";
 import { serverApi } from "./account.js";
 import { recipeShopRows } from "./kitchen.js";
 import { openNpc, refreshNpc } from "./npc.js";
-import { setTankFish, tankFish } from "./home.js";
+import { setTankFish, tankFish, myHome } from "./home.js";
 
 const FISH = Object.fromEntries(CONFIG.fish.map((f) => [f.id, f]));
 const RODS = CONFIG.rods;
@@ -637,7 +637,7 @@ function logRows() {
 
 // --- Your bedroom fish tank ---
 export function openFishTank(tank) {
-  const index = tank.decor.index;
+  const index = placedIndex(tank, myHome().placed); // (world.js)
   openNpc({
     name: "Your fish tank",
     portrait: { f: "fishTank", w: 1.0, h: 0.5 },
