@@ -126,8 +126,8 @@ const muteToggle = document.getElementById("mute-toggle");
 
 // --- The hallway clock's hourly chime ---
 // Checks every few seconds whether your local hour has changed, and if so
-// chimes (unless you've turned it off in Settings). The setting is
-// remembered in this browser.
+// chimes, if you are near enough to hear it (unless you've turned it off in
+// Settings). The setting is remembered in this browser.
 const chimeToggle = document.getElementById("chime-toggle");
 const CHIME_KEY = "cozy-house-chime";
 try {
@@ -148,7 +148,14 @@ setInterval(() => {
   const hour = new Date().getHours();
   if (hour === lastChimeHour) return;
   lastChimeHour = hour;
-  if (chimeToggle.checked && !gameScreen.hidden) playHourlyChime(hour);
+  if (!chimeToggle.checked || gameScreen.hidden) return;
+  // Only near the clock: on the ground floor, fading with distance.
+  const clock = FURNITURE.find((f) => f.kind === "grandfatherClock");
+  if (!clock || floorOf(player.y) !== floorOf(clock.y)) return;
+  const { fullWithin = 4, carries = 14 } = CONFIG.hourlyChime;
+  const distance = Math.hypot(player.x - (clock.x + clock.w / 2), player.y - (clock.y + clock.h));
+  const loudness = distance <= fullWithin ? 1 : 1 - (distance - fullWithin) / Math.max(0.1, carries - fullWithin);
+  if (loudness > 0) playHourlyChime(hour, loudness);
 }, CONFIG.hourlyChime.checkSeconds * 1000);
 const volumeSlider = document.getElementById("volume-slider");
 const lofiVolumeSlider = document.getElementById("lofi-volume-slider");

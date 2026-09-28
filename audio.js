@@ -234,8 +234,9 @@ export function playElevatorDing() {
 
 // The hallway clock's hourly chime: the first line of the Westminster
 // chimes, softly, then one low bong for each hour (if turned on).
-export function playHourlyChime(hour) {
-  const { volume, strikes } = CONFIG.hourlyChime;
+export function playHourlyChime(hour, loudness = 1) {
+  const { strikes } = CONFIG.hourlyChime;
+  const volume = CONFIG.hourlyChime.volume * loudness;
   const tune = [415.3, 369.99, 329.63, 246.94]; // G#4 F#4 E4 B3
   tune.forEach((f, i) => playTone(f, i * 650, { gain: volume, duration: 1.4, type: "sine" }));
   if (!strikes) return;

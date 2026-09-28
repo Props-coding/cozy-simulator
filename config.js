@@ -42,11 +42,12 @@ const CONFIG = {
   // Voice chat is on in every room except the Study. Inside a room, the
   // further away a friend stands, the quieter they sound: full volume
   // within `fullWithin` steps, fading down to `quietest` (0 = silent,
-  // 1 = no fading at all) by `fadeTo` steps away. (A step is one floor tile.)
+  // 1 = no fading at all) by `fadeTo` steps away. With quietest at 0,
+  // `fadeTo` is how far a voice carries. (A step is one floor tile.)
   voice: {
-    fullWithin: 3,
-    fadeTo: 12,
-    quietest: 0.2,
+    fullWithin: 2.5,
+    fadeTo: 9,
+    quietest: 0,
   },
 
   // Room names shown on screen. Change these if you want different labels.
@@ -816,11 +817,15 @@ const CONFIG = {
   wardrobeColors: ["#e05a47", "#e8883a", "#e8b84a", "#8fb86a", "#4f9a8a", "#5aa0d8", "#7a6bc8", "#c86bb0", "#e98ac0", "#a0703e", "#6b5a4a", "#f2ede4"],
 
   // The grandfather clock in the hallway chimes softly on every hour (your
-  // own local time). It follows the master volume and mute, is silent
-  // while you're asleep, and can be turned off in Settings.
+  // own local time). You hear it only near the clock: full within
+  // `fullWithin` steps, fading to nothing by `carries` steps away (so not
+  // upstairs or out in the yard). It follows the master volume and mute,
+  // is silent while you're asleep, and can be turned off in Settings.
   hourlyChime: {
     on: true, // the starting setting for someone who hasn't chosen yet
     volume: 0.06, // how loud (0 to 1, before the master volume)
+    fullWithin: 4,
+    carries: 14,
     strikes: true, // after the little tune, one low "bong" per hour (1 to 12)
     checkSeconds: 15, // how often to check whether the hour has changed
   },
