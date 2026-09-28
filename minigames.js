@@ -9,14 +9,16 @@
 // - The results: everyone's scores for the round, crumbs from the house
 //   server (checked against the time played, with a daily cap: config.js
 //   minigames), then play again or back to the floor.
-// Part 1 has four games: Snowball Arena, Crumb Rush, Treasure Dive and The
-// Scarecrow. Each is a small function that draws on the round's canvas
+// Eight games: Snowball Arena, Crumb Rush, Treasure Dive, The Scarecrow,
+// Ghost Hunt, Night Meadow, Kitchen Rush (with your own recipes) and
+// Cellar Crawl (real finds come home to your basket). Each is a small function that draws on the round's canvas
 // and calls `done(score)` at the end (see GAMES below).
 import { bank, myWallet } from "./bank.js";
 import { getPeers, sendGames, onGames } from "./network.js";
 import { openExtrasPanel, closeExtras } from "./extras.js";
 import { playClickSound, playCrumbSound } from "./audio.js";
 import { unlock } from "./achievements.js";
+import { itemInfo } from "./basket.js";
 
 let hooks = { notice: () => {}, name: () => "You", color: () => "#e05a47" };
 export function initMinigames(options) {
@@ -187,6 +189,7 @@ function showResults(game, round, got, el) {
     el.textContent = "";
     const mine = lobby.results.get("me")?.score ?? 0;
     el.appendChild(make("h3", "mini-score", `Your score: ${mine}`));
+    if (got?.loot?.length) el.appendChild(make("p", "mini-loot", `Brought home from the cellar: ${got.loot.map((id) => itemInfo(id).name).join(", ")}. (In your basket.)`));
     el.appendChild(make("p", "", got ? (got.crumbs ? `+${got.crumbs} crumbs${got.best ? ". A new personal best!" : "."}` : got.capped ? "That's all the crumbs the games pay today. Play on for fun!" : got.short ? "Too quick for crumbs: play a bit longer next time!" : "No crumbs this time. Have another go!") : "(No crumbs: the house server didn't answer.)"));
     if (lobby.players.length) {
       const rows = [...lobby.results.entries()].sort((a, b) => b[1].score - a[1].score);
@@ -224,6 +227,12 @@ function showResults(game, round, got, el) {
 function reader(canvas) {
   const down = new Set();
   const clicks = [];
+  const pointer = { x: W / 2, y: H / 2 };
+  const move = (e) => {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - r.left) / r.width) * W;
+    pointer.y = ((e.clientY - r.top) / r.height) * H;
+  };
   const on = (e) => {
     const k = e.key.toLowerCase();
     if (["arrowleft", "arrowright", "arrowup", "arrowdown", " ", "w", "a", "s", "d"].includes(k)) e.preventDefault();
@@ -239,10 +248,12 @@ function reader(canvas) {
   canvas.addEventListener("keydown", on);
   canvas.addEventListener("keyup", off);
   canvas.addEventListener("pointerdown", click);
+  canvas.addEventListener("pointermove", move);
   canvas.addEventListener("blur", lost);
   return {
     down,
     clicks,
+    pointer,
     left: () => down.has("arrowleft") || down.has("a"),
     right: () => down.has("arrowright") || down.has("d"),
     up: () => down.has("arrowup") || down.has("w"),
@@ -251,6 +262,7 @@ function reader(canvas) {
       canvas.removeEventListener("keydown", on);
       canvas.removeEventListener("keyup", off);
       canvas.removeEventListener("pointerdown", click);
+      canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("blur", lost);
     },
   };
@@ -702,4 +714,388 @@ const GAMES = {
     };
     return loop(canvas, game, input, step, draw, () => score, done);
   },
+
+  // Ghost Hunt: a dark parlor. Your flashlight follows the mouse; ghosts
+  // only show in its beam. Hold the light on one until it's caught. Some
+  // are jumpy (red eyes): catch those in the light too long and they give
+  // you a fright (two points off).
+  ghostHunt(canvas, rng, game, done) {
+    const input = reader(canvas);
+    const ghosts = [];
+    let score = 0, fright = 0, spawn = 0;
+    const add = () => ghosts.push({ x: 40 + rng() * (W - 80), y: 60 + rng() * (H - 100), vx: (rng() - 0.5) * 50, vy: (rng() - 0.5) * 40, lit: 0, jumpy: rng() < 0.25, ph: rng() * 6 });
+    for (let i = 0; i < 4; i++) add();
+    const furniture = Array.from({ length: 6 }, () => ({ x: 20 + rng() * (W - 80), y: 70 + rng() * (H - 120), w: 40 + rng() * 40, h: 20 + rng() * 20 }));
+    const inBeam = (g) => dist(g, input.pointer) < 60;
+    const step = (dt, t) => {
+      if (fright > 0) fright -= dt;
+      spawn -= dt;
+      if (spawn <= 0 && ghosts.length < 4 + Math.floor(t / 20)) {
+        add();
+        spawn = 1.5;
+      }
+      for (let i = ghosts.length - 1; i >= 0; i--) {
+        const g = ghosts[i];
+        g.x += (g.vx + Math.sin(t * 1.3 + g.ph) * 25) * dt;
+        g.y += (g.vy + Math.cos(t * 1.1 + g.ph) * 18) * dt;
+        if (g.x < 20 || g.x > W - 20) g.vx *= -1;
+        if (g.y < 40 || g.y > H - 20) g.vy *= -1;
+        g.x = Math.max(20, Math.min(W - 20, g.x));
+        g.y = Math.max(40, Math.min(H - 20, g.y));
+        if (fright <= 0 && inBeam(g)) g.lit += dt;
+        else g.lit = Math.max(0, g.lit - dt * 0.5);
+        if (g.jumpy && g.lit > 0.7) {
+          ghosts.splice(i, 1);
+          score = Math.max(0, score - 2);
+          fright = 1.2;
+        } else if (!g.jumpy && g.lit > 0.9) {
+          ghosts.splice(i, 1);
+          score++;
+        } else if (g.jumpy && g.lit > 0.35 && input.clicks.length) {
+          // (Click a jumpy one while it's lit to catch it before it jumps.)
+          ghosts.splice(i, 1);
+          score++;
+        }
+      }
+      input.clicks.length = 0;
+      return false;
+    };
+    const draw = (ctx, t) => {
+      ctx.fillStyle = "#2a2233";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#3a2e40"; // the old wallpaper's stripes
+      for (let x = 0; x < W; x += 30) ctx.fillRect(x, 0, 12, 60);
+      for (const f of furniture) {
+        ctx.fillStyle = "#3e3040";
+        ctx.fillRect(f.x, f.y, f.w, f.h);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.fillRect(f.x, f.y, f.w, 2);
+      }
+      // The ghosts (only in the beam).
+      for (const g of ghosts) {
+        const seen = Math.max(0, 1 - dist(g, input.pointer) / 90);
+        if (seen <= 0) continue;
+        ctx.globalAlpha = seen;
+        const bob = Math.sin(t * 3 + g.ph) * 3;
+        ctx.fillStyle = "#f0f0fa";
+        ctx.beginPath();
+        ctx.arc(g.x, g.y - 6 + bob, 13, Math.PI, 0);
+        ctx.lineTo(g.x + 13, g.y + 10 + bob);
+        for (let k = 0; k < 4; k++) ctx.lineTo(g.x + 13 - (k + 0.5) * 6.5, g.y + (k % 2 ? 10 : 5) + bob);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgba(90, 80, 120, 0.6)";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = g.jumpy ? "#e05a47" : "#2a2438";
+        ctx.fillRect(g.x - 5, g.y - 8 + bob, 3, 4);
+        ctx.fillRect(g.x + 2, g.y - 8 + bob, 3, 4);
+        ctx.fillStyle = "#f2c94c"; // the catch meter
+        ctx.fillRect(g.x - 12, g.y - 26 + bob, 24 * Math.min(1, g.lit / (g.jumpy ? 0.7 : 0.9)), 3);
+        ctx.globalAlpha = 1;
+      }
+      // Darkness everywhere but the beam.
+      const beam = ctx.createRadialGradient(input.pointer.x, input.pointer.y, 30, input.pointer.x, input.pointer.y, 110);
+      beam.addColorStop(0, "rgba(10, 8, 16, 0)");
+      beam.addColorStop(1, "rgba(10, 8, 16, 0.8)");
+      ctx.fillStyle = beam;
+      ctx.fillRect(0, 0, W, H);
+      if (fright > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${fright * 0.4})`;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#e05a47";
+        ctx.font = "800 26px 'Quicksand', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("BOO!", W / 2, H / 2);
+        ctx.textAlign = "left";
+      }
+    };
+    return loop(canvas, game, input, step, draw, () => score, done);
+  },
+
+  // Night Meadow: fireflies drift over tall grass, blinking on and off.
+  // Click one while it's glowing to net it; now and then a golden moth
+  // flutters by, worth three.
+  nightMeadow(canvas, rng, game, done) {
+    const input = reader(canvas);
+    const flies = [];
+    const grass = Array.from({ length: 60 }, () => ({ x: rng() * W, h: 20 + rng() * 40, lean: rng() - 0.5 }));
+    let score = 0, spawn = 0, nets = [];
+    const add = (gold = false) => flies.push({ x: rng() * W, y: 60 + rng() * (H - 120), vx: (rng() - 0.5) * 40, vy: (rng() - 0.5) * 20, ph: rng() * 6, rate: 1.2 + rng() * 1.5, gold });
+    for (let i = 0; i < 8; i++) add();
+    const lit = (f, t) => f.gold || Math.sin(t * f.rate + f.ph) > 0.1;
+    const step = (dt, t) => {
+      spawn -= dt;
+      if (spawn <= 0 && flies.length < 12) {
+        add(rng() < 0.08);
+        spawn = 0.8;
+      }
+      for (const f of flies) {
+        f.x += (f.vx + Math.sin(t + f.ph) * 15) * dt * (f.gold ? 2 : 1);
+        f.y += (f.vy + Math.cos(t * 0.8 + f.ph) * 10) * dt;
+        if (f.x < 10 || f.x > W - 10) f.vx *= -1;
+        if (f.y < 40 || f.y > H - 50) f.vy *= -1;
+      }
+      for (const c of input.clicks.splice(0)) {
+        nets.push({ x: c.x, y: c.y, at: t });
+        const hit = flies.find((f) => lit(f, t) && dist(f, c) < 22);
+        if (hit) {
+          flies.splice(flies.indexOf(hit), 1);
+          score += hit.gold ? 3 : 1;
+        }
+      }
+      nets = nets.filter((n) => t - n.at < 0.3);
+      return false;
+    };
+    const draw = (ctx, t) => {
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, "#141a33");
+      sky.addColorStop(1, "#2a3a4a");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#f4f0dc"; // the moon
+      ctx.beginPath();
+      ctx.arc(W - 60, 60, 18, 0, Math.PI * 2);
+      ctx.fill();
+      for (const f of flies) {
+        const on = lit(f, t);
+        if (on) {
+          const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.gold ? 18 : 12);
+          g.addColorStop(0, f.gold ? "rgba(255, 210, 90, 0.9)" : "rgba(220, 255, 120, 0.9)");
+          g.addColorStop(1, "rgba(220, 255, 120, 0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(f.x - 18, f.y - 18, 36, 36);
+        }
+        ctx.fillStyle = f.gold ? "#e8b43a" : on ? "#f0ff9a" : "#3a4a3a";
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.gold ? 4 : 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = "#2e4a34"; // the tall grass in front
+      ctx.lineWidth = 2;
+      for (const g of grass) {
+        ctx.beginPath();
+        ctx.moveTo(g.x, H);
+        ctx.quadraticCurveTo(g.x + g.lean * 10, H - g.h / 2, g.x + g.lean * 16 + Math.sin(t + g.x) * 2, H - g.h);
+        ctx.stroke();
+      }
+      for (const n of nets) {
+        ctx.strokeStyle = `rgba(240, 230, 210, ${1 - (t - n.at) / 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 16, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    };
+    return loop(canvas, game, input, step, draw, () => score, done);
+  },
+
+  // Kitchen Rush: orders for dishes from your own recipe book (or the
+  // simplest ones, if your book is thin). Click what each one needs into
+  // the pot, in any order; a wrong ingredient spills it. Points: the
+  // ingredients in each dish you finish.
+  kitchenRush(canvas, rng, game, done) {
+    const input = reader(canvas);
+    const all = CONFIG.kitchen.recipes;
+    const known = new Set(myWallet().recipes ?? []);
+    let book = all.filter((r) => known.has(r.id));
+    if (book.length < 3) book = [...book, ...[...all].sort((a, b) => a.ingredients.length - b.ingredients.length).filter((r) => !known.has(r.id))].slice(0, 5);
+    const nameOf = (id) => (id === "fish" ? "Any fish" : itemInfo(id).name);
+    let order = null, pot = [], score = 0, spill = 0, served = 0;
+    let bins = [];
+    const nextOrder = () => {
+      order = book[Math.floor(rng() * book.length)];
+      pot = [];
+      // The bins: what it needs, plus a few things it doesn't.
+      const decoys = [...new Set(all.flatMap((r) => r.ingredients))].filter((id) => !order.ingredients.includes(id));
+      const pick = [...new Set(order.ingredients)];
+      while (pick.length < 6 && decoys.length) pick.push(decoys.splice(Math.floor(rng() * decoys.length), 1)[0]);
+      pick.sort(() => rng() - 0.5);
+      bins = pick.map((id, i) => ({ id, x: 16 + (i % 3) * 152, y: 190 + Math.floor(i / 3) * 62, w: 144, h: 54 }));
+    };
+    nextOrder();
+    const step = (dt) => {
+      if (spill > 0) spill -= dt;
+      if (served > 0) served -= dt;
+      for (const c of input.clicks.splice(0)) {
+        const bin = bins.find((b) => c.x > b.x && c.x < b.x + b.w && c.y > b.y && c.y < b.y + b.h);
+        if (!bin || spill > 0) continue;
+        const needed = order.ingredients.filter((id) => id === bin.id).length;
+        const inPot = pot.filter((id) => id === bin.id).length;
+        if (inPot < needed) {
+          pot.push(bin.id);
+          if (pot.length === order.ingredients.length) {
+            score += order.ingredients.length;
+            served = 0.8;
+            nextOrder();
+          }
+        } else {
+          spill = 0.8;
+          pot = [];
+        }
+      }
+      return false;
+    };
+    const draw = (ctx) => {
+      ctx.fillStyle = "#f4e6d0";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#e8d4b8";
+      for (let x = 0; x < W; x += 40) ctx.fillRect(x, 0, 20, 180);
+      // The order ticket.
+      ctx.fillStyle = "#fffdf6";
+      ctx.fillRect(16, 32, 220, 140);
+      ctx.strokeStyle = "#d9c8a8";
+      ctx.strokeRect(16.5, 32.5, 219, 139);
+      ctx.fillStyle = "#6a4a30";
+      ctx.font = "800 15px 'Quicksand', sans-serif";
+      ctx.fillText(order.name, 28, 56);
+      ctx.font = "600 12px 'Quicksand', sans-serif";
+      order.ingredients.forEach((id, i) => {
+        const have = pot.filter((x) => x === id).length > order.ingredients.slice(0, i).filter((x) => x === id).length;
+        // (A filled green dot once it's in the pot, an empty one before.)
+        ctx.strokeStyle = have ? "#5fa052" : "#a08a6a";
+        ctx.fillStyle = "#5fa052";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(34, 76 + i * 18, 4, 0, Math.PI * 2);
+        if (have) ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = have ? "#5fa052" : "#6a4a30";
+        ctx.fillText(nameOf(id), 44, 80 + i * 18);
+      });
+      // The pot.
+      const px = 340, py = 110;
+      shadow(ctx, px, py + 44, 50);
+      ctx.fillStyle = spill > 0 ? "#8a4a3a" : "#4a4a52";
+      ctx.beginPath();
+      ctx.ellipse(px, py + 10, 56, 34, 0, 0, Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#6a6a72";
+      ctx.beginPath();
+      ctx.ellipse(px, py + 10, 56, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = spill > 0 ? "#c8603a" : served > 0 ? "#f2c94c" : pot.length ? "#e8a860" : "#3a3a42";
+      ctx.beginPath();
+      ctx.ellipse(px, py + 10, 48, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#6a4a30";
+      ctx.font = "800 13px 'Quicksand', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(spill > 0 ? "Spilled! Start again." : served > 0 ? "Order up!" : `${pot.length} of ${order.ingredients.length} in`, px, py + 64);
+      ctx.textAlign = "left";
+      // The bins.
+      for (const b of bins) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
+        ctx.fillRect(b.x + 2, b.y + 3, b.w, b.h);
+        ctx.fillStyle = "#c9a27a";
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.fillRect(b.x, b.y, b.w, 2);
+        ctx.fillStyle = "#3a2a1c";
+        ctx.font = "700 12px 'Quicksand', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(nameOf(b.id), b.x + b.w / 2, b.y + b.h / 2 + 4);
+        ctx.textAlign = "left";
+      }
+    };
+    return loop(canvas, game, input, step, draw, () => score, done);
+  },
+
+  // Cellar Crawl: a dim cellar of crates (made from the round's seed).
+  // Walk into a crate to open it (treasure: 1 to 3 points); rats scurry
+  // about and knock two points out of your hands. The ladder takes you
+  // out early. Afterwards the house server brings real finds home.
+  cellarCrawl(canvas, rng, game, done) {
+    const input = reader(canvas);
+    const me = { x: 40, y: H - 40, hurt: 0 };
+    const ladder = { x: 40, y: H - 40 };
+    const crates = Array.from({ length: 14 }, () => ({ x: 80 + rng() * (W - 120), y: 50 + rng() * (H - 90), value: 1 + Math.floor(rng() * 3), open: false }));
+    const rats = Array.from({ length: 3 }, () => ({ x: 100 + rng() * (W - 140), y: 60 + rng() * (H - 100), a: rng() * 6, turn: 0 }));
+    let score = 0, left = false, sparkle = [];
+    const step = (dt, t) => {
+      if (me.hurt > 0) me.hurt -= dt;
+      const sp = 130 * dt;
+      if (input.left()) me.x -= sp;
+      if (input.right()) me.x += sp;
+      if (input.up()) me.y -= sp;
+      if (input.downKey()) me.y += sp;
+      me.x = Math.max(14, Math.min(W - 14, me.x));
+      me.y = Math.max(36, Math.min(H - 12, me.y));
+      for (const c of crates) {
+        if (!c.open && Math.abs(me.x - c.x) < 18 && Math.abs(me.y - c.y) < 16) {
+          c.open = true;
+          score += c.value;
+          sparkle.push({ x: c.x, y: c.y, at: t, v: c.value });
+        }
+      }
+      for (const r of rats) {
+        r.turn -= dt;
+        if (r.turn <= 0) {
+          r.a = rng() * Math.PI * 2;
+          r.turn = 0.8 + rng() * 1.5;
+        }
+        r.x += Math.cos(r.a) * 70 * dt;
+        r.y += Math.sin(r.a) * 70 * dt;
+        if (r.x < 20 || r.x > W - 20) r.a = Math.PI - r.a;
+        if (r.y < 40 || r.y > H - 16) r.a = -r.a;
+        r.x = Math.max(20, Math.min(W - 20, r.x));
+        r.y = Math.max(40, Math.min(H - 16, r.y));
+        if (me.hurt <= 0 && dist(r, me) < 16) {
+          score = Math.max(0, score - 2);
+          me.hurt = 1.2;
+        }
+      }
+      sparkle = sparkle.filter((s) => t - s.at < 0.8);
+      // (Back at the ladder after a few seconds: climb out early.)
+      if (t > 5 && dist(me, ladder) < 12 && crates.some((c) => c.open)) left = true;
+      return left || crates.every((c) => c.open);
+    };
+    const draw = (ctx, t) => {
+      ctx.fillStyle = "#3a302a";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.25)"; // flagstones
+      for (let x = 0; x < W; x += 40) for (let y = 30; y < H; y += 30) ctx.fillRect(x + ((y / 30) % 2) * 20, y, 38, 1.5);
+      // The ladder up.
+      ctx.fillStyle = "#8a6444";
+      ctx.fillRect(ladder.x - 10, ladder.y - 14, 3, 28);
+      ctx.fillRect(ladder.x + 7, ladder.y - 14, 3, 28);
+      for (let k = 0; k < 4; k++) ctx.fillRect(ladder.x - 10, ladder.y - 12 + k * 7, 20, 2);
+      for (const c of crates) {
+        shadow(ctx, c.x, c.y + 12, 16);
+        ctx.fillStyle = "#2a1e14";
+        ctx.fillRect(c.x - 15, c.y - 13, 30, 25);
+        ctx.fillStyle = c.open ? "#5a4a3a" : "#8a6444";
+        ctx.fillRect(c.x - 14, c.y - 12, 28, 23);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.fillRect(c.x - 14, c.y - 2, 28, 2);
+        ctx.fillStyle = "rgba(255, 230, 190, 0.25)";
+        ctx.fillRect(c.x - 14, c.y - 12, 28, 2);
+        if (c.open) {
+          ctx.fillStyle = "#2a1e14";
+          ctx.fillRect(c.x - 10, c.y - 9, 20, 6);
+        }
+      }
+      for (const r of rats) {
+        shadow(ctx, r.x, r.y + 5, 8);
+        ball(ctx, r.x, r.y, 6, "#6a6a72");
+        ctx.fillStyle = "#e8a0a8";
+        ctx.fillRect(r.x + Math.cos(r.a) * 6 - 1, r.y + Math.sin(r.a) * 6 - 1, 2, 2);
+      }
+      for (const s of sparkle) {
+        ctx.fillStyle = `rgba(242, 201, 76, ${1 - (t - s.at) / 0.8})`;
+        ctx.font = "800 14px 'Quicksand', sans-serif";
+        ctx.fillText(`+${s.v}`, s.x - 8, s.y - 18 - (t - s.at) * 20);
+      }
+      shadow(ctx, me.x, me.y + 10, 10);
+      ball(ctx, me.x, me.y, 10, me.hurt > 0 && Math.sin(t * 20) > 0 ? "#f4f0f8" : player());
+      // A lantern glow around you; the rest is dim.
+      const glow = ctx.createRadialGradient(me.x, me.y, 30, me.x, me.y, 170);
+      glow.addColorStop(0, "rgba(10, 6, 4, 0)");
+      glow.addColorStop(1, "rgba(10, 6, 4, 0.7)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+    };
+    return loop(canvas, game, input, step, draw, () => score, done);
+  },
+
 };

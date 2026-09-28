@@ -216,3 +216,13 @@ test("Mini games: a door's lobby, and a round starting", async ({ page }) => {
   expect(await frameErrors(page)).toEqual([]);
   expect(problems).toEqual([]);
 });
+
+test("Mini games: all eight doors open their lobbies", async ({ page }) => {
+  const problems = await enterHouse(page);
+  for (const g of await page.evaluate(() => CONFIG.minigames.games.map((x) => [x.id, x.name]))) {
+    await page.evaluate(async (id) => (await import("./minigames.js")).openPortal(FURNITURE.find((x) => x.kind === "gamePortal" && x.game === id)), g[0]);
+    await expect(page.locator("#extras-title")).toHaveText(g[1]);
+    await page.keyboard.press("Escape");
+  }
+  expect(problems).toEqual([]);
+});

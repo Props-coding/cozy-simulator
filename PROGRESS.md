@@ -475,6 +475,14 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - From the review: the lobby now lists only friends who have the same door's lobby open (each open lobby says "here" once a second), and they're exactly who joins a round; results are kept per player (not by name) and only from the round's players; Champion needs everyone's score in and a strictly higher score; a round has to last at least ten seconds to pay crumbs (no more instant-round crumbs); payouts rebalanced so every game can reach its round cap; The Scarecrow gives you a quarter second to let go when it turns, sits lower (clear of the score bar) and says "FREEZE!" or "IT'S TURNING!" in big letters with the field tinted red while it watches; running out of air in Treasure Dive costs three points and a longer daze (the air bar moved to the top); snow critters stay on screen; held keys let go if the game loses focus; closing the panel while the server answers no longer breaks anything; the doors have panels, grain, a shadow at their foot and outlined boards.
   - **Needs the server deployed** (server.mjs, config.js, catalog.js, world.js).
 
+- Build 0.82 (overnight): Update 10, Mini Games, part 2. All eight doors open.
+  - Ghost Hunt (60 s): a dark old parlor; your flashlight follows the mouse, and ghosts only show in its beam. Hold the light on one to catch it. Red-eyed jumpy ones give you a fright (two points off) if you light them too long, unless you click them first.
+  - Night Meadow (45 s): fireflies blink over the tall grass under the moon; click one while it's glowing to net it. Now and then a golden moth flutters by, worth three.
+  - Kitchen Rush (60 s): orders come in for dishes from your own recipe book (if you know fewer than three, the simplest recipes fill in). Click the ingredients each dish needs, in any order; a wrong one spills the pot. Points: the ingredients in each dish you finish.
+  - Cellar Crawl (60 s): a dim cellar full of crates (walk into one to open it: 1 to 3 points), rats that knock two points out of your hands, and the ladder to climb out early. Afterwards the house server brings real finds home to your basket: one for every 5 points, up to 3 a round and 6 a day (a pantry food, a seed packet, worms or a lightbulb; `minigames.cellar` in config.js).
+  - Tests: a server test (the cellar's finds land in your basket, within the day's limit) and a house test (all eight doors open their lobbies).
+  - **Needs the server deployed** (server.mjs, config.js).
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 

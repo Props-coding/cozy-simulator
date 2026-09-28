@@ -278,7 +278,7 @@ test("arcade: the claw and the capsules cost crumbs, and the server decides", as
 // --- Mini games (Update 10) ---
 test("mini games: a round's crumbs can't beat the clock, and there's a daily cap", async () => {
   await seed("Alice", { crumbs: 0, minis: {} });
-  assert.equal((await bank("Alice", "miniStart", { game: "ghostHunt" })).status, 400, "that door doesn't open yet");
+  assert.equal((await bank("Alice", "miniStart", { game: "pinball" })).status, 400, "no such game");
   const { data: start } = await bank("Alice", "miniStart", { game: "crumbRush" });
   const end = await bank("Alice", "miniEnd", { id: start.result.id, score: 5000 });
   assert.equal(end.status, 200);
@@ -297,4 +297,17 @@ test("mini games: a round's crumbs can't beat the clock, and there's a daily cap
   assert.equal(e2.status, 200);
   assert.equal(e2.data.result.crumbs, 1, "only 1 crumb left of today's 60");
   assert.equal(e2.data.wallet.minis.best.snowball, 12);
+});
+
+test("Cellar Crawl: real finds come home, up to the day's limit", async () => {
+  const d = new Date();
+  const today = d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+  await seed("Alice", { basket: {}, minis: { lootDay: today, looted: 5, best: {} } });
+  const { data: s } = await bank("Alice", "miniStart", { game: "cellarCrawl" });
+  await new Promise((r) => setTimeout(r, 10_500));
+  const end = await bank("Alice", "miniEnd", { id: s.result.id, score: 10 });
+  assert.equal(end.status, 200);
+  assert.equal(end.data.result.loot.length, 1, "10 points would be 2 finds, but only 1 is left of today's 6");
+  const [item] = end.data.result.loot;
+  assert.equal(end.data.wallet.basket[item], 1, "the find is in the basket");
 });

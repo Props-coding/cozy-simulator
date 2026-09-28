@@ -787,6 +787,8 @@ function fillWallet(w) {
   w.minis.day ??= 0;
   w.minis.earned ??= 0;
   w.minis.best ??= {};
+  w.minis.lootDay ??= 0;
+  w.minis.looted ??= 0;
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -1643,7 +1645,23 @@ const BANK = {
     const best = score > (w.minis.best[game.id] ?? 0);
     if (best) w.minis.best = { ...w.minis.best, [game.id]: score };
     if (!short) grant(w, "firstMinigame", ev);
-    return { score, crumbs, best, short, capped: w.minis.earned >= cfg.crumbsPerDay };
+    // Cellar Crawl: real finds for your basket (the house server picks them).
+    const loot = [];
+    if (game.id === "cellarCrawl" && !short) {
+      const c = cfg.cellar;
+      if (w.minis.lootDay !== day) Object.assign(w.minis, { lootDay: day, looted: 0 });
+      const n = Math.max(0, Math.min(c.most, Math.floor(score / c.every), c.perDay - w.minis.looted));
+      const pick = (list) => list[Math.floor(Math.random() * list.length)];
+      for (let i = 0; i < n; i++) {
+        const kind = pick(c.finds);
+        const item = kind === "food" ? `food:${pick(GAME.CONFIG.kitchen.pantry).id}` : kind === "seed" ? `seed:${pick(GAME.CONFIG.crops.filter((x) => !x.merchant)).id}` : kind;
+        if (!knownItem(item)) continue;
+        putIn(w, item, 1);
+        loot.push(item);
+      }
+      w.minis.looted += loot.length;
+    }
+    return { score, crumbs, best, short, loot, capped: w.minis.earned >= cfg.crumbsPerDay };
   },
 
   // --- The Arcade (Update 9) ---
