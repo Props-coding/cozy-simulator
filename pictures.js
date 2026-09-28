@@ -1297,6 +1297,76 @@ Object.assign(OTHER, {
   },
 });
 
+// --- Night things (Update 8): for Mothman ---
+Object.assign(OTHER, {
+  // A warm-white lightbulb with a screw base.
+  "night:lightbulb"(ctx) {
+    circle(ctx, 0, -4, 9);
+    paint(ctx, "#fff0b8");
+    ctx.beginPath();
+    ctx.rect(-4.5, 4, 9, 8);
+    paint(ctx, "#b8b8c0", { top: 4, bottom: 12 });
+    ctx.strokeStyle = "rgba(60, 60, 70, 0.6)";
+    ctx.lineWidth = 1;
+    for (const y of [6.5, 9]) {
+      ctx.beginPath();
+      ctx.moveTo(-4.5, y);
+      ctx.lineTo(4.5, y);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "#d9a441"; // the filament
+    ctx.beginPath();
+    ctx.moveTo(-3, 2);
+    ctx.lineTo(-2, -5);
+    ctx.lineTo(0, -2);
+    ctx.lineTo(2, -5);
+    ctx.lineTo(3, 2);
+    ctx.stroke();
+    ellipse(ctx, -3.5, -8, 2.5, 1.5, -0.6);
+    flat(ctx, "rgba(255, 255, 255, 0.7)");
+  },
+  // A round paper lantern, glowing, with a little top and tassel.
+  "night:lantern"(ctx) {
+    ellipse(ctx, 0, 0, 11, 10);
+    paint(ctx, "#f2a860");
+    ctx.strokeStyle = "rgba(160, 80, 30, 0.45)";
+    ctx.lineWidth = 1;
+    for (const k of [4, 8]) {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 11, k, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.rect(-4, -12, 8, 3);
+    paint(ctx, "#5a3a2a", { top: -12, bottom: -9 });
+    ctx.beginPath();
+    ctx.rect(-1, 10, 2, 5);
+    flat(ctx, "#c0392b");
+    ellipse(ctx, -4, -4, 3, 2);
+    flat(ctx, "rgba(255, 245, 210, 0.7)");
+  },
+  // A firefly glowing in a small jar.
+  "night:firefly"(ctx) {
+    const glow = ctx.createRadialGradient(0, 2, 1, 0, 2, 11);
+    glow.addColorStop(0, "rgba(220, 255, 120, 0.9)");
+    glow.addColorStop(1, "rgba(220, 255, 120, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(-12, -9, 24, 22);
+    ctx.beginPath();
+    ctx.roundRect(-8, -7, 16, 20, 4);
+    paint(ctx, "#cfe6ee", { top: -7, bottom: 13, width: 1.1 });
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.rect(-7, -11, 14, 4);
+    paint(ctx, "#8a6444", { top: -11, bottom: -7 });
+    circle(ctx, 0, 3, 2.6);
+    flat(ctx, "#f0ff9a");
+    ctx.beginPath();
+    ctx.rect(-5, -4, 1.5, 12);
+    flat(ctx, "rgba(255, 255, 255, 0.6)");
+  },
+});
+
 // --- Putting it together ---
 function drawPicture(ctx, key) {
   const [kind, id] = key.includes(":") ? key.split(":") : [null, key];

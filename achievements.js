@@ -16,6 +16,7 @@ import { iconCanvas } from "./icons.js";
 import { playAchievementSound } from "./audio.js";
 import { bank, myWallet, noteStat } from "./bank.js";
 import { heartToast } from "./residents.js";
+import { mothGiftToast } from "./night.js";
 
 // Every moment (one-time achievement) is listed in catalog.js (shared
 // with the house server, which pays the rewards).
@@ -101,6 +102,7 @@ export function unlock(id) {
 export function showBankEvents(events) {
   // A new friendship heart with a resident (Update 6).
   for (const e of events) if (e.type === "hearts") showToast(heartToast(e));
+  for (const e of events) if (e.type === "mothGift") showToast(mothGiftToast(e)); // (night.js)
   for (const e of events) {
     if (e.type !== "achievement" || !byId[e.id]) continue;
     showToast({ ...byId[e.id], iconKey: e.id, label: "Achievement!" });

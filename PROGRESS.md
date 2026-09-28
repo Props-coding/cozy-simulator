@@ -435,6 +435,19 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Tests: 4 new server tests (a wish a day, the cooking channel teaches once, only authors take books back, only real pixel art is kept) and 2 new house tests (the well, the TV and the shelves; painting and saving a canvas).
   - **Needs the server deployed** (server.mjs, and config.js, catalog.js and world.js in the server's game folder) at the same time as this build goes live: the wish, the cooking channel, books and pixel art all need it.
 
+- Build 0.79 (overnight): Update 8, Night & Mothman.
+  - Mothman: a shy, fluffy, night-only resident (8 PM to 5 AM hometown time), drifting between the porch lanterns, the top of the porch steps and the campfire. He talks in the on-screen speech box like the raccoons and Otis: Chat, personal stories (they open with hearts), tonight's request, a gift, your scrapbook, goodnight. Friendship hearts like Clover and Mortimer (the same server system).
+  - His requests: lightbulbs (6 crumbs) and paper lanterns (15), sold at the Workshop's toolbox (press E), and fireflies, caught outdoors at night in the yard or at Willow Lake (press E; one every 30 seconds, 8 a night). He also likes honey. He loves lanterns, lightbulbs, fireflies and moonflowers; fish, not so much.
+  - His gifts, given by the house server: at 2 hearts the Believer badge (and the "the Believer" title), 4 hearts Moth Antennae (a hat), 6 hearts Moth Wings (a backpack), 8 hearts a Tiny Moth pet, 10 hearts the Mothman Plush (for your room). None of them are ever for sale. The Mothman Lamp is in Nest & Nook (decor, 45).
+  - Lamp visits: some nights (about 1 in 3) when you arrive, he's sitting by your bedside lamp for a few minutes ("your lamp was on, and it looked lonely").
+  - The sightings scrapbook: the first time you spot him each night, a blurry photo goes in (the date, where, and a moon if it was full). Now and then the camera's date stamp says something odd. Open it from his speech box.
+  - The porch light: every night from 9:00 to 9:20 PM (hometown), moths swarm the porch lanterns with Mothman leading. Watch it (press E near the porch) once a night for 15 crumbs and a little friendship.
+  - Full moons (the real moon's cycle): tiny wolf ears on everyone at night, and the Moonfish (epic) bites at Willow Lake on full moon nights. New badges: Blurry Photo, Porch Light, Howl (out on a full moon night), Believer, Lamp Friends (10 hearts).
+  - Lore: his stories say he came when there was only the porch light, before the porch; the owl leaves the Library lamp on for him (Mortimer's stories already hinted at the tapping); and the scrapbook's odd date stamps.
+  - Settings: `night` in config.js (prices, fireflies, porch light time and pay, lamp visit chance, gifts at which hearts).
+  - Tests: 4 new server tests (the toolbox, fireflies only at night and not too fast, sightings/requests/gifts, the porch light only at nine and once a night) and a house test (buying at the toolbox, Mothman in the speech box, the scrapbook). The test server can now also set night and the clock (a test-only route, like the account setup one).
+  - **Needs the server deployed** (server.mjs, config.js, catalog.js, world.js).
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 

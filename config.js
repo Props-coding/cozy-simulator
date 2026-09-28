@@ -256,6 +256,8 @@ const CONFIG = {
     { id: "pike", name: "Pike", rarity: 3, sell: 14, size: [40, 100], pull: "darting", color: "#7a9a5a" },
     { id: "koi", name: "Koi", rarity: 3, sell: 18, size: [30, 70], pull: "steady", color: "#f07a3a", when: { night: false } },
     { id: "eel", name: "Eel", rarity: 3, sell: 16, size: [40, 110], pull: "darting", color: "#4a4a3a", when: { rain: true } },
+    // (Update 8) Only on full moon nights, at Willow Lake.
+    { id: "moonfish", name: "Moonfish", rarity: 4, sell: 60, size: [30, 70], pull: "darting", color: "#c8d4ec", when: { night: true, fullMoon: true } },
     { id: "sturgeon", name: "Sturgeon", rarity: 4, sell: 30, size: [80, 180], pull: "heavy", color: "#7a7a80" },
     { id: "turtle", name: "Snapping Turtle", rarity: 4, sell: 35, size: [25, 45], pull: "heavy", color: "#5a6a3a", when: { season: ["summer"] } },
     { id: "goldenCarp", name: "Golden Carp", rarity: 4, sell: 38, size: [30, 60], pull: "steady", color: "#f2c230", when: { season: ["spring", "summer"] } },
@@ -284,6 +286,39 @@ const CONFIG = {
   // Put 2 to 4 things in the pot and cook: a known mix makes that dish
   // (and it's added to your recipe book); anything else makes a Burnt
   // Mystery (the raccoons will buy it, as junk).
+  // --- Night & Mothman (Update 8) ---
+  night: {
+    // Things for Mothman (basket items "night:<id>"). Lightbulbs and
+    // lanterns are sold at the Workshop's toolbox for `price` crumbs;
+    // fireflies are caught outdoors at night (price 0: never sold).
+    items: [
+      { id: "lightbulb", name: "Lightbulb", price: 6 },
+      { id: "lantern", name: "Paper Lantern", price: 15 },
+      { id: "firefly", name: "Firefly in a Jar", price: 0 },
+    ],
+    // Catching fireflies (yard or Willow Lake, at night): one every
+    // `fireflyEvery` seconds, `firefliesPerNight` a night.
+    fireflyEvery: 30,
+    firefliesPerNight: 8,
+    // The porch light: every night from `hour`:00 for `minutes` minutes
+    // (hometown time), moths swarm the porch lanterns with Mothman leading.
+    // Watching pays `crumbs` once a night.
+    porchLight: { hour: 21, minutes: 20, crumbs: 15 },
+    // Lamp visits: the chance (0 to 1) that Mothman is sitting by your
+    // bedside lamp when you arrive at night.
+    lampVisitChance: 0.35,
+    // What Mothman gives friends, at so many hearts: a title (through an
+    // achievement), a raccoon-catalog item (hat, backpack, pet) or a
+    // Nest & Nook piece.
+    rewards: [
+      { hearts: 2, achievement: "believer" },
+      { hearts: 4, owned: "mothAntennae" },
+      { hearts: 6, owned: "mothWings" },
+      { hearts: 8, owned: "mothPet" },
+      { hearts: 10, decor: "mothPlush" },
+    ],
+  },
+
   // --- House extras (Update 7) ---
   extras: {
     // The wishing well in the yard: one coin (crumb) a day, and a small
@@ -506,6 +541,11 @@ const CONFIG = {
         liked: ["fish:", "dish:", "crop:sunflower"],
         disliked: ["crop:radish", "crop:lettuce", "junk:can", "junk:weeds"],
       },
+      mothman: {
+        loved: ["night:lantern", "night:lightbulb", "night:firefly", "dish:moonTea", "crop:moonflower"],
+        liked: ["night:", "food:honey", "crop:sunflower", "dish:"],
+        disliked: ["fish:", "junk:"],
+      },
     },
     // The recipes each resident teaches (at `recipesAt` hearts), and their
     // price before any discount. These are recipes you can also find by
@@ -532,6 +572,11 @@ const CONFIG = {
         { hearts: 5, name: "Why did you come here?", line: "honest truth? my old bakery closed. i sat at a bus stop with doug and a suitcase, and gus said, 'there's a house up the road that smells like it needs bread.' he was right. it did." },
         { hearts: 8, name: "What do you dream about?", line: "a little shop window. a bell over the door. warm loaves stacked up, and everyone in the house stopping by in the morning. oh. wait. that's... that's kind of just this. huh." },
       ],
+      mothman: [
+        { hearts: 2, name: "How long have you been coming here?", line: "...since the porch light. it was on the first night i came. there wasn't a porch yet. just the light. i waited. the house grew around it." },
+        { hearts: 5, name: "The owl in the library", line: "the owl leaves the lamp on for me. every night. we have never spoken. i tap twice to say thank you. he taps back once. it is a good friendship." },
+        { hearts: 8, name: "Why lamps?", line: "...a lamp means someone is home. someone is awake. someone might need company. i am not good at company. but i am good at sitting nearby. that counts. doesn't it?" },
+      ],
       mortimer: [
         { hearts: 2, name: "Why the spectacles?", line: "i don't need them. owls see perfectly well. but a librarian without spectacles is simply an owl in a room full of books, and that's a different thing altogether." },
         { hearts: 5, name: "How long have you been here?", line: "before the house had a hallway, there was a library. before the library, a shelf. before the shelf, there was me, and a book i hadn't finished. i still haven't. it's very long." },
@@ -539,6 +584,14 @@ const CONFIG = {
       ],
     },
     requests: {
+      mothman: [
+        { item: "night:lightbulb", n: 1, crumbs: 12, line: "...a lightbulb. just one. the warm kind. if it's not too much trouble." },
+        { item: "night:lightbulb", n: 3, crumbs: 30, line: "three lightbulbs? for the long nights. i'll... i'll look at them. that's all. promise." },
+        { item: "night:lantern", n: 1, crumbs: 35, line: "a paper lantern. they glow so softly. like a moon you can hold." },
+        { item: "night:firefly", n: 2, crumbs: 30, line: "two fireflies. to talk to. they don't say much either. we get along." },
+        { item: "night:firefly", n: 3, crumbs: 45, line: "three fireflies, in jars. i'll let them go at dawn. it's the polite thing." },
+        { item: "food:honey", n: 1, crumbs: 20, line: "...honey? moths like sweet things. that's not a secret. it is a little embarrassing." },
+      ],
       clover: [
         { item: "crop:carrot", n: 3, crumbs: 45, line: "i'm making carrot muffins. well, i'm trying to. could you spare three carrots?" },
         { item: "crop:strawberry", n: 4, crumbs: 45, line: "strawberry tarts need strawberries. it's the law. four, please?" },
@@ -888,6 +941,7 @@ const CONFIG = {
   //   tier: "homebody", level: 3        (a tier, 1 Bronze ... 6 Legend)
   //   achievement: "whoAreYou"          (a one-time achievement)
   titles: [
+    { id: "believer", text: "the Believer", achievement: "believer" },
     { id: "studious", text: "the Studious", room: "study", level: 5 },
     { id: "scholar", text: "the Scholar", room: "study", level: 10 },
     { id: "bookworm", text: "the Bookworm", room: "library", level: 5 },

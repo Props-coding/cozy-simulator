@@ -97,6 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
+import { initNight, openToolbox, catchFirefly, watchSwarm, checkMothSighting, maybeLampVisit, fullMoonHello } from "./night.js";
 import { initExtras, isExtrasOpen, makeWish, wellHint, openTv, openLibrary, openPaint } from "./extras.js";
 import { startMarket, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
@@ -414,6 +415,12 @@ joinButton.addEventListener("click", async () => {
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
   startMarket(); // Porch Swap (the trading website), and whether Juniper's here (market.js)
+  // The night (night.js): a full moon hello, and now and then Mothman
+  // sitting by your bedside lamp when you arrive.
+  setTimeout(() => {
+    fullMoonHello();
+    maybeLampVisit();
+  }, 4000);
   initAdmin({
     teleport,
     rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)),
@@ -663,6 +670,7 @@ function studySignText() {
 function actionHintFor(room) {
   // (Otis in your first fishing lesson, or Hazel in your first gardening one)
   updateLessonCoach(isFishing() || nearestInteraction(player) === "fishing" ? fishingSpot(player) : null, gardenCoachLine(gardenBedInReach(player)));
+  checkMothSighting(player); // (a blurry photo, the first time you spot Mothman each night: night.js)
   const hint = roomHintFor(room);
   if (hint || uiBusy()) return hint;
   const pet = petInReach();
@@ -689,6 +697,9 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "tvSet") return "Press E to watch TV: cooking, weather and news.";
   if (nearestInteraction(player) === "libraryShelf") return "Press E to browse the shelves: books written by friends (or write one).";
   if (nearestInteraction(player) === "paint") return "Press E to paint it.";
+  if (nearestInteraction(player) === "toolbox") return "Press E to open the toolbox: lightbulbs and paper lanterns.";
+  if (nearestInteraction(player) === "porchSwarm") return "The moths are gathering at the porch light. Press E to watch.";
+  if (nearestInteraction(player) === "firefly") return "Fireflies are out. Press E to catch one in a jar.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
@@ -859,7 +870,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Kitchen & Trade (Update 5).
-  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)) }[nearestInteraction(player)];
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)), toolbox: openToolbox, porchSwarm: watchSwarm, firefly: catchFirefly }[nearestInteraction(player)];
   if (key === "e" && kitchenAction) {
     for (const k in keysDown) keysDown[k] = false;
     kitchenAction();
@@ -2324,6 +2335,7 @@ initBank({
 
 initKitchen({ notice: (text, ms) => showNotice(text, ms) });
 initExtras({ notice: (text, ms) => showNotice(text, ms) });
+initNight({ notice: (text, ms) => showNotice(text, ms) });
 
 initAchievements({
   announce: (id) => {

@@ -126,3 +126,36 @@ test("Pixel art: paint a canvas in your room and save it", async ({ page }) => {
   expect(pixels.slice(128, 144)).toBe("4".repeat(16));
   expect(problems).toEqual([]);
 });
+
+test("Night & Mothman: the toolbox, and Mothman in the speech box", async ({ page }) => {
+  const problems = await enterHouse(page);
+  await seed(page, { crumbs: 50, basket: {} });
+  await goTo(page, { name: "workshop", spot: () => {
+    const box = FURNITURE.find((f) => f.kind === "toolbox");
+    return { x: box.x + box.w + 0.15, y: box.y - 0.1 };
+  } });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await page.click("#npc-items .npc-item button >> nth=0"); // Buy a lightbulb
+  await expect.poll(async () => page.evaluate(async () => (await import("./bank.js")).myWallet().basket["night:lightbulb"] ?? 0)).toBe(1);
+  await page.keyboard.press("Escape");
+  // Out in the corridor, Mothman comes to sit right beside you (as on a
+  // lamp visit).
+  await goTo(page, { name: "corridor", spot: () => ({ x: 12.5, y: BUSINESS + 1.4 }) });
+  await page.evaluate(() => {
+    const me = window.porchlightTest.where();
+    setMothVisit({ x: me.x + 1.0, y: me.y + 0.5, until: Date.now() + 60_000 });
+  });
+  await page.waitForTimeout(500);
+  await page.keyboard.press("e");
+  await expect(page.locator("#talk-name")).toHaveText("Mothman");
+  for (let i = 0; i < 10 && !(await page.locator("#talk-choices button").count()); i++) {
+    await page.keyboard.press("e");
+    await page.waitForTimeout(300);
+  }
+  await page.click('#talk-choices button:has-text("Your scrapbook")');
+  await expect(page.locator("#extras-panel")).toBeVisible();
+  await page.keyboard.press("Escape");
+  expect(await frameErrors(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});

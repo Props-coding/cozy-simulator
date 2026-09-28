@@ -12,16 +12,20 @@ import { openNpc, npcSay, refreshNpc } from "./npc.js";
 import { bank, myWallet, loadBank } from "./bank.js";
 import { itemInfo, basketCount, basketItems } from "./basket.js";
 import { playCrumbSound } from "./audio.js";
+import { talk, talkChoicesFor } from "./shop.js";
+import { openScrapbook } from "./night.js";
 
 const pick = (lines) => lines[Math.floor(Math.random() * lines.length)];
 
 const THANKS = {
   clover: ["oh, you're a treasure! thank you thank you!", "perfect! these are perfect. i could hug you. i'm floury, so i won't.", "wonderful! come by later, there might be a spare roll with your name on it."],
   mortimer: ["most kind. most kind indeed. hoo.", "splendid. i shall note your generosity in the ledger.", "thank you. you have the makings of a fine library patron."],
+  mothman: ["...oh. oh, thank you. i'll keep it close to the light.", "...for me? you're very kind. kinder than most people are to moths.", "...thank you. i don't know what to say. so i'll just... sit here. happily."],
 };
 const DONE = {
   clover: "that's all i needed today, sweetpea. ask me again tomorrow!",
   mortimer: "you've been most helpful today. tomorrow, perhaps, another small favor.",
+  mothman: "...you've done enough tonight. more than enough. i'll be by the lamp.",
 };
 
 // Today's request from a resident, as a row for their window: what they
@@ -179,6 +183,97 @@ const WHO = {
   },
 };
 
+WHO.mothman = {
+  name: "Mothman",
+  color: "#8a7488",
+  pitch: 380,
+  hello: {
+    night: ["...oh. hello. i didn't hear you. i don't hear most things. i'm watching the lamp.", "...hi. is it alright if i stay here? by the light? i'm quiet.", "...oh! you can see me. most people don't look up from the lamp."],
+  },
+  topics: [
+    {
+      name: "How's your night?",
+      say: () => (moonEars() ? "...full moon tonight. everyone's a little bit wolf. it suits them. i think it suits you too." : pick(["...peaceful. the lamp's warm. the moths are out. a good night.", "...i've been counting the stars through the porch light. i lose count. i start again. it's nice."])),
+    },
+    {
+      name: "Why do you like lamps?",
+      say: () => pick(["...they're warm. and they mean someone's home. that's two good things in one.", "...i can't help it. none of us can. it's a moth thing. please don't make it weird."]),
+    },
+    {
+      name: "Tell me about yourself",
+      say: () => pick(["...i'm shy. i'm fluffy. people see the eyes and get scared, and then they see the fluff. the fluff helps.", "...i've always been around. just at the edges of the light. i'm trying to come a little closer."]),
+    },
+  ],
+};
+
+// Mothman talks in the speech box (like the raccoons and Otis): a hello,
+// then a few choices. Gifts use the same window as the other residents.
+function talkToMothman(r, state) {
+  const who = WHO.mothman;
+  const O = { name: who.name, color: who.color, pitch: who.pitch };
+  const ready = !!myWallet().friends;
+  const chatted = async () => {
+    if (ready && !friendOf("mothman").chatted) await bank("residentChat", { id: "mothman" });
+  };
+  const menu = () => {
+    const stories = (ready ? CONFIG.residents.stories.mothman ?? [] : []).filter((st) => friendOf("mothman").hearts >= st.hearts);
+    talkChoicesFor([
+      ["Chat", async () => {
+        await chatted();
+        const topic = pick(who.topics);
+        talk([[O, topic.say()]], menu);
+      }],
+      ...(stories.length ? [["Ask him something personal", () => talkChoicesFor([...stories.map((st) => [st.name, () => talk([[O, st.line]], menu)]), ["Never mind", menu]])]] : []),
+      ...(ready ? [["Tonight's request", () => mothRequest(O, menu)], ["Give a gift", () => mothGift(who)]] : []),
+      ["Your scrapbook", openScrapbook],
+      ["Goodnight", () => talk([[O, pick(["...goodnight. i'll keep the lamp company.", "...sleep well. i'll be around. at the edges.", "...bye. thank you for talking to me. people don't, usually."])]])],
+    ]);
+  };
+  const hello = state.visit ? "...oh. you're home. i hope you don't mind. your lamp was on, and it looked lonely." : pick(who.hello.night);
+  talk([[O, hello]], menu);
+  loadBank().catch(() => {});
+}
+
+function mothRequest(O, menu) {
+  const today = myWallet().requests?.mothman;
+  const want = today && CONFIG.residents.requests.mothman?.[today.index];
+  if (!want) return talk([[O, "...nothing tonight. just company."]], menu);
+  if (today.done) return talk([[O, DONE.mothman]], menu);
+  const info = itemInfo(want.item);
+  talk([[O, want.line]], () =>
+    talkChoicesFor([
+      [`Give ${want.n} ${info.name.toLowerCase()} (${want.crumbs} crumbs)`, async () => {
+        if (basketCount(want.item) < want.n) return talk([[O, `...you don't have ${want.n} yet. that's alright. the night is long.`]], menu);
+        if (!(await bank("residentRequest", { id: "mothman" }))) return menu();
+        playCrumbSound();
+        talk([[O, pick(THANKS.mothman)]], menu);
+      }],
+      ["Not yet", menu],
+    ])
+  );
+}
+
+function mothGift(who) {
+  openNpc({
+    name: who.name,
+    portrait: { resident: "mothman" },
+    color: who.color,
+    pitch: who.pitch,
+    hearts: () => ({ have: friendOf("mothman").hearts, max: H().maxHearts }),
+    hello: friendOf("mothman").gifted ? "...you already gave me something tonight. i'm still holding it." : "...a present? you don't have to. ...what is it?",
+    tabs: [
+      {
+        id: "gift",
+        label: "Give a gift",
+        items: () => giftRows("mothman"),
+        get empty() {
+          return friendOf("mothman").gifted ? "You've given Mothman a gift tonight. One a day: come back tomorrow!" : "Nothing to give yet. He loves lightbulbs, lanterns and fireflies.";
+        },
+      },
+    ],
+  });
+}
+
 // --- Friendship (step 3) ---
 const H = () => CONFIG.residents.hearts;
 const friendOf = (id) => myWallet().friends?.[id] ?? { points: 0, hearts: 0, chatted: false, gifted: false };
@@ -190,6 +285,12 @@ const GIFT_LINES = {
     liked: ["how lovely! this'll go straight into something tasty.", "ooh, thank you! i'll find a use for this, don't you worry."],
     neutral: ["oh! thank you, sweetpea. i'll... find a place for it.", "that's very thoughtful. very... thoughtful."],
     disliked: ["oh. oh dear. um. thank you? it's... wriggling. or it smells like it would.", "that's, um. i'll put it by the door. outside the door."],
+  },
+  mothman: {
+    loved: ["...oh. oh. this is... this is the nicest thing. i'm going to sit with it all night.", "...for me? it glows. or it will. thank you. truly."],
+    liked: ["...thank you. that's very thoughtful.", "...oh, nice. i'll keep it by the lamp."],
+    neutral: ["...hm. thank you. i'll... keep it safe.", "...a present. i don't get many. thank you."],
+    disliked: ["...oh. um. it's a little... fishy. moths and fish don't really... it's fine. thank you.", "...i'll put it outside. somewhere dark. thank you for thinking of me."],
   },
   mortimer: {
     loved: ["hoo! oh, this is splendid. truly splendid. i'm quite overcome.", "for me? i... i don't know what to say. and i always know what to say."],
@@ -286,6 +387,7 @@ export function talkToResident(id) {
   const who = WHO[id];
   const state = r && residentState(r);
   if (!who || !state) return;
+  if (id === "mothman") return talkToMothman(r, state);
   // Requests, gifts, recipes and hearts need the house server's side of
   // them (Update 6). Until the server has it, the residents just chat,
   // and the rest shows up by itself once it does.
@@ -382,5 +484,6 @@ export function residentHint(id) {
   const state = r && residentState(r);
   if (!state) return "";
   if (state.asleep) return `${WHO[id].name} is fast asleep on his perch. Press E to peek.`;
+  if (id === "mothman") return "Press E to say hello to Mothman. (He's shy.)";
   return `Press E to talk to ${WHO[id].name}${id === "clover" ? ", the baker" : ", the librarian"}.`;
 }

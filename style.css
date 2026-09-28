@@ -5694,3 +5694,35 @@ canvas.item-picture {
   border-color: var(--wood-dark);
   transform: scale(1.15);
 }
+
+/* --- Mothman's scrapbook (Update 8, night.js): blurry polaroids --- */
+.scrapbook {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.polaroid {
+  margin: 0;
+  padding: 8px 8px 10px;
+  background: #fffdf8;
+  border-radius: 4px;
+  box-shadow: 0 3px 8px rgba(60, 40, 20, 0.25);
+}
+.polaroid:nth-child(odd) {
+  transform: rotate(-1.5deg);
+}
+.polaroid:nth-child(even) {
+  transform: rotate(1.2deg);
+}
+.polaroid canvas {
+  display: block;
+  width: 100%;
+  border-radius: 2px;
+}
+.polaroid figcaption {
+  margin-top: 6px;
+  font-size: 0.8em;
+  color: #6a4a30;
+  line-height: 1.3;
+}

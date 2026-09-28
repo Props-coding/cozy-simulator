@@ -173,3 +173,63 @@ test("pixel art is kept only if it's real pixel art", async () => {
   await call("PUT", "/api/room/home", { size: "cozy", placed: [{ item: "artCanvas", x: 1, y: 0, pixels: "<script>" }] }, as("Alice"));
   assert.equal((await mine()).find((p) => p.item === "artCanvas")?.pixels, undefined, "junk is dropped");
 });
+
+// --- Night & Mothman (Update 8) ---
+const setSky = (sky) => call("POST", "/admin/test-sky", sky, { "X-Admin-Token": ADMIN });
+
+test("the toolbox sells lightbulbs and lanterns, never fireflies", async () => {
+  await seed("Alice", { crumbs: 30, basket: {} });
+  const bought = await bank("Alice", "buyNightItem", { id: "lightbulb", n: 2 });
+  assert.equal(bought.status, 200);
+  assert.equal(bought.data.wallet.crumbs, 30 - 12);
+  assert.equal(bought.data.wallet.basket["night:lightbulb"], 2);
+  assert.equal((await bank("Alice", "buyNightItem", { id: "firefly" })).status, 400, "fireflies are caught, not bought");
+  assert.equal((await bank("Alice", "buyNightItem", { id: "lantern", n: 5 })).status, 409, "not enough crumbs");
+});
+
+test("fireflies: only at night, not too fast, and a few a night", async () => {
+  await seed("Alice", { basket: {}, night: {} });
+  await setSky({ night: false });
+  assert.equal((await bank("Alice", "catchFirefly")).status, 409, "not by day");
+  await setSky({ night: true });
+  const caught = await bank("Alice", "catchFirefly");
+  assert.equal(caught.status, 200);
+  assert.equal(caught.data.wallet.basket["night:firefly"], 1);
+  assert.equal((await bank("Alice", "catchFirefly")).status, 409, "give it a moment");
+});
+
+test("Mothman: a sighting a night, his requests, and his gifts at so many hearts", async () => {
+  await setSky({ night: true });
+  await seed("Bruno", { crumbs: 0, owned: [], night: {}, basket: { "night:lightbulb": 5, "night:lantern": 2, "night:firefly": 5, "food:honey": 2 } });
+  const seen = await bank("Bruno", "mothSighting", { where: "porch" });
+  assert.equal(seen.status, 200);
+  assert.equal(seen.data.wallet.night.sightings.length, 1);
+  await bank("Bruno", "mothSighting", { where: "porch" });
+  assert.equal((await wallet("Bruno")).night.sightings.length, 1, "one photo a night");
+  const request = await bank("Bruno", "residentRequest", { id: "mothman" });
+  assert.equal(request.status, 200, JSON.stringify(request.data));
+  // Up to 4 hearts: the Believer badge (and its title) and the antennae.
+  await seed("Bruno", { residents: { ...(await wallet("Bruno")).residents, hearts: { mothman: 390 } } });
+  const gift = await bank("Bruno", "residentGift", { id: "mothman", item: "night:lantern" });
+  assert.equal(gift.status, 200);
+  assert.equal(gift.data.result.taste, "loved");
+  const w = gift.data.wallet;
+  assert.ok(w.unlocked.believer, "Believer");
+  assert.ok(w.owned.includes("mothAntennae"), "the antennae");
+  assert.ok(!w.owned.includes("mothWings"), "not the wings yet");
+  assert.equal((await bank("Bruno", "buy", { id: "mothWings" })).status, 400, "his gifts are never for sale");
+});
+
+test("the porch light: only at nine, once a night", async () => {
+  await seed("Alice", { crumbs: 0, night: {} });
+  const d = new Date();
+  const at = (h, m) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m) - Date.now();
+  await setSky({ night: true, offset: at(15, 0) });
+  assert.equal((await bank("Alice", "porchSwarm")).status, 409, "not at three in the afternoon");
+  await setSky({ night: true, offset: at(21, 5) });
+  const watched = await bank("Alice", "porchSwarm");
+  assert.equal(watched.status, 200);
+  assert.ok(watched.data.wallet.crumbs >= 15);
+  assert.equal((await bank("Alice", "porchSwarm")).status, 409, "once a night");
+  await setSky({ night: null, offset: 0 });
+});

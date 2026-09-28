@@ -80,6 +80,11 @@ const ICONS = {
   happyToHelp: { pic: "gift" },
   cloverFriend: { resident: "clover" },
   mortimerFriend: { resident: "mortimer" },
+  mothmanFriend: { resident: "mothman" },
+  believer: { resident: "mothman" },
+  firstSighting: { resident: "mothman" },
+  porchLight: { f: "porchLantern", w: 0.4, h: 0.3 },
+  fullMoon: { resident: "mothman" },
   harvester: { pic: "crop:carrot" },
   angler: { pic: "rod:bamboo" },
   chef: { pic: "pot" },
@@ -520,6 +525,7 @@ function drawSpec(big, spec) {
     ctx.scale(5, 5);
     const pose = { facing: 0, moving: false, act: "chat", asleep: false, y: 0 };
     if (spec.resident === "clover") drawClover(ctx, pose, 1);
+    else if (spec.resident === "mothman") drawMothman(ctx, pose, 1);
     else drawMortimer(ctx, pose, 1);
     ctx.restore();
   } else if (spec.f) {

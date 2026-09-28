@@ -447,6 +447,7 @@ function drawOutdoorLight(ctx) {
   }
   ctx.globalAlpha = 1;
   if (viewFloor === LAKE_FLOOR) drawLakeFireflies(ctx, level); // (render-lake.js)
+  if (viewFloor === YARD_FLOOR) drawMothSwarm(ctx); // (the porch light at nine: render-night.js)
   if (viewFloor === FARM_FLOOR) drawFarmFireflies(ctx, level); // (render-farm.js)
   if (alley) return drawAlleyOverhead(ctx, level); // (render-alley.js; no weather back there)
   drawOutsideWeather(ctx, whole); // rain or snow falls in front of the lights

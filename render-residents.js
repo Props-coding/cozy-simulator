@@ -25,6 +25,7 @@ function drawResident(ctx, r, state) {
   ctx.translate(at.x, at.y);
   if (r.kind === "rabbit") drawClover(ctx, state, t);
   else if (r.kind === "owl") drawMortimer(ctx, state, t);
+  else if (r.kind === "moth") drawMothman(ctx, state, t); // (render-night.js)
   ctx.restore();
 }
 

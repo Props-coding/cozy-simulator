@@ -653,7 +653,7 @@ let GAME = null;
 async function loadGame() {
   const files = ["config.js", "catalog.js", "world.js"];
   const code = (await Promise.all(files.map((f) => readFile(join(GAME_DIR, f), "utf8")))).join("\n;\n");
-  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond, waterAt, waterShadows, waterById, GARDEN_BEDS })", {}, { timeout: 5000 });
+  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond, waterAt, waterShadows, waterById, GARDEN_BEDS, isFullMoon })", {}, { timeout: 5000 });
   const byId = (list) => Object.fromEntries(list.map((x) => [x.id, x]));
   GAME = {
     CONFIG: g.CONFIG,
@@ -674,6 +674,8 @@ async function loadGame() {
     waterShadows: g.waterShadows,
     waterById: g.waterById,
     GARDEN_BEDS: g.GARDEN_BEDS, // (where each bed is: "yard" or "farm", from world.js)
+    isFullMoon: g.isFullMoon, // (the real moon, from world.js)
+    NIGHT: byId(g.CONFIG.night.items),
     TRACKS: g.CONFIG.tieredAchievements ?? [],
     TIERS: g.CONFIG.achievementTiers ?? [],
   };
@@ -698,6 +700,7 @@ function knownItem(id) {
   if (kind === "dish") return Object.hasOwn(GAME.RECIPES, name);
   if (kind === "bait") return Object.hasOwn(GAME.BAIT, name) && GAME.BAIT[name].price > 0;
   if (kind === "seed" || kind === "crop") return Object.hasOwn(GAME.CROPS, name);
+  if (kind === "night") return Object.hasOwn(GAME.NIGHT, name);
   return false;
 }
 
@@ -759,6 +762,15 @@ function fillWallet(w) {
   w.boost ??= null;
   w.cookieDay ??= 0;
   w.wishDay ??= 0; // (the day of your last wish at the well, Update 7)
+  // Night & Mothman (Update 8): your sightings (blurry photos), and what
+  // you've done tonight (fireflies caught, the porch light watched).
+  w.night ??= {};
+  w.night.sightings ??= [];
+  w.night.sightDay ??= 0;
+  w.night.fireflyDay ??= 0;
+  w.night.fireflies ??= 0;
+  w.night.lastFirefly ??= 0;
+  w.night.porchDay ??= 0;
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -815,6 +827,24 @@ function addFriendship(w, id, n, ev) {
   const was = Math.floor(before / h.pointsPerHeart), now = Math.floor(after / h.pointsPerHeart);
   if (now > was) ev.push({ type: "hearts", id, hearts: now });
   if (now >= h.maxHearts) grant(w, id + "Friend", ev);
+  if (id === "mothman") mothGifts(w, now, ev);
+}
+
+// Mothman's gifts to friends (config.js night.rewards): each once, when
+// you reach its hearts.
+function mothGifts(w, hearts, ev) {
+  for (const r of GAME.CONFIG.night.rewards) {
+    if (hearts < r.hearts) continue;
+    if (r.achievement) grant(w, r.achievement, ev);
+    if (r.owned && !w.owned.includes(r.owned)) {
+      w.owned.push(r.owned);
+      ev.push({ type: "mothGift", item: r.owned });
+    }
+    if (r.decor && !(w.home.owned[r.decor] > 0)) {
+      w.home.owned[r.decor] = 1;
+      ev.push({ type: "mothGift", item: "decor:" + r.decor });
+    }
+  }
 }
 
 // What a resident thinks of a gift: "loved", "liked", "neutral" or
@@ -830,7 +860,7 @@ function tasteOf(id, item) {
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log, lesson } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -942,6 +972,17 @@ async function checkSky() {
   }
 }
 
+// A night's date (Update 8): the evening's date, so the small hours after
+// midnight still count as the same night.
+const nightDay = () => {
+  const d = new Date(Date.now() + sky.offset - 12 * 3_600_000);
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+};
+// Out on a full moon night: the Howl badge.
+function moonBadge(w, ev) {
+  if (isNight() && GAME.isFullMoon()) grant(w, "fullMoon", ev);
+}
+
 // The hometown's clock: its date (as 20260926) and hour.
 const hometown = () => new Date(Date.now() + sky.offset);
 const hometownDay = () => {
@@ -979,6 +1020,7 @@ function fishBiting(fish) {
   if (when.night === false && isNight()) return false;
   if (when.rain && !sky.raining) return false;
   if (when.season && !when.season.includes(season())) return false;
+  if (when.fullMoon && !(isNight() && GAME.isFullMoon())) return false;
   return true;
 }
 // What bites, from the bait, the rod and the shadow that came to the
@@ -1178,12 +1220,12 @@ const BANK = {
   },
   buy(w, b, ev) {
     const item = GAME.SHOP[b.id];
-    if (!item) throw new Oops(400, "The raccoons don't sell that.");
+    if (!item || item.reward) throw new Oops(400, "The raccoons don't sell that.");
     if (w.owned.includes(item.id)) throw new Oops(409, "You already have that one.");
     spend(w, item.price);
     w.owned.push(item.id);
     grant(w, "firstBuy", ev);
-    const ownsAll = (type) => Object.values(GAME.SHOP).filter((i) => i.type === type).every((i) => w.owned.includes(i.id));
+    const ownsAll = (type) => Object.values(GAME.SHOP).filter((i) => i.type === type && !i.reward).every((i) => w.owned.includes(i.id));
     if (ownsAll("hat")) grant(w, "allHats", ev);
     if (ownsAll("shoes")) grant(w, "allShoes", ev);
     return {};
@@ -1548,6 +1590,59 @@ const BANK = {
     const crop = crops[Math.floor(Math.random() * crops.length)];
     putIn(w, `seed:${crop.id}`, 1);
     return { text, seed: crop.id };
+  },
+
+  // --- Night & Mothman (Update 8) ---
+  // Lightbulbs and lanterns, from the Workshop's toolbox.
+  buyNightItem(w, b) {
+    const item = GAME.NIGHT[b.id];
+    if (!item || !(item.price > 0)) throw new Oops(400, "The toolbox doesn't have that.");
+    const n = amount(b.n ?? 1, 1, 20); // (one, unless it says)
+    spend(w, item.price * n);
+    putIn(w, `night:${item.id}`, n);
+    return {};
+  },
+  // A firefly in a jar: outdoors, at night, one every so often, a few a
+  // night (the page only asks from the yard or the Lake).
+  catchFirefly(w, b, ev) {
+    const cfg = GAME.CONFIG.night;
+    if (!isNight()) throw new Oops(409, "The fireflies only come out at night.");
+    const day = nightDay();
+    if (w.night.fireflyDay !== day) w.night = { ...w.night, fireflyDay: day, fireflies: 0 };
+    if (w.night.fireflies >= cfg.firefliesPerNight) throw new Oops(409, "You've caught plenty tonight. Let the rest glow!");
+    if (Date.now() - w.night.lastFirefly < cfg.fireflyEvery * 1000) throw new Oops(409, "They're quick! Give it a moment.");
+    w.night.fireflies++;
+    w.night.lastFirefly = Date.now();
+    putIn(w, "night:firefly", 1);
+    moonBadge(w, ev);
+    return { caught: w.night.fireflies };
+  },
+  // Spotting Mothman: one blurry photo a night for the scrapbook.
+  mothSighting(w, b, ev) {
+    if (!isNight()) throw new Oops(409, "He only comes out at night.");
+    const day = nightDay();
+    if (w.night.sightDay === day) return {};
+    const where = ["porch", "campfire", "bedroom", "steps"].includes(b.where) ? b.where : "porch";
+    w.night.sightDay = day;
+    w.night.sightings = [...w.night.sightings, { day, where, moon: GAME.isFullMoon() }].slice(-40);
+    grant(w, "firstSighting", ev);
+    moonBadge(w, ev);
+    return { where };
+  },
+  // The porch light: the moths gather every night for a little while, with
+  // Mothman leading. Watching it pays once a night.
+  porchSwarm(w, b, ev) {
+    const cfg = GAME.CONFIG.night.porchLight;
+    const now = hometown();
+    if (!(now.getUTCHours() === cfg.hour && now.getUTCMinutes() < cfg.minutes)) throw new Oops(409, "The moths aren't gathering right now. Try the porch around nine at night.");
+    const day = hometownDay();
+    if (w.night.porchDay === day) throw new Oops(409, "You've watched the moths tonight. They'll be back tomorrow.");
+    w.night.porchDay = day;
+    earn(w, cfg.crumbs, ev);
+    grant(w, "porchLight", ev);
+    addFriendship(w, "mothman", 10, ev);
+    moonBadge(w, ev);
+    return { crumbs: cfg.crumbs };
   },
 
   // --- House extras (Update 7) ---
@@ -2813,6 +2908,14 @@ const adminRoutes = {
       for (const [k, v] of Object.entries(body.wallet ?? {})) w[k] = k === "fishing" ? { ...w.fishing, ...v } : v;
       await saveDb();
       return { wallet: w };
+    },
+    // (Also test-only: night or day, and the hometown's clock, so the
+    // night's things can be tested at any hour. { night, offset }.)
+    "POST /admin/test-sky": async (req) => {
+      const body = await readJson(req, 1_000);
+      if (typeof body.night === "boolean" || body.night === null) sky.night = body.night;
+      if (Number.isFinite(body.offset)) sky.offset = body.offset;
+      return { sky };
     },
   }),
 };

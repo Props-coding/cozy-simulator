@@ -2574,9 +2574,13 @@ function drawUprightBody(ctx, p) {
   // Glasses go on the face (a robe's hood hides them).
   if (!aura?.robe && Object.hasOwn(GLASSES_DRAWERS, p.glasses) && GLASSES_DRAWERS[p.glasses]) GLASSES_DRAWERS[p.glasses](ctx, cx, cy);
   ctx.restore();
-  // A robe's hood takes the place of a hat.
+  // A robe's hood takes the place of a hat. (On a full moon night, tiny
+  // wolf ears poke up under the hat: render-night.js.)
   if (aura?.robe) drawRobe(ctx, cx, cy, r);
-  else (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+  else {
+    if (moonEars()) drawWolfEars(ctx, cx, cy, r);
+    (Object.hasOwn(HAT_DRAWERS, p.hat) ? HAT_DRAWERS[p.hat] : HAT_DRAWERS.none)(ctx, cx, cy, r);
+  }
   // Earrings, at the sides of the head (after the hat, so a hat never
   // hides them; under headphones they hang just below the ear cups).
   if (!aura?.robe && Object.hasOwn(EARRING_DRAWERS, p.earrings) && EARRING_DRAWERS[p.earrings]) {

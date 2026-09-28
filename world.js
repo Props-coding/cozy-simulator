@@ -1192,6 +1192,26 @@ function isNightOutside() {
 // do there); where they are in it comes from the clock, so everyone sees
 // them in the same place. Outside all their hours they're home (not shown).
 // Their talk lives in residents.js, their looks in render-residents.js.
+// --- The moon (Update 8) ---
+// How far through its cycle the real moon is (0 new, 0.5 full), from a
+// known new moon (January 6, 2000). Full moon: about two nights either
+// side of the peak. The house server uses the same sums.
+function moonPhase(now = Date.now()) {
+  const synodic = 29.530588853 * 86_400_000;
+  return ((((now - Date.UTC(2000, 0, 6, 18, 14)) / synodic) % 1) + 1) % 1;
+}
+function isFullMoon(now = Date.now()) {
+  const p = moonPhase(now);
+  return p > 0.466 && p < 0.534;
+}
+
+// Mothman's lamp visit (Update 8): set by main.js when you arrive at night
+// and he's come to sit by your bedside lamp ({ x, y, until }), or null.
+let mothVisit = null;
+function setMothVisit(visit) {
+  mothVisit = visit;
+}
+
 const RESIDENTS = [
   {
     id: "clover",
@@ -1236,6 +1256,23 @@ const RESIDENTS = [
       { from: 6, to: 19, asleep: true, stops: [{ x: 5.4, y: -2.62, stay: 60, act: "perch" }] },
     ],
   },
+  // Mothman (Update 8): shy, fluffy, and only out at night, drifting
+  // between the lights: the two porch lanterns, the top of the porch
+  // steps, and the campfire.
+  {
+    id: "mothman",
+    name: "Mothman",
+    kind: "moth",
+    speed: 0.7,
+    day: [
+      { from: 20, to: 5, stops: [
+        { x: 19.55, y: YARD - 4.9, stay: 22, act: "lamp" },
+        { x: 22.15, y: YARD - 4.9, stay: 18, act: "lamp" },
+        { x: 17.9, y: YARD - 2.9, stay: 8, act: "look" },
+        { x: 5.2, y: YARD - 1.7, stay: 14, act: "fire" },
+      ] },
+    ],
+  },
 ];
 
 // The hometown's hour right now, with minutes as a fraction (like 13.5).
@@ -1250,6 +1287,8 @@ function hometownHour(now = Date.now()) {
 // Where a resident is right now: { x, y, facing (-1 left, 1 right, 0 front,
 // "back"), moving, act, asleep }, or null while they're home.
 function residentState(r, now = Date.now()) {
+  // (Mothman sitting by your bedside lamp, for a little while after you arrive.)
+  if (r.id === "mothman" && mothVisit && now < mothVisit.until) return { x: mothVisit.x, y: mothVisit.y, facing: 0, moving: false, act: "lamp", asleep: false, visit: true };
   const hour = hometownHour(now);
   const part = r.day.find((p) => (p.from < p.to ? hour >= p.from && hour < p.to : hour >= p.from || hour < p.to));
   if (!part) return null;
@@ -1860,6 +1899,9 @@ const DECOR = {
   tapestry: { name: "Boho Tapestry", tab: "decor", price: 28, kind: "tapestry", w: 1.2, wall: true },
   // The art aisle (Update 7): blank things you paint yourself (walk up to
   // one in your room and press E).
+  // (Update 8) The Mothman lamp, and the plush he gives his best friends.
+  mothLamp: { name: "Mothman Lamp", tab: "decor", price: 45, kind: "mothLamp", w: 0.5, h: 0.4 },
+  mothPlush: { name: "Mothman Plush", kind: "mothPlush", w: 0.5, h: 0.4, gift: true },
   artCanvas: { name: "Blank Canvas", tab: "art", price: 12, kind: "artCanvas", w: 0.7, wall: true },
   artPoster: { name: "Blank Poster", tab: "art", price: 18, kind: "artPoster", w: 1.2, wall: true },
   artRug: { name: "Blank Rug", tab: "art", price: 25, kind: "artRug", w: 1.6, h: 1.2, solid: false },
@@ -2150,6 +2192,12 @@ function nearestInteraction(player) {
   // shelves (books by friends; a tall library shelf in your bedroom works
   // too), and pixel art you can paint (your own).
   near("wishingWell", 0.9);
+  // Night & Mothman (Update 8): the Workshop's toolbox (lightbulbs and
+  // lanterns), the porch light swarm at nine, and fireflies (outdoors at
+  // night, anywhere nothing else is closer).
+  near("toolbox", 0.9);
+  if (typeof porchSwarmOn === "function" && porchSwarmOn() && floorOf(player.y) === YARD_FLOOR && FURNITURE.some((f) => f.kind === "porchLantern" && Math.hypot(f.x - cx, f.y + 0.6 - cy) < 3)) options.push(["porchSwarm", 0.4]);
+  if (isNightOutside() && (floorOf(player.y) === YARD_FLOOR || floorOf(player.y) === LAKE_FLOOR)) options.push(["firefly", 1.7]);
   near("tvSet", 1.0);
   near("libraryShelf", 0.7);
   if (myArtInReach(player)) options.push(["paint", 0.25]);

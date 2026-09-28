@@ -43,6 +43,12 @@ function openPanel(title, build, closing = null) {
   build(panelBody);
 }
 
+// The same panel, for other parts of the house (Mothman's scrapbook, night.js).
+export function openExtrasPanel(title, build) {
+  showing = "other";
+  openPanel(title, build);
+}
+
 export function closeExtras() {
   if (panel.hidden) return;
   panel.hidden = true;
