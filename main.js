@@ -2686,7 +2686,7 @@ function frame(now) {
   // While you're asleep, you count as "asleep" for sound: no mic, no voices.
   const soundRoom = amAsleep ? "asleep" : currentRoom.id;
   updateMicForRoom(soundRoom);
-  updateVoiceRouting(soundRoom, getPeers(), (p) => peerAllowed(p) && !mutedNames.has(String(p.name).toLowerCase()));
+  updateVoiceRouting(soundRoom, getPeers(), (p) => peerAllowed(p) && !mutedNames.has(String(p.name).toLowerCase()), player);
 
   if (currentRoom.id !== previousRoomId) {
     if (previousRoomId === "theater") leaveTheater();

@@ -40,12 +40,12 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 
 | Room | Voice chat | Sound you hear | Notes |
 |---|---|---|---|
-| Hallway (hub) | Off | Silence | Neutral space between rooms |
+| Hallway (hub) | On, with others in the hallway | Friends' voices | Neutral space between rooms |
 | Theater (was Gaming) | On, with others in the room | Friends' voices, plus a shared YouTube video | Paste a link and it plays in sync for everyone in the room |
-| Library | Off | Soft rain, locally (own volume slider) | Quiet reading room north of the hallway, across from the Theater |
+| Library | On, with others in the room | Friends' voices, and soft rain, locally (own volume slider) | Quiet reading room north of the hallway, across from the Theater |
 | Conference Room (business floor, north of its corridor) | On, with others in the room | Friends' voices | Big table, shared whiteboard (press B) |
 | Offices (business floor, north of its corridor) | On, only with others in the same office | Friends' voices | Personal, lockable, gone while the owner is offline |
-| Elevator lobbies, the business corridor and the suite floor | Off | Silence | Three floors: 1 ground (hallway, Theater, Study, Dinner, Library), 2 business (offices, Conference Room, Workshop, Lounge), 3 the suite floor (bedrooms). The elevator at each floor's east end has a floor picker (press E at its doors) |
+| Elevator lobbies, the business corridor and the suite floor | On, with others in the same one | Friends' voices | Three floors: 1 ground (hallway, Theater, Study, Dinner, Library), 2 business (offices, Conference Room, Workshop, Lounge), 3 the suite floor (bedrooms). The elevator at each floor's east end has a floor picker (press E at its doors) |
 | Workshop (business floor, south of its corridor) | On, with others in the room | Friends' voices | Workbench, done jar, and the house's project boards on the corkboard (press E) |
 | Lounge (business floor, between the Workshop and the elevator) | On, with others in the room | Friends' voices | Sofa, armchair, arcade cabinet and snacks, for a break and a chat |
 | Bedrooms (each its own space behind a door on the suite floor (floor 3), one per member, kept on the server) | Owner picks: voice (only with others in the same bedroom), lo-fi, or silent | Friends' voices or your lo-fi; in bed: soft white noise only | Door: Open, Knock first, Private or Party, enforced with signed room passes. Starts with a laptop desk, a mattress, a journal nightstand (private, encrypted journal) and a wall phone (private calls, or a message for someone away); decorate with Nest & Nook items. Step into bed to sleep: mic off, hear nobody, "sleeping" badge. Away owners sleep in their bed, with a moon on their door |
@@ -54,13 +54,15 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Back Alley (its own small map: down the manhole on the sidewalk below the yard, west of the bus stop, E to climb down; up out of the matching one to leave) | On, with others in the alley | Friends' voices | Sketchy but cozy, always dusk: brick, neon, wet cobbles, string lights, an old sofa, a sleeping cat, Reginald's back door. A street at the west end (road, curb, sidewalk, a streetlight, cars passing now and then) past a striped barrier; a chain-link fence with a padlocked gate (a future unlock) at the east. Puddles reflect the lights and splash when you walk through. The raccoons' shop lives here (since 0.72) |
 | The Farm (its own map, a bus trip from the yard: talk to Gus at the bus) | On, with others at the Farm | Friends' voices | Hazel's farm (since 0.761): barn and silo, her farm stand (seeds, buys crops), chicken run, windmill, orchard, pumpkin patch, well, and the sixteen shared garden beds where every crop grows. The yard keeps a three-bed starter patch for quick crops. Hazel teaches new gardeners in the yard first, then moves here |
 
+**Voice is on everywhere except the Study (decided 2026-09-28),** and fades with distance inside a room: full volume close by, quieter across a big room (`voice` in config.js). The yard's outdoor areas count as one space for voices. Asleep in bed you hear nobody, and a bedroom owner's own lo-fi or silent choice still applies.
+
 Always keep a visible master mute and a volume control, in case someone needs to override the rules.
 
 ## How audio should work
 
 - **Mic permission** is requested once on the Join screen. The Join button click also satisfies the browser rule that audio can only start after a user click.
 - **Sending:** the mic is only live while the player stands in a voice room. In quiet rooms (like the Study) the mic track is disabled so nothing leaves their computer.
-- **Receiving:** play a friend's voice only if both people are in the same voice room.
+- **Receiving:** play a friend's voice only if both people are in the same voice room, quieter the further away they stand (`voice` in config.js).
 - **Lo-fi in Study:** plays locally for each person, not synced. It starts when they enter Study, fades out when they leave, and has its own volume slider.
   - First try embedding a live lo-fi YouTube stream using the official YouTube embed. Embedding is sometimes blocked, so also prepare a backup: a direct audio stream URL.
   - **Do not guess stream URLs.** Find one that works today, confirm it is fine to stream, and put it in `config.js` so it is easy to swap.

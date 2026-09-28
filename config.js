@@ -31,6 +31,17 @@ const CONFIG = {
   ],
 
   // Room names shown on screen. Change these if you want different labels.
+  // --- Voices ---
+  // Voice chat is on in every room except the Study. Inside a room, the
+  // further away a friend stands, the quieter they sound: full volume
+  // within `fullWithin` steps, fading down to `quietest` (0 = silent,
+  // 1 = no fading at all) by `fadeTo` steps away. (A step is one floor tile.)
+  voice: {
+    fullWithin: 3,
+    fadeTo: 12,
+    quietest: 0.2,
+  },
+
   roomNames: {
     hallway: "Hallway",
     theater: "Theater",

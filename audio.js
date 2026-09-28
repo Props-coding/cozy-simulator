@@ -1,17 +1,32 @@
 // Handles the microphone and playing friends' voices, following the
 // room rules: your mic is only live while you stand in a voice room,
-// and you only hear a friend if you're both in the same voice room.
+// you only hear a friend if you're both in the same room, and the further
+// away they stand, the quieter they sound (CONFIG.voice).
 
-// Rooms where voice chat is on: the Theater and the Conference Room, plus
-// every office and bedroom (where you only hear the people in that same
-// room; a bedroom's owner can also pick lo-fi or silence instead). main.js
-// passes "asleep" as the room while you're in bed, which isn't a voice
-// room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire", "dinner", "lake", "alley", "farm"];
+// Voice chat is on everywhere except the Study (quiet co-working). A
+// bedroom's owner can pick lo-fi or silence instead. main.js passes
+// "asleep" as the room while you're in bed: your mic is off and you hear
+// nobody.
+const QUIET_ROOMS = ["study", "asleep"];
 
 function isVoiceRoom(roomId) {
   if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
-  return VOICE_ROOMS.includes(roomId) || roomId.startsWith("office-");
+  return !QUIET_ROOMS.includes(roomId);
+}
+
+// The yard's areas (the porch, the garden, the pond...) are one open space
+// for voices: out there, distance decides who you hear, not the invisible
+// lines between areas.
+const YARD_AREAS = ["yard", "porch", "garden", "pond", "campfire", "busStop"];
+const voiceSpace = (roomId) => (YARD_AREAS.includes(roomId) ? "yard" : roomId);
+
+// How loud a friend's voice is at `distance` steps away: full close by,
+// fading to CONFIG.voice.quietest across a big room.
+function distanceVolume(distance) {
+  const { fullWithin = 3, fadeTo = 12, quietest = 0.2 } = CONFIG.voice ?? {};
+  if (!Number.isFinite(distance) || distance <= fullWithin) return 1;
+  const k = Math.min(1, (distance - fullWithin) / Math.max(0.1, fadeTo - fullWithin));
+  return 1 - k * (1 - quietest);
 }
 
 // main.js tells us how to look up a bedroom's sound ("voice", "lofi" or
@@ -1053,19 +1068,21 @@ export function removePeerAudio(peerId) {
   forgetWhisperLine(peerId);
 }
 
-// Call every frame with your current room and the list of peers, to
-// switch your line to each friend on or off, and mute or unmute their
-// voice, according to the room rules. `allowed(peer)` says whether a
-// friend may be where they are (see the room passes in main.js).
-export function updateVoiceRouting(myRoomId, peers, allowed = () => true) {
+// Call every frame with your current room, where you are ({ x, y }) and
+// the list of peers, to switch your line to each friend on or off, and set
+// how loud their voice is, according to the room rules and how far away
+// they are. `allowed(peer)` says whether a friend may be where they are
+// (see the room passes in main.js).
+export function updateVoiceRouting(myRoomId, peers, allowed = () => true, me = null) {
   const iAmInVoiceRoom = isVoiceRoom(myRoomId);
   for (const peer of peers) {
-    const sameVoiceRoom = iAmInVoiceRoom && peer.room === myRoomId && allowed(peer);
+    const sameVoiceRoom = iAmInVoiceRoom && isVoiceRoom(String(peer.room ?? "")) && voiceSpace(peer.room) === voiceSpace(myRoomId) && allowed(peer);
     if (voiceTracks[peer.id]) voiceTracks[peer.id].enabled = sameVoiceRoom && !whisperingTo && !!localTrack?.enabled;
     const audioEl = peerAudioElements[peer.id];
     if (!audioEl) continue;
     audioEl.muted = masterMuted || !sameVoiceRoom;
-    audioEl.volume = masterVolume;
+    const distance = me ? Math.hypot(peer.x - me.x, peer.y - me.y) : 0;
+    audioEl.volume = masterVolume * distanceVolume(distance);
   }
   for (const [id, el] of Object.entries(whisperAudioElements)) {
     const peer = peers.find((p) => p.id === id);
