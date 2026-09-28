@@ -2,7 +2,7 @@
 // windows walk into the same door, get ready, play a round together and
 // see the results. Pictures go to SHOTS_DIR (or tests/looks/minigames).
 import { test, expect } from "@playwright/test";
-import { friendsInHouse } from "./friends.js";
+import { friendsInHouse, seedFriend } from "./friends.js";
 
 const DIR = process.env.SHOTS_DIR || "tests/looks/minigames";
 const shot = (friend, name) => friend.page.screenshot({ path: `${DIR}/${name}.png` });
@@ -26,13 +26,13 @@ test("Mini games: a lobby, a round and the results, with three friends", async (
   await walkIntoDoor(bob.page, "crumbRush");
   await walkIntoDoor(carol.page, "crumbRush");
   await expect(alice.page.locator(".mini-player")).toHaveCount(3, { timeout: 8000 });
-  await expect(alice.page.locator(".mini-lobby .warm-button")).toBeDisabled();
+  await expect(alice.page.locator(".mini-lobby .mini-buttons .warm-button")).toBeDisabled();
   await shot(alice, "1-lobby-alice-is-host");
   await bob.page.click(".mini-lobby .soft-button:has-text('Ready')");
   await carol.page.click(".mini-lobby .soft-button:has-text('Ready')");
-  await expect(alice.page.locator(".mini-lobby .warm-button")).toBeEnabled({ timeout: 5000 });
+  await expect(alice.page.locator(".mini-lobby .mini-buttons .warm-button")).toBeEnabled({ timeout: 5000 });
   await shot(bob, "2-lobby-bob-ready");
-  await alice.page.click(".mini-lobby .warm-button");
+  await alice.page.click(".mini-lobby .mini-buttons .warm-button");
   for (const f of [alice, bob, carol]) await f.page.locator(".mini-hud-bar").waitFor({ state: "visible", timeout: 8000 });
   await alice.page.waitForTimeout(1500);
   await shot(alice, "3-countdown");
@@ -66,8 +66,8 @@ async function startTogether(friends, game) {
   for (const f of friends.slice(1)) await walkIntoDoor(f.page, game);
   await expect(friends[0].page.locator(".mini-player")).toHaveCount(friends.length, { timeout: 8000 });
   for (const f of friends.slice(1)) await f.page.click(".mini-lobby .soft-button:has-text('Ready')");
-  await expect(friends[0].page.locator(".mini-lobby .warm-button")).toBeEnabled({ timeout: 5000 });
-  return friends[0].page.locator(".mini-lobby .warm-button");
+  await expect(friends[0].page.locator(".mini-lobby .mini-buttons .warm-button")).toBeEnabled({ timeout: 5000 });
+  return friends[0].page.locator(".mini-lobby .mini-buttons .warm-button");
 }
 // Jumps someone in the cellar to a spot (by the ladders, for example).
 const cellarGo = (f, pick) => f.page.evaluate(`(() => { const c = window.porchlightTest.cellar; const fl = c.floors[c.me.floor]; const s = (${pick})(fl, c); c.go(s.x, s.y); })()`);
@@ -149,11 +149,20 @@ test("Cellar Crawl: brooms, crates, critters, a knockout, a revive and the Rat K
   const target = await cellar(alice, (c) => {
     const fl = c.floors[c.me.floor];
     const o = fl.objects.filter((x) => x.breakable && !x.broken).sort((a, b) => Math.hypot(a.x - c.me.x, a.y - c.me.y) - Math.hypot(b.x - c.me.x, b.y - c.me.y))[0];
-    c.go(o.x + o.w / 2, o.y + o.h + 0.35);
-    c.aim(0, -1);
     return { id: o.id, hits: o.breakable };
   });
-  for (let k = 0; k < target.hits; k++) {
+  // (Standing just below it, facing up, and not to be bumped away by a
+  // passing critter, swinging until it breaks.)
+  for (let k = 0; k < 6; k++) {
+    const broken = await cellar(alice, (c, id) => {
+      const o = c.floors[0].objects.find((x) => x.id === id);
+      if (o.broken) return true;
+      c.me.hurt = 99;
+      c.go(o.x + o.w / 2, o.y + o.h + 0.35);
+      c.aim(0, -1);
+      return false;
+    }, target.id);
+    if (broken) break;
     await alice.page.keyboard.press(" ");
     await alice.page.waitForTimeout(450);
   }
@@ -276,4 +285,28 @@ test("Cellar Crawl: brooms, crates, critters, a knockout, a revive and the Rat K
   await expect(alice.page.locator(".mini-results-card")).toContainText("The Rat King's Throne");
   await alice.page.screenshot({ path: `${dir}/10-results-alice.png` });
   for (const f of friends) expect(f.problems).toEqual([]);
+});
+
+// --- Step 4: the workbench ---
+test("Cellar Crawl: the workbench's upgrades, and what they do down there", async ({ browser }) => {
+  const dir = process.env.CELLAR_DIR || DIR;
+  const [alice] = await friendsInHouse(browser, ["Alice"]);
+  await seedFriend(alice, { crumbs: 300, minis: { best: {}, cellar: {} } });
+  await walkIntoDoor(alice.page, "cellarCrawl");
+  await expect(alice.page.locator(".mini-bench-row")).toHaveCount(3);
+  await alice.page.waitForTimeout(500);
+  await alice.page.screenshot({ path: `${dir}/1-lobby-with-the-workbench.png` });
+  await alice.page.click(".mini-bench-row:has-text('Brighter lantern') .warm-button");
+  await expect(alice.page.locator(".mini-bench-purse")).toContainText("260");
+  await alice.page.click(".mini-bench-row:has-text('Bigger bag') .warm-button");
+  await expect(alice.page.locator(".mini-bench-purse")).toContainText("210");
+  await expect(alice.page.locator(".mini-bench-row:has-text('Bigger bag') .mini-bench-pips i.on")).toHaveCount(1);
+  await alice.page.screenshot({ path: `${dir}/2-two-upgrades-bought.png` });
+  // In the cellar: the bag holds 6 now, and the lantern reaches further.
+  await alice.page.click(".mini-lobby .mini-buttons .warm-button");
+  await alice.page.waitForFunction(() => window.porchlightTest.cellar, null, { timeout: 15_000 });
+  await expect(alice.page.locator(".mini-hud")).toContainText("0 of 6", { timeout: 8000 });
+  await alice.page.waitForTimeout(1200);
+  await alice.page.screenshot({ path: `${dir}/3-a-brighter-lantern.png` });
+  expect(alice.problems).toEqual([]);
 });

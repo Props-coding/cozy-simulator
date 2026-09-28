@@ -1101,6 +1101,8 @@ const CONFIG = {
   //   achievement: "whoAreYou"          (a one-time achievement)
   titles: [
     { id: "believer", text: "the Believer", achievement: "believer" },
+    { id: "delver", text: "the Delver", achievement: "cellarBottom" },
+    { id: "kingsbane", text: "the Rat King's Bane", achievement: "ratKing" },
     { id: "studious", text: "the Studious", room: "study", level: 5 },
     { id: "scholar", text: "the Scholar", room: "study", level: 10 },
     { id: "bookworm", text: "the Bookworm", room: "library", level: 5 },

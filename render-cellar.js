@@ -1127,3 +1127,150 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 });
+
+// --- The workbench in Cellar Crawl's lobby (cellar.js) ---
+// A sturdy bench against a stone wall: a pegboard of tools, a vise, a
+// lantern being fixed up and a broom leaning on the end. Lit from above,
+// with the lantern's warm glow.
+function paintWorkbench(ctx, w, h, t) {
+  ctx.fillStyle = "#3a302a"; // the wall
+  ctx.fillRect(0, 0, w, h);
+  for (let row = 0; row * 16 < h; row++) {
+    for (let col = -1; col * 34 < w; col++) {
+      const x = col * 34 + (row % 2) * 17, y = row * 16;
+      ctx.fillStyle = shadeColor("#5a4c40", Math.round((noise(row * 7 + col * 3) - 0.5) * 18));
+      roundRectPath(ctx, x + 1, y + 1, 32, 14, 3);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 235, 200, 0.08)";
+      ctx.fillRect(x + 3, y + 2, 28, 2);
+    }
+  }
+  // The pegboard, with a hammer, a saw and a spanner on it.
+  const pb = { x: w * 0.12, y: 10, w: w * 0.5, h: h * 0.42 };
+  cellarOutlined(ctx, () => {
+    ctx.fillStyle = "#b08a5c";
+    ctx.fillRect(pb.x, pb.y, pb.w, pb.h);
+  });
+  ctx.fillStyle = "rgba(60, 40, 20, 0.35)";
+  for (let y = pb.y + 8; y < pb.y + pb.h - 4; y += 10) for (let x = pb.x + 8; x < pb.x + pb.w - 4; x += 10) ctx.fillRect(x, y, 2, 2);
+  ctx.fillStyle = "rgba(255, 235, 200, 0.25)";
+  ctx.fillRect(pb.x, pb.y, pb.w, 2);
+  cellarOutlined(ctx, () => {
+    // Hammer.
+    ctx.fillStyle = "#8a6444";
+    ctx.fillRect(pb.x + 18, pb.y + 12, 5, pb.h - 20);
+    ctx.fillStyle = "#6a6e78";
+    ctx.fillRect(pb.x + 10, pb.y + 8, 21, 9);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.fillRect(pb.x + 10, pb.y + 8, 21, 2);
+    // Saw.
+    ctx.fillStyle = "#c8ccd4";
+    ctx.beginPath();
+    ctx.moveTo(pb.x + 44, pb.y + 10);
+    ctx.lineTo(pb.x + 90, pb.y + 10);
+    ctx.lineTo(pb.x + 90, pb.y + 22);
+    ctx.lineTo(pb.x + 44, pb.y + 28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#a8402a";
+    roundRectPath(ctx, pb.x + 90, pb.y + 8, 14, 18, 4);
+    ctx.fill();
+    // Spanner.
+    ctx.fillStyle = "#8a8e98";
+    ctx.fillRect(pb.x + pb.w - 34, pb.y + 10, 6, pb.h - 20);
+    ctx.beginPath();
+    ctx.arc(pb.x + pb.w - 31, pb.y + 10, 7, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  // The bench: a thick top with wood grain, and two legs.
+  const top = h * 0.6;
+  cellarOutlined(ctx, () => {
+    ctx.fillStyle = "#6a4a30";
+    ctx.fillRect(w * 0.08, top + 12, 12, h - top - 12);
+    ctx.fillRect(w * 0.9 - 12, top + 12, 12, h - top - 12);
+    const g = ctx.createLinearGradient(0, top, 0, top + 16);
+    g.addColorStop(0, "#b08058");
+    g.addColorStop(1, "#7a5436");
+    ctx.fillStyle = g;
+    ctx.fillRect(w * 0.04, top, w * 0.9, 16);
+  });
+  ctx.strokeStyle = "rgba(70, 40, 20, 0.35)";
+  ctx.lineWidth = 1;
+  for (let k = 0; k < 3; k++) {
+    ctx.beginPath();
+    ctx.moveTo(w * 0.05, top + 4 + k * 4);
+    for (let x = w * 0.05; x < w * 0.93; x += 20) ctx.lineTo(x, top + 4 + k * 4 + Math.sin(x * 0.05 + k) * 1.2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(255, 235, 200, 0.3)";
+  ctx.fillRect(w * 0.04, top, w * 0.9, 2);
+  // A vise on the left end.
+  cellarOutlined(ctx, () => {
+    ctx.fillStyle = "#4a5a6a";
+    ctx.fillRect(w * 0.1, top - 16, 26, 16);
+    ctx.fillStyle = "#6a7a8a";
+    ctx.fillRect(w * 0.1, top - 16, 26, 4);
+    ctx.fillStyle = "#3a3a40";
+    ctx.fillRect(w * 0.1 - 10, top - 10, 10, 3);
+  });
+  // The lantern being fixed, glowing.
+  const lx = w * 0.5, ly = top - 18;
+  const glow = ctx.createRadialGradient(lx, ly, 2, lx, ly, 70);
+  glow.addColorStop(0, "rgba(255, 200, 110, 0.35)");
+  glow.addColorStop(1, "rgba(255, 200, 110, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(lx - 70, ly - 70, 140, 140);
+  drawLantern(ctx, lx, ly - 2, 1.1, t, false);
+  // A little sack (for finds) and the broom, leaning on the end.
+  drawFindsBag(ctx, w * 0.7, top, 1);
+  drawBroom(ctx, w * 0.88, h - 4, -1.9, 0);
+}
+
+// The sack you carry finds in: rough cloth, a tied neck, a patch.
+function drawFindsBag(ctx, x, y, s) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.fillStyle = "rgba(20, 10, 4, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 16, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  cellarOutlined(ctx, () => {
+    const g = ctx.createLinearGradient(-14, 0, 14, 0);
+    g.addColorStop(0, "#d8b888");
+    g.addColorStop(1, "#a88858");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-6, -24);
+    ctx.quadraticCurveTo(-17, -16, -15, -4);
+    ctx.quadraticCurveTo(-14, 1, 0, 1);
+    ctx.quadraticCurveTo(14, 1, 15, -4);
+    ctx.quadraticCurveTo(17, -16, 6, -24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#c8a878"; // the tied neck
+    ctx.beginPath();
+    ctx.moveTo(-6, -24);
+    ctx.lineTo(-8, -31);
+    ctx.lineTo(8, -31);
+    ctx.lineTo(6, -24);
+    ctx.fill();
+    ctx.fillStyle = "#a8402a";
+    ctx.fillRect(-7, -26, 14, 3);
+    ctx.fillStyle = "#8a9a6a"; // a patch
+    ctx.fillRect(3, -13, 7, 6);
+  });
+  ctx.fillStyle = "rgba(255, 245, 220, 0.35)";
+  ctx.beginPath();
+  ctx.ellipse(-7, -14, 3, 6, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(90, 60, 30, 0.35)"; // the weave
+  ctx.lineWidth = 0.6;
+  for (let k = -10; k <= 10; k += 4) {
+    ctx.beginPath();
+    ctx.moveTo(k, -20);
+    ctx.lineTo(k * 1.2, -1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}

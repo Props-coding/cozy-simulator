@@ -1812,6 +1812,20 @@ const BANK = {
     return { score, crumbs, best, home, deepest: run.deepest, king: run.king, capped: crumbs < run.crumbs };
   },
 
+  // The workbench in Cellar Crawl's lobby: the next level of an upgrade
+  // (a brighter lantern, a bigger bag, a sturdier broom), for its price.
+  cellarUpgrade(w, b) {
+    const upgrade = GAME.CONFIG.minigames.cellar.upgrades[b.upgrade];
+    if (!upgrade || !Object.hasOwn(GAME.CONFIG.minigames.cellar.upgrades, b.upgrade)) throw new Oops(400, "There's no upgrade like that.");
+    const c = w.minis.cellar;
+    const level = c.upgrades[b.upgrade] ?? 0;
+    if (level >= upgrade.levels.length) throw new Oops(409, "That's as good as it gets.");
+    if (Number(b.level) !== level + 1) throw new Oops(409, "That's not the next level.");
+    spend(w, upgrade.levels[level].price);
+    c.upgrades = { ...c.upgrades, [b.upgrade]: level + 1 };
+    return { upgrade: b.upgrade, level: level + 1 };
+  },
+
   // --- The Arcade (Update 9) ---
   // A cabinet play starts: the house server notes the game and the time,
   // so the score at the end can be checked against how long it took.

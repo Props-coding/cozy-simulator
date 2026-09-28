@@ -165,6 +165,7 @@ function stopEverything() {
   open.stopLobby?.();
   open.run?.stop();
   open.stopBackdrop?.();
+  open.stopPreview?.();
   clearInterval(open.scoreTimer);
 }
 
@@ -187,7 +188,73 @@ function escape() {
 // --- Behind the cards: the game's art, filling the screen ---
 function paintBanner(c, game, w, h, t) {
   if (game.id === "cellarCrawl") return paintCellarBanner(c, w, h, t);
+  // The quick games: their painted scene, and in the middle, in a wooden
+  // frame, the game itself playing on its own (with you in it).
   paintGameBanner(c, game, w, h, t);
+  const shown = preview(game);
+  if (!shown) return;
+  const k = Math.min(w / CLASSIC_SIZE.w, h / CLASSIC_SIZE.h) * 0.76;
+  const v = { k, ox: (w - CLASSIC_SIZE.w * k) / 2, oy: (h - CLASSIC_SIZE.h * k) / 2 - h * 0.06 };
+  c.save();
+  c.fillStyle = "rgba(20, 10, 4, 0.35)"; // (a soft shadow under the frame)
+  c.beginPath();
+  c.ellipse(w / 2, v.oy + CLASSIC_SIZE.h * k + 10 * k, CLASSIC_SIZE.w * k * 0.55, 10 * k, 0, 0, Math.PI * 2);
+  c.fill();
+  const b = Math.max(4, 6 * k);
+  const wood = c.createLinearGradient(0, v.oy - b, 0, v.oy + CLASSIC_SIZE.h * k + b);
+  wood.addColorStop(0, "#8a6848");
+  wood.addColorStop(1, "#5c4530");
+  c.fillStyle = "#2a1d14";
+  c.fillRect(v.ox - b - 2, v.oy - b - 2, CLASSIC_SIZE.w * k + b * 2 + 4, CLASSIC_SIZE.h * k + b * 2 + 4);
+  c.fillStyle = wood;
+  c.fillRect(v.ox - b, v.oy - b, CLASSIC_SIZE.w * k + b * 2, CLASSIC_SIZE.h * k + b * 2);
+  c.fillStyle = "rgba(255, 230, 190, 0.3)";
+  c.fillRect(v.ox - b, v.oy - b, CLASSIC_SIZE.w * k + b * 2, 2);
+  c.drawImage(shown, v.ox, v.oy, CLASSIC_SIZE.w * k, CLASSIC_SIZE.h * k);
+  c.restore();
+}
+// A quick game running by itself (nobody pressing anything, and a clock
+// that never runs out) on a small canvas of its own, for the banners.
+function preview(game) {
+  if (open.preview?.id === game.id) return open.preview.drawn ? open.preview.canvas : null;
+  open.stopPreview?.();
+  const c = make("canvas");
+  c.width = CLASSIC_SIZE.w;
+  c.height = CLASSIC_SIZE.h;
+  const pc = c.getContext("2d");
+  const state = { id: game.id, canvas: c, drawn: false };
+  const screen = {
+    canvas: c,
+    keys: new Set(),
+    clicks: [],
+    pointer: { x: CLASSIC_SIZE.w / 2, y: CLASSIC_SIZE.h / 2 },
+    look: myLook(),
+    lookOf,
+    w: CLASSIC_SIZE.w,
+    h: CLASSIC_SIZE.h,
+    begin() {
+      pc.setTransform(1, 0, 0, 1, 0, 0);
+      return pc;
+    },
+    end() {
+      state.drawn = true;
+    },
+    hud() {},
+    send() {},
+    friends: () => [],
+    isHost: () => true,
+  };
+  try {
+    const run = startClassic(game.id, screen, seeded(7), { ...game, seconds: 1e9 }, () => {});
+    open.preview = state;
+    open.stopPreview = () => {
+      run?.stop();
+      if (open) open.preview = null;
+    };
+  } catch {
+    open.preview = { id: game.id, drawn: false };
+  }
+  return null;
 }
 function startBackdrop() {
   open.stopBackdrop?.();
@@ -477,6 +544,7 @@ function playRound(round, players) {
   };
 
   const go = async () => {
+    open.stopPreview?.(); // (the banner's game, playing by itself)
     if (game.id === "cellarCrawl") {
       open.run = startCellar(screen, round, { rng: seeded(round.seed), game, finish });
       return;
@@ -661,6 +729,7 @@ const BANNER_COLORS = {
   kitchenRush: ["#f4e6d0", "#e8d4b8", "#b88a5a"],
 };
 const outlined = (c, draw) => {
+  if (!outlinesOn) return draw(); // (off on a computer that struggles: render-scene.js)
   c.save();
   c.filter = "drop-shadow(0 0 1px rgba(35, 22, 12, 0.7))";
   draw();

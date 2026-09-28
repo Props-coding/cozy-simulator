@@ -190,6 +190,10 @@ const ACHIEVEMENT_LIST = [
   { id: "mortimerFriend", name: "Night Owls", desc: "Reach 10 hearts with Mortimer.", crumbs: 50, server: true },
   { id: "firstMinigame", name: "Game On", desc: "Finish a round of a mini game.", crumbs: 5, server: true },
   { id: "miniChampion", name: "Champion", desc: "Top a round of a mini game played with friends.", crumbs: 15 },
+  // Cellar Crawl (0.84): how deep you've been, and the Rat King.
+  { id: "cellarDeeper", name: "Going Down", desc: "Climb down to the second floor of Cellar Crawl.", crumbs: 5, server: true },
+  { id: "cellarBottom", name: "Rock Bottom", desc: "Reach the bottom floor of Cellar Crawl.", crumbs: 15, server: true },
+  { id: "ratKing", name: "Long Live the Broom", desc: "Beat the Rat King at the bottom of Cellar Crawl.", crumbs: 30, server: true },
   { id: "firstTickets", name: "Tickets, Please", desc: "Win tickets at an Arcade cabinet.", crumbs: 5, server: true },
   { id: "highScore", name: "High Score", desc: "Top a cabinet's high score board.", crumbs: 20, server: true },
   { id: "clawWin", name: "Claw Master", desc: "Win a plush from the claw machine.", crumbs: 10, server: true },

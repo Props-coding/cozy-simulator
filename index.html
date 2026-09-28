@@ -20,8 +20,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.83" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.83">
+       build, change every "v=0.84" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.84">
 </head>
 <body>
   <!-- The loading screen: a dark front porch at night. The porch light
@@ -1078,87 +1078,87 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.83</p>
+  <p id="version-tag">build 0.84</p>
 
-  <script src="config.js?v=0.83"></script>
-  <script src="catalog.js?v=0.83"></script>
-  <script src="world.js?v=0.83"></script>
-  <script src="render.js?v=0.83"></script>
-  <script src="render-furniture.js?v=0.83"></script>
-  <script src="render-rooms.js?v=0.83"></script>
-  <script src="render-extras.js?v=0.83"></script>
-  <script src="render-characters.js?v=0.83"></script>
-  <script src="render-scene.js?v=0.83"></script>
-  <script src="outdoors.js?v=0.83"></script>
-  <script src="render-lake.js?v=0.83"></script>
-  <script src="render-alley.js?v=0.83"></script>
-  <script src="render-farm.js?v=0.83"></script>
-  <script src="render-house-extras.js?v=0.83"></script>
-  <script src="render-residents.js?v=0.83"></script>
-  <script src="render-night.js?v=0.83"></script>
-  <script src="render-arcade.js?v=0.83"></script>
-  <script src="render-cellar.js?v=0.83"></script>
+  <script src="config.js?v=0.84"></script>
+  <script src="catalog.js?v=0.84"></script>
+  <script src="world.js?v=0.84"></script>
+  <script src="render.js?v=0.84"></script>
+  <script src="render-furniture.js?v=0.84"></script>
+  <script src="render-rooms.js?v=0.84"></script>
+  <script src="render-extras.js?v=0.84"></script>
+  <script src="render-characters.js?v=0.84"></script>
+  <script src="render-scene.js?v=0.84"></script>
+  <script src="outdoors.js?v=0.84"></script>
+  <script src="render-lake.js?v=0.84"></script>
+  <script src="render-alley.js?v=0.84"></script>
+  <script src="render-farm.js?v=0.84"></script>
+  <script src="render-house-extras.js?v=0.84"></script>
+  <script src="render-residents.js?v=0.84"></script>
+  <script src="render-night.js?v=0.84"></script>
+  <script src="render-arcade.js?v=0.84"></script>
+  <script src="render-cellar.js?v=0.84"></script>
   <script>
     // The page's code is here (the loading screen's first step).
     Loading.step("code");
     Loading.nextTip();
     // Keep the game's files on this computer, so coming back is quicker
     // (sw.js). Each build keeps its own copy, so an update always loads fresh.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.83").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.84").catch(() => {});
   </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.83",
-        "./network.js": "./network.js?v=0.83",
-        "./audio.js": "./audio.js?v=0.83",
-        "./theater.js": "./theater.js?v=0.83",
-        "./whiteboard.js": "./whiteboard.js?v=0.83",
-        "./shop.js": "./shop.js?v=0.83",
-        "./emoji.js": "./emoji.js?v=0.83",
-        "./achievements.js": "./achievements.js?v=0.83",
-        "./home.js": "./home.js?v=0.83",
-        "./residents.js": "./residents.js?v=0.83",
-        "./ui-icons.js": "./ui-icons.js?v=0.83",
-        "./travel.js": "./travel.js?v=0.83",
-        "./pictures.js": "./pictures.js?v=0.83",
-        "./turntable.js": "./turntable.js?v=0.83",
-        "./wardrobe.js": "./wardrobe.js?v=0.83",
-        "./kanban.js": "./kanban.js?v=0.83",
-        "./rooms.js": "./rooms.js?v=0.83",
-        "./journal.js": "./journal.js?v=0.83",
-        "./phone.js": "./phone.js?v=0.83",
-        "./laptop.js": "./laptop.js?v=0.83",
-        "./news.js": "./news.js?v=0.83",
-        "./account.js": "./account.js?v=0.83",
-        "./profile.js": "./profile.js?v=0.83",
-        "./icons.js": "./icons.js?v=0.83",
-        "./reputation.js": "./reputation.js?v=0.83",
-        "./titles.js": "./titles.js?v=0.83",
-        "./admin.js": "./admin.js?v=0.83",
-        "./updater.js": "./updater.js?v=0.83",
-        "./weather.js": "./weather.js?v=0.83",
-        "./basket.js": "./basket.js?v=0.83",
-        "./npc.js": "./npc.js?v=0.83",
-        "./bank.js": "./bank.js?v=0.83",
-        "./kitchen.js": "./kitchen.js?v=0.83",
-        "./extras.js": "./extras.js?v=0.83",
-        "./night.js": "./night.js?v=0.83",
-        "./arcade.js": "./arcade.js?v=0.83",
-        "./minigames.js": "./minigames.js?v=0.83",
-        "./minigames-classic.js": "./minigames-classic.js?v=0.83",
-        "./game-kit.js": "./game-kit.js?v=0.83",
-        "./cellar.js": "./cellar.js?v=0.83",
-        "./showroom.js": "./showroom.js?v=0.83",
-        "./market.js": "./market.js?v=0.83",
-        "./menu.js": "./menu.js?v=0.83",
-        "./garden.js": "./garden.js?v=0.83",
-        "./fishing.js": "./fishing.js?v=0.83",
-        "./bus.js": "./bus.js?v=0.83"
+        "./main.js": "./main.js?v=0.84",
+        "./network.js": "./network.js?v=0.84",
+        "./audio.js": "./audio.js?v=0.84",
+        "./theater.js": "./theater.js?v=0.84",
+        "./whiteboard.js": "./whiteboard.js?v=0.84",
+        "./shop.js": "./shop.js?v=0.84",
+        "./emoji.js": "./emoji.js?v=0.84",
+        "./achievements.js": "./achievements.js?v=0.84",
+        "./home.js": "./home.js?v=0.84",
+        "./residents.js": "./residents.js?v=0.84",
+        "./ui-icons.js": "./ui-icons.js?v=0.84",
+        "./travel.js": "./travel.js?v=0.84",
+        "./pictures.js": "./pictures.js?v=0.84",
+        "./turntable.js": "./turntable.js?v=0.84",
+        "./wardrobe.js": "./wardrobe.js?v=0.84",
+        "./kanban.js": "./kanban.js?v=0.84",
+        "./rooms.js": "./rooms.js?v=0.84",
+        "./journal.js": "./journal.js?v=0.84",
+        "./phone.js": "./phone.js?v=0.84",
+        "./laptop.js": "./laptop.js?v=0.84",
+        "./news.js": "./news.js?v=0.84",
+        "./account.js": "./account.js?v=0.84",
+        "./profile.js": "./profile.js?v=0.84",
+        "./icons.js": "./icons.js?v=0.84",
+        "./reputation.js": "./reputation.js?v=0.84",
+        "./titles.js": "./titles.js?v=0.84",
+        "./admin.js": "./admin.js?v=0.84",
+        "./updater.js": "./updater.js?v=0.84",
+        "./weather.js": "./weather.js?v=0.84",
+        "./basket.js": "./basket.js?v=0.84",
+        "./npc.js": "./npc.js?v=0.84",
+        "./bank.js": "./bank.js?v=0.84",
+        "./kitchen.js": "./kitchen.js?v=0.84",
+        "./extras.js": "./extras.js?v=0.84",
+        "./night.js": "./night.js?v=0.84",
+        "./arcade.js": "./arcade.js?v=0.84",
+        "./minigames.js": "./minigames.js?v=0.84",
+        "./minigames-classic.js": "./minigames-classic.js?v=0.84",
+        "./game-kit.js": "./game-kit.js?v=0.84",
+        "./cellar.js": "./cellar.js?v=0.84",
+        "./showroom.js": "./showroom.js?v=0.84",
+        "./market.js": "./market.js?v=0.84",
+        "./menu.js": "./menu.js?v=0.84",
+        "./garden.js": "./garden.js?v=0.84",
+        "./fishing.js": "./fishing.js?v=0.84",
+        "./bus.js": "./bus.js?v=0.84"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.83"></script>
+  <script type="module" src="main.js?v=0.84"></script>
 </body>
 </html>

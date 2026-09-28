@@ -5871,6 +5871,86 @@ canvas.item-picture {
   flex: 1;
   min-width: 0;
 }
+/* Cellar Crawl's workbench, beside the lobby (cellar.js) */
+.mini-bench {
+  flex: 0 0 340px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f7ecd8;
+  border: 2px solid var(--wood, #8a6848);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+.mini-bench-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px !important;
+}
+.mini-bench h3 {
+  margin: 8px 0 2px;
+  color: var(--wood-dark);
+}
+.mini-bench-purse {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: #7a5c3e;
+}
+.mini-bench-purse .crumb-icon {
+  width: 18px;
+  height: 18px;
+}
+.mini-bench-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-top: 1px dashed rgba(138, 104, 72, 0.35);
+}
+.mini-bench-row canvas {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  background: #ead8b8;
+  border-radius: 10px !important;
+}
+.mini-bench-words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.mini-bench-what {
+  font-size: 0.85em;
+  color: #7a5c3e;
+}
+.mini-bench-pips {
+  display: flex;
+  gap: 3px;
+}
+.mini-bench-pips i {
+  width: 12px;
+  height: 6px;
+  border-radius: 3px;
+  background: #d8c4a0;
+}
+.mini-bench-pips i.on {
+  background: #d9a441;
+}
+.mini-bench-row .warm-button {
+  white-space: nowrap;
+  padding: 6px 10px;
+}
+.mini-bench-said {
+  margin: 4px 0 0;
+  min-height: 1.2em;
+  font-size: 0.85em;
+  color: #4a7a4a;
+  font-weight: 700;
+}
 .mini-blurb {
   margin: 4px 0;
   font-weight: 700;
@@ -6120,6 +6200,9 @@ canvas.item-picture {
 @media (max-width: 700px) {
   .mini-lobby-body {
     flex-direction: column;
+  }
+  .mini-bench {
+    flex: none;
   }
 }
 

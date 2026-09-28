@@ -282,6 +282,7 @@ export function startCellar(screen, round, { finish }) {
     if (r?.id) {
       run = r;
       bag = r.bag;
+      hud();
     } else noServer = true;
   });
   const later = (job) => (chain = chain.then(job).catch(() => {}));
@@ -1102,7 +1103,99 @@ export function paintCellarBanner(ctx, w, h, t) {
   paintCellarScene(ctx, w, h, t);
 }
 
-// The workbench in the lobby (step 4 fills it in).
+// The workbench in the lobby: small upgrades for your next runs, bought
+// with crumbs, one level at a time (the prices are in config.js,
+// minigames.cellar.upgrades; the house server checks them).
+const BENCH_SAYS = {
+  lantern: (n) => `Your lantern lights ${n} tiles further`,
+  bag: (n) => `Carry ${n} more finds`,
+  broom: (n) => `Each swing hits ${n === 1 ? "one" : n} harder`,
+};
 export function cellarWorkbench() {
-  return document.createElement("div");
+  const box = document.createElement("div");
+  box.className = "mini-bench";
+  const art = document.createElement("canvas");
+  art.className = "mini-bench-art";
+  art.width = 320;
+  art.height = 130;
+  const title = document.createElement("h3");
+  title.textContent = "The workbench";
+  const purse = document.createElement("p");
+  purse.className = "mini-bench-purse";
+  const rows = document.createElement("div");
+  rows.className = "mini-bench-rows";
+  const said = document.createElement("p");
+  said.className = "mini-bench-said";
+  box.append(art, title, purse, rows, said);
+  const icons = [];
+  const fill = () => {
+    const wallet = myWallet();
+    const have = wallet.minis?.cellar?.upgrades ?? {};
+    purse.innerHTML = '<svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>';
+    purse.append(` You have ${wallet.crumbs ?? 0} crumbs`);
+    rows.textContent = "";
+    icons.length = 0;
+    for (const [id, up] of Object.entries(CFG().upgrades)) {
+      const level = have[id] ?? 0;
+      const next = up.levels[level];
+      const row = document.createElement("div");
+      row.className = "mini-bench-row";
+      const icon = document.createElement("canvas");
+      icon.width = 48;
+      icon.height = 48;
+      icons.push({ id, icon });
+      const words = document.createElement("div");
+      words.className = "mini-bench-words";
+      const name = document.createElement("strong");
+      name.textContent = up.name;
+      const pips = document.createElement("span");
+      pips.className = "mini-bench-pips";
+      for (let k = 0; k < up.levels.length; k++) {
+        const pip = document.createElement("i");
+        if (k < level) pip.className = "on";
+        pips.append(pip);
+      }
+      const what = document.createElement("span");
+      what.className = "mini-bench-what";
+      what.textContent = next ? BENCH_SAYS[id]?.(next.adds) ?? "" : "As good as it gets!";
+      words.append(name, pips, what);
+      const buy = document.createElement("button");
+      buy.type = "button";
+      buy.className = "warm-button";
+      buy.textContent = next ? `Buy for ${next.price}` : "Done";
+      buy.disabled = !next || (wallet.crumbs ?? 0) < next.price;
+      buy.addEventListener("click", async () => {
+        buy.disabled = true;
+        const got = await bank("cellarUpgrade", { upgrade: id, level: level + 1 });
+        said.textContent = got ? `${up.name}: level ${got.level}. It's ready for your next run.` : "";
+        fill();
+      });
+      row.append(icon, words, buy);
+      rows.append(row);
+    }
+  };
+  fill();
+  const onBank = () => (box.isConnected ? fill() : window.removeEventListener("bank-changed", onBank));
+  window.addEventListener("bank-changed", onBank);
+  // The art, with the lantern flickering.
+  const paint = () => {
+    if (!box.isConnected && painted) return;
+    painted = true;
+    const t = performance.now() / 1000;
+    const c = art.getContext("2d");
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    paintWorkbench(c, art.width, art.height, t);
+    for (const { id, icon } of icons) {
+      const g = icon.getContext("2d");
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, 48, 48);
+      if (id === "lantern") drawLantern(g, 24, 16, 0.95, t, false);
+      else if (id === "bag") drawFindsBag(g, 24, 44, 1.05);
+      else drawBroom(g, 9, 40, -0.8, 0);
+    }
+    requestAnimationFrame(paint);
+  };
+  let painted = false;
+  requestAnimationFrame(paint);
+  return box;
 }

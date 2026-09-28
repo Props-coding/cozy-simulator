@@ -225,6 +225,11 @@ test("Mini games: all eight doors open their lobbies", async ({ page }) => {
   for (const g of await page.evaluate(() => CONFIG.minigames.games.map((x) => [x.id, x.name]))) {
     await page.evaluate(async (id) => (await import("./minigames.js")).openPortal(FURNITURE.find((x) => x.kind === "gamePortal" && x.game === id)), g[0]);
     await expect(page.locator(".mini-lobby .mini-title")).toHaveText(g[1]);
+    // (BANNERS=folder saves a picture of each game's banner there.)
+    if (process.env.BANNERS) {
+      await page.waitForTimeout(800);
+      await page.locator(".mini-banner").screenshot({ path: `${process.env.BANNERS}/${g[0]}.png` });
+    }
     await page.keyboard.press("Escape");
     await expect(page.locator(".mini-scene")).toBeHidden();
   }
