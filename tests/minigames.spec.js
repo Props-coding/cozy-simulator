@@ -58,3 +58,65 @@ test("Mini games: a lobby, a round and the results, with three friends", async (
   await shot(alice, "7-back-at-the-door");
   for (const f of [alice, bob, carol]) expect(f.problems).toEqual([]);
 });
+
+// Starts a round of a game with everyone (the first friend hosts).
+async function startTogether(friends, game) {
+  await walkIntoDoor(friends[0].page, game);
+  await friends[0].page.waitForTimeout(600);
+  for (const f of friends.slice(1)) await walkIntoDoor(f.page, game);
+  await expect(friends[0].page.locator(".mini-player")).toHaveCount(friends.length, { timeout: 8000 });
+  for (const f of friends.slice(1)) await f.page.click(".mini-lobby .soft-button:has-text('Ready')");
+  await expect(friends[0].page.locator(".mini-lobby .warm-button")).toBeEnabled({ timeout: 5000 });
+  return friends[0].page.locator(".mini-lobby .warm-button");
+}
+// Jumps someone in the cellar to a spot (by the ladders, for example).
+const cellarGo = (f, pick) => f.page.evaluate(`(() => { const c = window.porchlightTest.cellar; const fl = c.floors[c.me.floor]; const s = (${pick})(fl, c); c.go(s.x, s.y); })()`);
+
+test("Cellar Crawl: the cellar, three floors deep", async ({ browser }) => {
+  const dir = process.env.CELLAR_DIR || DIR;
+  const friends = await friendsInHouse(browser, ["Alice", "Bob"]);
+  const [alice, bob] = friends;
+  const start = await startTogether(friends, "cellarCrawl");
+  await alice.page.screenshot({ path: `${dir}/1-lobby.png` });
+  await start.click();
+  await alice.page.waitForFunction(() => window.porchlightTest.cellar, null, { timeout: 15_000 });
+  await bob.page.waitForFunction(() => window.porchlightTest.cellar, null, { timeout: 15_000 });
+  await alice.page.waitForTimeout(1500);
+  await alice.page.screenshot({ path: `${dir}/2-floor1-start-alice.png` });
+  // Walk about a bit.
+  await alice.page.keyboard.down("ArrowDown");
+  await bob.page.keyboard.down("ArrowRight");
+  await alice.page.waitForTimeout(900);
+  await alice.page.keyboard.up("ArrowDown");
+  await bob.page.keyboard.up("ArrowRight");
+  await alice.page.waitForTimeout(600);
+  await bob.page.screenshot({ path: `${dir}/3-floor1-bob.png` });
+  // The whole floor, lights on (a test-only view), to check the layout.
+  await alice.page.evaluate(() => Object.assign(window.porchlightTest.cellar.debug, { view: 50, lightsOn: true }));
+  await alice.page.waitForTimeout(400);
+  await alice.page.screenshot({ path: `${dir}/4-floor1-overview.png` });
+  await alice.page.evaluate(() => Object.assign(window.porchlightTest.cellar.debug, { view: 0, lightsOn: false }));
+  // Down the ladder, both of them, to floor 2, then floor 3.
+  for (const n of [2, 3]) {
+    for (const f of [alice, bob]) {
+      await cellarGo(f, (fl) => ({ x: fl.ladderDown.x, y: fl.ladderDown.y + 0.8 }));
+      await f.page.waitForTimeout(200);
+      await f.page.keyboard.press("e");
+    }
+    await alice.page.waitForTimeout(1500);
+    expect(await alice.page.evaluate(() => window.porchlightTest.cellar.me.floor)).toBe(n - 1);
+    await alice.page.screenshot({ path: `${dir}/${n + 3}-floor${n}-alice.png` });
+  }
+  await alice.page.evaluate(() => Object.assign(window.porchlightTest.cellar.debug, { view: 60, lightsOn: true }));
+  await alice.page.waitForTimeout(400);
+  await alice.page.screenshot({ path: `${dir}/7-floor3-overview.png` });
+  await alice.page.evaluate(() => Object.assign(window.porchlightTest.cellar.debug, { view: 0, lightsOn: false }));
+  // Back up the ladder: home, and the results.
+  await cellarGo(alice, (fl) => ({ x: fl.ladderUp.x + 0.5, y: fl.ladderUp.y + 1 }));
+  await alice.page.waitForTimeout(300);
+  await alice.page.screenshot({ path: `${dir}/8-ladder-up.png` });
+  await alice.page.keyboard.press("e");
+  await alice.page.locator(".mini-results-card").waitFor({ state: "visible", timeout: 10_000 });
+  await alice.page.screenshot({ path: `${dir}/9-results.png` });
+  for (const f of friends) expect(f.problems).toEqual([]);
+});

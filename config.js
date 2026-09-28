@@ -304,13 +304,33 @@ const CONFIG = {
       { id: "ghostHunt", name: "Ghost Hunt", color: "#b8a8d8", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.6, maxCrumbs: 15, blurb: "The old parlor is haunted. Hold your flashlight on a ghost to catch it, but watch out for the jumpy ones!", how: "Move the mouse to point your flashlight and hold it on a ghost to catch it. Red-eyed ghosts jump out if you light them too long: click them when they say CLICK!" },
       { id: "nightMeadow", name: "Night Meadow", color: "#6a7ab0", seconds: 45, maxPerSecond: 2, base: 3, crumbsPerPoint: 0.5, maxCrumbs: 15, blurb: "A warm summer night full of fireflies. Net as many as you can while they're lit. A golden moth is worth three!", how: "Click a firefly while it's glowing to net it. Dark ones slip through." },
       { id: "kitchenRush", name: "Kitchen Rush", color: "#e05a47", seconds: 60, maxPerSecond: 1.5, base: 3, crumbsPerPoint: 0.4, maxCrumbs: 15, blurb: "Orders are flying in for dishes from your own recipe book. Drop the right ingredients in the pot, fast!", how: "Click the ingredients each order needs (any order). A wrong one spills the pot." },
-      { id: "cellarCrawl", name: "Cellar Crawl", color: "#8a6a4a", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "The cellar under the house is full of old crates. Find the treasure, dodge the rats, and bring real finds home.", how: "Arrow keys or WASD to walk. Open crates for treasure. Rats knock it out of your hands. Take the ladder up to leave early." },
+      { id: "cellarCrawl", name: "Cellar Crawl", color: "#8a6a4a", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "Take a lantern down into the old cellar under the house, together. Three floors of dark rooms, each deeper one darker, bigger and richer.", how: "WASD or arrow keys to walk, E to use a ladder. The ladder down leads deeper; the ladder up takes you home." },
     ],
-    // Cellar Crawl brings real things home: one find for every `every`
-    // points (up to `most` a round and `perDay` a day), picked by the house
-    // server from `finds` (a pantry food, a seed packet, worms, a lightbulb).
-    // (Only for a round of at least `after` seconds.)
-    cellar: { every: 5, most: 3, perDay: 6, after: 30, finds: ["food", "seed", "bait:worm", "night:lightbulb"] },
+    // Cellar Crawl (cellar.js): the old cellar under the house.
+    cellar: {
+      // Its shape. Each floor is `rooms` rooms on a grid of room-sized
+      // cells (`grid`: across, down); a room's cell is `roomSize` tiles
+      // (walls included). `extraDoors` (0 to 1): how often two rooms side
+      // by side get a door between them even when they don't need one.
+      roomSize: [12, 10],
+      extraDoors: 0.3,
+      // Each floor, from the top: `dark` how dark it is (0 to 1), `light`
+      // how far lanterns reach (1 = the full `lantern`), `cobwebs` the
+      // chance of a cobweb in each top corner, `glowcaps` how many glowing
+      // mushroom patches a room might have.
+      floors: [
+        { rooms: 5, grid: [4, 3], dark: 0.84, light: 1.0, cobwebs: 0.3, glowcaps: 0 },
+        { rooms: 7, grid: [4, 4], dark: 0.9, light: 0.85, cobwebs: 0.5, glowcaps: 2 },
+        { rooms: 9, grid: [5, 4], dark: 0.95, light: 0.72, cobwebs: 0.75, glowcaps: 3 },
+      ],
+      lantern: 3.6, // how far your lantern lights, in tiles
+      walkSpeed: 3.4, // tiles a second
+      view: 15, // how many tiles across the screen shows
+      crateHits: 1, // broom swings to break a crate
+      barrelHits: 2, // and a barrel
+      // (The old Cellar Crawl's finds, until the new loot arrives.)
+      every: 5, most: 3, perDay: 6, after: 30, finds: ["food", "seed", "bait:worm", "night:lightbulb"],
+    },
   },
 
   // --- The Arcade (Update 9) ---

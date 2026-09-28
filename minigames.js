@@ -17,6 +17,7 @@ import { playClickSound, playCrumbSound } from "./audio.js";
 import { unlock } from "./achievements.js";
 import { seeded, drawHero } from "./game-kit.js";
 import { startClassic, CLASSIC_SIZE } from "./minigames-classic.js";
+import { startCellar, cellarWorkbench, paintCellarBanner } from "./cellar.js";
 
 let hooks = { notice: () => {}, name: () => "You", look: () => null };
 export function initMinigames(options) {
@@ -106,7 +107,7 @@ window.addEventListener(
     if (open.mode !== "round") return;
     if (GAME_KEYS.includes(k)) e.preventDefault();
     keys.add(k);
-    open.pressed?.(k);
+    open.run?.pressed?.(k);
   },
   { capture: true }
 );
@@ -185,6 +186,7 @@ function escape() {
 
 // --- Behind the cards: the game's art, filling the screen ---
 function paintBanner(c, game, w, h, t) {
+  if (game.id === "cellarCrawl") return paintCellarBanner(c, w, h, t);
   paintGameBanner(c, game, w, h, t);
 }
 function startBackdrop() {
@@ -265,6 +267,7 @@ function showLobby() {
   buttons.append(leave, ready, start);
   main.append(make("p", "mini-blurb", game.blurb), make("p", "mini-how", game.how), players, status, note, buttons);
   body.append(main);
+  if (game.id === "cellarCrawl") body.append(cellarWorkbench());
   card.append(banner, title, body);
   layer.append(card);
 
@@ -390,7 +393,7 @@ function playRound(round, players) {
   // The screen the game draws on. The quick games draw on a 480 by 320
   // screen, fitted into the window (with a wooden frame around it); Cellar
   // Crawl draws on the whole window itself.
-  const fixed = CLASSIC_SIZE;
+  const fixed = game.id === "cellarCrawl" ? null : CLASSIC_SIZE;
   const screen = {
     canvas,
     keys,
@@ -472,6 +475,10 @@ function playRound(round, players) {
   };
 
   const go = async () => {
+    if (game.id === "cellarCrawl") {
+      open.run = startCellar(screen, round, { rng: seeded(round.seed), game, finish });
+      return;
+    }
     const started = await bank("miniStart", { game: game.id });
     if (open?.round !== round) return;
     const run = startClassic(game.id, screen, seeded(round.seed), game, async (score) => {
@@ -527,6 +534,7 @@ function buildHud(game) {
   const help = make("div", "mini-hud-help", `${game.how}  Escape to leave.`);
   hudEl.append(bar, help);
   hudParts = { time, timeFill, extra, score, friends, last: {} };
+  time.hidden = game.id === "cellarCrawl"; // (no clock in the cellar)
   setTimeout(() => help.classList.add("faded"), 6000);
 }
 function setText(el, key, value) {
