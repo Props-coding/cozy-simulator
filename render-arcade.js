@@ -311,6 +311,18 @@ FURNITURE_DRAWERS.gamePortal = function gamePortal(ctx, f) {
   ctx.fillRect(dx, dy, 1.5, bottom - dy);
   ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
   ctx.fillRect(dx + dw / 2 - 0.5, dy + 3, 1, bottom - dy - 5);
+  // Two sunken panels on each leaf, and a little grain.
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.22)";
+  ctx.lineWidth = 1;
+  for (const px of [dx + 2.5, dx + dw / 2 + 1.5]) {
+    ctx.strokeRect(px + 0.5, dy + 15.5, dw / 2 - 4.5, (bottom - dy - 20) / 2 - 1);
+    ctx.strokeRect(px + 0.5, dy + 15.5 + (bottom - dy - 20) / 2 + 1, dw / 2 - 4.5, (bottom - dy - 20) / 2 - 2);
+  }
+  ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+  for (let gy = dy + 4; gy < bottom - 2; gy += 5) ctx.fillRect(dx + 2, gy, dw - 4, 0.8);
+  // A soft shadow where the door meets the floor.
+  ctx.fillStyle = "rgba(20, 10, 30, 0.35)";
+  ctx.fillRect(dx - 3, bottom - 1.5, dw + 6, 3);
   // The round window, glowing.
   ctx.fillStyle = "#2a2438";
   ctx.beginPath();
@@ -329,19 +341,28 @@ FURNITURE_DRAWERS.gamePortal = function gamePortal(ctx, f) {
   roundRectPath(ctx, x + 1, top - 2, w - 2, 9, 2);
   ctx.fill();
   ctx.fillStyle = game.soon ? "#8a8494" : game.color;
-  ctx.font = "800 5.5px 'Quicksand', sans-serif";
+  ctx.font = "800 6.5px 'Quicksand', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(game.name.toUpperCase(), x + w / 2, top + 4.5);
+  ctx.fillText(game.name.toUpperCase(), x + w / 2, top + 5);
   ctx.textAlign = "left";
   if (game.soon) {
     // Boarded over, for now.
-    ctx.fillStyle = "#8a6444";
     ctx.save();
     ctx.translate(dx + dw / 2, dy + (bottom - dy) / 2);
-    ctx.rotate(-0.35);
-    ctx.fillRect(-dw * 0.6, -2.5, dw * 1.2, 5);
-    ctx.rotate(0.7);
-    ctx.fillRect(-dw * 0.6, -2.5, dw * 1.2, 5);
+    for (const turn of [-0.35, 0.7]) {
+      ctx.rotate(turn);
+      ctx.fillStyle = "#4a3220"; // the board's outline
+      ctx.fillRect(-dw * 0.6 - 1, -3.5, dw * 1.2 + 2, 7);
+      ctx.fillStyle = "#8a6444";
+      ctx.fillRect(-dw * 0.6, -2.5, dw * 1.2, 5);
+      ctx.fillStyle = "rgba(255, 230, 190, 0.25)"; // lit top edge, and grain
+      ctx.fillRect(-dw * 0.6, -2.5, dw * 1.2, 1);
+      ctx.fillStyle = "rgba(60, 38, 22, 0.35)";
+      ctx.fillRect(-dw * 0.4, 0.5, dw * 0.5, 0.7);
+      ctx.fillStyle = "#c8c8d0"; // nails
+      ctx.fillRect(-dw * 0.5, -0.8, 1.2, 1.2);
+      ctx.fillRect(dw * 0.45, -0.8, 1.2, 1.2);
+    }
     ctx.restore();
     ctx.fillStyle = "#f2d45c";
     ctx.font = "800 6px 'Quicksand', sans-serif";

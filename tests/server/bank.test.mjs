@@ -285,11 +285,16 @@ test("mini games: a round's crumbs can't beat the clock, and there's a daily cap
   assert.ok(end.data.result.score <= 4, `an instant 5000 counts as a few points at most (got ${end.data.result.score})`);
   assert.ok(end.data.result.crumbs <= 1);
   assert.equal((await bank("Alice", "miniEnd", { id: start.result.id, score: 5 })).status, 409, "a round only ends once");
-  // Near the day's cap: only what's left of it is paid.
-  await seed("Bruno", { crumbs: 0, minis: { day: 0 } });
-  const { data: s2 } = await bank("Bruno", "miniStart", { game: "scarecrow" });
-  const e2 = await bank("Bruno", "miniEnd", { id: s2.result.id, score: 1 });
+  assert.equal(end.data.result.crumbs, 0, "an instant round pays nothing");
+  // Near the day's cap: only what's left of it is paid (after a real
+  // ten-second round).
+  const d = new Date();
+  const today = d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+  await seed("Bruno", { crumbs: 0, minis: { day: today, earned: 59, best: {} } });
+  const { data: s2 } = await bank("Bruno", "miniStart", { game: "snowball" });
+  await new Promise((r) => setTimeout(r, 10_500));
+  const e2 = await bank("Bruno", "miniEnd", { id: s2.result.id, score: 12 });
   assert.equal(e2.status, 200);
-  assert.equal(e2.data.result.crumbs, 2, "1 point at The Scarecrow is 2 crumbs");
-  assert.equal(e2.data.wallet.minis.best.scarecrow, 1);
+  assert.equal(e2.data.result.crumbs, 1, "only 1 crumb left of today's 60");
+  assert.equal(e2.data.wallet.minis.best.snowball, 12);
 });

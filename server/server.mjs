@@ -1635,13 +1635,15 @@ const BANK = {
     const score = Math.max(0, Math.min(Math.floor(game.base + seconds * game.maxPerSecond), Math.floor(Number(b.score) || 0)));
     const day = hometownDay();
     if (w.minis.day !== day) Object.assign(w.minis, { day, earned: 0 });
-    const crumbs = Math.max(0, Math.min(Math.floor(score * game.crumbsPerPoint), game.maxCrumbs, cfg.crumbsPerDay - w.minis.earned));
+    // (A round has to be played for at least ten seconds to pay anything.)
+    const short = seconds < Math.min(10, game.seconds);
+    const crumbs = short ? 0 : Math.max(0, Math.min(Math.floor(score * game.crumbsPerPoint), game.maxCrumbs, cfg.crumbsPerDay - w.minis.earned));
     w.minis.earned += crumbs;
     earn(w, crumbs, ev);
     const best = score > (w.minis.best[game.id] ?? 0);
     if (best) w.minis.best = { ...w.minis.best, [game.id]: score };
-    if (seconds >= Math.min(10, game.seconds)) grant(w, "firstMinigame", ev);
-    return { score, crumbs, best, capped: w.minis.earned >= cfg.crumbsPerDay };
+    if (!short) grant(w, "firstMinigame", ev);
+    return { score, crumbs, best, short, capped: w.minis.earned >= cfg.crumbsPerDay };
   },
 
   // --- The Arcade (Update 9) ---

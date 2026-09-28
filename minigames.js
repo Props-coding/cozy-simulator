@@ -15,7 +15,7 @@
 import { bank, myWallet } from "./bank.js";
 import { getPeers, sendGames, onGames } from "./network.js";
 import { openExtrasPanel, closeExtras } from "./extras.js";
-import { playClickSound, playCrumbSound, playAchievementSound } from "./audio.js";
+import { playClickSound, playCrumbSound } from "./audio.js";
 import { unlock } from "./achievements.js";
 
 let hooks = { notice: () => {}, name: () => "You", color: () => "#e05a47" };
@@ -63,11 +63,19 @@ export function openPortal(f) {
   });
 }
 
-// Friends standing at this game's door (on the Games floor, a few steps away).
-function friendsAtDoor(game) {
-  const door = FURNITURE.find((f) => f.kind === "gamePortal" && f.game === game.id);
-  if (!door) return [];
-  return getPeers().filter((p) => floorOf(p.y) === GAMES_FLOOR && Math.abs(p.x - (door.x + door.w / 2)) < 2.5 && p.y - door.y < 3);
+// Who's in the lobby with you: every open lobby says "here" to the
+// friends on the Games floor once a second, so the list shows only the
+// friends who are really waiting at this door (and they're the ones who
+// join when someone presses Start). peerId -> { name, at }.
+const here = new Map();
+const text = (v, fallback) => (typeof v === "string" && v ? v.slice(0, 24) : fallback);
+function joining(game) {
+  const now = performance.now();
+  return [...here.entries()].filter(([, h]) => h.game === game.id && now - h.at < 2500).map(([id, h]) => ({ id, name: h.name }));
+}
+function sayHere(game) {
+  const floor = getPeers().filter((p) => floorOf(p.y) === GAMES_FLOOR).map((p) => p.id);
+  sendGames({ type: "here", game: game.id, name: hooks.name() }, floor);
 }
 
 function showLobby(el, game) {
@@ -80,42 +88,49 @@ function showLobby(el, game) {
   start.type = "button";
   const best = myWallet().minis?.best?.[game.id];
   const note = make("p", "tv-small", `${best ? `Your best: ${best}. ` : ""}Crumbs for your score, up to ${game.maxCrumbs} a round (and ${CONFIG.minigames.crumbsPerDay} a day from all the games).`);
-  el.append(blurb, how, make("p", "tv-small", "At the door:"), who, note, start);
+  el.append(blurb, how, make("p", "tv-small", "In the lobby (friends who open this door join you):"), who, note, start);
   const refresh = () => {
+    sayHere(game);
     who.textContent = "";
     who.appendChild(make("li", "", `${hooks.name()} (you)`));
-    for (const p of friendsAtDoor(game)) who.appendChild(make("li", "", p.name));
+    for (const p of joining(game)) who.appendChild(make("li", "", p.name));
   };
   refresh();
   const timer = setInterval(refresh, 1000);
   lobby = { game, el, stop: () => clearInterval(timer) };
   start.addEventListener("click", () => {
     playClickSound();
-    // Everyone at the door plays this round too (they see the countdown
-    // if their lobby's open).
-    const friends = friendsAtDoor(game);
+    const friends = joining(game);
     const round = { id: Math.random().toString(36).slice(2, 10), seed: Math.floor(Math.random() * 1e9), game: game.id, host: hooks.name() };
     sendGames({ type: "start", ...round }, friends.map((p) => p.id));
-    playRound(game, round, friends.map((p) => p.id));
+    playRound(game, round, friends);
   });
 }
 
-// Messages from friends' games.
+// Messages from friends' games. (Everything from a friend is checked:
+// only the fields we expect, as plain text or numbers.)
 onGames((message, peerId) => {
-  if (!message || typeof message !== "object") return;
-  if (message.type === "start" && lobby && !lobby.round && lobby.game.id === message.game) {
-    // (A friend pressed Start at the door we're at: join their round.)
-    const others = [peerId, ...friendsAtDoor(lobby.game).map((p) => p.id).filter((id) => id !== peerId)];
-    playRound(lobby.game, { id: String(message.id), seed: Number(message.seed) >>> 0, game: lobby.game.id, host: String(message.host ?? "a friend").slice(0, 24) }, others);
+  if (!message || typeof message !== "object" || typeof message.type !== "string") return;
+  if (message.type === "here" && typeof message.game === "string") here.set(peerId, { game: message.game, name: text(message.name, "A friend"), at: performance.now() });
+  if (message.type === "start" && lobby && !lobby.round && lobby.game.id === message.game && typeof message.id === "string") {
+    // (A friend pressed Start at the door we're waiting at: join their
+    // round, with them and whoever else was in the lobby.)
+    const host = { id: peerId, name: text(message.host, "A friend") };
+    const others = joining(lobby.game).filter((p) => p.id !== peerId);
+    playRound(lobby.game, { id: message.id.slice(0, 16), seed: Number(message.seed) >>> 0, game: lobby.game.id, host: host.name }, [host, ...others]);
   }
   if (message.type === "result" && lobby?.round && lobby.round.id === message.round) {
-    lobby.results.set(String(message.name ?? "?").slice(0, 24), Math.max(0, Math.floor(Number(message.score) || 0)));
+    // (Only from the round's own players, one line each.)
+    const player = lobby.players.find((p) => p.id === peerId);
+    if (!player) return;
+    lobby.results.set(peerId, { name: player.name, score: Math.max(0, Math.floor(Number(message.score) || 0)) });
     lobby.showResults?.();
   }
 });
 
 // --- A round ---
-function playRound(game, round, peerIds) {
+// `players`: the friends in it ({ id, name }), not counting you.
+function playRound(game, round, players) {
   const el = lobby.el;
   lobby.stop?.();
   el.textContent = "";
@@ -125,9 +140,10 @@ function playRound(game, round, peerIds) {
   canvas.tabIndex = 0;
   const hud = make("p", "tv-small", round.host === hooks.name() ? "Get ready..." : `${round.host} started a round. Get ready...`);
   el.append(hud, canvas);
-  const results = new Map();
+  const results = new Map(); // "me" or a friend's peerId -> { name, score }
   const state = { stopped: false, game: null };
-  lobby = { ...lobby, round, players: peerIds, results, stop: () => ((state.stopped = true), state.game?.stop()) };
+  const mine = { round, players, results, stop: () => ((state.stopped = true), state.game?.stop()) };
+  lobby = { ...lobby, ...mine };
   const ctx = canvas.getContext("2d");
   // The countdown (and a moment for everything to load).
   const began = performance.now();
@@ -155,8 +171,10 @@ function playRound(game, round, peerIds) {
     state.game = GAMES[game.id](canvas, seeded(round.seed), game, async (score) => {
       if (state.stopped) return;
       const got = started?.id ? await bank("miniEnd", { id: started.id, score }) : null;
-      results.set(hooks.name(), got?.score ?? score);
-      sendGames({ type: "result", round: round.id, name: hooks.name(), score: got?.score ?? score }, peerIds);
+      // (Closed, or on to something else, while the house server answered.)
+      if (state.stopped || lobby?.round !== round) return;
+      results.set("me", { name: hooks.name(), score: got?.score ?? score });
+      sendGames({ type: "result", round: round.id, score: got?.score ?? score }, players.map((p) => p.id));
       showResults(game, round, got, el);
     });
   };
@@ -167,19 +185,17 @@ function showResults(game, round, got, el) {
   const draw = () => {
     if (!lobby || lobby.round !== round) return;
     el.textContent = "";
-    const mine = lobby.results.get(hooks.name()) ?? 0;
+    const mine = lobby.results.get("me")?.score ?? 0;
     el.appendChild(make("h3", "mini-score", `Your score: ${mine}`));
-    el.appendChild(make("p", "", got ? (got.crumbs ? `+${got.crumbs} crumbs${got.best ? ". A new personal best!" : "."}` : got.capped ? "That's all the crumbs the games pay today. Play on for fun!" : "No crumbs this time. Have another go!") : "(No crumbs: the house server didn't answer.)"));
-    const rows = [...lobby.results.entries()].sort((a, b) => b[1] - a[1]);
-    if (rows.length > 1 || lobby.players.length) {
-      el.appendChild(make("p", "tv-small", "This round:"));
+    el.appendChild(make("p", "", got ? (got.crumbs ? `+${got.crumbs} crumbs${got.best ? ". A new personal best!" : "."}` : got.capped ? "That's all the crumbs the games pay today. Play on for fun!" : got.short ? "Too quick for crumbs: play a bit longer next time!" : "No crumbs this time. Have another go!") : "(No crumbs: the house server didn't answer.)"));
+    if (lobby.players.length) {
+      const rows = [...lobby.results.entries()].sort((a, b) => b[1].score - a[1].score);
+      el.appendChild(make("p", "tv-small", rows.length < lobby.players.length + 1 ? "This round (waiting for the others' scores):" : "This round:"));
       const list = make("ol", "mini-results");
-      for (const [name, score] of rows) list.appendChild(make("li", name === hooks.name() ? "me" : "", `${name}  ${score}`));
+      for (const [key, r] of rows) list.appendChild(make("li", key === "me" ? "me" : "", `${r.name}${key === "me" ? " (you)" : ""}  ${r.score}`));
       el.appendChild(list);
-      if (lobby.players.length && rows.length === lobby.players.length + 1 && rows[0][0] === hooks.name()) {
-        unlock("miniChampion");
-        playAchievementSound();
-      }
+      // Champion: everyone's in, and you beat every one of them.
+      if (rows.length === lobby.players.length + 1 && rows[0][0] === "me" && rows.slice(1).every(([, r]) => r.score < mine)) unlock("miniChampion");
     }
     const row = make("div", "book-top");
     const again = make("button", "warm-button", "Play again");
@@ -219,9 +235,11 @@ function reader(canvas) {
     clicks.push({ x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H });
     canvas.focus();
   };
+  const lost = () => down.clear(); // (let go of everything if the screen loses focus)
   canvas.addEventListener("keydown", on);
   canvas.addEventListener("keyup", off);
   canvas.addEventListener("pointerdown", click);
+  canvas.addEventListener("blur", lost);
   return {
     down,
     clicks,
@@ -233,6 +251,7 @@ function reader(canvas) {
       canvas.removeEventListener("keydown", on);
       canvas.removeEventListener("keyup", off);
       canvas.removeEventListener("pointerdown", click);
+      canvas.removeEventListener("blur", lost);
     },
   };
 }
@@ -365,6 +384,11 @@ const GAMES = {
         const far = dist(c, me) > 120;
         c.x += Math.cos(a) * (far ? 45 : -20) * dt;
         c.y += Math.sin(a) * (far ? 45 : -20) * dt;
+        // (Once they've walked in, they stay on the screen.)
+        if (c.x > 14 && c.x < W - 14) c.inX = true;
+        if (c.y > 40 && c.y < H - 10) c.inY = true;
+        if (c.inX) c.x = Math.max(14, Math.min(W - 14, c.x));
+        if (c.inY) c.y = Math.max(40, Math.min(H - 10, c.y));
         c.throwIn -= dt;
         if (c.throwIn <= 0) {
           const aim = Math.atan2(me.y - c.y, me.x - c.x);
@@ -484,7 +508,7 @@ const GAMES = {
   treasureDive(canvas, rng, game, done) {
     const input = reader(canvas);
     const me = { x: W / 2, y: 40, vy: 0, air: 1, sting: 0 };
-    const loot = Array.from({ length: 26 }, (_, i) => ({ x: 20 + rng() * (W - 40), y: 90 + rng() * (H - 110), pearl: i < 6 }));
+    const loot = Array.from({ length: 26 }, (_, i) => ({ x: 20 + rng() * (W - 40), y: 90 + rng() * (H - 120), pearl: i < 6 }));
     const jellies = Array.from({ length: 5 }, () => ({ x: rng() * W, y: 100 + rng() * (H - 140), v: (rng() < 0.5 ? -1 : 1) * (30 + rng() * 30), ph: rng() * 6 }));
     const bubbles = [];
     let score = 0, bubbleIn = 0;
@@ -500,11 +524,13 @@ const GAMES = {
       if (me.y > H - 14) (me.y = H - 14), (me.vy = 0);
       me.air = me.y < 48 ? Math.min(1, me.air + dt * 0.6) : me.air - dt * 0.07;
       if (me.air <= 0) {
-        // (Out of air: back up to the surface, a little dizzy.)
+        // (Out of air: dropped three points, and back up to the surface,
+        // dizzy for a couple of seconds.)
+        score = Math.max(0, score - 3);
         me.y = 40;
         me.vy = 0;
         me.air = 0.5;
-        me.sting = 1;
+        me.sting = 2;
       }
       if (me.sting > 0) me.sting -= dt;
       for (let i = loot.length - 1; i >= 0; i--) {
@@ -579,9 +605,12 @@ const GAMES = {
       ctx.fillRect(me.x - 7, me.y - 5, 14, 5);
       // The air bar.
       ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-      ctx.fillRect(10, H - 22, 104, 10);
+      ctx.fillRect(10, 26, 104, 10);
       ctx.fillStyle = me.air < 0.25 ? "#e05a47" : "#8fd0f0";
-      ctx.fillRect(12, H - 20, 100 * Math.max(0, me.air), 6);
+      ctx.fillRect(12, 28, 100 * Math.max(0, me.air), 6);
+      ctx.fillStyle = "#fff7e6";
+      ctx.font = "700 9px 'Quicksand', sans-serif";
+      ctx.fillText("AIR", 118, 35);
     };
     return loop(canvas, game, input, step, draw, () => score, done);
   },
@@ -612,12 +641,14 @@ const GAMES = {
       if (crow.next <= 0) {
         crow.watching = !crow.watching;
         crow.next = crow.watching ? 1.2 + rng() * 1.6 : 1.4 + rng() * 2.6;
+        crow.grace = crow.watching ? 0.25 : 0; // (a moment to let go of the keys)
       }
-      if (crow.watching && moving && caught <= 0 && me.y < start.y - 4) {
+      if (crow.grace > 0) crow.grace -= dt;
+      if (crow.watching && crow.grace <= 0 && moving && caught <= 0 && me.y < start.y - 4) {
         caught = 0.8;
         Object.assign(me, start);
       }
-      if (me.y < 64 && Math.abs(me.x - W / 2) < 40) {
+      if (me.y < 100 && Math.abs(me.x - W / 2) < 40) {
         score++;
         Object.assign(me, start);
       }
@@ -636,7 +667,12 @@ const GAMES = {
       }
       // The scarecrow at the top: facing away (a straw back) or watching
       // (a stitched face), and wobbling just before it turns.
-      const x = W / 2 + (crow.warn ? Math.sin(t * 40) * 2 : 0), y = 58;
+      // (Watching: the whole field goes a little red.)
+      if (crow.watching) {
+        ctx.fillStyle = "rgba(224, 90, 71, 0.18)";
+        ctx.fillRect(0, 0, W, H);
+      }
+      const x = W / 2 + (crow.warn ? Math.sin(t * 40) * 3 : 0), y = 84;
       shadow(ctx, x, y + 4, 16);
       ctx.fillStyle = "#6b4a30";
       ctx.fillRect(x - 2, y - 34, 4, 38);
@@ -652,10 +688,14 @@ const GAMES = {
         ctx.fillRect(x + 2, y - 40, 3, 3);
         ctx.fillRect(x - 4, y - 34, 8, 1.5);
       }
-      ctx.fillStyle = crow.watching ? "#e05a47" : crow.warn ? "#f2c94c" : "#6fb86a";
-      ctx.font = "800 12px 'Quicksand', sans-serif";
+      const label = crow.watching ? "FREEZE!" : crow.warn ? "IT'S TURNING!" : "SNEAK";
+      ctx.font = "800 18px 'Quicksand', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(crow.watching ? "FREEZE!" : crow.warn ? "..." : "SNEAK", x, 88);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(30, 20, 10, 0.6)";
+      ctx.strokeText(label, W / 2, 124);
+      ctx.fillStyle = crow.watching ? "#ff6a50" : crow.warn ? "#ffd84a" : "#e8ffd0";
+      ctx.fillText(label, W / 2, 124);
       ctx.textAlign = "left";
       shadow(ctx, me.x, me.y + 10, 10);
       ball(ctx, me.x, me.y, 10, caught > 0 ? "#f4f0f8" : player());
