@@ -1780,7 +1780,7 @@ Object.assign(FURNITURE_DRAWERS, {
   // Hazel the hedgehog, the gardener: spiky and round, in a straw hat and
   // a green apron, holding a little watering can.
   hazel(ctx, f) {
-    if (f.place && !hazelHere(f)) return; // (in the yard or at the Farm: see HAZEL in world.js)
+    if (!isThere(f)) return; // (in the yard or at the Farm: see HAZEL in world.js)
     const t = performance.now() / 1000;
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
@@ -2087,6 +2087,7 @@ Object.assign(FURNITURE_DRAWERS, {
   // Otis's bait stand: a wooden crate with a cooler on top, a bucket of
   // worms and a hand-painted "BAIT" sign.
   baitCrate(ctx, f) {
+    if (!isThere(f)) return; // (the pond one leaves with Otis)
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 16, "#9a7250");
     ctx.fillStyle = "rgba(60, 35, 15, 0.35)";
@@ -2135,7 +2136,7 @@ Object.assign(FURNITURE_DRAWERS, {
   // Otis's self-serve bait box at the pond (once he's moved to the Lake):
   // a little wooden box on a post, a jar for crumbs, and his note.
   baitBox(ctx, f) {
-    if (!OTIS.atLake) return;
+    if (!isThere(f)) return;
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
     ctx.fillStyle = "#6b4a30";
@@ -2174,7 +2175,7 @@ Object.assign(FURNITURE_DRAWERS, {
   },
 
   otis(ctx, f) {
-    if (f.place && !otisHere(f)) return; // (at the pond or the Lake: see OTIS in world.js)
+    if (!isThere(f)) return; // (at the pond or the Lake: see OTIS in world.js)
     const t = performance.now() / 1000;
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
@@ -2908,7 +2909,7 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // Juniper's wares on a patterned blanket (only while she's here).
   merchantWares(ctx, f) {
-    if (!MERCHANT.here) return;
+    if (!isThere(f)) return;
     const a = toScreen(f.x, f.y), w = f.w * TILE, h = f.h * TILE;
     ctx.fillStyle = "#7a3f5a";
     roundRectPath(ctx, a.x, a.y, w, h, 3);
@@ -2940,7 +2941,7 @@ Object.assign(FURNITURE_DRAWERS, {
   // a bushy tail, a green scarf and a patched traveling hat, with a big
   // backpack of goods (only while she's here, on her day).
   juniper(ctx, f) {
-    if (!MERCHANT.here) return;
+    if (!isThere(f)) return;
     const t = performance.now() / 1000;
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);

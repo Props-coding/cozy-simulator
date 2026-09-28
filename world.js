@@ -926,7 +926,7 @@ const YARD_FURNITURE = [
   // bait, selling fish and your fish log; see fishing.js).
   { kind: "baitCrate", x: 9.95, y: YARD + 4.25, w: 1.0, h: 0.5 },
   { kind: "otis", x: 10.25, y: YARD + 5.2, w: 0.55, h: 0.4, place: "pond" }, // (only for new fishers: see OTIS)
-  { kind: "baitBox", x: 10.8, y: YARD + 5.0, w: 0.6, h: 0.45, solid: false }, // (once Otis has gone to the Lake)
+  { kind: "baitBox", x: 10.8, y: YARD + 5.0, w: 0.6, h: 0.45 }, // (once Otis has gone to the Lake)
 
   // Where the raccoons used to lurk. They've moved to the back alley
   // (Update 7) and taken their bins with them: the grass has grown back,
@@ -1250,6 +1250,23 @@ const hazelHere = (f) => (f.place === "farm") === HAZEL.atFarm;
 // Whether Juniper, the traveling merchant, is in the yard today (Update
 // 5: market.js fills it in from the house server).
 const MERCHANT = { here: false };
+
+// Whether a piece is really there right now. The house's visitors come and
+// go (Hazel, Otis and his pond stand, Otis's bait box, Juniper and her
+// wares): while one is away you can walk through their spot, and a
+// right-click there finds nothing.
+function isThere(f) {
+  if (f.showroom) return true; // (the showroom shows everyone)
+  if (f.kind === "hazel") return hazelHere(f);
+  if (f.kind === "otis") return otisHere(f);
+  if (f.kind === "baitCrate" && floorOf(f.y) === YARD_FLOOR) return !OTIS.atLake; // (his pond stand goes with him)
+  if (f.kind === "baitBox") return OTIS.atLake; // (and his bait box and note take its place)
+  if (f.kind === "juniper" || f.kind === "merchantWares") return MERCHANT.here;
+  return true;
+}
+
+// Whether a box bumps into a wall or something solid that's there.
+const bumpsIntoSomething = (box) => SOLIDS.some((s) => rectsOverlap(box, s) && isThere(s));
 const OUTDOORS = { night: null, sky: "clear", rain: 0, snow: 0, clouds: 0, temp: null, raining: false, words: "", updated: 0 };
 function isNightOutside() {
   if (OUTDOORS.night !== null) return OUTDOORS.night;
@@ -2349,7 +2366,7 @@ function movePlayer(player, dx, dy) {
   const box = () => ({ x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE });
   const startRoomId = getCurrentRoom(player).id;
   const blocked = () => {
-    if (SOLIDS.some((w) => rectsOverlap(box(), w))) return true;
+    if (bumpsIntoSomething(box())) return true;
     const room = getCurrentRoom(player);
     return room.id !== startRoomId && room.owned?.locked && !room.owned.mine;
   };

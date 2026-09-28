@@ -36,6 +36,7 @@ function nameOf(kind) {
 function sampleOf(kind) {
   const f = { ...(FURNITURE.find((x) => x.kind === kind) ?? Object.values(DECOR).find((d) => d.kind === kind) ?? {}) };
   f.kind = kind;
+  f.showroom = true; // (visitors who are away still show here)
   f.x ??= 0;
   f.y ??= 0;
   f.w ??= 1;

@@ -402,7 +402,7 @@ joinButton.addEventListener("click", async () => {
       // (If something's in the way there, the nearest free spot instead,
       // so nobody ever lands stuck inside a fence or a wall.)
       const box = { x: spot.x, y: spot.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
-      if (isInsideARoom(box) && !SOLIDS.some((s) => rectsOverlap(box, s))) Object.assign(player, spot);
+      if (isInsideARoom(box) && !bumpsIntoSomething(box)) Object.assign(player, spot);
       else placeNear(spot.x, spot.y);
       for (const k in keysDown) keysDown[k] = false;
     },
@@ -570,7 +570,7 @@ function updatePrivateRooms() {
   // back to the middle of the hallway (or the suite floor).
   const box = { x: player.x, y: player.y, w: PLAYER_SIZE, h: PLAYER_SIZE };
   // (Sitting on a bench, log or swing overlaps it on purpose, so that's fine.)
-  if (!isInsideARoom(player) || (!mySeat && SOLIDS.some((s) => rectsOverlap(box, s)))) Object.assign(player, spawnPoint(floorOf(player.y)));
+  if (!isInsideARoom(player) || (!mySeat && bumpsIntoSomething(box))) Object.assign(player, spawnPoint(floorOf(player.y)));
 }
 
 // A short message that shows in the prompt line for a few seconds, like
@@ -1161,7 +1161,7 @@ function furnitureAt(g) {
   let under = null, above = null;
   for (const f of FURNITURE) {
     if (f.h === undefined || floorOf(f.y) !== floor) continue;
-    if ((f.kind === "juniper" || f.kind === "merchantWares") && !MERCHANT.here) continue;
+    if (!isThere(f)) continue; // (a visitor who's away)
     const flat = FLAT_KINDS.has(f.kind);
     if (flat && !f.decor?.mine) continue;
     if (g.x < f.x || g.x > f.x + f.w) continue;
@@ -1236,7 +1236,7 @@ function teleport(roomId) {
   const { x, y, w, h } = room.rect;
   const fits = (px, py) => {
     const box = { x: px, y: py, w: PLAYER_SIZE, h: PLAYER_SIZE };
-    return px >= x && py >= y && px + PLAYER_SIZE <= x + w && py + PLAYER_SIZE <= y + h && !SOLIDS.some((s) => rectsOverlap(box, s));
+    return px >= x && py >= y && px + PLAYER_SIZE <= x + w && py + PLAYER_SIZE <= y + h && !bumpsIntoSomething(box);
   };
   for (let ring = 0; ring < 12; ring++) {
     for (let i = -ring; i <= ring; i++) {
@@ -1257,7 +1257,7 @@ function teleport(roomId) {
 function placeNear(x, y) {
   const fits = (px, py) => {
     const box = { x: px, y: py, w: PLAYER_SIZE, h: PLAYER_SIZE };
-    return isInsideARoom(box) && !SOLIDS.some((s) => rectsOverlap(box, s));
+    return isInsideARoom(box) && !bumpsIntoSomething(box);
   };
   for (let ring = 1; ring < 14; ring++) {
     for (let i = -ring; i <= ring; i++) {

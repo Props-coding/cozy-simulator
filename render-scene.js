@@ -854,7 +854,7 @@ function drawDebugOverlays(ctx) {
     }
   }
   if (DEBUG_OVERLAYS.grid) drawGridOverlay(ctx, onFloor);
-  if (DEBUG_OVERLAYS.solids) for (const s of SOLIDS.filter((s) => onFloor(s.y))) box(s, "rgba(220, 40, 40, 0.85)", "rgba(220, 40, 40, 0.12)");
+  if (DEBUG_OVERLAYS.solids) for (const s of SOLIDS.filter((s) => onFloor(s.y) && isThere(s))) box(s, "rgba(220, 40, 40, 0.85)", "rgba(220, 40, 40, 0.12)");
   if (DEBUG_OVERLAYS.seats) {
     const step = { down: [0, 6], up: [0, -6], left: [-6, 0], right: [6, 0] };
     for (const seat of seatsOnFloor(viewFloor)) {
