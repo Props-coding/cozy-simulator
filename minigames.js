@@ -248,7 +248,8 @@ function showLobby() {
   const main = make("div", "mini-lobby-main");
   const players = make("div", "mini-players");
   const best = myWallet().minis?.best?.[game.id];
-  const note = make("p", "mini-note", `${best ? `Your best: ${best}. ` : ""}Crumbs for your score, up to ${game.maxCrumbs} a round (and ${CONFIG.minigames.crumbsPerDay} a day from all the games).`);
+  const cellar = CONFIG.minigames.cellar;
+  const note = make("p", "mini-note", game.id === "cellarCrawl" ? `${best ? `Your best haul: ${best}. ` : ""}Crates and barrels hold crumbs and rare finds. Only what you carry up the ladder comes home (up to ${cellar.crumbsPerDay} crumbs and ${cellar.findsPerDay} rare finds a day).` : `${best ? `Your best: ${best}. ` : ""}Crumbs for your score, up to ${game.maxCrumbs} a round (and ${CONFIG.minigames.crumbsPerDay} a day from all the games).`);
   const status = make("p", "mini-status");
   const buttons = make("div", "mini-buttons");
   const leave = button("soft-button", "Back to the floor", closeMini);
@@ -365,6 +366,7 @@ onGames((message, peerId) => {
   if (message.type === "result") {
     // (Only from the round's own players, one line each.)
     open.results.set(peerId, { name: player.name, score: Math.max(0, Math.floor(Number(message.score) || 0)) });
+    if (open.mode === "round") open.run?.left?.(peerId);
     if (open.mode === "results") open.showResults?.();
   }
   if (message.type === "game") open.run?.message?.(message.data, peerId);
@@ -436,7 +438,7 @@ function playRound(round, players) {
   // The host keeps the shared things (like the cellar's critters) in step.
   // If they leave, the next one along takes over.
   const hostOf = () => {
-    const ids = [myPeerId, ...open.players.filter((p) => !p.left).map((p) => p.id)];
+    const ids = [myPeerId, ...open.players.filter((p) => !p.left && !open.results.has(p.id)).map((p) => p.id)]; // (not friends who've finished)
     const hostHere = ids.includes(round.host) ? round.host : [...ids].sort()[0];
     return hostHere === myPeerId ? "me" : hostHere;
   };

@@ -99,6 +99,7 @@ test("Cellar Crawl: the cellar, three floors deep", async ({ browser }) => {
   // Down the ladder, both of them, to floor 2, then floor 3.
   for (const n of [2, 3]) {
     for (const f of [alice, bob]) {
+      await expect.poll(() => f.page.evaluate(() => window.porchlightTest.cellar.settled()), { timeout: 10_000 }).toBe(true);
       await cellarGo(f, (fl) => ({ x: fl.ladderDown.x, y: fl.ladderDown.y + 0.8 }));
       await f.page.waitForTimeout(200);
       await f.page.keyboard.press("e");
@@ -118,5 +119,161 @@ test("Cellar Crawl: the cellar, three floors deep", async ({ browser }) => {
   await alice.page.keyboard.press("e");
   await alice.page.locator(".mini-results-card").waitFor({ state: "visible", timeout: 10_000 });
   await alice.page.screenshot({ path: `${dir}/9-results.png` });
+  for (const f of friends) expect(f.problems).toEqual([]);
+});
+
+// --- Step 3: the play ---
+const cellar = (f, fn, arg) => f.page.evaluate(`(${fn})(window.porchlightTest.cellar, ${JSON.stringify(arg ?? null)})`);
+// Down one floor, everyone.
+async function allDown(friends) {
+  for (const f of friends) {
+    await expect.poll(() => cellar(f, (c) => c.settled()), { timeout: 10_000 }).toBe(true);
+    await cellarGo(f, (fl) => ({ x: fl.ladderDown.x, y: fl.ladderDown.y + 0.8 }));
+    await f.page.waitForTimeout(150);
+    await f.page.keyboard.press("e");
+  }
+  await friends[0].page.waitForTimeout(1200);
+}
+
+test("Cellar Crawl: brooms, crates, critters, a knockout, a revive and the Rat King", async ({ browser }) => {
+  const dir = process.env.CELLAR_DIR || DIR;
+  const friends = await friendsInHouse(browser, ["Alice", "Bob", "Cara"]);
+  const [alice, bob, cara] = friends;
+  const start = await startTogether(friends, "cellarCrawl");
+  await start.click();
+  for (const f of friends) await f.page.waitForFunction(() => window.porchlightTest.cellar, null, { timeout: 15_000 });
+  await alice.page.waitForTimeout(1500);
+
+  // Alice breaks a crate (or a barrel) with her broom: the house server
+  // says what was inside, and it shows as words floating up.
+  const target = await cellar(alice, (c) => {
+    const fl = c.floors[c.me.floor];
+    const o = fl.objects.filter((x) => x.breakable && !x.broken).sort((a, b) => Math.hypot(a.x - c.me.x, a.y - c.me.y) - Math.hypot(b.x - c.me.x, b.y - c.me.y))[0];
+    c.go(o.x + o.w / 2, o.y + o.h + 0.35);
+    c.aim(0, -1);
+    return { id: o.id, hits: o.breakable };
+  });
+  for (let k = 0; k < target.hits; k++) {
+    await alice.page.keyboard.press(" ");
+    await alice.page.waitForTimeout(450);
+  }
+  await cellar(alice, (c) => c.waitForServer());
+  expect(await cellar(alice, (c, id) => c.floors[0].objects.find((o) => o.id === id).broken, target.id)).toBe(true);
+  // (Bob's cellar hears about it too.)
+  await expect.poll(() => cellar(bob, (c, id) => c.floors[0].objects.find((o) => o.id === id).broken, target.id)).toBe(true);
+  await alice.page.waitForTimeout(250);
+  await alice.page.screenshot({ path: `${dir}/1-broom-breaks-a-crate.png` });
+
+  // Down to floor 2, where every room has rats.
+  await allDown(friends);
+  expect(await cellar(cara, (c) => c.me.floor)).toBe(1);
+  // Alice walks up to a rat and swings at it (the host moves the critters,
+  // so everyone sees the same ones).
+  const rat = await cellar(alice, (c) => {
+    const fl = c.floors[1];
+    const r = fl.critters.filter((x) => x.kind === "rat")[0];
+    c.me.hurt = 99; // (no getting hurt in this bit of the test)
+    c.go(r.x - 1.6, r.y);
+    c.aim(1, 0);
+    return r.id;
+  });
+  await alice.page.waitForTimeout(700);
+  await alice.page.screenshot({ path: `${dir}/2-a-rat-notices-alice.png` });
+  for (let k = 0; k < 6; k++) {
+    await cellar(alice, (c, id) => {
+      const r = c.floors[1].critters.find((x) => x.id === id);
+      if (!r) return;
+      c.go(r.x - 0.8, r.y + 0.1);
+      c.aim(1, 0);
+    }, rat);
+    await alice.page.keyboard.press(" ");
+    if (k === 0) await alice.page.screenshot({ path: `${dir}/3-alice-swings-her-broom.png` });
+    await alice.page.waitForTimeout(420);
+  }
+  expect(await cellar(alice, (c, id) => !c.floors[1].critters.some((x) => x.id === id), rat)).toBe(true);
+  // Bob's copy lost the rat too.
+  await expect.poll(() => cellar(bob, (c, id) => !c.floors[1].critters.some((x) => x.id === id), rat)).toBe(true);
+
+  // Bob is knocked out (three hits), and drops half of what he carries.
+  await cellar(bob, (c) => {
+    c.go(c.floors[1].spawn.x, c.floors[1].spawn.y + 1);
+    for (let k = 0; k < 3; k++) {
+      c.me.hurt = 0;
+      c.hurt();
+    }
+  });
+  expect(await cellar(bob, (c) => c.me.downed)).toBe(true);
+  // Cara comes over and stands next to him: after a few seconds he's up.
+  await cellar(alice, (c) => (c.me.hurt = 0));
+  const bobAt = await cellar(bob, (c) => ({ x: c.me.x, y: c.me.y }));
+  await cellar(cara, (c, at) => {
+    c.me.hurt = 99;
+    c.go(at.x + 0.8, at.y);
+  }, bobAt);
+  await cellar(alice, (c, at) => c.go(at.x - 1.2, at.y + 0.6), bobAt);
+  await alice.page.waitForTimeout(1600);
+  await alice.page.screenshot({ path: `${dir}/4-cara-helps-bob-up.png` });
+  await bob.page.screenshot({ path: `${dir}/5-bob-knocked-out.png` });
+  await expect.poll(() => cellar(bob, (c) => c.me.downed), { timeout: 8000 }).toBe(false);
+  expect(await cellar(bob, (c) => c.me.hearts)).toBe(2);
+
+  // A spider and its webs, if this floor has one (they slow you down).
+  const spider = await cellar(alice, (c) => {
+    const s = c.floors[1].critters.find((x) => x.kind === "spider");
+    if (!s) return false;
+    c.me.hurt = 99;
+    c.go(s.x - 2.2, s.y + 0.3);
+    return true;
+  });
+  if (spider) {
+    await alice.page.waitForTimeout(3500);
+    await alice.page.screenshot({ path: `${dir}/6-a-spider-and-its-webs.png` });
+  }
+
+  // The bottom floor, and the Rat King.
+  await allDown(friends);
+  const kingAt = await cellar(alice, (c) => {
+    const k = c.floors[2].critters.find((x) => x.kind === "ratKing");
+    c.me.hurt = 99;
+    c.go(k.x, k.y + 2.4);
+    c.aim(0, -1);
+    return { x: k.x, y: k.y };
+  });
+  for (const f of [bob, cara]) await cellar(f, (c, at) => {
+    c.me.hurt = 99;
+    c.go(at.x + (Math.random() - 0.5) * 2, at.y + 2.8);
+  }, kingAt);
+  await alice.page.waitForTimeout(1200);
+  await alice.page.screenshot({ path: `${dir}/7-the-rat-king.png` });
+  // (The house server wants a little time on the floor before the king
+  // can fall, so nobody skips straight to him.)
+  await alice.page.waitForTimeout(9000);
+  for (let k = 0; k < 60; k++) {
+    const alive = await cellar(alice, (c) => {
+      const king = c.floors[2].critters.find((x) => x.kind === "ratKing");
+      if (!king) return false;
+      c.me.hurt = 99;
+      c.go(king.x, king.y + 0.9);
+      c.aim(0, -1);
+      return true;
+    });
+    if (!alive) break;
+    await alice.page.keyboard.press(" ");
+    if (k === 6) await alice.page.screenshot({ path: `${dir}/8-fighting-the-king.png` });
+    await alice.page.waitForTimeout(380);
+  }
+  expect(await cellar(alice, (c) => c.floors[2].critters.some((x) => x.kind === "ratKing"))).toBe(false);
+  await alice.page.waitForTimeout(600);
+  await alice.page.screenshot({ path: `${dir}/9-the-king-is-beaten.png` });
+  await cellar(alice, (c) => c.waitForServer());
+  expect((await cellar(alice, (c) => c.carrying())).items).toContain("The Rat King's Throne");
+
+  // Up the ladder: it all comes home.
+  await cellarGo(alice, (fl) => ({ x: fl.ladderUp.x + 0.5, y: fl.ladderUp.y + 1 }));
+  await alice.page.waitForTimeout(200);
+  await alice.page.keyboard.press("e");
+  await alice.page.locator(".mini-results-card").waitFor({ state: "visible", timeout: 10_000 });
+  await expect(alice.page.locator(".mini-results-card")).toContainText("The Rat King's Throne");
+  await alice.page.screenshot({ path: `${dir}/10-results-alice.png` });
   for (const f of friends) expect(f.problems).toEqual([]);
 });

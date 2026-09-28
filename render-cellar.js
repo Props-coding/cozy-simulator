@@ -661,3 +661,469 @@ function drawLantern(ctx, x, y, s, t, hook = true) {
   ctx.fillRect(-7, 10, 14, 3);
   ctx.restore();
 }
+
+// --- The critters (x, y: where their feet touch the floor, in pixels;
+// face: 1 right, -1 left) ---
+
+// A rat: a round grey-brown body, pink ears and nose, a long tail, and
+// eyes that shine. Winding up to dash, it shivers.
+function drawRat(ctx, x, y, face, t, state = {}) {
+  const s = state.big ?? 1;
+  const shake = state.windup ? Math.sin(t * 60) * 1.5 : 0;
+  const hop = state.dash ? 0 : Math.abs(Math.sin(t * 10 + x)) * 1.2;
+  ctx.fillStyle = "rgba(20, 10, 4, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(x, y, 13 * s, 4 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.save();
+  ctx.translate(x + shake, y - hop);
+  ctx.scale(face * s, s);
+  if (state.hurt) ctx.globalAlpha = 0.6;
+  cellarOutlined(ctx, () => {
+    ctx.strokeStyle = "#c9a0a0"; // the tail
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, -5);
+    ctx.quadraticCurveTo(-20, -2 + Math.sin(t * 8) * 3, -25, -9);
+    ctx.stroke();
+    const body = ctx.createRadialGradient(-2, -12, 1, 0, -7, 13);
+    body.addColorStop(0, "#a8998c");
+    body.addColorStop(1, "#5e5048");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(-1, -7, 12, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath(); // the head, pointing forward
+    ctx.moveTo(6, -12);
+    ctx.quadraticCurveTo(16, -9, 17, -5);
+    ctx.quadraticCurveTo(12, -2, 5, -2);
+    ctx.fill();
+    ctx.fillStyle = "#e8a0a8"; // nose and ears
+    ctx.beginPath();
+    ctx.arc(17, -5, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    for (const ex of [4, 8]) {
+      ctx.fillStyle = "#6e5e56";
+      ctx.beginPath();
+      ctx.arc(ex, -14, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e8a0a8";
+      ctx.beginPath();
+      ctx.arc(ex, -14, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // lit from above
+    ctx.beginPath();
+    ctx.ellipse(-2, -12, 7, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#4a3e38"; // little feet
+    ctx.fillRect(-6, -1.5, 3, 1.5);
+    ctx.fillRect(4, -1.5, 3, 1.5);
+  });
+  ctx.strokeStyle = "rgba(240, 230, 230, 0.5)"; // whiskers
+  ctx.lineWidth = 0.6;
+  for (const dy of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(15, -5);
+    ctx.lineTo(21, -5 + dy * 2.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// A dust bunny: a fluffy grey puff of many little tufts (lighter on top),
+// two beady eyes and tiny ears, hopping.
+function drawBunny(ctx, x, y, face, t, state = {}) {
+  const hop = Math.abs(Math.sin(t * 9 + x * 0.1)) * 5;
+  ctx.fillStyle = "rgba(20, 10, 4, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(x, y, 9, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (state.hurt) ctx.globalAlpha = 0.6;
+  const cx = x, cy = y - 9 - hop;
+  for (const ex of [-4, 4]) {
+    ctx.fillStyle = "#8e8a90"; // ears
+    ctx.beginPath();
+    ctx.ellipse(cx + ex, cy - 9, 2, 4, ex * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  drawLeafClump(ctx, cx, cy, 10, 8.5, ["#6e6a72", "#9a969e", "#c8c4cc"], Math.floor(x * 0.37) % 50, 16);
+  ctx.fillStyle = "#1a1418";
+  for (const ex of [-3, 3]) {
+    ctx.beginPath();
+    ctx.arc(cx + ex + face * 1.5, cy - 1, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(cx - 3.5 + face * 1.5, cy - 2, 0.9, 0.9);
+  ctx.fillRect(cx + 2.5 + face * 1.5, cy - 2, 0.9, 0.9);
+  ctx.globalAlpha = 1;
+}
+
+// A spider: a dark round body and abdomen, eight walking legs, and a
+// cluster of little red eyes.
+function drawSpider(ctx, x, y, face, t, state = {}) {
+  ctx.fillStyle = "rgba(20, 10, 4, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(x, y, 14, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (state.hurt) ctx.globalAlpha = 0.6;
+  const cy = y - 12;
+  ctx.strokeStyle = "#2a2226";
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < 4; i++) {
+    for (const side of [-1, 1]) {
+      const wig = Math.sin(t * 14 + i * 1.3 + (side > 0 ? 0 : 1.5)) * 2;
+      const kx = x + side * (8 + i * 1.5), ky = cy - 6 + i * 3 + wig;
+      ctx.beginPath();
+      ctx.moveTo(x + side * 3, cy - 1 + i * 1.5);
+      ctx.lineTo(kx, ky);
+      ctx.lineTo(x + side * (13 + i * 2), y - 1 + (i - 1.5));
+      ctx.stroke();
+    }
+  }
+  cellarOutlined(ctx, () => {
+    const abd = ctx.createRadialGradient(x - 2, cy - 4, 1, x, cy + 2, 10);
+    abd.addColorStop(0, "#5a4a52");
+    abd.addColorStop(1, "#1e181c");
+    ctx.fillStyle = abd;
+    ctx.beginPath();
+    ctx.ellipse(x - face * 3, cy + 1, 8.5, 7.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3a3036";
+    ctx.beginPath();
+    ctx.arc(x + face * 6, cy + 1, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#a0404a"; // a mark on its back
+    ctx.beginPath();
+    ctx.ellipse(x - face * 3, cy - 1, 2.5, 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.fillStyle = "#ff5a5a";
+  for (const [ex, ey] of [[7, -1], [9, 0.5], [7.5, 1.8], [9.5, -1.6]]) ctx.fillRect(x + face * ex - 0.6, cy + ey, 1.3, 1.3);
+  ctx.globalAlpha = 1;
+}
+
+// The Rat King: a big rat standing up in a purple cape and a gold crown,
+// holding a fork for a scepter. Winding up, he shakes it.
+function drawRatKing(ctx, x, y, face, t, state = {}) {
+  const shake = state.windup ? Math.sin(t * 50) * 2 : 0;
+  ctx.fillStyle = "rgba(20, 10, 4, 0.3)";
+  ctx.beginPath();
+  ctx.ellipse(x, y, 26, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.save();
+  ctx.translate(x + shake, y);
+  ctx.scale(face, 1);
+  if (state.hurt) ctx.globalAlpha = 0.7;
+  cellarOutlined(ctx, () => {
+    ctx.strokeStyle = "#c9a0a0"; // his tail
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-12, -6);
+    ctx.quadraticCurveTo(-34, -2 + Math.sin(t * 4) * 4, -38, -18);
+    ctx.stroke();
+    const cape = ctx.createLinearGradient(-18, 0, 18, 0); // the cape
+    cape.addColorStop(0, "#4a2458");
+    cape.addColorStop(0.5, "#7a3a8a");
+    cape.addColorStop(1, "#4a2458");
+    ctx.fillStyle = cape;
+    ctx.beginPath();
+    ctx.moveTo(-10, -44);
+    ctx.quadraticCurveTo(-24, -20, -20, 0);
+    ctx.lineTo(18, 0);
+    ctx.quadraticCurveTo(22, -20, 10, -44);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f2ece2"; // ermine trim, with black spots
+    ctx.fillRect(-20, -4, 38, 4);
+    ctx.fillStyle = "#2a2226";
+    for (let k = -16; k < 16; k += 7) ctx.fillRect(k, -3, 1.5, 2);
+    const body = ctx.createRadialGradient(0, -40, 2, 0, -30, 16);
+    body.addColorStop(0, "#b0a298");
+    body.addColorStop(1, "#6a5c54");
+    ctx.fillStyle = body; // the belly and head
+    ctx.beginPath();
+    ctx.ellipse(0, -24, 10, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(4, -46, 10, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath(); // snout
+    ctx.moveTo(10, -50);
+    ctx.quadraticCurveTo(22, -46, 22, -42);
+    ctx.quadraticCurveTo(14, -39, 8, -41);
+    ctx.fill();
+    ctx.fillStyle = "#e8a0a8";
+    ctx.beginPath();
+    ctx.arc(22, -43, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    for (const ex of [-2, 8]) {
+      ctx.fillStyle = "#7a6a62"; // ears
+      ctx.beginPath();
+      ctx.arc(ex, -55, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e8a0a8";
+      ctx.beginPath();
+      ctx.arc(ex, -55, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e8b83a"; // the crown
+    ctx.beginPath();
+    ctx.moveTo(-3, -56);
+    ctx.lineTo(-3, -66);
+    ctx.lineTo(1, -61);
+    ctx.lineTo(5, -68);
+    ctx.lineTo(9, -61);
+    ctx.lineTo(13, -66);
+    ctx.lineTo(13, -56);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#c0303a";
+    ctx.fillRect(4, -60, 2.4, 2.4);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.fillRect(-2, -58, 14, 1.2);
+    ctx.fillStyle = "#1a1418"; // an eye
+    ctx.beginPath();
+    ctx.arc(10, -48, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c8c8d0"; // the fork scepter
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(14, -10);
+    ctx.lineTo(20, -46);
+    ctx.stroke();
+    ctx.lineWidth = 1.2;
+    for (const dx of [-2.5, 0, 2.5]) {
+      ctx.beginPath();
+      ctx.moveTo(20 + dx, -46);
+      ctx.lineTo(21 + dx, -54);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#8a7870"; // his paw on it
+    ctx.beginPath();
+    ctx.arc(16, -24, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+// A spider's web on the floor: pale spokes and rings, fading as it ages.
+function drawFloorWeb(ctx, x, y, r, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = "rgba(235, 235, 245, 0.6)";
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.55);
+    ctx.stroke();
+  }
+  for (let ring = 1; ring <= 3; ring++) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, (r * ring) / 3.3, (r * ring * 0.55) / 3.3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Your broom: a wooden handle and a bundle of straw bristles, tied with
+// twine. `angle` is where it points; mid-swing it sweeps and leaves dust.
+function drawBroom(ctx, x, y, angle, swing) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  cellarOutlined(ctx, () => {
+    ctx.fillStyle = "#8a6444"; // the handle
+    ctx.fillRect(-2, -1.5, 24, 3);
+    ctx.fillStyle = "rgba(255, 225, 180, 0.35)";
+    ctx.fillRect(-2, -1.5, 24, 1);
+    ctx.fillStyle = "#d8b060"; // the bristles
+    ctx.beginPath();
+    ctx.moveTo(21, -3);
+    ctx.lineTo(34, -8);
+    ctx.lineTo(35, 8);
+    ctx.lineTo(21, 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(120, 80, 30, 0.6)";
+    ctx.lineWidth = 0.7;
+    for (let k = -6; k <= 6; k += 3) {
+      ctx.beginPath();
+      ctx.moveTo(23, k * 0.3);
+      ctx.lineTo(34, k);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#a8402a"; // twine
+    ctx.fillRect(21, -3.5, 2.5, 7);
+  });
+  ctx.restore();
+  if (swing > 0) {
+    // The sweep: a soft arc of dust.
+    ctx.save();
+    ctx.globalAlpha = swing * 0.55;
+    ctx.strokeStyle = "rgba(240, 225, 200, 0.9)";
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(x, y, 34, angle - 0.9, angle + 0.2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// What's left of a broken crate or barrel: planks and staves on the floor.
+function drawDebris(ctx, o) {
+  const base = toScreen(o.x + o.w / 2, o.y + o.h);
+  const wood = o.kind === "barrel" ? "#8a5a34" : o.tint ?? "#9a7148";
+  for (let k = 0; k < 6; k++) {
+    const a = noise(o.id + k * 1.7) * Math.PI, dx = (noise(o.id * 3 + k) - 0.5) * 30, dy = (noise(o.id * 5 + k) - 0.5) * 10;
+    ctx.save();
+    ctx.translate(base.x + dx, base.y - 5 + dy);
+    ctx.rotate(a);
+    ctx.fillStyle = shadeColor(wood, -20 + k * 5);
+    ctx.fillRect(-7, -1.5, 14, 3);
+    ctx.fillStyle = "rgba(255, 225, 180, 0.2)";
+    ctx.fillRect(-7, -1.5, 14, 1);
+    ctx.restore();
+  }
+  if (o.kind === "barrel") {
+    ctx.strokeStyle = "#3a3a40"; // a fallen hoop
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(base.x + 4, base.y - 4, 12, 4, 0.2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+// A little puff of dust (a critter knocked out, a crate broken).
+function drawPuff(ctx, x, y, age) {
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - age / 0.5);
+  ctx.fillStyle = "#d8ccb8";
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(a) * age * 50, y - 10 + Math.sin(a) * age * 30, 5 - age * 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// --- Rare finds from the cellar, for your room (see DECOR in world.js) ---
+Object.assign(FURNITURE_DRAWERS, {
+  wineRack(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    drawWineRack(ctx, f);
+  },
+
+  // An old iron-and-brass lantern on the floor, still glowing.
+  cellarLantern(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const base = toScreen(f.x + f.w / 2, f.y + f.h);
+    const t = performance.now() / 1000;
+    const glow = ctx.createRadialGradient(base.x, base.y - 14, 2, base.x, base.y - 14, 40);
+    glow.addColorStop(0, "rgba(255, 200, 110, 0.35)");
+    glow.addColorStop(1, "rgba(255, 200, 110, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(base.x - 40, base.y - 54, 80, 80);
+    drawLantern(ctx, base.x, base.y - 20, 1.3, t, false);
+  },
+
+  // A gilded frame on the wall: a very distinguished rat in a ruff and a
+  // monocle, painted in oils against a dark background.
+  ratPortrait(ctx, f) {
+    const a = toScreen(f.x, f.y);
+    const w = f.w * TILE, x = a.x + 3, y = a.y - WALL_HEIGHT + 2, fw = w - 6, fh = 34;
+    const gold = ctx.createLinearGradient(x, y, x + fw, y + fh);
+    gold.addColorStop(0, "#f2d27a");
+    gold.addColorStop(0.5, "#b8862a");
+    gold.addColorStop(1, "#e8c060");
+    ctx.fillStyle = gold;
+    ctx.fillRect(x, y, fw, fh);
+    ctx.fillStyle = "#6a4a14";
+    ctx.fillRect(x + 3, y + 3, fw - 6, fh - 6);
+    const bg = ctx.createRadialGradient(x + fw / 2, y + fh / 2, 2, x + fw / 2, y + fh / 2, fh);
+    bg.addColorStop(0, "#4a3a2a");
+    bg.addColorStop(1, "#1a120c");
+    ctx.fillStyle = bg;
+    ctx.fillRect(x + 4, y + 4, fw - 8, fh - 8);
+    const cx = x + fw / 2, cy = y + fh / 2 + 2;
+    ctx.fillStyle = "#3a2448"; // a velvet coat
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 10, 11, 7, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = "#f2ece2"; // the ruff
+    for (let k = -3; k <= 3; k++) {
+      ctx.beginPath();
+      ctx.arc(cx + k * 2.4, cy + 3, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#8a7c72"; // the rat
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - 3, 6, 6.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const ex of [-5, 5]) {
+      ctx.beginPath();
+      ctx.arc(cx + ex, cy - 9, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#e8a0a8";
+    ctx.fillRect(cx - 1, cy + 1, 2, 1.5);
+    ctx.fillStyle = "#1a1418";
+    ctx.fillRect(cx - 3, cy - 4, 1.6, 1.6);
+    ctx.fillRect(cx + 1.5, cy - 4, 1.6, 1.6);
+    ctx.strokeStyle = "#e8c060"; // the monocle
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(cx + 2.3, cy - 3.2, 2.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 245, 220, 0.18)"; // varnish shine
+    ctx.fillRect(x + 5, y + 5, 3, fh - 12);
+  },
+
+  // The Rat King's throne: a high-backed chair built from a crate and a
+  // cork, with a red velvet cushion, rat-ear finials and gold studs.
+  ratThrone(ctx, f) {
+    drawShadow(ctx, f.x, f.y, f.w, f.h);
+    const seat = drawBlock(ctx, f.x, f.y + f.h * 0.35, f.w, f.h * 0.65, 18, "#6a4028");
+    const back = toScreen(f.x, f.y + f.h * 0.35);
+    const w = f.w * TILE;
+    const bx = back.x + 3, bw = w - 6, top = back.y - 18 - 44;
+    ctx.fillStyle = "#5a3620"; // the tall back
+    roundRectPath(ctx, bx, top, bw, 46, 6);
+    ctx.fill();
+    ctx.fillStyle = "#7a2a36"; // velvet
+    roundRectPath(ctx, bx + 5, top + 6, bw - 10, 32, 5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 220, 230, 0.15)";
+    ctx.fillRect(bx + 7, top + 8, bw - 14, 3);
+    ctx.fillStyle = "#e8b83a"; // gold studs
+    for (let k = 0; k < 5; k++) {
+      ctx.beginPath();
+      ctx.arc(bx + 5 + ((bw - 10) * k) / 4, top + 3, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const ex of [bx + 4, bx + bw - 4]) {
+      ctx.fillStyle = "#5a3620"; // rat-ear finials
+      ctx.beginPath();
+      ctx.arc(ex, top - 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e8a0a8";
+      ctx.beginPath();
+      ctx.arc(ex, top - 2, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#8a2a3a"; // the seat cushion
+    roundRectPath(ctx, seat.top.x + 3, seat.top.y + 1, seat.top.w - 6, seat.top.h - 2, 4);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 220, 230, 0.2)";
+    ctx.fillRect(seat.top.x + 5, seat.top.y + 2, seat.top.w - 10, 2);
+    ctx.fillStyle = "#e8b83a"; // a gold crest on the front
+    ctx.beginPath();
+    ctx.arc(seat.face.x + seat.face.w / 2, seat.face.y + seat.face.h / 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+  },
+});

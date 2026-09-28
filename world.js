@@ -2008,6 +2008,13 @@ const DECOR = {
   plushFrog: { name: "Frog Plush", kind: "plushFrog", w: 0.45, h: 0.35 },
   miniArcade: { name: "Mini Arcade Cabinet", kind: "arcade", w: 0.8, h: 0.6 },
   neonStar: { name: "Neon Star", kind: "neonStar", w: 0.7, wall: true },
+  // (0.84) Cellar Crawl's rare finds: never sold in Nest & Nook. They come
+  // up from the cellar (config.js minigames.cellar: rareDecor, and the Rat
+  // King's throne).
+  wineRack: { name: "Cellar Wine Rack", kind: "wineRack", w: 1.2, h: 0.45 },
+  cellarLantern: { name: "Old Cellar Lantern", kind: "cellarLantern", w: 0.45, h: 0.35 },
+  ratPortrait: { name: "Portrait of a Rat Noble", kind: "ratPortrait", w: 0.8, wall: true },
+  ratThrone: { name: "The Rat King's Throne", kind: "ratThrone", w: 1.0, h: 0.8 },
   mothLamp: { name: "Mothman Lamp", tab: "decor", price: 45, kind: "mothLamp", w: 0.5, h: 0.4 },
   mothPlush: { name: "Mothman Plush", kind: "mothPlush", w: 0.5, h: 0.4 }, // (no price or aisle: only Mothman gives it)
   artCanvas: { name: "Blank Canvas", tab: "art", price: 12, kind: "artCanvas", w: 0.7, wall: true },

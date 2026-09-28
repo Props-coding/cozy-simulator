@@ -299,16 +299,84 @@ test("mini games: a round's crumbs can't beat the clock, and there's a daily cap
   assert.equal(e2.data.wallet.minis.best.snowball, 12);
 });
 
-test("Cellar Crawl: real finds come home, up to the day's limit", async () => {
-  await setSky({ offset: 0 }); // (so "today" below is the house server's today)
+// (Cellar Crawl: breaking crates in a row needs a moment between them.)
+const breath = () => new Promise((r) => setTimeout(r, 230));
+const houseToday = () => {
   const d = new Date();
-  const today = d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
-  await seed("Alice", { basket: {}, minis: { lootDay: today, looted: 5, best: {} } });
-  const { data: s } = await bank("Alice", "miniStart", { game: "cellarCrawl" });
-  await new Promise((r) => setTimeout(r, 30_500)); // (finds need a 30-second round)
-  const end = await bank("Alice", "miniEnd", { id: s.result.id, score: 10 });
-  assert.equal(end.status, 200);
-  assert.equal(end.data.result.loot.length, 1, "10 points would be 2 finds, but only 1 is left of today's 6");
-  const [item] = end.data.result.loot;
-  assert.equal(end.data.wallet.basket[item], 1, "the find is in the basket");
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+};
+
+test("Cellar Crawl: crates are opened on the server, a knockout drops half, the ladder up banks it", async () => {
+  await setSky({ offset: 0 });
+  await seed("Alice", { crumbs: 0, basket: {}, minis: { best: {}, cellar: {} } });
+  assert.equal((await bank("Alice", "cellarBreak", { id: "made-up", kind: "crate" })).status, 409, "no run going on");
+  assert.equal((await bank("Alice", "miniStart", { game: "cellarCrawl" })).status, 400, "the old way in is closed");
+  const { data: s } = await bank("Alice", "cellarStart");
+  const id = s.result.id;
+  let carried = s.result.carried;
+  assert.equal(carried.value, 0);
+  for (let k = 0; k < 6; k++) {
+    const r = await bank("Alice", "cellarBreak", { id, kind: k % 2 ? "barrel" : "crate" });
+    assert.equal(r.status, 200);
+    carried = r.data.result.carried;
+    await breath();
+  }
+  // Too fast: two crates in the same instant.
+  const quick = await Promise.all([bank("Alice", "cellarBreak", { id, kind: "crate" }), bank("Alice", "cellarBreak", { id, kind: "crate" })]);
+  assert.ok(quick.some((r) => r.status === 429), "a second crate in the same instant is refused");
+  carried = (quick.find((r) => r.status === 200) ?? {}).data?.result.carried ?? carried;
+  assert.equal((await bank("Alice", "cellarDeeper", { id, floor: 1 })).status, 409, "too soon to go deeper");
+  assert.equal((await bank("Alice", "cellarDeeper", { id, floor: 2 })).status, 409, "no skipping a floor");
+  assert.equal((await bank("Alice", "cellarKing", { id })).status, 409, "no king on the top floor");
+  // Knocked out: half of it (rounded up) is dropped.
+  const down = await bank("Alice", "cellarDown", { id });
+  assert.equal(down.status, 200);
+  assert.equal(down.data.result.lost.crumbs, Math.ceil(carried.crumbs / 2));
+  carried = down.data.result.carried;
+  // Up the ladder: the crumbs go in the wallet, and the run is over.
+  const home = await bank("Alice", "cellarBank", { id });
+  assert.equal(home.status, 200);
+  assert.equal(home.data.wallet.crumbs, carried.crumbs + (home.data.result.score > 0 ? 5 : 0), "the carried crumbs (plus Game On, the first time)");
+  assert.equal(home.data.result.score, carried.value);
+  assert.equal((await bank("Alice", "cellarBank", { id })).status, 409, "a run banks only once");
+  assert.equal((await bank("Alice", "cellarBreak", { id, kind: "crate" })).status, 409, "and its crates are gone");
+});
+
+test("Cellar Crawl: the day's crumbs and rare finds have a limit", async () => {
+  await setSky({ offset: 0 });
+  await seed("Bruno", { crumbs: 0, basket: {}, minis: { best: {}, cellar: { day: houseToday(), earned: 88, finds: 6, upgrades: {}, deepest: 0, kings: 0 } } });
+  const { data: s } = await bank("Bruno", "cellarStart");
+  const id = s.result.id;
+  let carried = s.result.carried;
+  for (let k = 0; k < 30 && carried.crumbs < 3; k++) {
+    const r = await bank("Bruno", "cellarBreak", { id, kind: "barrel" });
+    assert.ok(["crumbs", "nothing"].includes(r.data.result.got.kind), "no rare finds once today's are found");
+    carried = r.data.result.carried;
+    await breath();
+  }
+  const home = await bank("Bruno", "cellarBank", { id });
+  assert.equal(home.data.result.crumbs, 2, "only 2 crumbs left of today's 90");
+  assert.equal(home.data.result.capped, true);
+});
+
+test("Cellar Crawl: three floors down, not too fast, and the Rat King's throne comes home", async () => {
+  await setSky({ offset: 0 });
+  await seed("Alice", { crumbs: 0, basket: {}, home: { owned: {}, size: "cozy" }, minis: { best: {}, cellar: {} } });
+  const { data: s } = await bank("Alice", "cellarStart");
+  const id = s.result.id;
+  for (const floor of [1, 2]) {
+    await new Promise((r) => setTimeout(r, 5_100));
+    assert.equal((await bank("Alice", "cellarDeeper", { id, floor })).status, 200);
+  }
+  assert.equal((await bank("Alice", "cellarKing", { id })).status, 409, "the king can't fall the moment you arrive");
+  await new Promise((r) => setTimeout(r, 12_100));
+  const king = await bank("Alice", "cellarKing", { id });
+  assert.equal(king.status, 200);
+  assert.ok(king.data.result.carried.crumbs >= 25);
+  assert.equal((await bank("Alice", "cellarKing", { id })).status, 409, "only once a run");
+  const home = await bank("Alice", "cellarBank", { id });
+  assert.equal(home.data.result.king, true);
+  assert.equal(home.data.result.deepest, 2);
+  assert.equal(home.data.wallet.home.owned.ratThrone, 1, "the throne is in storage, ready to place");
+  assert.equal(home.data.wallet.minis.cellar.kings, 1);
 });

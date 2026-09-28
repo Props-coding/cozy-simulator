@@ -304,7 +304,7 @@ const CONFIG = {
       { id: "ghostHunt", name: "Ghost Hunt", color: "#b8a8d8", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.6, maxCrumbs: 15, blurb: "The old parlor is haunted. Hold your flashlight on a ghost to catch it, but watch out for the jumpy ones!", how: "Move the mouse to point your flashlight and hold it on a ghost to catch it. Red-eyed ghosts jump out if you light them too long: click them when they say CLICK!" },
       { id: "nightMeadow", name: "Night Meadow", color: "#6a7ab0", seconds: 45, maxPerSecond: 2, base: 3, crumbsPerPoint: 0.5, maxCrumbs: 15, blurb: "A warm summer night full of fireflies. Net as many as you can while they're lit. A golden moth is worth three!", how: "Click a firefly while it's glowing to net it. Dark ones slip through." },
       { id: "kitchenRush", name: "Kitchen Rush", color: "#e05a47", seconds: 60, maxPerSecond: 1.5, base: 3, crumbsPerPoint: 0.4, maxCrumbs: 15, blurb: "Orders are flying in for dishes from your own recipe book. Drop the right ingredients in the pot, fast!", how: "Click the ingredients each order needs (any order). A wrong one spills the pot." },
-      { id: "cellarCrawl", name: "Cellar Crawl", color: "#8a6a4a", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "Take a lantern down into the old cellar under the house, together. Three floors of dark rooms, each deeper one darker, bigger and richer.", how: "WASD or arrow keys to walk, E to use a ladder. The ladder down leads deeper; the ladder up takes you home." },
+      { id: "cellarCrawl", name: "Cellar Crawl", color: "#8a6a4a", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "Take a lantern and a broom down into the old cellar under the house, together. Three floors of dark rooms full of rats, dust bunnies and spiders, each deeper one darker, bigger and richer. The Rat King waits at the bottom.", how: "WASD or arrow keys to walk, Space to swing your broom, E to use a ladder. Break crates and barrels for loot. Knocked out, you drop half of what you carry (a friend standing close helps you up). The ladder up takes it all home." },
     ],
     // Cellar Crawl (cellar.js): the old cellar under the house.
     cellar: {
@@ -317,19 +317,78 @@ const CONFIG = {
       // Each floor, from the top: `dark` how dark it is (0 to 1), `light`
       // how far lanterns reach (1 = the full `lantern`), `cobwebs` the
       // chance of a cobweb in each top corner, `glowcaps` how many glowing
-      // mushroom patches a room might have.
+      // mushroom patches a room might have. `critters`: how many of each
+      // critter a room gets, [fewest, most] (dust bunnies come in swarms of
+      // `swarm`); the first room (with the ladder up) is always empty.
       floors: [
-        { rooms: 5, grid: [4, 3], dark: 0.84, light: 1.0, cobwebs: 0.3, glowcaps: 0 },
-        { rooms: 7, grid: [4, 4], dark: 0.9, light: 0.85, cobwebs: 0.5, glowcaps: 2 },
-        { rooms: 9, grid: [5, 4], dark: 0.95, light: 0.72, cobwebs: 0.75, glowcaps: 3 },
+        { rooms: 5, grid: [4, 3], dark: 0.84, light: 1.0, cobwebs: 0.3, glowcaps: 0, critters: { rat: [0, 2], bunny: [0, 1], spider: [0, 0] } },
+        { rooms: 7, grid: [4, 4], dark: 0.9, light: 0.85, cobwebs: 0.5, glowcaps: 2, critters: { rat: [1, 2], bunny: [0, 1], spider: [0, 1] } },
+        { rooms: 9, grid: [5, 4], dark: 0.95, light: 0.72, cobwebs: 0.75, glowcaps: 3, critters: { rat: [1, 3], bunny: [0, 2], spider: [0, 1] } },
       ],
       lantern: 3.6, // how far your lantern lights, in tiles
       walkSpeed: 3.4, // tiles a second
       view: 15, // how many tiles across the screen shows
+      hearts: 3, // how many hits you can take before you're knocked out
+      hurtSeconds: 1.2, // after a hit, how long nothing else can hurt you
+      // Your broom (Space): how far it reaches (tiles), how hard it hits,
+      // how far it knocks critters back (tiles a second), and the wait
+      // between swings (seconds).
+      broom: { reach: 1.25, damage: 1, knockback: 9, cooldown: 0.36 },
       crateHits: 1, // broom swings to break a crate
       barrelHits: 2, // and a barrel
-      // (The old Cellar Crawl's finds, until the new loot arrives.)
-      every: 5, most: 3, perDay: 6, after: 30, finds: ["food", "seed", "bait:worm", "night:lightbulb"],
+      // The critters. hp: hits to knock one out; speed: tiles a second;
+      // sees: how close you have to be before it notices you (tiles).
+      critters: {
+        // Rats creep closer, wind up, then dash straight at you.
+        rat: { hp: 2, speed: 1.8, sees: 5, dashSpeed: 8, dashFrom: 3.2, windup: 0.55, dashSeconds: 0.4, rest: 1.1 },
+        // Dust bunnies are weak, but come in swarms and hop about.
+        bunny: { hp: 1, speed: 2.5, sees: 5, swarm: 4 },
+        // Spiders keep their distance and leave sticky webs that slow you.
+        spider: { hp: 3, speed: 1.4, sees: 5.5, webEvery: 2.2, webSeconds: 14, webSlow: 0.45, keepAway: 2.6 },
+        // The Rat King, in the last room of the bottom floor: dashes, and
+        // calls rats (`calls` at a time, every `callEvery` seconds, up to
+        // `callMost` about at once). Angrier (faster) under half his hp.
+        ratKing: { hp: 24, speed: 1.6, sees: 7, dashSpeed: 9, dashFrom: 4, windup: 0.7, dashSeconds: 0.5, rest: 1.4, callEvery: 7, calls: 2, callMost: 5 },
+      },
+      // Knocked out (no hearts left): half of what you're carrying drops.
+      // A friend standing within `reviveRange` tiles for `reviveSeconds`
+      // gets you up (with `reviveHearts`); otherwise you come to by the
+      // ladder up after `downedSeconds` (with all your hearts).
+      downedSeconds: 12,
+      reviveSeconds: 3,
+      reviveRange: 1.4,
+      reviveHearts: 2,
+      // What crates and barrels hold, floor by floor (deeper is better).
+      // Each entry's `weight` is how likely it is compared with the others:
+      // crumbs (a range), a rare seed (`rareSeeds`), a recipe you don't
+      // know yet, a piece of rare decor (`rareDecor`), or nothing. Barrels
+      // hold `barrelBonus` times the crumbs.
+      loot: [
+        [{ kind: "crumbs", crumbs: [1, 4], weight: 60 }, { kind: "seed", weight: 7 }, { kind: "recipe", weight: 4 }, { kind: "decor", weight: 3 }, { kind: "nothing", weight: 26 }],
+        [{ kind: "crumbs", crumbs: [3, 7], weight: 58 }, { kind: "seed", weight: 11 }, { kind: "recipe", weight: 7 }, { kind: "decor", weight: 6 }, { kind: "nothing", weight: 18 }],
+        [{ kind: "crumbs", crumbs: [5, 11], weight: 52 }, { kind: "seed", weight: 14 }, { kind: "recipe", weight: 10 }, { kind: "decor", weight: 10 }, { kind: "nothing", weight: 14 }],
+      ],
+      barrelBonus: 1.5,
+      rareSeeds: ["starfruit", "moonflower"],
+      rareDecor: ["wineRack", "cellarLantern", "ratPortrait"],
+      // Beating the Rat King: crumbs (a range) and his throne, for everyone
+      // there when he falls.
+      king: { crumbs: [25, 40], decor: "ratThrone" },
+      bag: 4, // how many finds (not crumbs) you can carry at first
+      findValue: 10, // a find's worth in your haul's score (crumbs count 1 each)
+      crumbsPerDay: 90, // the most crumbs the cellar pays in a day
+      findsPerDay: 6, // and the most rare finds (then crates hold crumbs)
+      // (Checks the house server makes, so nobody can skip ahead.)
+      minFloorSeconds: 5, // the least time on a floor before going deeper
+      kingMinSeconds: 12, // the least time on the bottom floor to beat the king
+      breaksPerFloor: 60, // the most crates a floor can have
+      // The workbench in the lobby: small upgrades, bought with crumbs,
+      // one level at a time. Each level's price and what it adds.
+      upgrades: {
+        lantern: { name: "Brighter lantern", levels: [{ price: 40, adds: 0.6 }, { price: 90, adds: 0.6 }, { price: 160, adds: 0.8 }] },
+        bag: { name: "Bigger bag", levels: [{ price: 50, adds: 2 }, { price: 110, adds: 2 }, { price: 200, adds: 3 }] },
+        broom: { name: "Sturdier broom", levels: [{ price: 45, adds: 1 }, { price: 100, adds: 1 }, { price: 180, adds: 1 }] },
+      },
     },
   },
 

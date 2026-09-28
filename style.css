@@ -5984,6 +5984,27 @@ canvas.item-picture {
   align-items: center;
   gap: 10px;
 }
+.mini-hearts {
+  display: inline-flex;
+  gap: 3px;
+}
+.mini-heart .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+.mini-heart.lost .ui-icon {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+.mini-bag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mini-bag .ui-icon {
+  width: 18px;
+  height: 18px;
+}
 .mini-hud-score {
   padding: 2px 12px;
   border-radius: 999px;

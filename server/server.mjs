@@ -789,6 +789,17 @@ function fillWallet(w) {
   w.minis.best ??= {};
   w.minis.lootDay ??= 0;
   w.minis.looted ??= 0;
+  // Cellar Crawl (rebuilt in 0.84): the run going on (what you're
+  // carrying), today's crumbs and finds from it, and the workbench's upgrades.
+  w.minis.cellar ??= {};
+  const cel = w.minis.cellar;
+  cel.run ??= null;
+  cel.day ??= 0;
+  cel.earned ??= 0;
+  cel.finds ??= 0;
+  cel.deepest ??= 0;
+  cel.kings ??= 0;
+  cel.upgrades ??= {};
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -878,10 +889,70 @@ function tasteOf(id, item) {
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log, lesson } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, arcade: { tickets: w.arcade.tickets, won: arcadeToday(w).won, cashed: arcadeToday(w).cashed, pins: w.arcade.pins }, minis: { earned: w.minis.day === hometownDay() ? w.minis.earned : 0, best: w.minis.best }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, arcade: { tickets: w.arcade.tickets, won: arcadeToday(w).won, cashed: arcadeToday(w).cashed, pins: w.arcade.pins }, minis: { earned: w.minis.day === hometownDay() ? w.minis.earned : 0, best: w.minis.best, cellar: cellarView(w) }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
+
+// --- Cellar Crawl's helpers (see the cellar actions in the bank) ---
+function cellarRun(w, b) {
+  const run = w.minis.cellar.run;
+  if (!run || run.id !== b.id) throw new Oops(409, "That cellar run isn't going on.");
+  return run;
+}
+// How many finds your bag holds (crumbs don't count: they go in a pouch).
+function cellarBag(w) {
+  const cfg = GAME.CONFIG.minigames.cellar;
+  const level = Math.min(w.minis.cellar.upgrades.bag ?? 0, cfg.upgrades.bag.levels.length);
+  return cfg.bag + cfg.upgrades.bag.levels.slice(0, level).reduce((sum, l) => sum + l.adds, 0);
+}
+const carried = (run) => ({ crumbs: run.crumbs, items: run.items.map(cellarItemName), value: run.crumbs + run.items.length * GAME.CONFIG.minigames.cellar.findValue });
+function cellarItemName(item) {
+  const [kind, id] = String(item).split(":");
+  if (kind === "seed") return `${GAME.CROPS[id]?.name ?? id} seeds`;
+  if (kind === "recipe") return `Recipe: ${GAME.RECIPES[id]?.name ?? id}`;
+  if (kind === "decor") return GAME.DECOR[id]?.name ?? id;
+  return id;
+}
+function cellarView(w) {
+  const c = w.minis.cellar, today = c.day === hometownDay();
+  return { upgrades: c.upgrades, earned: today ? c.earned : 0, finds: today ? c.finds : 0, deepest: c.deepest, kings: c.kings };
+}
+// Picks what a crate held, from the floor's loot table. Rare finds are
+// limited each day (then it's crumbs instead), and need room in your bag.
+function rollCellarLoot(w, run, bonus) {
+  const cfg = GAME.CONFIG.minigames.cellar;
+  const c = w.minis.cellar;
+  const day = hometownDay();
+  if (c.day !== day) Object.assign(c, { day, earned: 0, finds: 0 });
+  const table = cfg.loot[run.floor];
+  let pick = Math.random() * table.reduce((sum, e) => sum + e.weight, 0);
+  let entry = table[table.length - 1];
+  for (const e of table) if ((pick -= e.weight) < 0) {
+    entry = e;
+    break;
+  }
+  const crumbsFrom = (e) => Math.round((e.crumbs[0] + Math.floor(Math.random() * (e.crumbs[1] - e.crumbs[0] + 1))) * bonus);
+  const crumbEntry = table.find((e) => e.kind === "crumbs");
+  const asCrumbs = () => {
+    const n = crumbsFrom(crumbEntry);
+    run.crumbs += n;
+    return { kind: "crumbs", crumbs: n };
+  };
+  if (entry.kind === "nothing") return { kind: "nothing" };
+  if (entry.kind === "crumbs") return asCrumbs();
+  let item = null;
+  const pickOne = (list) => (list.length ? list[Math.floor(Math.random() * list.length)] : null);
+  if (entry.kind === "seed") item = pickOne(cfg.rareSeeds.filter((id) => Object.hasOwn(GAME.CROPS, id)).map((id) => "seed:" + id));
+  if (entry.kind === "decor") item = pickOne(cfg.rareDecor.filter((id) => Object.hasOwn(GAME.DECOR, id)).map((id) => "decor:" + id));
+  if (entry.kind === "recipe") item = pickOne(Object.keys(GAME.RECIPES).filter((id) => !w.recipes.includes(id) && !run.items.includes("recipe:" + id)).map((id) => "recipe:" + id));
+  // (No more rare finds today, nothing left to find, or a full bag: crumbs.)
+  if (!item || c.finds >= cfg.findsPerDay) return asCrumbs();
+  if (run.items.length >= cellarBag(w)) return { kind: "full" };
+  c.finds += 1;
+  run.items.push(item);
+  return { kind: entry.kind, item, name: cellarItemName(item) };
+}
 
 // Gives an achievement (and its crumbs) once. `ev` collects what happened,
 // so the page can show the pop-ups.
@@ -1620,7 +1691,7 @@ const BANK = {
   // --- Mini games (Update 10) ---
   // A round starts: the house server notes the game and the time.
   miniStart(w, b) {
-    const game = GAME.CONFIG.minigames.games.find((g) => g.id === b.game && !g.soon);
+    const game = GAME.CONFIG.minigames.games.find((g) => g.id === b.game && !g.soon && g.id !== "cellarCrawl"); // (Cellar Crawl has its own: cellarStart)
     if (!game) throw new Oops(400, "That door doesn't open yet.");
     w.minis.play = { game: game.id, at: Date.now(), id: newId() };
     return { id: w.minis.play.id };
@@ -1645,23 +1716,100 @@ const BANK = {
     const best = score > (w.minis.best[game.id] ?? 0);
     if (best) w.minis.best = { ...w.minis.best, [game.id]: score };
     if (!short) grant(w, "firstMinigame", ev);
-    // Cellar Crawl: real finds for your basket (the house server picks them).
-    const loot = [];
-    if (game.id === "cellarCrawl" && seconds >= (cfg.cellar.after ?? 30)) {
-      const c = cfg.cellar;
-      if (w.minis.lootDay !== day) Object.assign(w.minis, { lootDay: day, looted: 0 });
-      const n = Math.max(0, Math.min(c.most, Math.floor(score / c.every), c.perDay - w.minis.looted));
-      const pick = (list) => list[Math.floor(Math.random() * list.length)];
-      for (let i = 0; i < n; i++) {
-        const kind = pick(c.finds);
-        const item = kind === "food" ? `food:${pick(GAME.CONFIG.kitchen.pantry).id}` : kind === "seed" ? `seed:${pick(GAME.CONFIG.crops.filter((x) => !x.merchant)).id}` : kind;
-        if (!knownItem(item)) continue;
-        putIn(w, item, 1);
-        loot.push(item);
-      }
-      w.minis.looted += loot.length;
+    return { score, crumbs, best, short, capped: w.minis.earned >= cfg.crumbsPerDay };
+  },
+
+  // --- Cellar Crawl (rebuilt in 0.84) ---
+  // A run starts: nothing carried yet, on the top floor.
+  cellarStart(w) {
+    const c = w.minis.cellar;
+    c.run = { id: newId(), at: Date.now(), floor: 0, floorAt: Date.now(), deepest: 0, crumbs: 0, items: [], breaks: 0, lastBreak: 0, king: false, downs: 0 };
+    return { id: c.run.id, bag: cellarBag(w), carried: carried(c.run) };
+  },
+  // Down the ladder to the next floor (one at a time, and not too fast).
+  cellarDeeper(w, b, ev) {
+    const run = cellarRun(w, b);
+    const cfg = GAME.CONFIG.minigames.cellar;
+    if (Number(b.floor) !== run.floor + 1 || run.floor + 1 >= cfg.floors.length) throw new Oops(409, "That's not the next floor down.");
+    if (Date.now() - run.floorAt < cfg.minFloorSeconds * 1000) throw new Oops(409, "Not so fast!");
+    run.floor += 1;
+    run.floorAt = Date.now();
+    run.breaks = 0;
+    run.deepest = Math.max(run.deepest, run.floor);
+    const c = w.minis.cellar;
+    c.deepest = Math.max(c.deepest, run.floor);
+    if (run.floor >= 1) grant(w, "cellarDeeper", ev);
+    if (run.floor >= cfg.floors.length - 1) grant(w, "cellarBottom", ev);
+    return { floor: run.floor };
+  },
+  // A crate or barrel broken: the house server picks what was inside
+  // (from this floor's loot table), if your bag has room.
+  cellarBreak(w, b) {
+    const run = cellarRun(w, b);
+    const cfg = GAME.CONFIG.minigames.cellar;
+    const now = Date.now();
+    if (run.breaks >= cfg.breaksPerFloor || now - run.lastBreak < 200) throw new Oops(429, "Easy there!");
+    run.breaks += 1;
+    run.lastBreak = now;
+    const got = rollCellarLoot(w, run, b.kind === "barrel" ? cfg.barrelBonus : 1);
+    return { got, carried: carried(run) };
+  },
+  // Knocked out: half of what you're carrying is dropped (lost).
+  cellarDown(w, b) {
+    const run = cellarRun(w, b);
+    const lost = { crumbs: Math.ceil(run.crumbs / 2), items: [] };
+    run.crumbs -= lost.crumbs;
+    for (let n = Math.ceil(run.items.length / 2); n > 0; n--) lost.items.push(...run.items.splice(Math.floor(Math.random() * run.items.length), 1));
+    run.downs += 1;
+    return { lost: { crumbs: lost.crumbs, items: lost.items.map(cellarItemName) }, carried: carried(run) };
+  },
+  // The Rat King is beaten (everyone on the bottom floor gets the prize).
+  cellarKing(w, b, ev) {
+    const run = cellarRun(w, b);
+    const cfg = GAME.CONFIG.minigames.cellar;
+    if (run.king || run.floor !== cfg.floors.length - 1) throw new Oops(409, "No king here.");
+    if (Date.now() - run.floorAt < cfg.kingMinSeconds * 1000) throw new Oops(409, "Not so fast!");
+    run.king = true;
+    const [lo, hi] = cfg.king.crumbs;
+    run.crumbs += lo + Math.floor(Math.random() * (hi - lo + 1));
+    const got = [];
+    if (Object.hasOwn(GAME.DECOR, cfg.king.decor)) {
+      run.items.push("decor:" + cfg.king.decor);
+      got.push(cellarItemName("decor:" + cfg.king.decor));
     }
-    return { score, crumbs, best, short, loot, capped: w.minis.earned >= cfg.crumbsPerDay };
+    w.minis.cellar.kings += 1;
+    grant(w, "ratKing", ev);
+    return { got, carried: carried(run) };
+  },
+  // Up the ladder: everything you're carrying comes home. Crumbs into your
+  // wallet (within today's cap), seeds into your basket, recipes into your
+  // book, decor into your room's storage.
+  cellarBank(w, b, ev) {
+    const run = cellarRun(w, b);
+    const cfg = GAME.CONFIG.minigames.cellar;
+    const c = w.minis.cellar;
+    w.minis.cellar.run = null;
+    const day = hometownDay();
+    if (c.day !== day) Object.assign(c, { day, earned: 0, finds: 0 });
+    const crumbs = Math.max(0, Math.min(run.crumbs, cfg.crumbsPerDay - c.earned));
+    c.earned += crumbs;
+    earn(w, crumbs, ev);
+    const home = [];
+    for (const item of run.items) {
+      const [kind, id] = item.split(":");
+      if (kind === "seed" && knownItem(item)) putIn(w, item, 1);
+      else if (kind === "decor" && Object.hasOwn(GAME.DECOR, id)) w.home.owned[id] = Math.min(99, (w.home.owned[id] ?? 0) + 1);
+      else if (kind === "recipe" && Object.hasOwn(GAME.RECIPES, id) && !w.recipes.includes(id)) {
+        w.recipes.push(id);
+        if (w.recipes.length >= 10) grant(w, "cookbook", ev);
+      } else continue;
+      home.push(cellarItemName(item));
+    }
+    const score = run.crumbs + run.items.length * cfg.findValue;
+    const best = score > (w.minis.best.cellarCrawl ?? 0);
+    if (best) w.minis.best = { ...w.minis.best, cellarCrawl: score };
+    if (score > 0) grant(w, "firstMinigame", ev);
+    return { score, crumbs, best, home, deepest: run.deepest, king: run.king, capped: crumbs < run.crumbs };
   },
 
   // --- The Arcade (Update 9) ---
