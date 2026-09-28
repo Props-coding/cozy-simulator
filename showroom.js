@@ -14,12 +14,13 @@ const VIEWS = ["front", "right", "back", "left"];
 const VIEW_NAMES = { front: "the front", right: "turned right", back: "the back", left: "turned left" };
 const CELL = 150;
 
-// Every kind, in a fixed order (so the numbers stay put): the turned
-// versions ("wardrobeSide") are views of their piece, not pieces of their own.
+// Every kind, in alphabetical order of the names you see (the numbers
+// follow that order). The turned versions ("wardrobeSide") are views of
+// their piece, not pieces of their own.
 const kinds = () =>
   Object.keys(FURNITURE_DRAWERS)
     .filter((k) => !k.endsWith("Side"))
-    .sort((a, b) => a.localeCompare(b));
+    .sort((a, b) => nameOf(a).localeCompare(nameOf(b)) || a.localeCompare(b));
 
 // A friendly name: its Nest & Nook name if it has one, otherwise its kind
 // in words ("picnicTable" becomes "Picnic table").
