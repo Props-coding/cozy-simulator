@@ -2,8 +2,6 @@
 
 A cozy browser hangout for a few friends. Read this whole file before doing anything. Then start at Milestone 1.
 
-**Waiting (2026-09-28): the house server needs updating for build 0.761. Claude Code on Brandon's PC: read `SERVER-TODO.md` first and offer to do it.**
-
 ## Who you are working with
 
 The user is creative, smart, and a psychologist by trade, but has no coding knowledge. They can follow clear steps and want to end up with something good and efficient. They are not very organized, so keep things tidy for them: small steps, a running checklist, and clear "what to do next" notes.
