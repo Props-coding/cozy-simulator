@@ -381,6 +381,12 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Fixes: the "totally normal trash" sign stands beside the bins; the warning sign is on an electric box mounted on the wall; the milk crates have proper slats; puddles only lie in the low spots (by the storm drain at the curb, along the curb, under each gutter pipe) with light edges and reflections of the nearest light (streetlight, string lights, or the pink and teal neon).
   - Lighting: always dusk back there, whatever the weather; darker, with bright string lights, neon and soft pools of light under them; no grey haze and no rain; clean dark framing around it like the indoor floors.
   - Needs the server's copies of config.js, catalog.js and world.js updated (for the new achievement).
+- The safety net (2026-09-28, no change to the site players see): three developer tools, so mistakes get caught before friends see them.
+  - A mistake checker (ESLint 10, `npm run lint`): reads the code without running it and flags names that don't exist and things used before they're set up. It understands the house's shared scripts by reading index.html. It found no real errors in the current code (one harmless tidy-up in laptop.js). Tested by planting the two kinds of slip from recent updates (a missing function, a value used too early): it caught both.
+  - Automated house tests (Playwright 1.56, `npm test`): a throwaway copy of the house server and a test account, the house opened in a hidden browser, every floor visited (ground, business, suite, yard, Willow Lake, back alley), failing on any error, and timing how long each floor takes to draw. Today: 2 to 4 ms a frame on every floor (smooth needs under about 16), so there's no speed problem anywhere.
+  - Before-and-after pictures (`npm run test:pictures`): a picture of every floor with time frozen and the "random" numbers fixed, compared with the approved pictures in tests/pictures/. Tested: moving the yard's scarecrow half a step was caught; repeat runs with no change pass.
+  - GitHub runs the mistake checker and the house tests on every change (`.github/workflows/checks.yml`); a red X means something broke.
+  - A small test hook in main.js, only active on localhost (never on the live site).
 
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.

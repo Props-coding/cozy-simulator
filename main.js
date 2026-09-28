@@ -1328,6 +1328,20 @@ function reportError(message, where) {
 window.addEventListener("error", (e) => reportError(e.message, `${(e.filename ?? "").split("/").pop()}:${e.lineno}`));
 window.addEventListener("unhandledrejection", (e) => reportError(e.reason?.message ?? e.reason, "promise"));
 
+// --- For the automated tests (the tests/ folder, see README.md) ---
+// Only when the house runs on this computer (localhost), never on the live
+// site: lets a test jump to any spot and see any problem a frame hit.
+if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+  window.porchlightTest = {
+    frameErrors: [],
+    frameMs: [], // how long the last few frames took to draw, in milliseconds
+    where: () => ({ x: player.x, y: player.y, floor: floorOf(player.y), room: getCurrentRoom(player).id }),
+    go: (x, y) => placeNear(x, y),
+    // (True once you've woken up in your bed, the first thing after joining.)
+    settled: () => !wakeInBed,
+  };
+}
+
 // After the admin panel unlocks things (or the raccoons dress you): redraw
 // the Join screen's outfit picker, if it's showing.
 function refreshLook() {
@@ -2608,10 +2622,17 @@ let lofiPlaying = false;
 let frameErrors = 0;
 function tick(now) {
   try {
-    frame(now);
+    if (window.porchlightTest) {
+      // (The tests time each frame: see "For the automated tests".)
+      const started = performance.now();
+      frame(now);
+      window.porchlightTest.frameMs.push(performance.now() - started);
+      if (window.porchlightTest.frameMs.length > 240) window.porchlightTest.frameMs.shift();
+    } else frame(now);
   } catch (err) {
     if (frameErrors++ < 3) reportError(err?.message ?? err, "frame: " + String(err?.stack ?? "").split("\n")[1]?.trim());
     console.error(err);
+    window.porchlightTest?.frameErrors.push(String(err?.stack ?? err));
   }
   requestAnimationFrame(tick);
 }
