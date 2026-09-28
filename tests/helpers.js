@@ -11,6 +11,7 @@ export const FLOORS = [
   { name: "yard", room: null, spot: () => YARD_SPAWN },
   { name: "Willow Lake", room: "lake", spot: () => LAKE_SPAWN },
   { name: "back alley", room: "alley", spot: () => ALLEY_SPAWN },
+  { name: "the Farm", room: "farm", spot: () => FARM_SPAWN },
 ];
 
 // Opens the site, logs in as the test account and joins the house.

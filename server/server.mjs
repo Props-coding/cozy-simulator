@@ -327,6 +327,10 @@ function applyGarden(body, user, w, ev) {
     if (plot) throw new Oops(409, `${plot.owner} is already growing something there.`);
     const crop = String(body.crop ?? "");
     if (!Object.hasOwn(GAME.CROPS, crop)) throw new Oops(400, "That's not a seed.");
+    // New gardeners start with Hazel's lesson (she hands out the first seed).
+    if (w && w.gardenLesson === "none") throw new Oops(409, "Say hello to Hazel first! She's by her seed stand in the yard.");
+    // The yard's starter beds only grow quick beginner crops; everything grows at the Farm.
+    if (GAME.GARDEN_BEDS?.[bed]?.place === "yard" && !GAME.CROPS[crop].starter) throw new Oops(409, `${GAME.CROPS[crop].name} won't grow in the starter patch. Take the bus to the Farm for that one!`);
     const count = Object.values(plots).filter((p) => p.owner.toLowerCase() === user.name.toLowerCase()).length;
     if (count >= Math.min(GARDEN_MAX_PER_PERSON, GAME.CONFIG.garden.maxPlotsPerPlayer)) throw new Oops(409, "You're already growing plenty!");
     if (w) {
@@ -335,8 +339,11 @@ function applyGarden(body, user, w, ev) {
     }
     // Your color (for the little name stake), as the page sends it.
     const color = /^#[0-9a-fA-F]{6}$/.test(body.color) ? body.color : "#999999";
-    plots[bed] = { owner: user.name, color, crop, plantedAt: now, waters: [now], wateredBy: user.name };
-    return { planted: crop };
+    // Your lesson's radish: it starts dry (Hazel shows you how to water it),
+    // then grows in a few minutes.
+    const lesson = w?.gardenLesson === "started" && crop === "radish" && !Object.values(plots).some((p) => p.lesson && p.owner.toLowerCase() === user.name.toLowerCase());
+    plots[bed] = lesson ? { owner: user.name, color, crop, plantedAt: now, waters: [], wateredBy: null, lesson: true } : { owner: user.name, color, crop, plantedAt: now, waters: [now], wateredBy: user.name };
+    return { planted: crop, lesson };
   }
   if (!plot) throw new Oops(404, "Nothing's growing there.");
   if (body.action === "water") {
@@ -355,7 +362,12 @@ function applyGarden(body, user, w, ev) {
       putIn(w, `crop:${crop.id}`, n);
       addStat(w, "harvests", n);
       if (crop.id === "pumpkin") grant(w, "greatPumpkin", ev);
-      return { crop: plot.crop, n };
+      // Your lesson's first harvest: Hazel heads off to her farm.
+      if (plot.lesson && w.gardenLesson === "started") {
+        w.gardenLesson = "done";
+        ev.push({ type: "gardenLesson" });
+      }
+      return { crop: plot.crop, n, lesson: !!plot.lesson };
     }
     delete plots[bed];
     return { crop: plot.crop };
@@ -641,7 +653,7 @@ let GAME = null;
 async function loadGame() {
   const files = ["config.js", "catalog.js", "world.js"];
   const code = (await Promise.all(files.map((f) => readFile(join(GAME_DIR, f), "utf8")))).join("\n;\n");
-  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond, waterAt, waterShadows, waterById })", {}, { timeout: 5000 });
+  const g = vm.runInNewContext(code + "\n;({ CONFIG, DECOR, ROOMY_PRICE, SHOP_CATALOG, ACHIEVEMENT_LIST, pondShadows, inPond, waterAt, waterShadows, waterById, GARDEN_BEDS })", {}, { timeout: 5000 });
   const byId = (list) => Object.fromEntries(list.map((x) => [x.id, x]));
   GAME = {
     CONFIG: g.CONFIG,
@@ -661,6 +673,7 @@ async function loadGame() {
     waterAt: g.waterAt, // (the pond or the Lake, from world.js)
     waterShadows: g.waterShadows,
     waterById: g.waterById,
+    GARDEN_BEDS: g.GARDEN_BEDS, // (where each bed is: "yard" or "farm", from world.js)
     TRACKS: g.CONFIG.tieredAchievements ?? [],
     TIERS: g.CONFIG.achievementTiers ?? [],
   };
@@ -754,6 +767,10 @@ function fillWallet(w) {
   // one) or "done" (you've landed your first fish). Anyone who has caught
   // a fish before counts as done.
   w.fishing.lesson ??= Object.keys(w.fishing.log ?? {}).length ? "done" : "none";
+  // Hazel's gardening lesson (Update 8), the same way: "none", "started"
+  // (she gave you a radish seed) or "done" (you've harvested). Anyone who
+  // has gardened before counts as done.
+  w.gardenLesson ??= (w.stats?.harvests ?? 0) > 0 || !!w.unlocked?.firstSeed || Object.keys(w.basket ?? {}).some((id) => /^(seed|crop):/.test(id)) ? "done" : "none";
   return w;
 }
 
@@ -811,7 +828,7 @@ function tasteOf(id, item) {
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log, lesson } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -1010,6 +1027,11 @@ function growthOf(plot, now = Date.now()) {
   const crop = GAME.CROPS[plot.crop];
   if (!crop) return 0;
   const HOUR = 3_600_000;
+  // Hazel's lesson radish: nothing until it's watered, then quick.
+  if (plot.lesson) {
+    if (!plot.waters.length) return 0;
+    return Math.min(1, (now - plot.waters[0]) / ((GAME.CONFIG.garden.lessonMinutes ?? 3) * 60_000));
+  }
   const wetFor = GAME.CONFIG.garden.waterHours * HOUR;
   const start = plot.plantedAt;
   let wet = 0, until = start;
@@ -1173,6 +1195,15 @@ const BANK = {
     earn(w, crumbs, ev);
     grant(w, "junkDealer", ev);
     return { sold: n, crumbs, ids: junk };
+  },
+
+  // --- Hazel's gardening lesson (Update 8) ---
+  // It begins: she gives you a radish seed to plant in the starter patch.
+  startGardenLesson(w) {
+    if (w.gardenLesson !== "none") return {};
+    w.gardenLesson = "started";
+    putIn(w, "seed:radish", 1);
+    return {};
   },
 
   // --- Otis and the pond ---
@@ -1618,6 +1649,11 @@ const BANK = {
       plot.waters = plot.waters.map((t) => t - back);
     }
     if (db.garden) db.garden.version++;
+    return {};
+  },
+  // (Testing) Hazel's lesson again, from the start.
+  adminGardenLesson(w) {
+    w.gardenLesson = "none";
     return {};
   },
   // (Testing) Otis's lesson again, from the start.
@@ -2253,7 +2289,7 @@ const routes = {
     if (!allowed("garden:" + key, 600)) throw new Oops(429, "Lots of gardening! Please wait a few minutes.");
     const body = await readJson(req, 2_000);
     // (A page from before the bank, with no wallet yet, gardens the old way.)
-    const w = user.wallet ?? null;
+    const w = user.wallet ? fillWallet(user.wallet) : null;
     const ev = [];
     const result = applyGarden(body, user, w, ev);
     if (w) checkTiers(w, ev);

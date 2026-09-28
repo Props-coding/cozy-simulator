@@ -38,6 +38,9 @@ test("every floor looks the way it did", async ({ page }) => {
   for (const floor of FLOORS) {
     await test.step(floor.name, async () => {
       await goTo(page, floor);
+      // (A little mouse movement counts as being active, so your character
+      // doesn't start an idle stretch or yawn at a slightly different moment.)
+      await page.mouse.move(4, 4 + FLOORS.indexOf(floor));
       await page.clock.runFor(4000); // (the camera glides over, then everything settles)
       await expect(page.locator("#house")).toHaveScreenshot(`${floor.name.replace(/ /g, "-")}.png`, { maxDiffPixels: 150, animations: "disabled" });
     });

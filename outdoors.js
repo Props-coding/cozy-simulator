@@ -281,8 +281,8 @@ function paintYardGround(ctx) {
   ctx.beginPath();
   ctx.ellipse(fire.x, fire.y, 1.7 * TILE, 1.2 * TILE, 0, 0, Math.PI * 2);
   ctx.fill();
-  // The garden's soil bed, inside its fence.
-  const g1 = toScreen(13.0, YARD - 1.2), g2 = toScreen(23.6, YARD + 4.4);
+  // The starter garden's soil bed, inside its fence.
+  const g1 = toScreen(13.0, YARD - 1.2), g2 = toScreen(17.1, YARD + 4.4);
   ctx.fillStyle = "rgba(120, 150, 80, 0.35)";
   ctx.fillRect(g1.x, g1.y, g2.x - g1.x, g2.y - g1.y);
   paintPaths(ctx);
@@ -317,6 +317,7 @@ function paintFrontSteps(ctx) {
 function drawPondShimmer(ctx) {
   if (viewFloor === LAKE_FLOOR) return drawLakeShimmer(ctx); // (render-lake.js)
   if (viewFloor === ALLEY_FLOOR) return drawAlleyLife(ctx); // (render-alley.js)
+  if (viewFloor === FARM_FLOOR) return drawFarmLife(ctx); // (render-farm.js)
   if (viewFloor !== YARD_FLOOR) return;
   const t = performance.now() / 1000;
   const c = toScreen(POND.cx, POND.cy);
@@ -423,7 +424,7 @@ function drawOutdoorLight(ctx) {
   ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
-  const glows = viewFloor === LAKE_FLOOR ? lakeGlows() : viewFloor === ALLEY_FLOOR ? alleyGlows() : yardGlows();
+  const glows = viewFloor === LAKE_FLOOR ? lakeGlows() : viewFloor === ALLEY_FLOOR ? alleyGlows() : viewFloor === FARM_FLOOR ? farmGlows() : yardGlows();
   for (const [x, y, r, strength, color = "255, 185, 95"] of glows) {
     const p = toScreen(x, y);
     const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
@@ -446,6 +447,7 @@ function drawOutdoorLight(ctx) {
   }
   ctx.globalAlpha = 1;
   if (viewFloor === LAKE_FLOOR) drawLakeFireflies(ctx, level); // (render-lake.js)
+  if (viewFloor === FARM_FLOOR) drawFarmFireflies(ctx, level); // (render-farm.js)
   if (alley) return drawAlleyOverhead(ctx, level); // (render-alley.js; no weather back there)
   drawOutsideWeather(ctx, whole); // rain or snow falls in front of the lights
 }
@@ -1745,11 +1747,39 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.textAlign = "center";
     ctx.fillText("SEEDS", a.x + w / 2, box.face.y + 12.5);
     ctx.textAlign = "left";
+    // Once Hazel's moved to her farm: a little tag hanging off the awning,
+    // and an honesty jar for crumbs.
+    if (!HAZEL.atFarm) return;
+    const tx = a.x + w - 14, ty = ay + 12;
+    ctx.strokeStyle = "#6e5440";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(tx - 6, ty);
+    ctx.lineTo(tx, ty + 6);
+    ctx.lineTo(tx + 6, ty);
+    ctx.stroke();
+    ctx.fillStyle = "#6e5440";
+    roundRectPath(ctx, tx - 17, ty + 5, 34, 13, 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2e6c8";
+    roundRectPath(ctx, tx - 16, ty + 6, 32, 11, 2);
+    ctx.fill();
+    ctx.fillStyle = "#4f7a3f";
+    ctx.font = "800 6.5px 'Quicksand', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SELF SERVE", tx, ty + 13.8);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(200, 225, 235, 0.75)";
+    roundRectPath(ctx, box.top.x + box.top.w - 12, box.top.y - 7, 8, 9, 2);
+    ctx.fill();
+    ctx.fillStyle = "#e3a954";
+    ctx.fillRect(box.top.x + box.top.w - 11, box.top.y - 3, 6, 4);
   },
 
   // Hazel the hedgehog, the gardener: spiky and round, in a straw hat and
   // a green apron, holding a little watering can.
   hazel(ctx, f) {
+    if (f.place && !hazelHere(f)) return; // (in the yard or at the Farm: see HAZEL in world.js)
     const t = performance.now() / 1000;
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
@@ -2542,7 +2572,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillStyle = "#f2c94c";
     ctx.font = "700 7.5px 'Quicksand', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(floorOf(f.y) === LAKE_FLOOR ? "HOME" : "LAKE · FARM", x + w / 2, top - 1);
+    ctx.fillText(floorOf(f.y) === YARD_FLOOR ? "LAKE · FARM" : "HOME", x + w / 2, top - 1);
     ctx.textAlign = "left";
   },
 
@@ -2623,7 +2653,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillText(text, b.x, b.y - 43);
     ctx.fillStyle = "#c8c8d0";
     ctx.font = "600 6px 'Quicksand', sans-serif";
-    ctx.fillText(floorOf(f.y) === LAKE_FLOOR ? "Home" : "Lake · Farm", b.x, b.y - 34);
+    ctx.fillText(floorOf(f.y) === YARD_FLOOR ? "Lake · Farm" : "Home", b.x, b.y - 34);
     ctx.textAlign = "left";
   },
 });

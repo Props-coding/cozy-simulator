@@ -1,4 +1,4 @@
-// Bus trips (the Lake, and the Farm to come). Pick one from Gus's list
+// Bus trips (Willow Lake, and the Farm). Pick one from Gus's list
 // (bus.js) and a themed loading screen covers the view while the bus
 // "drives": to the Lake, a dusky lake with a dark lantern at the end of
 // its dock and fireflies drifting in toward it; back home, the porch with
@@ -21,8 +21,9 @@ export function isTraveling() {
 export function initTravel(options) {
   hooks = { ...hooks, ...options };
   registerTrip({ id: "lake", name: "Willow Lake", from: YARD_FLOOR, note: "Big water, a long dock and the rarest fish. Otis's bait shack is there.", start: () => travel("lake") });
-  registerTrip({ id: "farm", name: "The Farm", from: YARD_FLOOR, note: "Fields, a barn and room to grow. Coming soon!", soon: true, start: () => {} });
+  registerTrip({ id: "farm", name: "The Farm", from: YARD_FLOOR, note: "Hazel's farm: sixteen garden beds, every crop, a barn, chickens and a windmill.", start: () => travel("farm") });
   registerTrip({ id: "home", name: "Home", from: LAKE_FLOOR, note: "Back to the house.", start: () => travel("home") });
+  registerTrip({ id: "homeFromFarm", name: "Home", from: FARM_FLOOR, note: "Back to the house.", start: () => travel("home") });
 }
 
 // --- The scenes ---
@@ -93,6 +94,94 @@ const LAKE_SCENE = `
   <g class="drifters"></g>
 </svg>`;
 
+// The Farm at sunset: rolling hills, a sun sinking behind them, rows of
+// crops running off toward the red barn (its hay-loft window is the light
+// that comes on), a windmill turning on the hill, a fence along the lane,
+// and sunflowers up close.
+const FARM_SCENE = `
+<svg class="trip-scene" viewBox="0 0 400 300" aria-hidden="true">
+  <defs>
+    <linearGradient id="farm-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b3a6e"/>
+      <stop offset="0.45" stop-color="#b86a78"/>
+      <stop offset="0.8" stop-color="#f2a86a"/>
+      <stop offset="1" stop-color="#f7cf8a"/>
+    </linearGradient>
+    <radialGradient id="farm-sun">
+      <stop offset="0" stop-color="#fff2c0"/>
+      <stop offset="0.35" stop-color="#ffd27a" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffb060" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="loft-glow">
+      <stop offset="0" stop-color="#ffd98a" stop-opacity="0.9"/>
+      <stop offset="0.4" stop-color="#f6b95b" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#f6b95b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="farm-field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a6a3a"/>
+      <stop offset="1" stop-color="#2e3a22"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#farm-sky)"/>
+  <g fill="#fdf6e0" opacity="0.7"><circle cx="40" cy="22" r="1"/><circle cx="118" cy="40" r="0.8"/><circle cx="210" cy="18" r="1.1"/><circle cx="300" cy="34" r="0.8"/><circle cx="366" cy="14" r="1"/></g>
+  <!-- The sun, sinking behind the far hills, and a few birds heading home. -->
+  <circle cx="232" cy="150" r="70" fill="url(#farm-sun)"/>
+  <circle cx="232" cy="150" r="18" fill="#fff0c4"/>
+  <g stroke="#3a2a3a" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M150 66 q4 -4 8 0 q4 -4 8 0"/><path d="M172 56 q3 -3 6 0 q3 -3 6 0"/><path d="M136 80 q3 -3 6 0 q3 -3 6 0"/>
+  </g>
+  <!-- Rolling hills, far to near. -->
+  <path d="M0 150 Q60 128 130 142 T260 138 T400 132 V180 H0 Z" fill="#6a6a7a"/>
+  <path d="M0 162 Q80 140 170 156 T330 150 T400 146 V190 H0 Z" fill="#4e6248"/>
+  <!-- The windmill on its hill, sails turning. -->
+  <path d="M290 166 Q330 128 400 140 V190 H270 Z" fill="#3e5238"/>
+  <path d="M338 146 L346 104 L356 104 L364 146 Z" fill="#e8dcc8" stroke="#2e2a2a" stroke-width="1.5"/>
+  <path d="M342 106 Q351 92 360 106 Z" fill="#3a2e2a"/>
+  <rect x="348" y="128" width="6" height="18" rx="3" fill="#4a3428"/>
+  <g class="farm-sails" style="transform-origin: 351px 102px; transform-box: view-box">
+    <g fill="#f4ecd8" stroke="#3a2e2a" stroke-width="1.2">
+      <rect x="349" y="62" width="9" height="36"/><rect x="344" y="106" width="9" height="36"/>
+      <rect x="311" y="95" width="36" height="9"/><rect x="355" y="100" width="36" height="9"/>
+    </g>
+    <circle cx="351" cy="102" r="3" fill="#2e2a2a"/>
+  </g>
+  <!-- The fields: rows of crops running toward the barn. -->
+  <path d="M0 176 Q200 160 400 172 V300 H0 Z" fill="url(#farm-field)"/>
+  <g stroke="#7a8a4a" stroke-width="3" opacity="0.8" stroke-linecap="round">
+    <path d="M160 178 L-40 300"/><path d="M170 178 L20 300"/><path d="M180 178 L80 300"/><path d="M190 178 L140 300"/><path d="M200 178 L200 300"/>
+    <path d="M210 178 L260 300"/><path d="M220 178 L320 300"/><path d="M230 178 L380 300"/><path d="M240 178 L440 300"/>
+  </g>
+  <g stroke="#3a2a1e" stroke-width="2" opacity="0.5">
+    <path d="M165 178 L-10 300"/><path d="M185 178 L110 300"/><path d="M205 178 L230 300"/><path d="M225 178 L350 300"/>
+  </g>
+  <!-- The barn, with its hay loft (the light), and the silo. -->
+  <rect x="104" y="138" width="16" height="40" rx="7" fill="#9aa0a6" stroke="#2e2a2a" stroke-width="1.5"/>
+  <path d="M104 142 Q112 130 120 142 Z" fill="#b8bec4" stroke="#2e2a2a" stroke-width="1.5"/>
+  <path d="M40 180 V146 L52 128 L78 116 L104 128 L116 146 V180 Z" fill="#a8423a" stroke="#2e1e1a" stroke-width="2"/>
+  <path d="M36 148 L52 126 L78 112 L104 126 L120 148" fill="none" stroke="#3a2e2a" stroke-width="5" stroke-linejoin="round"/>
+  <rect x="64" y="154" width="28" height="26" fill="#8a3530" stroke="#efe8da" stroke-width="2.5"/>
+  <path d="M64 154 L92 180 M92 154 L64 180" stroke="#efe8da" stroke-width="2"/>
+  <g class="porch-light">
+    <circle class="glow" cx="78" cy="136" r="90" fill="url(#loft-glow)"/>
+    <rect class="lamp" x="71" y="129" width="14" height="13" stroke="#efe8da" stroke-width="2.5"/>
+  </g>
+  <!-- A fence along the lane, and sunflowers up close. -->
+  <g stroke="#3a2a1e" stroke-width="3" stroke-linecap="round">
+    <path d="M250 300 L262 214 M290 300 L296 206 M330 300 L330 198 M370 300 L364 190"/>
+    <path d="M244 244 L380 206 M248 272 L384 232" stroke-width="2.4"/>
+  </g>
+  <g>
+    <path d="M28 300 Q30 250 34 222" stroke="#2f4a26" stroke-width="3" fill="none"/>
+    <path d="M62 300 Q60 262 58 240" stroke="#2f4a26" stroke-width="3" fill="none"/>
+    <ellipse cx="30" cy="258" rx="9" ry="4" fill="#3a5a2e" transform="rotate(-30 30 258)"/>
+    <ellipse cx="64" cy="270" rx="9" ry="4" fill="#3a5a2e" transform="rotate(25 64 270)"/>
+    <g fill="#e8a82a"><circle cx="34" cy="218" r="12"/><circle cx="58" cy="236" r="10"/></g>
+    <g fill="#f2c230"><circle cx="34" cy="218" r="9"/><circle cx="58" cy="236" r="7.5"/></g>
+    <g fill="#4a2e1a"><circle cx="34" cy="218" r="5"/><circle cx="58" cy="236" r="4"/></g>
+  </g>
+  <g class="drifters"></g>
+</svg>`;
+
 // A picture from its markup (read the way the page reads its own).
 function svgFrom(markup) {
   const holder = document.createElement("template");
@@ -132,6 +221,16 @@ const TRIPS = {
     drifters: "fireflies",
     light: [200, 158],
     spot: () => ({ ...LAKE_SPAWN }),
+  },
+  farm: {
+    title: "The Farm",
+    steps: ["Climbing aboard", "Out past the edge of town", "Along the fields", "Pulling up by the barn"],
+    arrived: "Welcome to Hazel's Farm!",
+    tips: ["Everything grows at the Farm: strawberries, pumpkins, blueberries and the merchant's rare seeds.", "The sixteen beds are shared. Water your friends' crops while you're here!", "Real rain in the hometown waters every bed, at home and at the Farm.", "Hazel's farm stand is up by the barn.", "The starter patch at home is perfect for radishes, lettuce and carrots."],
+    scene: () => svgFrom(FARM_SCENE),
+    drifters: "fireflies",
+    light: [78, 136],
+    spot: () => ({ ...FARM_SPAWN }),
   },
   home: {
     title: "Porchlight",

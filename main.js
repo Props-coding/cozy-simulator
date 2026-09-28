@@ -88,7 +88,7 @@ import { openMenu, closeMenu, isMenuOpen } from "./menu.js";
 import { isHouseReady, myBadge, checkBadge, checkRoomPass, initAccountHooks, checkAdminOrder, serverApi } from "./account.js";
 import { initUpdater, takeResume } from "./updater.js";
 import { startWeather } from "./weather.js";
-import { startGarden, gardenHint, useGardenBed, talkToHazel, isSeedPickerOpen } from "./garden.js";
+import { startGarden, gardenHint, useGardenBed, talkToHazel, openSeedBox, isSeedPickerOpen } from "./garden.js";
 import { isNpcOpen } from "./npc.js";
 import { initBus, busHint, nearWaitingBus, talkToDriver } from "./bus.js";
 import { initFishing, isFishing, isReeling, fishingHint, useFishing, stopFishing, fishingLine, talkToOtis, openBaitBox, openFishTank, castAt } from "./fishing.js";
@@ -673,7 +673,8 @@ function roomHintFor(room) {
   if (uiBusy()) return "";
   if (amAsleep) return "Sleeping. Walk out of bed to get up.";
   if (nearestInteraction(player) === "raccoons") return "Press E to talk to the raccoons.";
-  if (nearestInteraction(player) === "hazel") return "Press E to talk to Hazel: seeds for sale, and she buys your harvest.";
+  if (nearestInteraction(player) === "hazel") return HAZEL.atFarm ? "Press E to talk to Hazel: seeds for sale, and she buys your harvest." : "Press E to talk to Hazel. She'll show you how to garden.";
+  if (nearestInteraction(player) === "seedStand") return "Press E for Hazel's self-serve seed stand: beginner seeds, and a basket to sell your harvest.";
   if (nearestInteraction(player) === "gardenBed") return gardenHint(gardenBedInReach(player));
   if (nearestInteraction(player) === "otis") return OTIS.atLake ? "Press E to talk to Otis: rods, bait, selling fish and your fish log." : "Press E to talk to Otis. He'll teach you to fish.";
   if (nearestInteraction(player) === "baitBox") return "Press E to open Otis's bait box: worms, crickets, and a slot to sell your fish.";
@@ -809,6 +810,12 @@ window.addEventListener("keydown", (e) => {
   if (key === "e" && nearestInteraction(player) === "turntable") {
     for (const k in keysDown) keysDown[k] = false;
     openTurntable();
+    return;
+  }
+
+  if (key === "e" && nearestInteraction(player) === "seedStand") {
+    for (const k in keysDown) keysDown[k] = false;
+    openSeedBox();
     return;
   }
 

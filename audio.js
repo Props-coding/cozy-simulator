@@ -7,7 +7,7 @@
 // room; a bedroom's owner can also pick lo-fi or silence instead). main.js
 // passes "asleep" as the room while you're in bed, which isn't a voice
 // room: your mic is off and you hear nobody.
-const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire", "dinner", "lake", "alley"];
+const VOICE_ROOMS = ["theater", "conference", "workshop", "lounge", "campfire", "dinner", "lake", "alley", "farm"];
 
 function isVoiceRoom(roomId) {
   if (roomId.startsWith("bedroom-")) return bedroomAudio(roomId) === "voice";
@@ -95,6 +95,8 @@ const ROOM_CHIME_NOTES = {
   lake: [392, 587.33],
   // The back alley: Eb4, Ab4, a little shady.
   alley: [311.13, 415.3],
+  // The Farm: F4, A4, C5, bright and sunny.
+  farm: [349.23, 440],
 };
 
 export function playRoomChangeSound(roomId) {

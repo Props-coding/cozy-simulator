@@ -414,6 +414,10 @@ function paintYard(ctx) {
     paintLakeGround(ctx); // Willow Lake (render-lake.js)
     return;
   }
+  if (viewFloor === FARM_FLOOR) {
+    paintFarmGround(ctx); // the Farm (render-farm.js)
+    return;
+  }
   if (viewFloor === ALLEY_FLOOR) {
     paintAlleyGround(ctx); // the back alley (render-alley.js)
     return;

@@ -2,6 +2,8 @@
 
 A cozy browser hangout for a few friends. Read this whole file before doing anything. Then start at Milestone 1.
 
+**Waiting (2026-09-28): the house server needs updating for build 0.751. Claude Code on Brandon's PC: read `SERVER-TODO.md` first and offer to do it.**
+
 ## Who you are working with
 
 The user is creative, smart, and a psychologist by trade, but has no coding knowledge. They can follow clear steps and want to end up with something good and efficient. They are not very organized, so keep things tidy for them: small steps, a running checklist, and clear "what to do next" notes.
@@ -52,6 +54,7 @@ A browser-based living space for 3 to 4 friends on desktop PCs. Everyone opens a
 | Study | Off | Lo-fi music, locally | Quiet co-working |
 | Dinner (the kitchen) | On, with others in the room | Friends' voices | A normal room since 0.67 (it used to be a silent "away eating" room). The kitchen: stove, fridge and pantry, and the fortune cookie jar |
 | Back Alley (its own small map: down the manhole in the yard, where the raccoons' dumpster used to be, E to climb down; up out of the matching one to leave) | On, with others in the alley | Friends' voices | Sketchy but cozy, always dusk: brick, neon, wet cobbles, string lights, an old sofa, a sleeping cat, Reginald's back door. A sliver of street past a barrier at the west end, a padlocked fence (a future unlock) at the east. The raccoons' shop lives here (since 0.72) |
+| The Farm (its own map, a bus trip from the yard: talk to Gus at the bus) | On, with others at the Farm | Friends' voices | Hazel's farm (since 0.751): barn and silo, her farm stand (seeds, buys crops), chicken run, windmill, orchard, pumpkin patch, well, and the sixteen shared garden beds where every crop grows. The yard keeps a three-bed starter patch for quick crops. Hazel teaches new gardeners in the yard first, then moves here |
 
 Always keep a visible master mute and a volume control, in case someone needs to override the rules.
 

@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.751",
+    title: "The Farm, and Hazel's gardening lesson",
+    text: "Gus's bus goes to the Farm now! Hazel's farm has a big red barn and silo, her farm stand, a chicken run with a coop and a few busy hens, a windmill, an orchard of apple trees, a pumpkin patch with sunflowers and a scarecrow, a well, a picnic table and a bench, and sixteen shared garden beds. Everything grows at the Farm. The garden at home is now a starter patch of three beds for quick crops (radishes, lettuce and carrots); crops that were already growing in the old beds carry on at the Farm. You can each grow in four beds at once now (it was three). New to gardening? Hazel waits by her seed stand in the yard, gives you a radish seed and shows you how to plant, water and harvest; your lesson radish grows in a few minutes. After that she's at her farm, and her yard stand is self-serve for beginner seeds. Voice is on at the Farm.",
+  },
+  {
     build: "0.72",
     title: "The raccoons have moved (somewhere)",
     text: "The raccoons packed up their spot by the bins. Their sign says \"we moved. ask the hills.\" Rumor has it there's a back alley behind the house, and a way into it that isn't on any floor plan. Once you find it: wet cobbles, a fire escape, a pink neon sign, string lights, an old sofa and a couple of milk crates to sit on, and a cat who's asleep and would like to stay that way. Voice is on in the alley, and the raccoons' shop works just like before (ask them why they moved).",

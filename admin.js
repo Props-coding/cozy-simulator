@@ -212,7 +212,7 @@ function meTab() {
   }
   const picker = make("div");
   for (const [floor, list] of [...byFloor].sort(([a], [b]) => a - b)) {
-    picker.appendChild(make("div", "admin-floor", floor === ALLEY_FLOOR ? "Back Alley" : floor === LAKE_FLOOR ? "Willow Lake" : floor === YARD_FLOOR ? "Outside" : CONFIG.floors[floor]?.name ?? `Floor ${floor + 1}`));
+    picker.appendChild(make("div", "admin-floor", floor === FARM_FLOOR ? "The Farm" : floor === ALLEY_FLOOR ? "Back Alley" : floor === LAKE_FLOOR ? "Willow Lake" : floor === YARD_FLOOR ? "Outside" : CONFIG.floors[floor]?.name ?? `Floor ${floor + 1}`));
     const chips = make("div", "admin-chips");
     for (const room of list) {
       const chip = make("button", "admin-chip", room.name);
@@ -246,7 +246,7 @@ function meTab() {
       btn("Roomy bedroom", () => (grantRoomy(), "Your bedroom is Roomy now.")),
       btn("Every recipe", () => (bank("adminRecipes"), "Every recipe is in your book.")),
     ]),
-    row("Basket", [btn("Fill my basket", () => (bank("adminStock"), playCrumbSound(), "At least 5 of everything is in your basket.")), btn("+200 fishing XP", () => (addFishingXp(200), "+200 fishing XP.")), btn("Redo Otis's lesson", () => (bank("adminLesson"), "Otis is back at the pond with a lesson for you. (Your rods and fish log stay.)"))]),
+    row("Basket", [btn("Fill my basket", () => (bank("adminStock"), playCrumbSound(), "At least 5 of everything is in your basket.")), btn("+200 fishing XP", () => (addFishingXp(200), "+200 fishing XP.")), btn("Redo Otis's lesson", () => (bank("adminLesson"), "Otis is back at the pond with a lesson for you. (Your rods and fish log stay.)")), btn("Redo Hazel's lesson", () => (bank("adminGardenLesson"), "Hazel is back at her yard stand with a lesson for you. (Your seeds and crops stay.)"))]),
     row("Achievements", [
       btn("Unlock all", () => (unlockAllQuietly(), "Every achievement unlocked (quietly: no pop-ups or crumbs).")),
       btn("Reset all", () => (resetAchievements(), "Achievements and their counters reset."), { danger: true, confirm: { title: "Reset all your achievements?", text: "Every achievement, tier and counter (hours, chats, fish...) goes back to nothing. There's no undo.", yes: "Reset all" } }),

@@ -52,6 +52,7 @@ const CONFIG = {
     busStop: "Bus Stop",
     lake: "Willow Lake",
     alley: "Back Alley",
+    farm: "The Farm",
   },
 
   // --- Outdoors (Update 4) ---
@@ -85,9 +86,12 @@ const CONFIG = {
   // Anyone can water anyone's bed, and rain waters every bed (while
   // someone is in the house to see it rain). Nothing ever wilts or dies.
   garden: {
-    maxPlotsPerPlayer: 3,
+    maxPlotsPerPlayer: 4, // beds each person can grow in at once (the yard's three and the Farm's sixteen are shared)
     waterHours: 6,
     dryGrowth: 0.4,
+    // Hazel's lesson (Update 8): the radish you plant with her grows in
+    // this many minutes, once watered, so you see it through in one visit.
+    lessonMinutes: 3,
   },
 
   // The crops. hours: how long it takes to grow when kept watered (it
@@ -95,11 +99,12 @@ const CONFIG = {
   // ripe). seed: what Hazel charges for a seed. sell: crumbs Hazel pays for
   // each one you harvest. yield: how many you harvest, [fewest, most].
   // look: how it's drawn ("root", "leafy", "berry", "vine", "flower",
-  // "stalk" or "pumpkin"). color: the crop's own color.
+  // "stalk" or "pumpkin"). color: the crop's own color. starter: grows in
+  // the yard's starter patch too (everything grows at the Farm).
   crops: [
-    { id: "radish", name: "Radish", hours: 1, seed: 4, sell: 6, yield: [2, 3], look: "root", color: "#d9485a" },
-    { id: "lettuce", name: "Lettuce", hours: 2, seed: 5, sell: 5, yield: [3, 4], look: "leafy", color: "#8fc06a" },
-    { id: "carrot", name: "Carrot", hours: 3, seed: 6, sell: 8, yield: [2, 4], look: "root", color: "#e8883a" },
+    { id: "radish", name: "Radish", hours: 1, seed: 4, sell: 6, yield: [2, 3], look: "root", color: "#d9485a", starter: true },
+    { id: "lettuce", name: "Lettuce", hours: 2, seed: 5, sell: 5, yield: [3, 4], look: "leafy", color: "#8fc06a", starter: true },
+    { id: "carrot", name: "Carrot", hours: 3, seed: 6, sell: 8, yield: [2, 4], look: "root", color: "#e8883a", starter: true },
     { id: "strawberry", name: "Strawberry", hours: 6, seed: 12, sell: 6, yield: [4, 7], look: "berry", color: "#e0404a" },
     { id: "tomato", name: "Tomato", hours: 10, seed: 15, sell: 8, yield: [4, 7], look: "vine", color: "#e0503a" },
     { id: "sunflower", name: "Sunflower", hours: 12, seed: 10, sell: 30, yield: [1, 1], look: "flower", color: "#f2c230" },

@@ -5360,6 +5360,15 @@ canvas.item-picture {
   animation: porch-flicker-glow 0.9s steps(1) forwards;
 }
 
+/* The Farm's windmill, turning on its hill. */
+.trip-scene .farm-sails {
+  animation: farm-sails 9s linear infinite;
+}
+
+@keyframes farm-sails {
+  to { transform: rotate(360deg); }
+}
+
 /* Fireflies: a soft blink as they drift. */
 .firefly {
   animation: moth-flutter 3.4s ease-in-out infinite, firefly-blink 1.6s ease-in-out infinite;
@@ -5403,6 +5412,7 @@ canvas.item-picture {
   .firefly,
   .trip-scene .ripple,
   .trip-scene .moon-shimmer,
+  .trip-scene .farm-sails,
   .trip-screen.lit .porch-light .lamp,
   .trip-screen.lit .porch-light .glow {
     animation: none;

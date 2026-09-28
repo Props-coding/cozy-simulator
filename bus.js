@@ -50,12 +50,12 @@ export function talkToDriver(player) {
     portrait: { glyph: "gus" },
     color: "#3f6f9f",
     pitch: 200,
-    hello: floor === YARD_FLOOR ? ["all aboard! where to today?", "morning! or evening. i lose track. where to?", "hop on! the lake's lovely this time of day."] : ["ready to head home?", "all aboard for home!", "good day out? hop on whenever you're ready."],
+    hello: floor === YARD_FLOOR ? ["all aboard! where to today?", "morning! or evening. i lose track. where to?", "hop on! the lake's lovely this time of day.", "the farm or the lake? hazel says the pumpkins are coming along."] : ["ready to head home?", "all aboard for home!", "good day out? hop on whenever you're ready."],
     tabs: [
       {
         id: "trips",
         label: "Trips",
-        empty: "The Lake and the Farm are coming soon! Gus is still painting the signs.",
+        empty: "No trips from here just yet. Gus is still painting the signs.",
         items: () =>
           here.map((trip) => ({
             icon: trip.icon,

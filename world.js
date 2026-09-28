@@ -57,7 +57,7 @@ function manholeArrival(side) {
 // 2 the bedroom hall, and 3 and up for the bedrooms (each is its own
 // little map, see bedroomSpot).
 function floorOf(y) {
-  return Math.max(ALLEY_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
+  return Math.max(FARM_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
 }
 
 // The yard (Update 4): the outdoors behind the house, on its own map one
@@ -76,6 +76,11 @@ const LAKE = LAKE_FLOOR * UPSTAIRS; // add this to a lake spot's y
 // through a hidden door at the hallway's east end. See "The back alley" below.
 const ALLEY_FLOOR = -3;
 const ALLEY = ALLEY_FLOOR * UPSTAIRS; // add this to an alley spot's y
+// The Farm (a bus trip away, Update 8): Hazel's farm, where the big
+// garden is. Its own map, one more "floor" up the grid (floor -4), the same
+// size as the yard. See "The Farm" below.
+const FARM_FLOOR = -4;
+const FARM = FARM_FLOOR * UPSTAIRS; // add this to a farm spot's y
 // Outdoor maps (the yard, the Lake and the alley): weather, day and night, umbrellas.
 function isOutdoorFloor(floor) {
   return floor <= YARD_FLOOR;
@@ -589,12 +594,12 @@ const YARD_WALLS = [
 
 // A straight run of fence from (x1, y1) to (x2, y2), in yard spots (one of
 // them the same), as furniture. Along the page it's a row of pickets;
-// down the page it's drawn from the side.
-function fenceRun(x1, y1, x2, y2, style = "picket") {
+// down the page it's drawn from the side. (`base`: the Farm's fences use FARM.)
+function fenceRun(x1, y1, x2, y2, style = "picket", base = YARD) {
   const across = y1 === y2;
   return across
-    ? { kind: "fence", style, x: Math.min(x1, x2), y: YARD + y1 - 0.1, w: Math.abs(x2 - x1), h: 0.2 }
-    : { kind: "fenceSide", style, x: x1 - 0.1, y: YARD + Math.min(y1, y2), w: 0.2, h: Math.abs(y2 - y1) };
+    ? { kind: "fence", style, x: Math.min(x1, x2), y: base + y1 - 0.1, w: Math.abs(x2 - x1), h: 0.2 }
+    : { kind: "fenceSide", style, x: x1 - 0.1, y: base + Math.min(y1, y2), w: 0.2, h: Math.abs(y2 - y1) };
 }
 
 // Flat things painted on the ground: the paths, the road and sidewalk, and
@@ -616,9 +621,16 @@ const YARD_PATHS = [
   { w: 0.8, points: [[9.35, 5.9], [8.5, 5.9]] }, // onto the dock
 ];
 
-// The garden beds (yard spots): [x, local y], each 1.7 wide and 1.0 deep.
-const GARDEN_BEDS = [13.5, 15.6, 18.7, 20.8].flatMap((x) => [-0.75, 1.0, 2.75].map((y) => ({ x, y: YARD + y, w: 1.7, h: 1.0 })))
-  .sort((a, b) => a.y - b.y || a.x - b.x);
+// The garden beds, each 1.7 wide and 1.0 deep, numbered in this order
+// (the house server keeps what's growing by number):
+//   0 to 2   the starter patch in the yard (quick beginner crops only)
+//   3 to 18  the Farm's fields: four rows of four, a walkway down the middle
+// `place` says which. (Until Update 8 all twelve were in the yard; a crop
+// already growing in beds 3 to 11 simply carries on at the Farm.)
+const GARDEN_BEDS = [
+  ...[-0.75, 1.0, 2.75].map((y) => ({ x: 14.15, y: YARD + y, w: 1.7, h: 1.0, place: "yard" })),
+  ...[0.2, 1.95, 3.7, 5.45].flatMap((y) => [6.5, 8.7, 12.6, 14.8].map((x) => ({ x, y: FARM + y, w: 1.7, h: 1.0, place: "farm" }))),
+];
 
 // Where you'd cast from (a spot at the pond's edge or on the dock), and
 // where the bobber lands: { bx, by } in grid units, or null if you're not
@@ -705,10 +717,12 @@ function myFishTankInReach(player) {
 // The garden bed you're standing next to (within a step, on the yard), as
 // its number, or -1.
 function gardenBedInReach(player) {
-  if (floorOf(player.y) !== YARD_FLOOR) return -1;
+  const floor = floorOf(player.y);
+  if (floor !== YARD_FLOOR && floor !== FARM_FLOOR) return -1;
   const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
   let best = -1, bestD = 0.75;
   GARDEN_BEDS.forEach((b, n) => {
+    if (floorOf(b.y) !== floor) return;
     const d = Math.hypot(Math.max(b.x - cx, 0, cx - b.x - b.w), Math.max(b.y - cy, 0, cy - b.y - b.h));
     if (d < bestD) (best = n), (bestD = d);
   });
@@ -749,14 +763,14 @@ const YARD_FURNITURE = [
   { kind: "flowerBed", x: 0.2, y: YARD - 5.35, w: 4.1, h: 0.5 },
   { kind: "flowerBed", x: 7.1, y: YARD - 5.35, w: 4.2, h: 0.5 },
 
-  // The garden: a picket fence all round, with a gate at the top (under
-  // the porch steps) and at the bottom (toward the bus stop).
-  fenceRun(12.8, -1.4, 17.2, -1.4),
-  fenceRun(18.8, -1.4, 23.8, -1.4),
-  fenceRun(12.8, 4.6, 17.4, 4.6),
-  fenceRun(18.6, 4.6, 23.8, 4.6),
+  // The starter garden (since Update 8; the big garden moved to the Farm):
+  // a picket fence round three beds west of the path, with a little gate
+  // on its east side, onto the path.
+  fenceRun(12.8, -1.4, 17.3, -1.4),
+  fenceRun(12.8, 4.6, 17.3, 4.6),
   fenceRun(12.8, -1.4, 12.8, 4.6),
-  fenceRun(23.8, -1.4, 23.8, 4.6),
+  fenceRun(17.3, -1.4, 17.3, 0.55),
+  fenceRun(17.3, 1.45, 17.3, 4.6),
 
   // The pond's dock, reeds and a few stones.
   { kind: "dock", ...DOCK, solid: false },
@@ -793,19 +807,25 @@ const YARD_FURNITURE = [
   { kind: "wildflowers", x: 12.2, y: YARD + 3.6, w: 0.5, h: 0.3, solid: false },
   { kind: "wildflowers", x: 21.3, y: YARD + 6.0, w: 1.0, h: 0.3, solid: false },
 
-  // The garden's twelve raised beds (numbered 0 to 11, see garden.js):
-  // two columns each side of the middle path, three rows, with room to
-  // walk between the rows.
+  // The garden beds (numbered, see garden.js): the starter patch's three
+  // here, and the Farm's sixteen (they're all in GARDEN_BEDS).
   ...GARDEN_BEDS.map((b, n) => ({ kind: "gardenPlot", ...b, bed: n })),
-  // A scarecrow keeping watch, and a watering station (a rain barrel with
-  // cans) by the east fence.
-  { kind: "scarecrow", x: 22.8, y: YARD + 0.6, w: 0.7, h: 0.35 },
-  { kind: "wateringStation", x: 22.6, y: YARD + 2.8, w: 1.0, h: 0.5 },
+  // In the starter patch: a watering station (a rain barrel with cans) by
+  // the west fence, and a little scarecrow on the east side.
+  { kind: "wateringStation", x: 12.95, y: YARD + 2.9, w: 1.0, h: 0.5 },
+  { kind: "scarecrow", x: 16.25, y: YARD + 2.3, w: 0.7, h: 0.35 },
+  // East of the path, where the rest of the garden was: open lawn again,
+  // with a few flowers, a bush and a stone.
+  { kind: "wildflowers", x: 19.6, y: YARD - 0.4, w: 1.1, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 22.1, y: YARD + 1.7, w: 1.0, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 20.2, y: YARD + 3.6, w: 0.9, h: 0.3, solid: false },
+  { kind: "bush", x: 22.6, y: YARD - 0.6, w: 0.9, h: 0.55, n: 4 },
+  { kind: "pondStones", x: 21.0, y: YARD + 1.1, w: 0.7, h: 0.35 },
 
   // Hazel the hedgehog's seed stand, just outside the garden's west fence
   // (walk up and press E to buy seeds or sell your harvest; see garden.js).
   { kind: "seedStand", x: 10.15, y: YARD - 1.35, w: 1.45, h: 0.6 },
-  { kind: "hazel", x: 11.8, y: YARD - 1.05, w: 0.55, h: 0.4 },
+  { kind: "hazel", x: 11.8, y: YARD - 1.05, w: 0.55, h: 0.4, place: "yard" }, // (only for new gardeners: see HAZEL)
 
   // The campfire: a stone fire pit that lights itself at night (see
   // outdoors.js), with four logs around it to sit on (press E by one).
@@ -848,7 +868,7 @@ const YARD_FURNITURE = [
   // Signposts, so you know where you are.
   { kind: "signpost", x: 8.0, y: YARD - 0.4, w: 0.3, h: 0.2, text: "Campfire", point: "left" },
   { kind: "signpost", x: 10.05, y: YARD + 3.4, w: 0.3, h: 0.2, text: "Pond", point: "left" },
-  { kind: "signpost", x: 19.1, y: YARD - 1.9, w: 0.3, h: 0.2, text: "Garden", point: "down" },
+  { kind: "signpost", x: 19.1, y: YARD - 1.9, w: 0.3, h: 0.2, text: "Garden", point: "left" },
   { kind: "signpost", x: 16.9, y: YARD + 8.1, w: 0.3, h: 0.2, text: "Bus Stop", point: "right" },
 ];
 
@@ -1017,6 +1037,121 @@ const ALLEY_FURNITURE = [
 
 // Where you come up in the alley: beside the manhole.
 const ALLEY_SPAWN = { x: 4.1, y: ALLEY + 1.8 };
+
+// --- The Farm (a bus trip away, Update 8) ---
+// Hazel's farm, where the big garden is. On its own map (floor -4), laid
+// out like the yard: x across 0 to HOUSE_WIDTH, y from its top (FARM is
+// the top of its walkable middle, like YARD). Along the top: the big red
+// barn and its silo, Hazel's farm stand, a fenced chicken run with the
+// coop, and a windmill. In the middle: the fields (sixteen shared beds,
+// four rows of four, a walkway down the middle), a well, a wheelbarrow and
+// hay bales, an orchard of apple trees to the west, and a fenced pumpkin
+// patch with sunflowers and a scarecrow to the east. Along the bottom: a
+// picnic table, a bench facing the fields, the farm's sign, the road and
+// Gus's bus. Voice is on everywhere here.
+const FARM_AREA = { id: "farm", name: CONFIG.roomNames.farm, rect: { x: 0, y: FARM - 5.4, w: HOUSE_WIDTH, h: 15.7 }, outdoor: true };
+
+// Its edges (the hedgerow along the top, the sides, the curb).
+const FARM_WALLS = [
+  { x: -WALL_THICKNESS, y: FARM - 5.4, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: 0.5, hidden: true },
+  { x: -WALL_THICKNESS, y: FARM - 5.8, w: WALL_THICKNESS, h: 16, hidden: true },
+  { x: HOUSE_WIDTH, y: FARM - 5.8, w: WALL_THICKNESS, h: 16, hidden: true },
+  { x: -WALL_THICKNESS, y: FARM + 10.3, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: WALL_THICKNESS, hidden: true },
+];
+
+// Its paths (painted like the yard's, see paintPaths in outdoors.js): the
+// lane along the top past the barn and Hazel's stand, the walkway down the
+// middle of the fields, on down to the bus stop, and a spur to the picnic table.
+const FARM_PATHS = [
+  { w: 1.0, points: [[2.6, -0.95], [5.2, -0.9], [8.4, -0.98], [11.5, -1.0], [15.0, -1.05], [19.6, -1.0]] },
+  { w: 1.1, points: [[11.5, -1.0], [11.5, 1.6], [11.5, 4.2], [11.5, 6.9], [11.6, 7.7]] },
+  { w: 1.1, points: [[11.6, 7.7], [12.7, 8.5], [14.6, 8.9], [16.5, 9.1], [17.4, 9.8]] },
+  { w: 0.85, points: [[11.5, 7.7], [10.0, 8.0], [8.6, 8.3]] },
+];
+
+const FARM_FURNITURE = [
+  // Along the top: a hedgerow of trees, the barn and silo with hay bales,
+  // Hazel's farm stand (Hazel stands beside it, once she's moved here: see
+  // HAZEL), the chicken run and the windmill.
+  { kind: "yardTree", x: 7.3, y: FARM - 4.7, w: 1.0, h: 0.55, n: 5 },
+  { kind: "yardTree", x: 10.3, y: FARM - 4.95, w: 1.0, h: 0.55, n: 1 },
+  { kind: "yardTree", x: 18.9, y: FARM - 4.75, w: 1.0, h: 0.55, n: 2 },
+  { kind: "pineTree", x: 23.0, y: FARM - 4.6, w: 0.9, h: 0.5, n: 7 },
+  { kind: "barn", x: 0.6, y: FARM - 2.6, w: 5.2, h: 1.3 },
+  { kind: "silo", x: 6.15, y: FARM - 2.25, w: 1.25, h: 0.9 },
+  { kind: "hayBales", x: 0.7, y: FARM - 1.25, w: 1.2, h: 0.55 },
+  { kind: "farmStand", x: 8.1, y: FARM - 2.35, w: 2.7, h: 0.75 },
+  { kind: "hazel", x: 10.95, y: FARM - 2.0, w: 0.55, h: 0.4, place: "farm" },
+  { kind: "lampPost", x: 7.6, y: FARM - 1.75, w: 0.3, h: 0.25 },
+  fenceRun(12.8, -4.3, 18.4, -4.3, "rail", FARM),
+  fenceRun(12.8, -1.6, 18.4, -1.6, "rail", FARM),
+  fenceRun(12.8, -4.3, 12.8, -1.6, "rail", FARM),
+  fenceRun(18.4, -4.3, 18.4, -1.6, "rail", FARM),
+  { kind: "chickenCoop", x: 13.3, y: FARM - 3.65, w: 1.9, h: 0.9 },
+  { kind: "chickens", x: 13.1, y: FARM - 2.55, w: 5.0, h: 0.75, solid: false },
+  { kind: "windmill", x: 20.5, y: FARM - 2.75, w: 2.1, h: 1.2 },
+
+  // The fields: a rail fence round the sixteen beds (the beds themselves
+  // are in GARDEN_BEDS), open where the walkway goes through.
+  fenceRun(5.9, -0.3, 10.9, -0.3, "rail", FARM),
+  fenceRun(12.1, -0.3, 17.1, -0.3, "rail", FARM),
+  fenceRun(5.9, 6.9, 10.9, 6.9, "rail", FARM),
+  fenceRun(12.1, 6.9, 17.1, 6.9, "rail", FARM),
+  fenceRun(5.9, -0.3, 5.9, 6.9, "rail", FARM),
+  fenceRun(17.1, -0.3, 17.1, 6.9, "rail", FARM),
+  { kind: "well", x: 17.6, y: FARM + 0.7, w: 1.1, h: 0.8 },
+  { kind: "wheelbarrow", x: 17.55, y: FARM + 3.4, w: 1.1, h: 0.5 },
+  { kind: "hayBales", x: 17.55, y: FARM + 5.4, w: 1.2, h: 0.55 },
+
+  // The orchard, west of the fields: apple trees (apples on the branches
+  // and a few in the grass), and a crate of picked ones.
+  { kind: "appleTree", x: 0.6, y: FARM + 0.35, w: 1.0, h: 0.55, n: 0 },
+  { kind: "appleTree", x: 3.2, y: FARM + 0.8, w: 1.0, h: 0.55, n: 1 },
+  { kind: "appleTree", x: 1.5, y: FARM + 3.0, w: 1.0, h: 0.55, n: 2 },
+  { kind: "appleTree", x: 4.1, y: FARM + 3.45, w: 1.0, h: 0.55, n: 3 },
+  { kind: "appleTree", x: 0.6, y: FARM + 5.6, w: 1.0, h: 0.55, n: 4 },
+  { kind: "appleTree", x: 3.1, y: FARM + 6.1, w: 1.0, h: 0.55, n: 5 },
+  { kind: "appleCrate", x: 2.0, y: FARM + 8.05, w: 0.8, h: 0.5 },
+
+  // The pumpkin patch, east of the fields: a low fence round it, pumpkins
+  // on their vines, sunflowers along the back, and a scarecrow.
+  fenceRun(19.3, 0.9, 23.7, 0.9, "rail", FARM),
+  fenceRun(19.3, 6.4, 23.7, 6.4, "rail", FARM),
+  fenceRun(19.3, 0.9, 19.3, 6.4, "rail", FARM),
+  fenceRun(23.7, 0.9, 23.7, 6.4, "rail", FARM),
+  { kind: "sunflowerRow", x: 19.5, y: FARM + 1.0, w: 4.0, h: 0.45, solid: false },
+  { kind: "pumpkinPatch", x: 19.5, y: FARM + 1.6, w: 4.0, h: 4.6, solid: false },
+  { kind: "scarecrow", x: 21.2, y: FARM + 3.3, w: 0.7, h: 0.35 },
+
+  // Along the bottom: a picnic table, a bench facing the fields, lamps,
+  // flowers, the farm's sign, the fence along the sidewalk (with a gap for
+  // the path), and the bus stop.
+  { kind: "picnicTable", x: 6.8, y: FARM + 7.85, w: 1.8, h: 0.9 },
+  { kind: "parkBench", x: 13.6, y: FARM + 7.55, w: 1.5, h: 0.45 },
+  { kind: "lampPost", x: 10.7, y: FARM + 7.3, w: 0.3, h: 0.25 },
+  { kind: "lampPost", x: 18.1, y: FARM + 8.2, w: 0.3, h: 0.25 },
+  { kind: "wildflowers", x: 4.6, y: FARM + 8.6, w: 1.1, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 19.9, y: FARM + 7.4, w: 1.0, h: 0.3, solid: false },
+  { kind: "wildflowers", x: 9.4, y: FARM + 6.95, w: 0.9, h: 0.3, solid: false },
+  { kind: "bush", x: 22.6, y: FARM + 7.3, w: 0.9, h: 0.55, n: 5 },
+  { kind: "bush", x: 0.5, y: FARM + 8.3, w: 0.9, h: 0.55, n: 6 },
+  { kind: "farmSign", x: 12.2, y: FARM + 9.3, w: 1.7, h: 0.25 },
+  fenceRun(0.1, -4.6, 0.1, 9.3, "rail", FARM),
+  fenceRun(0.1, 9.3, 11.6, 9.3, "rail", FARM),
+  fenceRun(18.3, 9.3, 23.9, 9.3, "rail", FARM),
+  { kind: "busShelter", x: 19.4, y: FARM + 9.5, w: 2.5, h: 0.75 },
+  { kind: "busSign", x: 22.6, y: FARM + 10.0, w: 0.3, h: 0.2 },
+  { kind: "bus", x: 0, y: FARM + 10.7, w: HOUSE_WIDTH, h: 0.5, solid: false, stopX: 14.8 },
+];
+
+// Where you arrive at the Farm, and pop back to: just inside the gate by the bus stop.
+const FARM_SPAWN = { x: 16.9, y: FARM + 8.6 };
+
+// Hazel the hedgehog: by her seed stand in the yard until you've had her
+// gardening lesson (garden.js), then at her farm stand here (for you). A
+// seed box takes her place in the yard. main.js keeps atFarm up to date.
+const HAZEL = { atFarm: true };
+const hazelHere = (f) => (f.place === "farm") === HAZEL.atFarm;
 
 // Is it night outside? Update 4's weather (weather.js) fills in OUTDOORS
 // from the real sky over the hometown; until it has, night is guessed from
@@ -1359,8 +1494,8 @@ function buildHouse(offices, doors = []) {
   lastBuild = [offices, doors];
   const t = WALL_THICKNESS;
   const rooms = [...BASE_ROOMS, ...YARD_ROOMS];
-  const walls = [...BASE_WALLS, ...YARD_WALLS, ...LAKE_WALLS, ...ALLEY_WALLS];
-  const furniture = [...BASE_FURNITURE, ...seasonalFurniture(), ...YARD_FURNITURE, ...LAKE_FURNITURE, ...ALLEY_FURNITURE];
+  const walls = [...BASE_WALLS, ...YARD_WALLS, ...LAKE_WALLS, ...ALLEY_WALLS, ...FARM_WALLS];
+  const furniture = [...BASE_FURNITURE, ...seasonalFurniture(), ...YARD_FURNITURE, ...LAKE_FURNITURE, ...ALLEY_FURNITURE, ...FARM_FURNITURE];
 
   // A corridor's top wall, from x -t to the east end, with gaps for its doorways.
   const corridorWall = (y, doorways) => {
@@ -1464,6 +1599,7 @@ function buildHouse(offices, doors = []) {
   rooms.push(YARD_AREA);
   rooms.push(LAKE_AREA);
   rooms.push(ALLEY_AREA);
+  rooms.push(FARM_AREA);
 
   furniture.push(...seasonalWallDecor(walls, furniture));
   ROOMS = rooms;
@@ -1959,8 +2095,10 @@ function nearestInteraction(player) {
   }
   if (isNearMyLaptop(player)) options.push(["laptop", 0]);
   // Outdoors (Update 4): Hazel's seed stand, and the garden beds.
-  const hazel = FURNITURE.find((f) => f.kind === "hazel");
-  const hazelDistance = Math.hypot(cx - (hazel.x + hazel.w / 2), cy - (hazel.y + hazel.h / 2));
+  // Hazel: in the yard until you've had her lesson, then at the Farm (her
+  // seed stand in the yard becomes a self-serve seed box).
+  const hazel = FURNITURE.find((f) => f.kind === "hazel" && floorOf(f.y) === floorOf(player.y) && hazelHere(f));
+  const hazelDistance = hazel ? Math.hypot(cx - (hazel.x + hazel.w / 2), cy - (hazel.y + hazel.h / 2)) : Infinity;
   if (hazelDistance < 1.4) options.push(["hazel", hazelDistance]);
   if (gardenBedInReach(player) >= 0) options.push(["gardenBed", 0.5]);
   // Otis: at the pond until you've had his lesson, then at the Lake (a
@@ -1981,7 +2119,8 @@ function nearestInteraction(player) {
   near("fridge", 0.9);
   near("cookieJar", 0.9);
   near("tradingPost", 1.0);
-  if (OTIS.atLake) near("baitBox", 0.9); // (Otis's bait box at the pond, once he's at the Lake)
+  if (OTIS.atLake) near("baitBox", 0.9);
+  if (HAZEL.atFarm) near("seedStand", 0.9); // (Hazel's seed box in the yard, once she's at the Farm) // (Otis's bait box at the pond, once he's at the Lake)
   if (MERCHANT.here) near("juniper", 1.1);
   // Residents (Update 6), wherever they are right now.
   const resident = residentInReach(player);
@@ -2057,5 +2196,6 @@ function getCurrentRoom(player) {
   if (floorOf(cy) === YARD_FLOOR) return YARD_AREA;
   if (floorOf(cy) === LAKE_FLOOR) return LAKE_AREA;
   if (floorOf(cy) === ALLEY_FLOOR) return ALLEY_AREA;
+  if (floorOf(cy) === FARM_FLOOR) return FARM_AREA;
   return ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "suite")); // (a bedroom's doorway counts as the suite floor's hall)
 }

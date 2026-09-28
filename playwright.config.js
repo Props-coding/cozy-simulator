@@ -25,7 +25,14 @@ export default defineConfig({
   },
   projects: [
     { name: "checks", testMatch: /checks\.spec\.js/ },
-    { name: "pictures", testMatch: /pictures\.spec\.js/, snapshotPathTemplate: "tests/pictures/{arg}{ext}" },
+    {
+      name: "pictures",
+      testMatch: /pictures\.spec\.js/,
+      snapshotPathTemplate: "tests/pictures/{arg}{ext}",
+      // (A silent microphone: the usual test one beeps, and in a voice room
+      // your character bobs along when it hears you "talk".)
+      use: { launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", "--use-file-for-fake-audio-capture=tests/silence.wav", "--autoplay-policy=no-user-gesture-required"] } },
+    },
   ],
   webServer: [
     { command: "node tests/house-server.mjs", url: `http://localhost:${HOUSE_PORT}/api/health`, reuseExistingServer: false, stdout: "ignore", stderr: "pipe" },
