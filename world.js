@@ -1288,7 +1288,13 @@ function hometownHour(now = Date.now()) {
 // "back"), moving, act, asleep }, or null while they're home.
 function residentState(r, now = Date.now()) {
   // (Mothman sitting by your bedside lamp, for a little while after you arrive.)
-  if (r.id === "mothman" && mothVisit && now < mothVisit.until) return { x: mothVisit.x, y: mothVisit.y, facing: 0, moving: false, act: "lamp", asleep: false, visit: true };
+  if (r.id === "mothman") {
+    if (mothVisit && now < mothVisit.until) return { x: mothVisit.x, y: mothVisit.y, facing: 0, moving: false, act: "lamp", asleep: false, visit: true };
+    // (Only while it's really dark out, and at nine he leads the moths at
+    // the porch light.)
+    if (!isNightOutside()) return null;
+    if (typeof porchSwarmOn === "function" && porchSwarmOn(now)) return { x: 20.85, y: YARD - 4.9, facing: 0, moving: false, act: "lamp", asleep: false };
+  }
   const hour = hometownHour(now);
   const part = r.day.find((p) => (p.from < p.to ? hour >= p.from && hour < p.to : hour >= p.from || hour < p.to));
   if (!part) return null;
@@ -1901,7 +1907,7 @@ const DECOR = {
   // one in your room and press E).
   // (Update 8) The Mothman lamp, and the plush he gives his best friends.
   mothLamp: { name: "Mothman Lamp", tab: "decor", price: 45, kind: "mothLamp", w: 0.5, h: 0.4 },
-  mothPlush: { name: "Mothman Plush", kind: "mothPlush", w: 0.5, h: 0.4, gift: true },
+  mothPlush: { name: "Mothman Plush", kind: "mothPlush", w: 0.5, h: 0.4 }, // (no price or aisle: only Mothman gives it)
   artCanvas: { name: "Blank Canvas", tab: "art", price: 12, kind: "artCanvas", w: 0.7, wall: true },
   artPoster: { name: "Blank Poster", tab: "art", price: 18, kind: "artPoster", w: 1.2, wall: true },
   artRug: { name: "Blank Rug", tab: "art", price: 25, kind: "artRug", w: 1.6, h: 1.2, solid: false },
@@ -2193,11 +2199,10 @@ function nearestInteraction(player) {
   // too), and pixel art you can paint (your own).
   near("wishingWell", 0.9);
   // Night & Mothman (Update 8): the Workshop's toolbox (lightbulbs and
-  // lanterns), the porch light swarm at nine, and fireflies (outdoors at
-  // night, anywhere nothing else is closer).
+  // lanterns), and the porch light swarm at nine. (Fireflies are caught
+  // only when nothing at all is in reach: main.js, night.js fireflyHere.)
   near("toolbox", 0.9);
   if (typeof porchSwarmOn === "function" && porchSwarmOn() && floorOf(player.y) === YARD_FLOOR && FURNITURE.some((f) => f.kind === "porchLantern" && Math.hypot(f.x - cx, f.y + 0.6 - cy) < 3)) options.push(["porchSwarm", 0.4]);
-  if (isNightOutside() && (floorOf(player.y) === YARD_FLOOR || floorOf(player.y) === LAKE_FLOOR)) options.push(["firefly", 1.7]);
   near("tvSet", 1.0);
   near("libraryShelf", 0.7);
   if (myArtInReach(player)) options.push(["paint", 0.25]);

@@ -345,7 +345,8 @@ function closeShop() {
 function renderShop() {
   shopItems.innerHTML = "";
   const current = look.get();
-  for (const item of CATALOG.filter((i) => i.type === shopTab).sort((a, b) => a.price - b.price)) {
+  // (Mothman's gifts aren't for sale: shown only once they're yours.)
+  for (const item of CATALOG.filter((i) => i.type === shopTab && (!i.reward || myWallet().owned.includes(i.id))).sort((a, b) => a.price - b.price)) {
     const owned = myWallet().owned.includes(item.id);
     const wearing = current[item.type] === item.id;
     const tag = document.createElement("div");

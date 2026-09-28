@@ -52,7 +52,7 @@ function porchSwarmOn(now = Date.now()) {
 // fluttering his wings.
 function drawMothman(ctx, s, t) {
   const hover = s.moving ? 6 + Math.sin(t * 5) * 2 : Math.sin(t * 1.5) * 0.8;
-  residentShadow(ctx, s.moving ? 9 : 11, s.moving ? 0.14 : 0.22);
+  if (!s.noShadow) residentShadow(ctx, s.moving ? 9 : 11, s.moving ? 0.14 : 0.22); // (the plush has its own)
   const back = s.facing === "back";
   if (typeof s.facing === "number" && s.facing < 0) ctx.scale(-1, 1);
   ctx.translate(0, -hover);
@@ -304,9 +304,21 @@ Object.assign(FURNITURE_DRAWERS, {
   mothLamp(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h);
+    // A round wooden base (lit on top), and a stand with a lit left edge.
+    ctx.fillStyle = "#5e412a";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 3, 8, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#7a5638";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 4.5, 8, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 225, 180, 0.3)";
+    ctx.fillRect(b.x - 5, b.y - 6.5, 6, 1);
     ctx.fillStyle = "#4e3f52";
-    ctx.fillRect(b.x - 5, b.y - 4, 10, 4);
-    ctx.fillRect(b.x - 1.2, b.y - 28, 2.4, 25);
+    ctx.fillRect(b.x - 1.5, b.y - 30, 3, 26);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(b.x - 1.5, b.y - 30, 1, 26);
     const glow = ctx.createRadialGradient(b.x, b.y - 36, 2, b.x, b.y - 36, 13);
     glow.addColorStop(0, "#fff4d8");
     glow.addColorStop(1, "#f0c88a");
@@ -337,7 +349,7 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.scale(0.55, 0.5);
-    drawMothman(ctx, { facing: 0, moving: false, act: "sit" }, 0);
+    drawMothman(ctx, { facing: 0, moving: false, act: "sit", noShadow: true }, 0);
     ctx.restore();
   },
 });

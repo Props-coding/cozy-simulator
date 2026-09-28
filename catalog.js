@@ -191,7 +191,7 @@ const ACHIEVEMENT_LIST = [
   { id: "firstSighting", name: "Blurry Photo", desc: "Spot Mothman at night.", crumbs: 10, server: true },
   { id: "porchLight", name: "Porch Light", desc: "Watch the moths gather at the porch light.", crumbs: 10, server: true },
   { id: "fullMoon", name: "Howl", desc: "Be out on a full moon night.", crumbs: 15, server: true },
-  { id: "happyToHelp", name: "Happy to Help", desc: "Bring Clover or Mortimer what they asked for.", crumbs: 10, server: true },
+  { id: "happyToHelp", name: "Happy to Help", desc: "Bring a resident what they asked for.", crumbs: 10, server: true },
   { id: "firstTrade", name: "Open for Business", desc: "Sell something on Porch Swap.", crumbs: 15, server: true },
   { id: "wellTraveled", name: "Well Traveled", desc: "Buy something from the traveling merchant.", crumbs: 15, server: true },
   { id: "cookbook", name: "Cookbook", desc: "Know 10 recipes.", crumbs: 40, server: true },

@@ -71,14 +71,12 @@ export async function catchFirefly() {
   hooks.notice(`You caught a firefly in a jar! (${got.caught} tonight.) It glows softly in your basket.`);
 }
 
-// --- The porch light swarm ---
-// Near the porch lanterns while the moths are gathering.
-export function nearSwarm(player) {
-  if (!porchSwarmOn() || floorOf(player.y) !== YARD_FLOOR) return false;
-  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
-  return FURNITURE.some((f) => f.kind === "porchLantern" && Math.hypot(f.x - cx, f.y + 0.6 - cy) < 3);
+// Fireflies are out: at night, in the yard or at Willow Lake.
+export function fireflyHere(player) {
+  return isNightOutside() && (floorOf(player.y) === YARD_FLOOR || floorOf(player.y) === LAKE_FLOOR);
 }
 
+// --- The porch light swarm ---
 export async function watchSwarm() {
   const got = await bank("porchSwarm");
   if (!got) return;
@@ -118,10 +116,11 @@ function nightDay() {
 // --- Lamp visits ---
 // When you arrive at night, now and then Mothman is sitting by your
 // bedside lamp for a few minutes.
+// (A Mothman Lamp in your room doubles the chance, and he sits by that.)
 export function maybeLampVisit() {
-  if (!isNightOutside() || Math.random() >= CONFIG.night.lampVisitChance) return;
-  const lamp = FURNITURE.find((f) => f.kind === "nightstand" && f.mine);
-  if (!lamp) return;
+  const mothLamp = FURNITURE.find((f) => f.kind === "mothLamp" && f.mine);
+  const lamp = mothLamp ?? FURNITURE.find((f) => f.kind === "nightstand" && f.mine);
+  if (!isNightOutside() || !lamp || Math.random() >= CONFIG.night.lampVisitChance * (mothLamp ? 2 : 1)) return;
   setMothVisit({ x: lamp.x + lamp.w + 0.35, y: lamp.y + lamp.h + 0.15, until: Date.now() + 5 * 60_000 }); // (world.js)
   hooks.notice("Someone is sitting quietly by your bedside lamp...", 8000);
 }

@@ -305,7 +305,7 @@ const GIFT_LINES = {
 function giftRows(id) {
   if (friendOf(id).gifted) return [];
   return basketItems()
-    .filter(([item]) => /^(crop|fish|dish|junk|food):/.test(item))
+    .filter(([item]) => /^(crop|fish|dish|junk|food|night):/.test(item))
     .sort(([a], [b]) => itemInfo(a).group.localeCompare(itemInfo(b).group) || itemInfo(a).name.localeCompare(itemInfo(b).name))
     .map(([item, n]) => {
       const info = itemInfo(item);

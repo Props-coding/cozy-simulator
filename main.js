@@ -97,7 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
-import { initNight, openToolbox, catchFirefly, watchSwarm, checkMothSighting, maybeLampVisit, fullMoonHello } from "./night.js";
+import { initNight, openToolbox, catchFirefly, fireflyHere, watchSwarm, checkMothSighting, maybeLampVisit, fullMoonHello } from "./night.js";
 import { initExtras, isExtrasOpen, makeWish, wellHint, openTv, openLibrary, openPaint } from "./extras.js";
 import { startMarket, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
@@ -674,7 +674,7 @@ function actionHintFor(room) {
   const hint = roomHintFor(room);
   if (hint || uiBusy()) return hint;
   const pet = petInReach();
-  if (!pet) return "";
+  if (!pet) return fireflyHere(player) && !nearestFreeSeat() && !nearWaitingBus(player) ? "Fireflies are out. Press E to catch one in a jar." : "";
   const whose = pet.who === "me" ? "your" : `${pet.ownerName}'s`;
   return `Press E to pet ${whose} ${itemName(pet.kind).toLowerCase()}.`;
 }
@@ -699,7 +699,6 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "paint") return "Press E to paint it.";
   if (nearestInteraction(player) === "toolbox") return "Press E to open the toolbox: lightbulbs and paper lanterns.";
   if (nearestInteraction(player) === "porchSwarm") return "The moths are gathering at the porch light. Press E to watch.";
-  if (nearestInteraction(player) === "firefly") return "Fireflies are out. Press E to catch one in a jar.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
@@ -870,7 +869,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Kitchen & Trade (Update 5).
-  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)), toolbox: openToolbox, porchSwarm: watchSwarm, firefly: catchFirefly }[nearestInteraction(player)];
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper, wishingWell: makeWish, tvSet: openTv, libraryShelf: openLibrary, paint: () => openPaint(myArtInReach(player)), toolbox: openToolbox, porchSwarm: watchSwarm }[nearestInteraction(player)];
   if (key === "e" && kitchenAction) {
     for (const k in keysDown) keysDown[k] = false;
     kitchenAction();
@@ -923,6 +922,13 @@ window.addEventListener("keydown", (e) => {
     playPetSound();
     unlock("patPat");
     if (pet.who !== "me") unlock("pettingZoo");
+  }
+
+  // Catching a firefly (outdoors at night), when nothing at all is in
+  // reach: no bus, no seat, no pet (night.js).
+  if (key === "e" && !pet && !nearestInteraction(player) && !mySeat && !nearestFreeSeat() && !nearWaitingBus(player) && fireflyHere(player)) {
+    catchFirefly();
+    return;
   }
 
   const buildKind = isNearBuildDoor(player);
