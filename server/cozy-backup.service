@@ -1,0 +1,8 @@
+# Runs cozy-backup.sh (installed to /usr/local/bin/): see cozy-backup.timer.
+# Installed to /etc/systemd/system/.
+[Unit]
+Description=Nightly backup of the Cozy House server's saves
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cozy-backup.sh

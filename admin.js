@@ -468,6 +468,7 @@ function debugTab() {
     row("Seats", [toggle("seats", "Seat spots (where you sit)")]),
     row("Collision", [toggle("solids", "Walls and furniture you bump into")]),
     row("Rooms", [toggle("rooms", "Room edges and names")]),
+    row("Grid", [toggle("grid", "Grid spots and object names (for placing things)")]),
   ];
 }
 

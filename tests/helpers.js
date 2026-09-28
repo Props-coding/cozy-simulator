@@ -1,7 +1,7 @@
 // Shared steps for the tests: log in and walk into the house, and jump to
 // a spot (using the page's test hook, see "For the automated tests" in main.js).
 import { expect } from "@playwright/test";
-import { TEST_HOUSE } from "./house.js";
+import { TEST_HOUSE, HOUSE_PORT } from "./house.js";
 
 // Every floor, with a spot to stand on each (the spots come from world.js).
 export const FLOORS = [
@@ -36,6 +36,20 @@ export async function enterHouse(page) {
 export async function goTo(page, floor) {
   const ok = await page.evaluate(`(() => { const s = (${floor.spot.toString()})(); return window.porchlightTest.go(s.x, s.y); })()`);
   expect(ok, `found somewhere to stand on the ${floor.name}`).toBe(true);
+}
+
+// Sets up the test account with things already in it, straight on the
+// test house server, then has the page fetch its wallet again. For
+// example: seed(page, { crumbs: 500, basket: { "fish:bluegill": 3 },
+// fishing: { lesson: "caught", lessonFish: "bluegill" } }).
+export async function seed(page, wallet) {
+  const res = await fetch(`http://localhost:${HOUSE_PORT}/admin/test-seed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Admin-Token": TEST_HOUSE.adminToken },
+    body: JSON.stringify({ name: TEST_HOUSE.name, wallet }),
+  });
+  if (!res.ok) throw new Error(`seed: ${res.status} ${await res.text()}`);
+  await page.evaluate(async () => (await import("./bank.js")).loadBank());
 }
 
 export const whereAmI = (page) => page.evaluate(() => window.porchlightTest.where());

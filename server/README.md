@@ -23,6 +23,7 @@ It's plain Node.js with no extra packages, behind Caddy (which handles HTTPS) at
 | Web server settings | `/etc/caddy/Caddyfile` |
 | Voice relay | service `coturn`, settings in `/etc/turnserver.conf` (made from `turnserver.conf` here, with the secret filled in). Ports 3478 (UDP/TCP), 5349 (TLS) and 50000 to 50500 (UDP) are open in the firewall |
 | Relay certificate | copied from Caddy daily by `cozy-turn-certs` (a timer), so it renews along with Caddy's |
+| Nightly backups | `cozy-backup` (a timer) packs /var/lib/cozy-server into /var/backups/cozy-nightly/ every night at 09:30 UTC, kept 30 days, root only. To restore one: stop cozy-server, `sudo tar xzf <file> -C /`, start it |
 
 ## Who can get in
 

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Before anything goes up to GitHub (and so goes live): the mistake
+# checker, the server's money rules and the house test. If any fails, the
+# push stops and nothing goes live. (Turned on per computer with
+# `git config core.hooksPath .githooks`; skip once, in an emergency only,
+# with `git push --no-verify`.)
+echo "Checking before the push: mistake checker, money rules, house test..."
+npm run --silent lint >/dev/null 2>&1 || { echo "The mistake checker found errors (npm run lint). Push stopped."; exit 1; }
+npm run --silent test:server >/dev/null 2>&1 || { echo "The server's money rules failed (npm run test:server). Push stopped."; exit 1; }
+npm run --silent test >/dev/null 2>&1 || { echo "The house test failed (npm test). Push stopped."; exit 1; }
+echo "All checks passed."

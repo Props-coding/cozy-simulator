@@ -414,6 +414,9 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Found and fixed while testing: the windmill's sails all landed on one spot (the canvas loses precision on huge angles; the angle is now kept to one turn), and a server slip in the lesson's "gardened before" check.
   - The tests visit the Farm too (6 ms a frame there, the busiest floor, still far under 16). The picture checks are now steady: the test microphone is silent (in a voice room the character used to bob along to its beep) and the mouse moves before each picture (no idle yawns). New approved pictures, including the Farm.
   - **Needs the server deployed** (server.mjs, plus the new config.js, catalog.js and world.js in the server's game folder): see SERVER-TODO.md. Until then, the old server knows nothing of the lesson (so Hazel stays at the Farm for everyone) and doesn't stop other crops going into the starter patch.
+- Workflow tools (2026-09-28, nothing players see): the GitHub command-line tool installed; test accounts that start with things in them; the object gallery (every object in one set of pictures); a grid overlay for placing things (admin panel, Debug); tests for the server's money rules (also run by GitHub); checks before every push; nightly server backups at 09:30 UTC, kept 30 days (server/cozy-backup.*); and a reviewer helper for a fresh-eyes check before updates go live.
+  - Open question: the nightly backups live on the droplet itself. For a copy somewhere else too, DigitalOcean's own weekly backups cost about 20% of the droplet's price (roughly $1 a month); the owner can switch them on in the DigitalOcean dashboard.
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 

@@ -737,11 +737,60 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
 }
 
 // --- Debug outlines (the admin panel's Debug tab; only on this computer) ---
-// Room edges and names (blue), everything you bump into (red), and where
-// people sit (green dots, with a line showing which way they face).
-const DEBUG_OVERLAYS = { seats: false, solids: false, rooms: false };
+// Room edges and names (blue), everything you bump into (red), where
+// people sit (green dots, with a line showing which way they face), and a
+// grid of spots with each object's name (for placing things: the numbers
+// are the x, y you'd write in world.js, y counted from the floor's top,
+// the way YARD + y and ALLEY + y are).
+const DEBUG_OVERLAYS = { seats: false, solids: false, rooms: false, grid: false };
+function drawGridOverlay(ctx, onFloor) {
+  const { left, top, right, bottom } = viewBounds();
+  const base = viewFloor * UPSTAIRS; // (the floor's y = 0)
+  const x0 = Math.floor((left - toScreen(0, 0).x) / TILE), x1 = Math.ceil((right - toScreen(0, 0).x) / TILE);
+  const y0 = Math.floor((top - toScreen(0, base).y) / TILE), y1 = Math.ceil((bottom - toScreen(0, base).y) / TILE);
+  ctx.lineWidth = 1;
+  for (let gx = x0; gx <= x1; gx += 0.5) {
+    const x = toScreen(gx, 0).x;
+    ctx.strokeStyle = gx % 1 ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, top);
+    ctx.lineTo(x + 0.5, bottom);
+    ctx.stroke();
+  }
+  for (let gy = y0; gy <= y1; gy += 0.5) {
+    const y = toScreen(0, base + gy).y;
+    ctx.strokeStyle = gy % 1 ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(left, y + 0.5);
+    ctx.lineTo(right, y + 0.5);
+    ctx.stroke();
+  }
+  // Each whole spot's numbers (x,y), with a dark edge so they read anywhere.
+  ctx.font = "700 8px sans-serif";
+  ctx.textAlign = "left";
+  for (let gx = x0; gx <= x1; gx++) {
+    for (let gy = y0; gy <= y1; gy++) {
+      const p = toScreen(gx, base + gy);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+      ctx.fillText(`${gx},${gy}`, p.x + 2.5, p.y + 9.5);
+      ctx.fillStyle = "#fff";
+      ctx.fillText(`${gx},${gy}`, p.x + 2, p.y + 9);
+    }
+  }
+  // Every object's name and footprint.
+  for (const f of FURNITURE.filter((f) => onFloor(f.y))) {
+    const a = toScreen(f.x, f.y), b = toScreen(f.x + (f.w ?? 0), f.y + (f.h ?? 0));
+    ctx.strokeStyle = "rgba(255, 220, 60, 0.9)";
+    ctx.strokeRect(a.x + 0.5, a.y + 0.5, Math.max(2, b.x - a.x - 1), Math.max(2, b.y - a.y - 1));
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillText(f.kind, a.x + 1.5, b.y + 9.5);
+    ctx.fillStyle = "#ffe066";
+    ctx.fillText(f.kind, a.x + 1, b.y + 9);
+  }
+}
+
 function drawDebugOverlays(ctx) {
-  if (!DEBUG_OVERLAYS.seats && !DEBUG_OVERLAYS.solids && !DEBUG_OVERLAYS.rooms) return;
+  if (!DEBUG_OVERLAYS.seats && !DEBUG_OVERLAYS.solids && !DEBUG_OVERLAYS.rooms && !DEBUG_OVERLAYS.grid) return;
   const onFloor = (y) => floorOf(y) === viewFloor;
   const box = (r, color, fill) => {
     const a = toScreen(r.x, r.y), b = toScreen(r.x + r.w, r.y + r.h);
@@ -761,6 +810,7 @@ function drawDebugOverlays(ctx) {
       ctx.fillText(room.id, a.x + 3, a.y + 10);
     }
   }
+  if (DEBUG_OVERLAYS.grid) drawGridOverlay(ctx, onFloor);
   if (DEBUG_OVERLAYS.solids) for (const s of SOLIDS.filter((s) => onFloor(s.y))) box(s, "rgba(220, 40, 40, 0.85)", "rgba(220, 40, 40, 0.12)");
   if (DEBUG_OVERLAYS.seats) {
     const step = { down: [0, 6], up: [0, -6], left: [-6, 0], right: [6, 0] };

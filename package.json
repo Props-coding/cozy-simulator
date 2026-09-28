@@ -6,8 +6,10 @@
   "scripts": {
     "lint": "eslint .",
     "test": "playwright test --project=checks",
+    "test:server": "node --test \"tests/server/*.test.mjs\"",
     "test:pictures": "playwright test --project=pictures",
-    "test:pictures:update": "playwright test --project=pictures --update-snapshots"
+    "test:pictures:update": "playwright test --project=pictures --update-snapshots",
+    "gallery": "playwright test --project=gallery"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

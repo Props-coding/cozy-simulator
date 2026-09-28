@@ -1,0 +1,13 @@
+# Runs the nightly backup at 09:30 UTC (the small hours in the hometown),
+# or soon after the server wakes up if it was off then.
+# Installed to /etc/systemd/system/, alongside cozy-backup.service.
+[Unit]
+Description=Back up the Cozy House server's saves every night
+
+[Timer]
+OnCalendar=*-*-* 09:30:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

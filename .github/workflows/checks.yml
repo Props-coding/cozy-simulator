@@ -2,7 +2,9 @@
 # on one of its own test machines (free for public projects). A red X on a
 # change means something broke; a green tick means these all passed:
 #   1. the mistake checker (npm run lint)
-#   2. the house loads, and every floor draws without problems (npm test)
+#   2. the house server's money rules (npm run test:server)
+#   3. the house loads, every floor draws without problems, and a few
+#      features work end to end (npm test)
 # (The before-and-after pictures aren't checked here: GitHub's machines
 # draw text a little differently. Claude runs those before each update.)
 name: Checks
@@ -31,6 +33,8 @@ jobs:
         run: npm ci
       - name: Mistake checker
         run: npm run lint
+      - name: The house server's money rules
+        run: npm run test:server
       - name: Install the test browser
         run: npx playwright install --with-deps chromium
       - name: The house loads and every floor draws

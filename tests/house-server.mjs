@@ -25,6 +25,7 @@ const server = spawn(process.execPath, ["server/server.mjs"], {
     ROOM_PASSWORD: "test-room-password",
     TURN_SECRET: "test-turn-secret",
     TURN_HOST: "localhost",
+    TEST_SEED: "1", // (lets the tests set up the test account: seed() in helpers.js)
   },
 });
 server.on("exit", (code) => process.exit(code ?? 0));

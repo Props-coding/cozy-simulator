@@ -19,12 +19,16 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${SITE_PORT}`,
     viewport: { width: 1920, height: 969 }, // a 1080p screen, inside the browser
+    // (On Windows, the Edge that's already installed; elsewhere, like
+    // GitHub's machines, Playwright's own Chromium.)
+    channel: process.platform === "win32" ? "msedge" : undefined,
     timezoneId: "America/Chicago",
     permissions: ["microphone"],
     launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", "--autoplay-policy=no-user-gesture-required"] },
   },
   projects: [
     { name: "checks", testMatch: /checks\.spec\.js/ },
+    { name: "gallery", testMatch: /gallery\.spec\.js/ }, // (every object side by side: tests/gallery/)
     {
       name: "pictures",
       testMatch: /pictures\.spec\.js/,

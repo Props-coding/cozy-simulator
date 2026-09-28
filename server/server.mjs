@@ -2710,6 +2710,23 @@ const adminRoutes = {
     await saveDb();
     return { name };
   },
+  // Only on the automated tests' throwaway server (TEST_SEED=1, set by
+  // tests/house-server.mjs), never the real one: sets up the test account
+  // with things already in it ({ name, wallet: { crumbs, basket: {...},
+  // fishing: { lesson }... } }). Each part given replaces what they had
+  // (a basket given is their whole basket), except fishing, which is
+  // merged (so setting the lesson keeps their rods).
+  ...(env.TEST_SEED === "1" && {
+    "POST /admin/test-seed": async (req) => {
+      const body = await readJson(req, 100_000);
+      const key = String(body.name ?? "").trim().toLowerCase();
+      if (!db.users[key]) throw new Oops(404, "No account with that name.");
+      const w = ensureWallet(db.users[key], key);
+      for (const [k, v] of Object.entries(body.wallet ?? {})) w[k] = k === "fishing" ? { ...w.fishing, ...v } : v;
+      await saveDb();
+      return { wallet: w };
+    },
+  }),
 };
 
 const MAINTENANCE_OPEN = new Set(["GET /api/health", "GET /api/badge-key", "POST /api/login", "GET /api/me", "POST /api/logout", "GET /api/rooms", "POST /api/errors"]);
