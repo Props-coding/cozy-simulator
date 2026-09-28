@@ -757,6 +757,7 @@ const GAMES = {
           score++;
         }
       }
+      for (const c of input.clicks) Object.assign(input.pointer, c);
       input.clicks.length = 0;
       return false;
     };
@@ -766,9 +767,14 @@ const GAMES = {
       ctx.fillStyle = "#3a2e40"; // the old wallpaper's stripes
       for (let x = 0; x < W; x += 30) ctx.fillRect(x, 0, 12, 60);
       for (const f of furniture) {
-        ctx.fillStyle = "#3e3040";
+        shadow(ctx, f.x + f.w / 2, f.y + f.h + 2, f.w / 2 + 2);
+        ctx.fillStyle = "#1a141e";
+        ctx.fillRect(f.x - 1, f.y - 1, f.w + 2, f.h + 2);
+        ctx.fillStyle = "#4a3a4e";
         ctx.fillRect(f.x, f.y, f.w, f.h);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.fillRect(f.x, f.y + f.h * 0.6, f.w, f.h * 0.4);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
         ctx.fillRect(f.x, f.y, f.w, 2);
       }
       // The ghosts (only in the beam).
@@ -790,8 +796,17 @@ const GAMES = {
         ctx.fillStyle = g.jumpy ? "#e05a47" : "#2a2438";
         ctx.fillRect(g.x - 5, g.y - 8 + bob, 3, 4);
         ctx.fillRect(g.x + 2, g.y - 8 + bob, 3, 4);
-        ctx.fillStyle = "#f2c94c"; // the catch meter
+        // The meter: yellow fills to a catch; red (a jumpy one) fills to a
+        // fright, and says CLICK! while a click would catch it.
+        ctx.fillStyle = g.jumpy ? "#e05a47" : "#f2c94c";
         ctx.fillRect(g.x - 12, g.y - 26 + bob, 24 * Math.min(1, g.lit / (g.jumpy ? 0.7 : 0.9)), 3);
+        if (g.jumpy && g.lit > 0.35) {
+          ctx.fillStyle = "#ffd84a";
+          ctx.font = "800 11px 'Quicksand', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("CLICK!", g.x, g.y - 32 + bob);
+          ctx.textAlign = "left";
+        }
         ctx.globalAlpha = 1;
       }
       // Darkness everywhere but the beam.
@@ -835,6 +850,8 @@ const GAMES = {
         f.y += (f.vy + Math.cos(t * 0.8 + f.ph) * 10) * dt;
         if (f.x < 10 || f.x > W - 10) f.vx *= -1;
         if (f.y < 40 || f.y > H - 50) f.vy *= -1;
+        f.x = Math.max(10, Math.min(W - 10, f.x));
+        f.y = Math.max(40, Math.min(H - 50, f.y));
       }
       for (const c of input.clicks.splice(0)) {
         nets.push({ x: c.x, y: c.y, at: t });
@@ -907,7 +924,8 @@ const GAMES = {
       order = book[Math.floor(rng() * book.length)];
       pot = [];
       // The bins: what it needs, plus a few things it doesn't.
-      const decoys = [...new Set(all.flatMap((r) => r.ingredients))].filter((id) => !order.ingredients.includes(id));
+      const anyFish = order.ingredients.includes("fish");
+      const decoys = [...new Set(all.flatMap((r) => r.ingredients))].filter((id) => !order.ingredients.includes(id) && !(anyFish && id.startsWith("fish:")) && !(id === "fish" && order.ingredients.some((x) => x.startsWith("fish:"))));
       const pick = [...new Set(order.ingredients)];
       while (pick.length < 6 && decoys.length) pick.push(decoys.splice(Math.floor(rng() * decoys.length), 1)[0]);
       pick.sort(() => rng() - 0.5);
@@ -942,9 +960,12 @@ const GAMES = {
       ctx.fillStyle = "#e8d4b8";
       for (let x = 0; x < W; x += 40) ctx.fillRect(x, 0, 20, 180);
       // The order ticket.
+      ctx.fillStyle = "rgba(60, 40, 20, 0.15)";
+      ctx.fillRect(19, 36, 220, 140);
       ctx.fillStyle = "#fffdf6";
       ctx.fillRect(16, 32, 220, 140);
-      ctx.strokeStyle = "#d9c8a8";
+      ctx.strokeStyle = "#a8906a";
+      ctx.lineWidth = 1.5;
       ctx.strokeRect(16.5, 32.5, 219, 139);
       ctx.fillStyle = "#6a4a30";
       ctx.font = "800 15px 'Quicksand', sans-serif";
@@ -965,7 +986,7 @@ const GAMES = {
       });
       // The pot.
       const px = 340, py = 110;
-      shadow(ctx, px, py + 44, 50);
+      shadow(ctx, px, py + 30, 54);
       ctx.fillStyle = spill > 0 ? "#8a4a3a" : "#4a4a52";
       ctx.beginPath();
       ctx.ellipse(px, py + 10, 56, 34, 0, 0, Math.PI);
@@ -985,12 +1006,17 @@ const GAMES = {
       ctx.textAlign = "left";
       // The bins.
       for (const b of bins) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
-        ctx.fillRect(b.x + 2, b.y + 3, b.w, b.h);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+        ctx.fillRect(b.x + 2, b.y + 4, b.w, b.h);
         ctx.fillStyle = "#c9a27a";
         ctx.fillRect(b.x, b.y, b.w, b.h);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.fillStyle = "rgba(90, 60, 30, 0.25)"; // the bin's shaded lower half
+        ctx.fillRect(b.x, b.y + b.h * 0.6, b.w, b.h * 0.4);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
         ctx.fillRect(b.x, b.y, b.w, 2);
+        ctx.strokeStyle = "#8a6444";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(b.x + 0.75, b.y + 0.75, b.w - 1.5, b.h - 1.5);
         ctx.fillStyle = "#3a2a1c";
         ctx.font = "700 12px 'Quicksand', sans-serif";
         ctx.textAlign = "center";
@@ -1009,7 +1035,11 @@ const GAMES = {
     const input = reader(canvas);
     const me = { x: 40, y: H - 40, hurt: 0 };
     const ladder = { x: 40, y: H - 40 };
-    const crates = Array.from({ length: 14 }, () => ({ x: 80 + rng() * (W - 120), y: 50 + rng() * (H - 90), value: 1 + Math.floor(rng() * 3), open: false }));
+    const crates = [];
+    for (let tries = 0; crates.length < 14 && tries < 200; tries++) {
+      const c = { x: 80 + rng() * (W - 120), y: 50 + rng() * (H - 90), value: 1 + Math.floor(rng() * 3), open: false };
+      if (crates.every((o) => Math.abs(o.x - c.x) > 36 || Math.abs(o.y - c.y) > 32)) crates.push(c);
+    }
     const rats = Array.from({ length: 3 }, () => ({ x: 100 + rng() * (W - 140), y: 60 + rng() * (H - 100), a: rng() * 6, turn: 0 }));
     let score = 0, left = false, sparkle = [];
     const step = (dt, t) => {
@@ -1040,6 +1070,7 @@ const GAMES = {
         if (r.y < 40 || r.y > H - 16) r.a = -r.a;
         r.x = Math.max(20, Math.min(W - 20, r.x));
         r.y = Math.max(40, Math.min(H - 16, r.y));
+        if (dist(r, ladder) < 60) r.a = Math.atan2(r.y - ladder.y, r.x - ladder.x); // (rats keep away from the ladder)
         if (me.hurt <= 0 && dist(r, me) < 16) {
           score = Math.max(0, score - 2);
           me.hurt = 1.2;
@@ -1047,7 +1078,7 @@ const GAMES = {
       }
       sparkle = sparkle.filter((s) => t - s.at < 0.8);
       // (Back at the ladder after a few seconds: climb out early.)
-      if (t > 5 && dist(me, ladder) < 12 && crates.some((c) => c.open)) left = true;
+      if (t > 10 && dist(me, ladder) < 12 && crates.some((c) => c.open)) left = true;
       return left || crates.every((c) => c.open);
     };
     const draw = (ctx, t) => {
@@ -1077,7 +1108,13 @@ const GAMES = {
       }
       for (const r of rats) {
         shadow(ctx, r.x, r.y + 5, 8);
-        ball(ctx, r.x, r.y, 6, "#6a6a72");
+        ball(ctx, r.x, r.y, 7, "#b8b0b8");
+        ctx.strokeStyle = "#f4ecf4"; // a pale tail, to spot them in the dark
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(r.x - Math.cos(r.a) * 7, r.y - Math.sin(r.a) * 7);
+        ctx.lineTo(r.x - Math.cos(r.a) * 15, r.y - Math.sin(r.a) * 15 + Math.sin(t * 10) * 2);
+        ctx.stroke();
         ctx.fillStyle = "#e8a0a8";
         ctx.fillRect(r.x + Math.cos(r.a) * 6 - 1, r.y + Math.sin(r.a) * 6 - 1, 2, 2);
       }
@@ -1094,6 +1131,15 @@ const GAMES = {
       glow.addColorStop(1, "rgba(10, 6, 4, 0.7)");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
+      // The rats' eyes shine even in the dark, so you can see them coming.
+      for (const r of rats) {
+        ctx.fillStyle = "#ff8a9a";
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.arc(r.x + Math.cos(r.a) * 5 + Math.cos(r.a + Math.PI / 2) * side * 2.2, r.y + Math.sin(r.a) * 5 + Math.sin(r.a + Math.PI / 2) * side * 2.2, 1.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     };
     return loop(canvas, game, input, step, draw, () => score, done);
   },

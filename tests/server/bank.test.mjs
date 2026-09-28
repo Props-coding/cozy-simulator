@@ -300,11 +300,12 @@ test("mini games: a round's crumbs can't beat the clock, and there's a daily cap
 });
 
 test("Cellar Crawl: real finds come home, up to the day's limit", async () => {
+  await setSky({ offset: 0 }); // (so "today" below is the house server's today)
   const d = new Date();
   const today = d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
   await seed("Alice", { basket: {}, minis: { lootDay: today, looted: 5, best: {} } });
   const { data: s } = await bank("Alice", "miniStart", { game: "cellarCrawl" });
-  await new Promise((r) => setTimeout(r, 10_500));
+  await new Promise((r) => setTimeout(r, 30_500)); // (finds need a 30-second round)
   const end = await bank("Alice", "miniEnd", { id: s.result.id, score: 10 });
   assert.equal(end.status, 200);
   assert.equal(end.data.result.loot.length, 1, "10 points would be 2 finds, but only 1 is left of today's 6");

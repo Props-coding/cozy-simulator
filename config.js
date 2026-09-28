@@ -301,7 +301,7 @@ const CONFIG = {
       { id: "crumbRush", name: "Crumb Rush", color: "#e8b84a", seconds: 45, maxPerSecond: 3, base: 3, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "The kitchen floor is covered in crumbs. Grab them all before the robot vacuum does!", how: "WASD or arrow keys to move. Golden crumbs are worth three. Don't get vacuumed." },
       { id: "treasureDive", name: "Treasure Dive", color: "#3f8ab0", seconds: 60, maxPerSecond: 2, base: 3, crumbsPerPoint: 0.4, maxCrumbs: 15, blurb: "Dive the pond's deep end for coins and pearls. Mind the jellyfish, and come up for air.", how: "Space (or up) to swim up, left and right to steer. Bubbles refill your air." },
       { id: "scarecrow", name: "The Scarecrow", color: "#c9a45a", seconds: 60, maxPerSecond: 0.4, base: 0, crumbsPerPoint: 1, maxCrumbs: 15, blurb: "Sneak across the field to the scarecrow. Freeze when it turns around!", how: "Arrow keys or WASD to sneak. If it sees you move, back to the start." },
-      { id: "ghostHunt", name: "Ghost Hunt", color: "#b8a8d8", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.6, maxCrumbs: 15, blurb: "The old parlor is haunted. Hold your flashlight on a ghost to catch it, but watch out for the jumpy ones!", how: "Move the mouse to point your flashlight. Hold it on a ghost until it's caught. Red-eyed ghosts give you a fright." },
+      { id: "ghostHunt", name: "Ghost Hunt", color: "#b8a8d8", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.6, maxCrumbs: 15, blurb: "The old parlor is haunted. Hold your flashlight on a ghost to catch it, but watch out for the jumpy ones!", how: "Move the mouse to point your flashlight and hold it on a ghost to catch it. Red-eyed ghosts jump out if you light them too long: click them when they say CLICK!" },
       { id: "nightMeadow", name: "Night Meadow", color: "#6a7ab0", seconds: 45, maxPerSecond: 2, base: 3, crumbsPerPoint: 0.5, maxCrumbs: 15, blurb: "A warm summer night full of fireflies. Net as many as you can while they're lit. A golden moth is worth three!", how: "Click a firefly while it's glowing to net it. Dark ones slip through." },
       { id: "kitchenRush", name: "Kitchen Rush", color: "#e05a47", seconds: 60, maxPerSecond: 1.5, base: 3, crumbsPerPoint: 0.4, maxCrumbs: 15, blurb: "Orders are flying in for dishes from your own recipe book. Drop the right ingredients in the pot, fast!", how: "Click the ingredients each order needs (any order). A wrong one spills the pot." },
       { id: "cellarCrawl", name: "Cellar Crawl", color: "#8a6a4a", seconds: 60, maxPerSecond: 1, base: 2, crumbsPerPoint: 0.3, maxCrumbs: 15, blurb: "The cellar under the house is full of old crates. Find the treasure, dodge the rats, and bring real finds home.", how: "Arrow keys or WASD to walk. Open crates for treasure. Rats knock it out of your hands. Take the ladder up to leave early." },
@@ -309,7 +309,8 @@ const CONFIG = {
     // Cellar Crawl brings real things home: one find for every `every`
     // points (up to `most` a round and `perDay` a day), picked by the house
     // server from `finds` (a pantry food, a seed packet, worms, a lightbulb).
-    cellar: { every: 5, most: 3, perDay: 6, finds: ["food", "seed", "bait:worm", "night:lightbulb"] },
+    // (Only for a round of at least `after` seconds.)
+    cellar: { every: 5, most: 3, perDay: 6, after: 30, finds: ["food", "seed", "bait:worm", "night:lightbulb"] },
   },
 
   // --- The Arcade (Update 9) ---

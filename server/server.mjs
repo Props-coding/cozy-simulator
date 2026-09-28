@@ -1647,7 +1647,7 @@ const BANK = {
     if (!short) grant(w, "firstMinigame", ev);
     // Cellar Crawl: real finds for your basket (the house server picks them).
     const loot = [];
-    if (game.id === "cellarCrawl" && !short) {
+    if (game.id === "cellarCrawl" && seconds >= (cfg.cellar.after ?? 30)) {
       const c = cfg.cellar;
       if (w.minis.lootDay !== day) Object.assign(w.minis, { lootDay: day, looted: 0 });
       const n = Math.max(0, Math.min(c.most, Math.floor(score / c.every), c.perDay - w.minis.looted));
