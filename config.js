@@ -292,10 +292,11 @@ const CONFIG = {
   arcade: {
     // The cabinets. Tickets for a play: `ticketsPerPoint` of your score, up
     // to `maxTickets`. (The house server checks a play took real time: no
-    // score higher than `maxPerSecond` points a second, plus `base`.)
+    // score higher than `maxPerSecond` points a second, plus `base`, over
+    // at most `maxSeconds`.)
     games: [
-      { id: "snake", name: "Crumb Snake", ticketsPerPoint: 1, maxTickets: 40, maxPerSecond: 1.2, base: 3, how: "Arrow keys (or WASD) to steer. Eat the crumbs, don't bite your tail." },
-      { id: "moths", name: "Moth Catcher", ticketsPerPoint: 1, maxTickets: 40, maxPerSecond: 1.5, base: 3, how: "Left and right (or A and D) to move the jar. Catch the moths, let the leaves fall." },
+      { id: "snake", name: "Crumb Snake", ticketsPerPoint: 1, maxTickets: 40, maxPerSecond: 1.2, base: 3, maxSeconds: 300, how: "Arrow keys (or WASD) to steer. Eat the crumbs, don't bite your tail." },
+      { id: "moths", name: "Moth Catcher", ticketsPerPoint: 1, maxTickets: 40, maxPerSecond: 1.5, base: 3, maxSeconds: 46, how: "Left and right (or A and D) to move the jar. Catch the moths, let the leaves fall." },
     ],
     ticketsPerDay: 300, // the most tickets the cabinets pay in a day
     // Tickets into crumbs at the prize counter: `ticketsPerCrumb` tickets

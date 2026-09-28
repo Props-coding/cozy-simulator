@@ -1624,7 +1624,7 @@ const BANK = {
     if (!play || play.id !== b.id) throw new Oops(409, "That game isn't running.");
     w.arcade.play = null;
     const game = GAME.CONFIG.arcade.games.find((g) => g.id === play.game);
-    const seconds = Math.min(600, (Date.now() - play.at) / 1000);
+    const seconds = Math.min(game.maxSeconds ?? 300, (Date.now() - play.at) / 1000);
     const most = Math.floor(game.base + seconds * game.maxPerSecond);
     const score = Math.max(0, Math.min(most, Math.floor(Number(b.score) || 0)));
     const today = arcadeToday(w);
@@ -1664,6 +1664,7 @@ const BANK = {
     const prize = GAME.CONFIG.arcade.prizes.find((p) => p.id === b.id);
     if (!prize) throw new Oops(400, "That's not behind the counter.");
     if (prize.owned && w.owned.includes(prize.owned)) throw new Oops(409, "You already have that one.");
+    if (prize.decor && (w.home.owned[prize.decor] ?? 0) >= 99) throw new Oops(409, "That's plenty of those.");
     if (w.arcade.tickets < prize.tickets) throw new Oops(409, `That's ${prize.tickets} tickets, and you have ${w.arcade.tickets}.`);
     w.arcade.tickets -= prize.tickets;
     if (prize.owned) w.owned.push(prize.owned);

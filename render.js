@@ -422,7 +422,7 @@ function paintYard(ctx) {
     paintAlleyGround(ctx); // the back alley (render-alley.js)
     return;
   }
-  if (viewFloor >= 1 || viewFloor === GAMES_FLOOR) {
+  if (isInsideFloor(viewFloor)) {
     paintIndoorBackdrop(ctx);
     return;
   }
@@ -576,7 +576,7 @@ function measureHouseBounds() {
   // closeness (the same size as the view), with its tall walls in view.
   if (viewFloor === ALLEY_FLOOR) return alleyBounds();
   // Other indoor floors: fitted to all their rooms together.
-  if (viewFloor >= 1) {
+  if (isInsideFloor(viewFloor)) {
     const rects = ROOMS.filter((r) => floorOf(r.rect.y) === viewFloor).map((r) => r.rect);
     const x = Math.min(...rects.map((r) => r.x)), y = Math.min(...rects.map((r) => r.y));
     return fitBounds({ x, y, w: Math.max(...rects.map((r) => r.x + r.w)) - x, h: Math.max(...rects.map((r) => r.y + r.h)) - y }, 0.9);

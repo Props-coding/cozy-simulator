@@ -392,7 +392,7 @@ joinButton.addEventListener("click", async () => {
   startMail();
   startWeather(); // the hometown's real sky, outside and through the windows
   // The shared garden in the yard (beds kept on the house server).
-  initBus({ outside: () => floorOf(player.y) <= YARD_FLOOR });
+  initBus({ outside: () => isOutdoorFloor(floorOf(player.y)) });
   // Bus trips (travel.js): arriving puts you at the other stop.
   initTravel({
     arrive: (spot) => {
@@ -540,6 +540,8 @@ function spawnPoint(floor) {
   if (floor === YARD_FLOOR) return { ...YARD_SPAWN };
   if (floor === LAKE_FLOOR) return { ...LAKE_SPAWN };
   if (floor === ALLEY_FLOOR) return { ...ALLEY_SPAWN };
+  if (floor === GAMES_FLOOR) return { x: 8.7, y: GAMES + 1.2 };
+  if (floor < 0) return { ...YARD_SPAWN }; // (anywhere else outside: the yard)
   return { x: 8.7, y: [0, BUSINESS, SUITE][Math.min(floor, 2)] + 1.2 };
 }
 

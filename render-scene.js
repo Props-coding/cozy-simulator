@@ -579,7 +579,7 @@ function lawnAreas() {
   const t = WALL_THICKNESS, base = viewFloor * UPSTAIRS;
   // In the yard, everything is outside (the porch roof aside).
   if (isOutdoorFloor(viewFloor)) return [{ x: -t - 2, y: base + houseTopY - 2, w: HOUSE_WIDTH + 2 * t + 4, h: 20 }];
-  if (viewFloor >= 1) return []; // (indoors, rain only shows through windows)
+  if (isInsideFloor(viewFloor)) return []; // (indoors, rain only shows through windows)
   const taken = ROOMS.filter((r) => r.north && floorOf(r.rect.y) === viewFloor)
     .map((r) => [r.rect.x - t, r.rect.x + r.rect.w + t])
     .sort((a, b) => a[0] - b[0]);

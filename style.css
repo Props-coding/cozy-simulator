@@ -5763,3 +5763,9 @@ canvas.item-picture {
   font-size: 0.95em;
   color: #4a3a5a;
 }
+.arcade-scores {
+  margin-top: 6px;
+}
+.arcade-scores .tv-small {
+  margin: 0;
+}

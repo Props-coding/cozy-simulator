@@ -42,8 +42,10 @@ export function openCabinet(f) {
     const start = make("button", "warm-button", "Start");
     start.type = "button";
     const board = make("ol", "arcade-board");
-    row.append(start, make("span", "tv-small", "High scores"));
-    el.append(top, screen, row, board);
+    const scores = make("div", "arcade-scores");
+    scores.append(make("p", "tv-small", "High scores"), board);
+    row.append(start);
+    el.append(top, screen, row, scores);
     showBoard(board, game.id);
     drawAttract(screen, game);
     start.addEventListener("click", () => {
@@ -78,7 +80,8 @@ async function showBoard(list, id, fresh = null) {
   const boards = fresh ? { [id]: fresh } : (await serverApi("GET", "/api/arcade/scores").catch(() => null))?.boards ?? {};
   list.textContent = "";
   const rows = boards[id] ?? [];
-  if (!rows.length) list.appendChild(make("p", "tv-small", "No scores yet. Be the first!"));
+  list.hidden = !rows.length;
+  list.previousElementSibling.textContent = rows.length ? "High scores" : "High scores: none yet. Be the first!";
   for (const r of rows.slice(0, 5)) list.appendChild(make("li", "", `${r.name}  ${r.score}`));
 }
 
@@ -87,6 +90,7 @@ async function showBoard(list, id, fresh = null) {
 async function play(game, canvas, done) {
   running?.stop();
   const started = await bank("arcadeStart", { game: game.id });
+  if (!canvas.isConnected || canvas.closest("[hidden]")) return; // (closed while we waited)
   canvas.focus();
   const finish = async (score) => {
     running = null;
@@ -246,7 +250,7 @@ function mothCatcher(canvas, finish) {
     ctx.fillRect(jar - 20, 202, 40, 5);
     ctx.fillStyle = "#f2d45c";
     ctx.font = "700 12px monospace";
-    ctx.fillText(`SCORE ${score}   ${"♥".repeat(lives)}   ${Math.max(0, Math.ceil(45 - (now - began) / 1000))}s`, 8, 16);
+    ctx.fillText(`SCORE ${score}   LIVES ${lives}   ${Math.max(0, Math.ceil(45 - (now - began) / 1000))}s`, 8, 16);
   };
   const loop = (now) => {
     if (!alive) return;

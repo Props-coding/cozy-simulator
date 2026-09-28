@@ -157,6 +157,9 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.beginPath();
     ctx.arc(cx, cy, 13, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = "rgba(60, 70, 80, 0.6)"; // the globe's rim
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
     const colors = ["#e05a47", "#f2c94c", "#6fb86a", "#3f8ab0", "#8a6ab0", "#e89ab8"];
     for (let i = 0; i < 9; i++) {
       const a = i * 2.4, r = 3 + (i % 3) * 3;
@@ -180,12 +183,33 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillRect(cx - 3, stand.face.y + 13, 6, 4);
   },
 
-  // The prize counter: a long glass case of prizes, with a wall of plushies
-  // above (drawn on the counter's back) and a ticket sign.
+  // The prize counter: a long glass case of prizes, plushies lined up on
+  // top, and a ticket sign.
   prizeCounter(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#6e4a8a");
     const { x, y, w } = c.face;
+    // Wood-grain panels on the front, and a lit edge.
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    for (let px = x + w / 4; px < x + w - 2; px += w / 4) ctx.fillRect(px, y + 17, 1, 5);
+    ctx.fillStyle = "rgba(255, 235, 255, 0.25)";
+    ctx.fillRect(x, y, w, 1.2);
+    // Plushies lined up along the top of the counter.
+    const pals = ["#e89ab8", "#6fb86a", "#8a8a92", "#c9a27a", "#f2c94c"];
+    for (let i = 0; i < 5; i++) {
+      const px = c.top.x + 12 + i * ((c.top.w - 24) / 4), py = c.top.y + c.top.h / 2;
+      ctx.fillStyle = shadeColor(pals[i], -60);
+      ctx.beginPath();
+      ctx.arc(px, py - 3, 5.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = pals[i];
+      ctx.beginPath();
+      ctx.arc(px, py - 3.4, 4.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(40, 25, 20, 0.6)";
+      ctx.fillRect(px - 2, py - 4.5, 1, 1);
+      ctx.fillRect(px + 1, py - 4.5, 1, 1);
+    }
     ctx.fillStyle = "rgba(200, 225, 240, 0.35)"; // the glass front
     ctx.fillRect(x + 3, y + 3, w - 6, 13);
     const colors = ["#e89ab8", "#6fb86a", "#f2c94c", "#8fd0f0", "#c9a27a", "#e05a47"];
@@ -273,6 +297,10 @@ function drawPlush(ctx, f, color, face) {
   const b = toScreen(f.x + f.w / 2, f.y + f.h);
   const x = b.x, y = b.y;
   const soft = (cx, cy, rx, ry, c) => {
+    ctx.fillStyle = shadeColor(c, -60); // a soft darker outline
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 0.4, rx + 1.1, ry + 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
     const g = ctx.createRadialGradient(cx - rx * 0.3, cy - ry * 0.4, 1, cx, cy, Math.max(rx, ry));
     g.addColorStop(0, shadeColor(c, 25));
     g.addColorStop(1, shadeColor(c, -20));
@@ -281,10 +309,12 @@ function drawPlush(ctx, f, color, face) {
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.fill();
   };
+  for (const dx of [-5, 5]) soft(x + dx, y - 25, 2.8, 2.8, color); // ears
   soft(x, y - 7, 7.5, 7, color); // body
   for (const dx of [-7, 7]) soft(x + dx, y - 8, 2.5, 3.5, color); // arms
-  for (const dx of [-5, 5]) soft(x + dx, y - 25, 2.8, 2.8, color); // ears
   soft(x, y - 19, 7, 6.5, color); // head
+  ctx.fillStyle = "rgba(0, 0, 0, 0.12)"; // a little fuzzy texture
+  for (let i = 0; i < 6; i++) ctx.fillRect(x - 5 + (i * 2.1) % 10, y - 11 + (i % 3) * 3, 1, 1);
   ctx.strokeStyle = "rgba(255, 255, 255, 0.35)"; // a stitched seam
   ctx.setLineDash([1.5, 1.5]);
   ctx.lineWidth = 0.8;

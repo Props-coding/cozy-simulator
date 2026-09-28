@@ -91,6 +91,11 @@ const GAMES = GAMES_FLOOR * UPSTAIRS + 3; // the corridor's top edge (like BUSIN
 function isOutdoorFloor(floor) {
   return floor <= YARD_FLOOR && floor !== GAMES_FLOOR;
 }
+// Indoor floors with no garden around them (the floors upstairs, and the
+// Games floor): fitted to their rooms, no weather but through windows.
+function isInsideFloor(floor) {
+  return floor >= 1 || floor === GAMES_FLOOR;
+}
 
 // Open floor areas, in grid units, used to figure out which room the
 // player is standing in. Order matters: checked top to bottom, first
@@ -450,8 +455,8 @@ const BASE_FURNITURE = [
   // The corridor: a runner, lamps, plants. Its north wall is kept clear for
   // the mini games' doors (Update 10).
   { kind: "rug", x: 1.5, y: GAMES + 0.95, w: 21, h: 0.95, color: "#4a4a7a", solid: false },
-  { kind: "palm", x: 0.2, y: GAMES + 2.05, w: 0.6, h: 0.6 },
-  { kind: "palm", x: 23.2, y: GAMES + 2.05, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 0.2, y: GAMES + 0.1, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 23.2, y: GAMES + 0.1, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: GAMES + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 3, solid: false },
   { kind: "bench", x: 18.3, y: GAMES + 4.2, w: 1.5, h: 0.5 },
   { kind: "snakePlant", x: 23.2, y: GAMES + 5.8, w: 0.6, h: 0.6 },
