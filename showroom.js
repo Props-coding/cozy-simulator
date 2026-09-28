@@ -1,18 +1,17 @@
 // The furniture showroom (admin panel, Debug tab): every object the house
 // can draw (furniture, decor, trees and bushes, benches, signs, the
 // residents' things...), each numbered and named, so it's easy to say
-// "number 42 needs work". Buttons turn them all: the front, and turned to
-// the left or right for pieces that have a turned look (the ones you can
-// rotate in your room). Drawn with their real settings from the house
+// "number 42 needs work". Two buttons turn them all a quarter turn at a
+// time (-90 and +90 degrees): the front, turned right, the back, turned
+// left. Pieces without a look for that direction say so, which is the
+// list of what still needs drawing. Drawn with their real settings from the house
 // when there are some, like the gallery test (tests/gallery.spec.js).
 import { openExtrasPanel } from "./extras.js";
 
 const panel = document.getElementById("extras-panel");
-const VIEWS = [
-  ["front", "Front"],
-  ["left", "Turned left"],
-  ["right", "Turned right"],
-];
+// The four directions, a quarter turn apart (+90 degrees goes down the list).
+const VIEWS = ["front", "right", "back", "left"];
+const VIEW_NAMES = { front: "the front", right: "turned right", back: "the back", left: "turned left" };
 const CELL = 150;
 
 // Every kind, in a fixed order (so the numbers stay put): the turned
@@ -52,8 +51,8 @@ function drawCell(canvas, kind, view) {
   ctx.fillStyle = "#e4dccb";
   ctx.fillRect(0, 0, CELL, CELL);
   let f = sampleOf(kind);
-  const turned = view !== "front";
-  if (turned) {
+  if (view === "back") return false; // (no piece has a back look yet)
+  if (view !== "front") {
     if (!FURNITURE_DRAWERS[kind + "Side"]) return false;
     f = { ...f, kind: kind + "Side", facing: view, w: f.h ?? f.w, h: f.w };
   }
@@ -76,19 +75,23 @@ function drawCell(canvas, kind, view) {
 }
 
 export function openShowroom() {
-  let view = "front";
+  let turn = 0; // (0 the front, 1 turned right, 2 the back, 3 turned left)
   let filter = "";
   panel.classList.add("showroom-open");
   openExtrasPanel("Furniture showroom", (el) => {
     const bar = document.createElement("div");
     bar.className = "showroom-bar";
-    const views = VIEWS.map(([id, label]) => {
+    const facing = document.createElement("strong");
+    const views = [
+      ["Turn -90°", -1],
+      ["Turn +90°", 1],
+    ].map(([label, step]) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "soft-button";
       b.textContent = label;
       b.addEventListener("click", () => {
-        view = id;
+        turn = (turn + step + 4) % 4;
         draw();
       });
       return b;
@@ -102,13 +105,14 @@ export function openShowroom() {
     });
     const count = document.createElement("span");
     count.className = "tv-small";
-    bar.append(...views, search, count);
+    bar.append(...views, facing, search, count);
     const grid = document.createElement("div");
     grid.className = "showroom-grid";
     el.append(bar, grid);
     const all = kinds();
     const draw = () => {
-      views.forEach((b, i) => b.classList.toggle("active", VIEWS[i][0] === view));
+      const view = VIEWS[turn];
+      facing.textContent = `Showing ${VIEW_NAMES[view]}`;
       grid.textContent = "";
       let shown = 0, turnable = 0;
       all.forEach((kind, i) => {
@@ -125,7 +129,7 @@ export function openShowroom() {
           ctx.fillStyle = "#8a7a6a";
           ctx.font = "600 12px 'Quicksand', sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("No turned look", CELL / 2, CELL / 2);
+          ctx.fillText(view === "back" ? "No back look" : "No turned look", CELL / 2, CELL / 2);
         } else if (view !== "front") turnable++;
         const label = document.createElement("figcaption");
         const num = document.createElement("b");
@@ -136,7 +140,7 @@ export function openShowroom() {
         grid.appendChild(cell);
         shown++;
       });
-      count.textContent = view === "front" ? `${shown} of ${all.length} pieces` : `${turnable} of ${shown} have a turned look`;
+      count.textContent = view === "front" ? `${shown} of ${all.length} pieces` : `${turnable} of ${shown} have a look this way`;
     };
     draw();
     search.focus();
