@@ -39,6 +39,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: The house loads and every floor draws
         run: npm test
+        # (GitHub's test machines have no graphics chip, and the soft
+        # outlines take over a minute a frame without one, so every test
+        # timed out. These checks look for errors, not looks, so they run
+        # with the outlines off; the pictures check keeps them on.)
+        env:
+          NO_OUTLINES: "1"
       - name: Keep the test report if something failed
         if: failure()
         uses: actions/upload-artifact@v7
