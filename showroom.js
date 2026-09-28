@@ -6,6 +6,10 @@
 // left. Pieces without a look for that direction say so, which is the
 // list of what still needs drawing. Drawn with their real settings from the house
 // when there are some, like the gallery test (tests/gallery.spec.js).
+//
+// Also: day or night, any season, click a piece for a big view, and
+// "Needs work" marks with a note, kept on this computer, that copy out as
+// one list to paste to Claude.
 import { openExtrasPanel } from "./extras.js";
 
 const panel = document.getElementById("extras-panel");
@@ -13,6 +17,25 @@ const panel = document.getElementById("extras-panel");
 const VIEWS = ["front", "right", "back", "left"];
 const VIEW_NAMES = { front: "the front", right: "turned right", back: "the back", left: "turned left" };
 const CELL = 150;
+const ZOOM = 3; // (how much bigger the big view is)
+const SEASON_CHOICES = [null, ...SEASONS]; // (null: the real season)
+
+// The "Needs work" marks: { kind: "the note" }, kept in this browser.
+const MARKS_KEY = "porchlight.showroomMarks";
+function loadMarks() {
+  try {
+    return JSON.parse(localStorage.getItem(MARKS_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+}
+function saveMarks(marks) {
+  try {
+    localStorage.setItem(MARKS_KEY, JSON.stringify(marks));
+  } catch {
+    // (Storage blocked: the marks last until the page closes.)
+  }
+}
 
 // Every kind, in alphabetical order of the names you see (the numbers
 // follow that order). The turned versions ("wardrobeSide") are views of
@@ -46,57 +69,93 @@ function sampleOf(kind) {
   return f;
 }
 
-// Draws one piece into a cell, in a view. Returns false if it has no
-// turned look (for the left and right views).
-function drawCell(canvas, kind, view) {
+// Draws one piece into a canvas, in a view, by day or night, in a season
+// (`look`), `scale` times bigger. Returns false if it has no look that way.
+function drawCell(canvas, kind, view, look, scale = 1) {
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#e4dccb";
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.fillStyle = look.night ? "#6a7090" : "#e4dccb";
   ctx.fillRect(0, 0, CELL, CELL);
   let f = sampleOf(kind);
-  if (view === "back") return false; // (no piece has a back look yet)
-  if (view !== "front") {
-    if (!FURNITURE_DRAWERS[kind + "Side"]) return false;
-    f = { ...f, kind: kind + "Side", facing: view, w: f.h ?? f.w, h: f.w };
+  const turned = view === "left" || view === "right";
+  if (view === "back" || (turned && !FURNITURE_DRAWERS[kind + "Side"])) {
+    ctx.restore();
+    return false; // (no piece has a back look yet)
   }
+  if (turned) f = { ...f, kind: kind + "Side", facing: view, w: f.h ?? f.w, h: f.w };
   const foot = toScreen(f.x + f.w / 2, f.y + (f.h ?? 0.6));
-  const was = viewFloor;
-  ctx.save();
+  const toPiece = () => ctx.translate(CELL / 2 - foot.x, CELL - 22 - foot.y);
+  // (The house's own settings, swapped in just while this one draws.)
+  const was = { floor: viewFloor, night: OUTDOORS.night, season: seasonPreview };
   ctx.beginPath();
   ctx.rect(0, 0, CELL, CELL);
   ctx.clip();
-  ctx.translate(CELL / 2 - foot.x, CELL - 22 - foot.y);
   try {
     viewFloor = floorOf(f.y);
+    OUTDOORS.night = look.night;
+    seasonPreview = look.season;
+    ctx.save();
+    toPiece();
     drawOutlined(ctx, f);
+    ctx.restore();
+    // Night: the dark over it, then its own light (a lamp, the campfire).
+    if (look.night) {
+      ctx.fillStyle = "rgba(20, 28, 60, 0.3)";
+      ctx.fillRect(0, 0, CELL, CELL);
+      const glow = f.glow?.(f);
+      if (glow?.[2]) {
+        const [gx, gy, r, strength] = glow;
+        toPiece();
+        const p = toScreen(gx, gy);
+        const light = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        light.addColorStop(0, `rgba(255, 185, 95, ${0.55 * strength})`);
+        light.addColorStop(1, "rgba(255, 185, 95, 0)");
+        ctx.fillStyle = light;
+        ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+      }
+    }
   } catch {
     // (A piece that can't draw here shows as an empty cell.)
   }
-  viewFloor = was;
+  viewFloor = was.floor;
+  OUTDOORS.night = was.night;
+  seasonPreview = was.season;
   ctx.restore();
   return true;
+}
+
+// A small button for the bars.
+function button(label, run) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "soft-button";
+  b.textContent = label;
+  b.addEventListener("click", run);
+  return b;
 }
 
 export function openShowroom() {
   let turn = 0; // (0 the front, 1 turned right, 2 the back, 3 turned left)
   let filter = "";
+  let onlyMarked = false;
+  const look = { night: false, season: null };
+  const marks = loadMarks();
   panel.classList.add("showroom-open");
   openExtrasPanel("Furniture showroom", (el) => {
+    const all = kinds();
     const bar = document.createElement("div");
     bar.className = "showroom-bar";
     const facing = document.createElement("strong");
-    const views = [
-      ["Turn -90°", -1],
-      ["Turn +90°", 1],
-    ].map(([label, step]) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "soft-button";
-      b.textContent = label;
-      b.addEventListener("click", () => {
-        turn = (turn + step + 4) % 4;
-        draw();
-      });
-      return b;
+    const time = button("By day", () => {
+      look.night = !look.night;
+      time.textContent = look.night ? "By night" : "By day";
+      draw();
+    });
+    const season = button("Season: now", () => {
+      look.season = SEASON_CHOICES[(SEASON_CHOICES.indexOf(look.season) + 1) % SEASON_CHOICES.length];
+      season.textContent = `Season: ${look.season ?? "now"}`;
+      draw();
     });
     const search = document.createElement("input");
     search.type = "search";
@@ -107,11 +166,64 @@ export function openShowroom() {
     });
     const count = document.createElement("span");
     count.className = "tv-small";
-    bar.append(...views, facing, search, count);
+    bar.append(
+      button("Turn -90°", () => ((turn = (turn + 3) % 4), draw())),
+      button("Turn +90°", () => ((turn = (turn + 1) % 4), draw())),
+      facing, time, season, search, count,
+    );
+
+    // The marks: show only them, copy them out as one list, or clear them.
+    const markBar = document.createElement("div");
+    markBar.className = "showroom-bar";
+    const markCount = document.createElement("span");
+    markCount.className = "tv-small";
+    const countMarks = () => (markCount.textContent = `${Object.keys(marks).length} marked "Needs work"`);
+    const only = button("Show only marked", () => {
+      onlyMarked = !onlyMarked;
+      only.classList.toggle("active", onlyMarked);
+      draw();
+    });
+    const copy = button("Copy the list", async () => {
+      const list = all
+        .map((kind, i) => (kind in marks ? `${i + 1}. ${nameOf(kind)} (${kind})${marks[kind] ? `: ${marks[kind]}` : ""}` : null))
+        .filter(Boolean)
+        .join("\n");
+      try {
+        await navigator.clipboard.writeText(list || "(nothing marked)");
+        copy.textContent = "Copied! Paste it to Claude";
+      } catch {
+        copy.textContent = "Couldn't copy";
+      }
+      setTimeout(() => (copy.textContent = "Copy the list"), 2000);
+    });
+    const clear = button("Clear marks", () => {
+      if (!Object.keys(marks).length || !confirm("Clear every Needs work mark and note?")) return;
+      for (const k in marks) delete marks[k];
+      saveMarks(marks);
+      draw();
+    });
+    markBar.append(markCount, only, copy, clear);
+
     const grid = document.createElement("div");
     grid.className = "showroom-grid";
-    el.append(bar, grid);
-    const all = kinds();
+    // The big view of one piece (click a piece; click the big view to close).
+    const big = document.createElement("div");
+    big.className = "showroom-big";
+    big.hidden = true;
+    big.addEventListener("click", () => (big.hidden = true));
+    el.append(bar, markBar, grid, big);
+
+    const zoom = (kind, n, view) => {
+      big.textContent = "";
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = CELL * ZOOM;
+      drawCell(canvas, kind, view, look, ZOOM);
+      const label = document.createElement("p");
+      label.textContent = `${n}. ${nameOf(kind)} (click to close)`;
+      big.append(canvas, label);
+      big.hidden = false;
+    };
+
     const draw = () => {
       const view = VIEWS[turn];
       facing.textContent = `Showing ${VIEW_NAMES[view]}`;
@@ -119,30 +231,61 @@ export function openShowroom() {
       let shown = 0, turnable = 0;
       all.forEach((kind, i) => {
         const n = i + 1, name = nameOf(kind);
+        if (onlyMarked && !(kind in marks)) return;
         if (filter && !`${n} ${name} ${kind}`.toLowerCase().includes(filter)) return;
         const cell = document.createElement("figure");
         cell.className = "showroom-cell";
+        cell.classList.toggle("marked", kind in marks);
         const canvas = document.createElement("canvas");
         canvas.width = canvas.height = CELL;
-        const drew = drawCell(canvas, kind, view);
-        if (!drew) {
+        if (!drawCell(canvas, kind, view, look)) {
           cell.classList.add("no-turn");
           const ctx = canvas.getContext("2d");
-          ctx.fillStyle = "#8a7a6a";
+          ctx.fillStyle = look.night ? "#c8c0d8" : "#8a7a6a";
           ctx.font = "600 12px 'Quicksand', sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(view === "back" ? "No back look" : "No turned look", CELL / 2, CELL / 2);
-        } else if (view !== "front") turnable++;
+        } else {
+          if (view !== "front") turnable++;
+          canvas.title = "Click for a big view";
+          canvas.addEventListener("click", () => zoom(kind, n, view));
+        }
         const label = document.createElement("figcaption");
         const num = document.createElement("b");
         num.textContent = `${n}. `;
         label.append(num, name);
         label.title = kind;
-        cell.append(canvas, label);
+        // Needs work: a tick box, and a note once it's ticked.
+        const mark = document.createElement("label");
+        mark.className = "showroom-mark";
+        const tick = document.createElement("input");
+        tick.type = "checkbox";
+        tick.checked = kind in marks;
+        mark.append(tick, " Needs work");
+        const note = document.createElement("input");
+        note.type = "text";
+        note.placeholder = "What's wrong? (optional)";
+        note.value = marks[kind] ?? "";
+        note.hidden = !tick.checked;
+        tick.addEventListener("change", () => {
+          if (tick.checked) marks[kind] = note.value;
+          else delete marks[kind];
+          note.hidden = !tick.checked;
+          cell.classList.toggle("marked", tick.checked);
+          saveMarks(marks);
+          countMarks();
+          if (tick.checked) note.focus();
+        });
+        note.addEventListener("input", () => {
+          marks[kind] = note.value;
+          saveMarks(marks);
+        });
+        cell.append(canvas, label, mark, note);
         grid.appendChild(cell);
         shown++;
       });
       count.textContent = view === "front" ? `${shown} of ${all.length} pieces` : `${turnable} of ${shown} have a look this way`;
+      countMarks();
     };
     draw();
     search.focus();

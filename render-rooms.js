@@ -1086,18 +1086,138 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // A wooden bench with two plump cushions and a folded throw.
   bench(ctx, f) {
+    // A cushioned wooden bench: turned legs with the floor showing
+    // between them, a spindle back with round-topped posts, one long
+    // tufted sage cushion, a mustard pillow leaning in one corner and a
+    // knit throw folded over the other end. Lit from above: tops lighter,
+    // undersides darker.
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const b = drawBlock(ctx, f.x, f.y, f.w, f.h, 18, WOOD);
-    const cw = b.top.w / 2 - 8;
-    for (const [i, color] of [[0, "#6f8a6a"], [1, "#c98f3c"]]) {
-      roundRectPath(ctx, b.top.x + 5 + i * (cw + 6), b.top.y - 3, cw, b.top.h, 5);
-      ctx.fillStyle = color;
+    const a = toScreen(f.x, f.y), w = f.w * TILE, d = f.h * TILE;
+    const x0 = a.x + 2, x1 = a.x + w - 2, yb = a.y + d; // (its left, right and front-floor line)
+    const seat = 17; // (how high the seat is)
+    const top = a.y - seat, front = yb - seat; // (the seat's back and front edge, on screen)
+    const wood = (x, y, ww, hh, base) => {
+      const g = ctx.createLinearGradient(0, y, 0, y + hh);
+      g.addColorStop(0, shadeColor(base, 22));
+      g.addColorStop(1, shadeColor(base, -18));
+      ctx.fillStyle = g;
+      roundRectPath(ctx, x, y, ww, hh, Math.min(2, ww / 2, hh / 2));
       ctx.fill();
-      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
-      ctx.fillRect(b.top.x + 9 + i * (cw + 6), b.top.y - 1, cw - 8, 2);
+    };
+
+    // The back: a top rail on two posts with round knobs, spindles between.
+    const railY = top - 17;
+    for (let i = 1; i < 8; i++) wood(x0 + ((x1 - x0) * i) / 8 - 1.5, railY + 4, 3, 15, WOOD);
+    wood(x0 + 2, railY, x1 - x0 - 4, 5, WOOD);
+    ctx.fillStyle = "rgba(255, 240, 210, 0.25)";
+    ctx.fillRect(x0 + 4, railY + 0.5, x1 - x0 - 8, 1.2);
+    for (const px of [x0, x1 - 5]) {
+      wood(px, railY - 2, 5, seat + 19, WOOD_DARK);
+      ctx.fillStyle = shadeColor(WOOD, 12);
+      ctx.beginPath();
+      ctx.arc(px + 2.5, railY - 3.5, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 240, 210, 0.45)";
+      ctx.beginPath();
+      ctx.arc(px + 1.6, railY - 4.6, 1.2, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.fillStyle = "#b5603c"; // folded throw hanging over the front
-    ctx.fillRect(b.face.x + b.face.w - 22, b.face.y - 2, 14, b.face.h - 2);
+
+    // Legs (front two and a middle one), turned: a thin waist and a foot.
+    for (const lx of [x0 + 3, (x0 + x1) / 2 - 2, x1 - 7]) {
+      wood(lx, front + 4, 4, seat - 4, WOOD_DARK);
+      ctx.fillStyle = shadeColor(WOOD_DARK, -15);
+      ctx.fillRect(lx - 0.5, yb - 3, 5, 3);
+      ctx.fillStyle = "rgba(255, 240, 210, 0.2)";
+      ctx.fillRect(lx + 1, front + 6, 1, seat - 9);
+    }
+    // The seat frame: a wooden apron along the front, with its grain.
+    wood(x0, front, x1 - x0, 6, WOOD);
+    ctx.fillStyle = "rgba(60, 35, 15, 0.25)";
+    for (const gx of [0.18, 0.46, 0.71]) ctx.fillRect(x0 + (x1 - x0) * gx, front + 2.5, 9, 0.8);
+    // A stretcher between the legs, low down.
+    ctx.fillStyle = shadeColor(WOOD_DARK, -8);
+    ctx.fillRect(x0 + 5, yb - 7, x1 - x0 - 10, 2);
+
+    // The cushion: one long sage pad, three tufted sections, a piped edge.
+    const cy = top + 1, ch = front - top + 1;
+    const pad = ctx.createLinearGradient(0, cy, 0, cy + ch);
+    pad.addColorStop(0, "#9bbba6");
+    pad.addColorStop(1, "#6d9280");
+    ctx.fillStyle = pad;
+    roundRectPath(ctx, x0 + 1, cy, x1 - x0 - 2, ch, 5);
+    ctx.fill();
+    ctx.fillStyle = "#5c7f6d"; // (its front edge, in shade)
+    roundRectPath(ctx, x0 + 1, front - 2, x1 - x0 - 2, 4, 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(50, 80, 65, 0.45)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 3; i++) {
+      const sx = x0 + ((x1 - x0) * i) / 3;
+      ctx.beginPath();
+      ctx.moveTo(sx, cy + 2);
+      ctx.lineTo(sx, front - 2);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 3; i++) {
+      const bx = x0 + ((x1 - x0) * (i + 0.5)) / 3, by = (cy + front) / 2 - 1;
+      ctx.fillStyle = "rgba(40, 70, 55, 0.55)";
+      ctx.beginPath();
+      ctx.arc(bx, by, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.22)"; // (the soft puff around each button)
+      ctx.beginPath();
+      ctx.ellipse(bx - 4, by - 3, 5, 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // (A little woven texture on the fabric.)
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    for (let i = 0; i < 18; i++) ctx.fillRect(x0 + 4 + ((i * 37) % (x1 - x0 - 8)), cy + 2 + ((i * 11) % Math.max(1, ch - 5)), 2, 1);
+
+    // A mustard pillow leaning against the back, on the left.
+    const px = x0 + 5, py = top - 10;
+    const pg = ctx.createLinearGradient(0, py, 0, py + 16);
+    pg.addColorStop(0, "#e6b25a");
+    pg.addColorStop(1, "#b9832f");
+    ctx.fillStyle = pg;
+    ctx.beginPath();
+    ctx.moveTo(px, py + 2);
+    ctx.quadraticCurveTo(px + 9, py - 1, px + 18, py + 2);
+    ctx.quadraticCurveTo(px + 20, py + 9, px + 18, py + 16);
+    ctx.quadraticCurveTo(px + 9, py + 18, px, py + 16);
+    ctx.quadraticCurveTo(px - 2, py + 9, px, py + 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(120, 80, 20, 0.5)";
+    ctx.setLineDash([1.5, 1.5]);
+    ctx.strokeRect(px + 3.5, py + 4, 11, 9);
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(255, 245, 220, 0.35)";
+    ctx.fillRect(px + 4, py + 2, 8, 1.5);
+
+    // A rust knit throw folded over the right end, hanging down the front.
+    const tx = x1 - 22, tw = 15;
+    const tg = ctx.createLinearGradient(0, cy, 0, front + 12);
+    tg.addColorStop(0, "#c9714a");
+    tg.addColorStop(1, "#9a4f30");
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.moveTo(tx, cy + 3);
+    ctx.lineTo(tx + tw, cy + 3);
+    ctx.lineTo(tx + tw + 1, front + 11);
+    ctx.lineTo(tx - 1, front + 11);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 220, 190, 0.3)"; // (knit ribs)
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(tx + (tw * i) / 4, cy + 4);
+      ctx.lineTo(tx + (tw * i) / 4, front + 10);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(60, 25, 10, 0.3)"; // (the fold over the cushion's edge)
+    ctx.fillRect(tx - 1, front - 2, tw + 2, 2);
+    ctx.fillStyle = "#e7c9a4"; // (fringe)
+    for (let i = 0; i < 6; i++) ctx.fillRect(tx + i * 3, front + 11, 1.2, 3);
   },
 
   // A tall pot holding two umbrellas, handles poking out the top.

@@ -5854,3 +5854,50 @@ canvas.item-picture {
 .showroom-cell.no-turn {
   opacity: 0.55;
 }
+.showroom-cell canvas {
+  cursor: zoom-in;
+}
+.showroom-cell.marked {
+  border-color: #e05a47;
+  background: #fff3ef;
+}
+.showroom-mark {
+  display: block;
+  font-size: 0.8em;
+  color: #7a5a4a;
+  cursor: pointer;
+}
+.showroom-cell input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 3px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  border: 2px solid #efcfc4;
+  font-family: inherit;
+  font-size: 0.8em;
+}
+/* The big view of one piece, over the grid. */
+.showroom-big {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(60, 45, 35, 0.55);
+  cursor: zoom-out;
+  z-index: 50;
+}
+.showroom-big[hidden] {
+  display: none;
+}
+.showroom-big canvas {
+  width: min(450px, 80%);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+.showroom-big p {
+  color: #fffdf8;
+  font-weight: 700;
+}
