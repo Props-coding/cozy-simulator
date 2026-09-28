@@ -29,6 +29,7 @@ import { ripenGardenPreview } from "./garden.js";
 import { addFishingXp } from "./fishing.js";
 import { refreshMarket } from "./market.js";
 import { itemInfo } from "./basket.js";
+import { openShowroom } from "./showroom.js";
 
 const button = document.getElementById("admin-button");
 const panel = document.getElementById("admin-panel");
@@ -469,6 +470,8 @@ function debugTab() {
     row("Collision", [toggle("solids", "Walls and furniture you bump into")]),
     row("Rooms", [toggle("rooms", "Room edges and names")]),
     row("Grid", [toggle("grid", "Grid spots and object names (for placing things)")]),
+    section("Art"),
+    row("Showroom", [btn("Open the furniture showroom", () => (setOpen(false), openShowroom()))], "Every object the house draws, numbered and named, from the front and turned left or right."),
   ];
 }
 

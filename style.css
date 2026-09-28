@@ -5803,3 +5803,54 @@ canvas.item-picture {
   font-weight: 700;
   color: #b0602a;
 }
+
+/* --- The furniture showroom (admin panel, showroom.js) --- */
+#extras-panel.showroom-open:not([hidden]) {
+  width: min(1100px, calc(100% - 30px));
+  height: calc(100% - 30px);
+  max-height: none;
+}
+.showroom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.showroom-bar button.active {
+  outline: 3px solid var(--wood);
+}
+.showroom-bar input {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 2px solid #e8d9bf;
+  font-family: inherit;
+}
+.showroom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.showroom-cell {
+  margin: 0;
+  background: #fffdf8;
+  border: 2px solid #efe0c4;
+  border-radius: 10px;
+  padding: 4px;
+  text-align: center;
+}
+.showroom-cell canvas {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+}
+.showroom-cell figcaption {
+  font-size: 0.85em;
+  color: #4a3a2c;
+  margin-top: 3px;
+}
+.showroom-cell.no-turn {
+  opacity: 0.55;
+}
