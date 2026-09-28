@@ -45,6 +45,12 @@ let localTrack = null;
 let currentRoomId = "hallway"; // kept up to date by updateMicForRoom
 let masterMuted = false;
 let masterVolume = 1;
+// The sound settings' own sliders (0 to 1, on top of the main volume):
+// friends' voices, the little sound effects, and the dance music. Friends'
+// voices can also be muted on their own.
+let voiceVolume = 1, effectsVolume = 1, musicVolume = 1;
+let voicesMuted = false;
+const effectsLevel = () => masterVolume * effectsVolume;
 const peerAudioElements = {}; // peerId -> <audio> element playing their voice
 
 // --- Join/leave sounds ---
@@ -70,7 +76,7 @@ function playTone(freq, delayMs, { gain = 0.15, duration = 0.15, type = "sine" }
     const gainNode = toneContext.createGain();
     osc.type = type;
     osc.frequency.value = freq;
-    gainNode.gain.setValueAtTime(masterMuted ? 0 : gain * masterVolume, toneContext.currentTime);
+    gainNode.gain.setValueAtTime(masterMuted ? 0 : gain * effectsLevel(), toneContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.001, toneContext.currentTime + duration);
     osc.connect(gainNode);
     gainNode.connect(toneContext.destination);
@@ -170,7 +176,7 @@ export function playBabble(pitch, letter) {
   filter.type = "lowpass";
   filter.frequency.value = pitch * 3.2; // softens the buzzy square wave
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.05 * masterVolume, now + 0.008);
+  gain.gain.linearRampToValueAtTime(0.05 * effectsLevel(), now + 0.008);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
   osc.connect(filter);
   filter.connect(gain);
@@ -194,7 +200,7 @@ export function playCoatWhoosh() {
   filter.frequency.setValueAtTime(500, now);
   filter.frequency.exponentialRampToValueAtTime(1800, now + 0.3);
   const gain = toneContext.createGain();
-  gain.gain.value = 0.12 * masterVolume;
+  gain.gain.value = 0.12 * effectsLevel();
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(toneContext.destination);
@@ -217,7 +223,7 @@ export function playSecretDoor() {
   filter.Q.value = 6;
   const gain = toneContext.createGain();
   gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.06 * masterVolume, now + 0.06);
+  gain.gain.linearRampToValueAtTime(0.06 * effectsLevel(), now + 0.06);
   gain.gain.linearRampToValueAtTime(0, now + 0.5);
   osc.connect(filter);
   filter.connect(gain);
@@ -614,7 +620,7 @@ export function isDanceId(id) {
 export function playDanceTune(id, volume = 1) {
   if (!isDanceId(id) || !toneContext || !(volume > 0)) return;
   danceBus = toneContext.createGain();
-  danceBus.gain.value = Math.min(1, volume);
+  danceBus.gain.value = Math.min(1, volume) * musicVolume;
   danceBus.connect(toneContext.destination);
   try {
     DANCE_TUNES[id]();
@@ -805,7 +811,7 @@ function startFire() {
 // Called every frame (from main.js): fades the crackle in and out.
 export function updateCampfireSound(dt) {
   if (!fire) return;
-  const target = masterMuted ? 0 : fireTarget * masterVolume * 0.5;
+  const target = masterMuted ? 0 : fireTarget * effectsLevel() * 0.5;
   fireLevel += (target - fireLevel) * (1 - Math.pow(0.05, dt));
   fire.out.gain.value = fireLevel;
   if (fireTarget === 0 && fireLevel < 0.002) {
@@ -1081,14 +1087,14 @@ export function updateVoiceRouting(myRoomId, peers, allowed = () => true, me = n
     if (voiceTracks[peer.id]) voiceTracks[peer.id].enabled = sameVoiceRoom && !whisperingTo && !!localTrack?.enabled;
     const audioEl = peerAudioElements[peer.id];
     if (!audioEl) continue;
-    audioEl.muted = masterMuted || !sameVoiceRoom;
+    audioEl.muted = masterMuted || voicesMuted || !sameVoiceRoom;
     const distance = me ? Math.hypot(peer.x - me.x, peer.y - me.y) : 0;
-    audioEl.volume = masterVolume * distanceVolume(distance);
+    audioEl.volume = masterVolume * voiceVolume * distanceVolume(distance);
   }
   for (const [id, el] of Object.entries(whisperAudioElements)) {
     const peer = peers.find((p) => p.id === id);
-    el.muted = masterMuted || isSilentSpot() || (peer ? !allowed(peer) : false);
-    el.volume = masterVolume;
+    el.muted = masterMuted || voicesMuted || isSilentSpot() || (peer ? !allowed(peer) : false);
+    el.volume = masterVolume * voiceVolume;
   }
 }
 
@@ -1104,6 +1110,18 @@ export function getMasterLevel() {
 
 export function setMasterVolume(vol) {
   masterVolume = vol;
+}
+
+// The sound settings: "voices", "effects" or "music", 0 to 1.
+export function setSoundLevel(kind, vol) {
+  if (kind === "voices") voiceVolume = vol;
+  if (kind === "effects") effectsVolume = vol;
+  if (kind === "music") musicVolume = vol;
+}
+
+// Mutes friends' voices only (the house's own sounds keep playing).
+export function setVoicesMuted(muted) {
+  voicesMuted = muted;
 }
 
 // --- Lo-fi music for the Study room ---

@@ -625,22 +625,41 @@
           <div id="settings-panel" hidden>
             <h2>Sound</h2>
             <label class="voice-row toggle-row">
-              Hourly clock chime
+              Mute all sound
               <span class="toggle">
-                <input id="chime-toggle" type="checkbox">
+                <input id="mute-all-toggle" type="checkbox">
                 <span class="toggle-track"></span>
               </span>
             </label>
+            <label class="voice-row">
+              Main volume
+              <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+            </label>
             <label class="voice-row toggle-row">
-              Mute everyone
+              Mute friends' voices
               <span class="toggle">
                 <input id="mute-toggle" type="checkbox">
                 <span class="toggle-track"></span>
               </span>
             </label>
             <label class="voice-row">
-              Volume
-              <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+              Friends' voices
+              <input id="voices-volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+            </label>
+            <label class="voice-row">
+              Sound effects
+              <input id="effects-volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+            </label>
+            <label class="voice-row">
+              Dance music
+              <input id="music-volume-slider" type="range" min="0" max="1" step="0.05" value="1">
+            </label>
+            <label class="voice-row toggle-row">
+              Hourly clock chime
+              <span class="toggle">
+                <input id="chime-toggle" type="checkbox">
+                <span class="toggle-track"></span>
+              </span>
             </label>
             <label class="voice-row">
               Lo-fi volume (Study)

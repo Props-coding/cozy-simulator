@@ -29,6 +29,8 @@ import {
   updateVoiceRouting,
   setMasterMuted,
   setMasterVolume,
+  setSoundLevel,
+  setVoicesMuted,
   enterStudy,
   leaveStudy,
   setLofiVolume,
@@ -180,24 +182,45 @@ onPeerJoin((peerId) => {
   if (focusTimer) sendFocus(focusMessage(), peerId);
 });
 
-muteToggle.addEventListener("change", () => {
-  setMasterMuted(muteToggle.checked);
-  playClickSound();
-});
-volumeSlider.addEventListener("input", () => setMasterVolume(parseFloat(volumeSlider.value)));
-volumeSlider.addEventListener("change", () => playClickSound());
-lofiVolumeSlider.addEventListener("input", () => setLofiVolume(parseFloat(lofiVolumeSlider.value)));
-lofiVolumeSlider.addEventListener("change", () => playClickSound());
-setLofiVolume(CONFIG.defaultLofiVolume);
-lofiVolumeSlider.value = CONFIG.defaultLofiVolume;
-rainVolumeSlider.addEventListener("input", () => setRainVolume(parseFloat(rainVolumeSlider.value)));
-rainVolumeSlider.addEventListener("change", () => playClickSound());
-setRainVolume(CONFIG.defaultRainVolume);
-rainVolumeSlider.value = CONFIG.defaultRainVolume;
-whiteNoiseSlider.addEventListener("input", () => setWhiteNoiseVolume(parseFloat(whiteNoiseSlider.value)));
-whiteNoiseSlider.addEventListener("change", () => playClickSound());
-setWhiteNoiseVolume(CONFIG.defaultWhiteNoiseVolume);
-whiteNoiseSlider.value = CONFIG.defaultWhiteNoiseVolume;
+// The sound settings: each slider and switch does its own thing, and
+// they're all remembered in this browser (so you set them once).
+const SOUND_KEY = "porchlight.sound";
+let soundSaved = {};
+try {
+  soundSaved = JSON.parse(localStorage.getItem(SOUND_KEY)) ?? {};
+} catch {
+  // (Nothing saved, or storage blocked: the defaults below.)
+}
+const soundSettings = [
+  // [the slider or switch, what it changes, its starting value]
+  [document.getElementById("mute-all-toggle"), setMasterMuted, false],
+  [muteToggle, setVoicesMuted, false],
+  [volumeSlider, setMasterVolume, 1],
+  [document.getElementById("voices-volume-slider"), (v) => setSoundLevel("voices", v), 1],
+  [document.getElementById("effects-volume-slider"), (v) => setSoundLevel("effects", v), 1],
+  [document.getElementById("music-volume-slider"), (v) => setSoundLevel("music", v), 1],
+  [lofiVolumeSlider, setLofiVolume, CONFIG.defaultLofiVolume],
+  [rainVolumeSlider, setRainVolume, CONFIG.defaultRainVolume],
+  [whiteNoiseSlider, setWhiteNoiseVolume, CONFIG.defaultWhiteNoiseVolume],
+];
+for (const [input, apply, start] of soundSettings) {
+  const toggle = input.type === "checkbox";
+  const value = soundSaved[input.id] ?? start;
+  if (toggle) input.checked = value;
+  else input.value = value;
+  apply(value);
+  input.addEventListener(toggle ? "change" : "input", () => {
+    const now = toggle ? input.checked : parseFloat(input.value);
+    apply(now);
+    soundSaved[input.id] = now;
+    try {
+      localStorage.setItem(SOUND_KEY, JSON.stringify(soundSaved));
+    } catch {
+      // (Storage blocked: it lasts until the page closes.)
+    }
+  });
+  input.addEventListener("change", () => playClickSound());
+}
 
 const canvas = document.getElementById("house");
 const ctx = canvas.getContext("2d");
