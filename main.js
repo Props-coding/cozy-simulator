@@ -97,7 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
-import { startMarket, openTradingPost, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
+import { startMarket, talkToJuniper, nearMerchantHint, isTradeDialogOpen, offerTradeTo, initMarket } from "./market.js";
 import { initWhiteboard, openWhiteboard, closeWhiteboard, isWhiteboardOpen, sendBoardTo, loadSavedBoard } from "./whiteboard.js";
 
 const myTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -412,7 +412,7 @@ joinButton.addEventListener("click", async () => {
     },
   });
   startGarden({ color: () => myColor, notice: (text) => showNotice(text, 5000), confirm: (options) => askConfirm(options) });
-  startMarket(); // the trading post, and whether Juniper's here (market.js)
+  startMarket(); // Porch Swap (the trading website), and whether Juniper's here (market.js)
   initAdmin({
     teleport,
     rooms: () => ROOMS.filter((r) => r.rect && !r.bedroom).sort((a, b) => floorOf(a.rect.y) - floorOf(b.rect.y) || a.name.localeCompare(b.name)),
@@ -681,7 +681,6 @@ function roomHintFor(room) {
   if (nearestInteraction(player) === "stove") return "Press E to cook: your recipes, or experiment and see what happens.";
   if (nearestInteraction(player) === "fridge") return "Press E to open the fridge and pantry: eggs, milk, flour, sugar and more.";
   if (nearestInteraction(player) === "cookieJar") return "Press E for today's fortune cookie.";
-  if (nearestInteraction(player) === "tradingPost") return "Press E for the trading post: see what friends have put out, or trade your own things.";
   if (nearestInteraction(player) === "juniper") return nearMerchantHint();
   if (nearestInteraction(player)?.startsWith("resident:")) return residentHint(nearestInteraction(player).slice(9));
   if (isFishing() || nearestInteraction(player) === "fishing") return fishingHint(fishingSpot(player));
@@ -846,7 +845,7 @@ window.addEventListener("keydown", (e) => {
   }
 
   // Kitchen & Trade (Update 5).
-  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, tradingPost: openTradingPost, juniper: talkToJuniper }[nearestInteraction(player)];
+  const kitchenAction = { stove: openStove, fridge: openFridge, cookieJar: openCookieJar, juniper: talkToJuniper }[nearestInteraction(player)];
   if (key === "e" && kitchenAction) {
     for (const k in keysDown) keysDown[k] = false;
     kitchenAction();

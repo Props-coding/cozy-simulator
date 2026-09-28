@@ -1,24 +1,26 @@
-// The trading post and the traveling merchant (Update 5), out in the yard.
+// Porch Swap, the trading website, and the traveling merchant (Update 5).
 //
-// - The trading post (the stall below the garden, press E): put basket
-//   things out for crumbs, or ask for a swap. They wait at the stall, even
-//   while you're away, and anyone can take them: you get paid straight
-//   away (with a note in your mailbox). Nothing taken within a week comes
-//   back to you. Each person can have a few things out at once.
+// - Porch Swap (a website on the laptop in your bedroom; it used to be a
+//   stall in the yard): put basket things up for crumbs, or ask for a
+//   swap. They wait there, even while you're away, and anyone can take
+//   them: you get paid straight away (with a note in your mailbox).
+//   Nothing taken within a week comes back to you. Each person can have a
+//   few things up at once.
 // - Juniper the fox, the traveling merchant, comes on the bus once a week
 //   (on her day, in the hometown) with rare seeds, bait, recipes and decor.
 //   What she brings changes each week; each person can buy a few of each.
 //
 // - A direct offer to one friend (right-click them, then Trade): it waits
-//   at the stall under "For you", only they can take it, and a note in
+//   on Porch Swap marked "For you", only they can take it, and a note in
 //   their mailbox tells them.
 //
-// The house server keeps the stall and does every trade (the bank, see
+// The house server keeps what's up for trade and does every trade (the bank, see
 // bank.js). Settings are in config.js (tradingPost, merchant).
 import { serverApi } from "./account.js";
 import { bank, myWallet } from "./bank.js";
 import { basketCount, basketItems, itemInfo } from "./basket.js";
-import { openNpc, refreshNpc } from "./npc.js";
+import { openNpc, refreshNpc, renderRows } from "./npc.js";
+import { uiIcon } from "./ui-icons.js";
 import { crumbBalance } from "./shop.js";
 import { playClickSound, playCrumbSound } from "./audio.js";
 
@@ -27,7 +29,7 @@ export function initMarket(options) {
   hooks = { ...hooks, ...options };
 }
 
-// The stall and Juniper's pack, from the house server (refreshed now and then).
+// What's up for trade, and Juniper's pack, from the house server (refreshed now and then).
 let market = { listings: [], mine: [], merchant: { here: false, week: 0, stock: [] } };
 
 export async function refreshMarket() {
@@ -35,6 +37,7 @@ export async function refreshMarket() {
     market = await serverApi("GET", "/api/market");
     MERCHANT.here = market.merchant.here; // (world.js: she's drawn by the bus stop)
     refreshNpc();
+    refreshSwapSite();
   } catch {
     // Offline for a moment: keep what we had.
   }
@@ -48,22 +51,66 @@ export function startMarket() {
 
 const label = (id, n) => `${n} × ${itemInfo(id).name}`;
 
-// --- The trading post ---
-export async function openTradingPost() {
-  await refreshMarket();
-  openNpc({
-    name: "Trading post",
-    portrait: { f: "tradingPost", w: 1.9, h: 0.6 },
-    color: "#c98f3c",
-    pitch: 380,
-    hello: ["Swap, sell, or just have a look.", "One friend's pond boot is another friend's treasure.", "Everything here waits for the right person."],
-    tabs: [
-      { id: "browse", label: "At the stall", items: browseRows, empty: "Nothing out right now. Be the first to put something out!", onOpen: refreshMarket },
-      { id: "mine", label: "Your things", items: myRows, empty: "You haven't put anything out. Pick something in \"Put out\"." },
-      { id: "sell", label: "Put out", items: sellRows, empty: "Your basket is empty." },
-    ],
-  });
+// --- Porch Swap, the website ---
+// Its three pages: what friends have up, your own things, and your basket
+// (to put something up).
+const SWAP_TABS = [
+  { id: "browse", label: "Up for trade", items: () => browseRows(), empty: "Nothing up right now. Be the first to put something up!" },
+  { id: "mine", label: "Your things", items: () => myRows(), empty: "You haven't put anything up. Pick something in \"Put something up\"." },
+  { id: "sell", label: "Put something up", items: () => sellRows(), empty: "Your basket is empty." },
+];
+const SWAP_HELLOS = ["Swap, sell, or just have a look.", "One friend's pond boot is another friend's treasure.", "Everything here waits for the right person."];
+let swapPage = null;
+let swapTab = "browse";
+let swapSays = "";
+let swapAddress = () => {};
+
+// Draws the site into the laptop's page (laptop.js), and tells the
+// address bar which part you're on.
+export function renderSwapSite(page, onTab) {
+  if (onTab) {
+    // (Freshly opened: a new hello, and the latest from the house server.)
+    swapAddress = onTab;
+    swapSays = SWAP_HELLOS[Math.floor(Math.random() * SWAP_HELLOS.length)];
+    refreshMarket();
+  }
+  swapPage = page;
+  swapAddress("https://porchswap.cozy/" + swapTab);
+  page.innerHTML = "";
+  page.classList.add("swap-page");
+  const front = document.createElement("header");
+  front.className = "swap-front";
+  front.innerHTML = `<div class="swap-awning"></div><div class="swap-sign"><span class="swap-logo">${uiIcon("swap")}</span><span class="swap-words"><strong>Porch Swap</strong><span>friends' things, for crumbs or a swap</span></span><span class="nook-wallet"><svg class="crumb-icon" aria-hidden="true"><use href="#crumb-icon"></use></svg>${crumbBalance()}</span></div>`;
+  const says = document.createElement("p");
+  says.className = "swap-says";
+  says.textContent = swapSays;
+  const tabs = document.createElement("div");
+  tabs.className = "nook-tabs swap-tabs";
+  for (const t of SWAP_TABS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = t.label;
+    button.classList.toggle("active", t.id === swapTab);
+    button.addEventListener("click", () => {
+      playClickSound();
+      swapTab = t.id;
+      if (t.id === "browse") refreshMarket();
+      renderSwapSite(page);
+    });
+    tabs.appendChild(button);
+  }
+  const list = document.createElement("div");
+  list.className = "swap-items";
+  const current = SWAP_TABS.find((t) => t.id === swapTab);
+  renderRows(list, current.items(), current.empty, (line) => (swapSays = line), () => renderSwapSite(page));
+  page.append(front, says, tabs, list);
 }
+
+// Redraws the site if it's showing (new listings, crumbs changed).
+function refreshSwapSite() {
+  if (swapPage?.isConnected && !swapPage.hidden && !swapPage.closest("[hidden]")) renderSwapSite(swapPage);
+}
+window.addEventListener("crumbs-changed", refreshSwapSite);
 
 function browseRows() {
   return market.listings
@@ -220,7 +267,7 @@ document.getElementById("trade-list").addEventListener("click", async () => {
   const done = await bank("tradeList", { item: listing, n, ...extra, ...(offerTo ? { for: offerTo } : {}) });
   if (!done) return;
   playCrumbSound();
-  if (offerTo) hooks.notice(`Offered to ${offerTo}. It's waiting at the trading post, and a note tells them.`);
+  if (offerTo) hooks.notice(`Offered to ${offerTo}. It's waiting on Porch Swap (the laptop in their bedroom), and a note tells them.`);
   closeTradeDialog();
   await refreshMarket();
 });

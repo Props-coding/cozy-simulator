@@ -20,8 +20,8 @@
        update everyone's browser fetches the new files instead of reusing
        old ones it saved earlier. (GitHub Pages lets browsers keep files for
        10 minutes, which could mix new and old code.) When releasing a new
-       build, change every "v=0.74" in this file to the new number. -->
-  <link rel="stylesheet" href="style.css?v=0.74">
+       build, change every "v=0.75" in this file to the new number. -->
+  <link rel="stylesheet" href="style.css?v=0.75">
 </head>
 <body>
   <!-- The loading screen: a dark front porch at night. The porch light
@@ -931,12 +931,14 @@
                     <button type="button" class="app" data-app="mail"><span class="app-icon"><svg class="ui-icon" aria-hidden="true"><use href="#ic-letter"></use></svg></span>Mail<span id="mail-badge" class="app-badge" hidden></span></button>
                     <button type="button" class="app" data-app="news"><span class="app-icon"><svg class="ui-icon" aria-hidden="true"><use href="#ic-news"></use></svg></span>The Cozy Times</button>
                     <button type="button" class="app" data-app="store"><span class="app-icon"><svg class="ui-icon" aria-hidden="true"><use href="#nook-bird"></use></svg></span>Nest &amp; Nook</button>
+                    <button type="button" class="app" data-app="swap"><span class="app-icon"><svg class="ui-icon" aria-hidden="true"><use href="#ic-swap"></use></svg></span>Porch Swap</button>
                     <button type="button" class="app" data-app="decorate"><span class="app-icon"><svg class="ui-icon" aria-hidden="true"><use href="#ic-sofa"></use></svg></span>Decorate my room</button>
                   </div>
                 </div>
                 <div id="laptop-mail" class="laptop-page" hidden></div>
                 <div id="laptop-news" class="laptop-page" hidden></div>
                 <div id="laptop-store" class="laptop-page" hidden></div>
+                <div id="laptop-swap" class="laptop-page" hidden></div>
               </div>
             </div>
             <div class="laptop-base"></div>
@@ -1069,74 +1071,74 @@
 
   <!-- Bump this each time we push, so you can tell whether you're
        looking at the latest version or an old cached page. -->
-  <p id="version-tag">build 0.74</p>
+  <p id="version-tag">build 0.75</p>
 
-  <script src="config.js?v=0.74"></script>
-  <script src="catalog.js?v=0.74"></script>
-  <script src="world.js?v=0.74"></script>
-  <script src="render.js?v=0.74"></script>
-  <script src="render-furniture.js?v=0.74"></script>
-  <script src="render-rooms.js?v=0.74"></script>
-  <script src="render-extras.js?v=0.74"></script>
-  <script src="render-characters.js?v=0.74"></script>
-  <script src="render-scene.js?v=0.74"></script>
-  <script src="outdoors.js?v=0.74"></script>
-  <script src="render-lake.js?v=0.74"></script>
-  <script src="render-alley.js?v=0.74"></script>
-  <script src="render-residents.js?v=0.74"></script>
+  <script src="config.js?v=0.75"></script>
+  <script src="catalog.js?v=0.75"></script>
+  <script src="world.js?v=0.75"></script>
+  <script src="render.js?v=0.75"></script>
+  <script src="render-furniture.js?v=0.75"></script>
+  <script src="render-rooms.js?v=0.75"></script>
+  <script src="render-extras.js?v=0.75"></script>
+  <script src="render-characters.js?v=0.75"></script>
+  <script src="render-scene.js?v=0.75"></script>
+  <script src="outdoors.js?v=0.75"></script>
+  <script src="render-lake.js?v=0.75"></script>
+  <script src="render-alley.js?v=0.75"></script>
+  <script src="render-residents.js?v=0.75"></script>
   <script>
     // The page's code is here (the loading screen's first step).
     Loading.step("code");
     Loading.nextTip();
     // Keep the game's files on this computer, so coming back is quicker
     // (sw.js). Each build keeps its own copy, so an update always loads fresh.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.74").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=0.75").catch(() => {});
   </script>
   <!-- The same "?v=" for the files main.js loads in turn. -->
   <script type="importmap">
     {
       "imports": {
-        "./main.js": "./main.js?v=0.74",
-        "./network.js": "./network.js?v=0.74",
-        "./audio.js": "./audio.js?v=0.74",
-        "./theater.js": "./theater.js?v=0.74",
-        "./whiteboard.js": "./whiteboard.js?v=0.74",
-        "./shop.js": "./shop.js?v=0.74",
-        "./emoji.js": "./emoji.js?v=0.74",
-        "./achievements.js": "./achievements.js?v=0.74",
-        "./home.js": "./home.js?v=0.74",
-        "./residents.js": "./residents.js?v=0.74",
-        "./ui-icons.js": "./ui-icons.js?v=0.74",
-        "./travel.js": "./travel.js?v=0.74",
-        "./pictures.js": "./pictures.js?v=0.74",
-        "./turntable.js": "./turntable.js?v=0.74",
-        "./wardrobe.js": "./wardrobe.js?v=0.74",
-        "./kanban.js": "./kanban.js?v=0.74",
-        "./rooms.js": "./rooms.js?v=0.74",
-        "./journal.js": "./journal.js?v=0.74",
-        "./phone.js": "./phone.js?v=0.74",
-        "./laptop.js": "./laptop.js?v=0.74",
-        "./news.js": "./news.js?v=0.74",
-        "./account.js": "./account.js?v=0.74",
-        "./profile.js": "./profile.js?v=0.74",
-        "./icons.js": "./icons.js?v=0.74",
-        "./reputation.js": "./reputation.js?v=0.74",
-        "./titles.js": "./titles.js?v=0.74",
-        "./admin.js": "./admin.js?v=0.74",
-        "./updater.js": "./updater.js?v=0.74",
-        "./weather.js": "./weather.js?v=0.74",
-        "./basket.js": "./basket.js?v=0.74",
-        "./npc.js": "./npc.js?v=0.74",
-        "./bank.js": "./bank.js?v=0.74",
-        "./kitchen.js": "./kitchen.js?v=0.74",
-        "./market.js": "./market.js?v=0.74",
-        "./menu.js": "./menu.js?v=0.74",
-        "./garden.js": "./garden.js?v=0.74",
-        "./fishing.js": "./fishing.js?v=0.74",
-        "./bus.js": "./bus.js?v=0.74"
+        "./main.js": "./main.js?v=0.75",
+        "./network.js": "./network.js?v=0.75",
+        "./audio.js": "./audio.js?v=0.75",
+        "./theater.js": "./theater.js?v=0.75",
+        "./whiteboard.js": "./whiteboard.js?v=0.75",
+        "./shop.js": "./shop.js?v=0.75",
+        "./emoji.js": "./emoji.js?v=0.75",
+        "./achievements.js": "./achievements.js?v=0.75",
+        "./home.js": "./home.js?v=0.75",
+        "./residents.js": "./residents.js?v=0.75",
+        "./ui-icons.js": "./ui-icons.js?v=0.75",
+        "./travel.js": "./travel.js?v=0.75",
+        "./pictures.js": "./pictures.js?v=0.75",
+        "./turntable.js": "./turntable.js?v=0.75",
+        "./wardrobe.js": "./wardrobe.js?v=0.75",
+        "./kanban.js": "./kanban.js?v=0.75",
+        "./rooms.js": "./rooms.js?v=0.75",
+        "./journal.js": "./journal.js?v=0.75",
+        "./phone.js": "./phone.js?v=0.75",
+        "./laptop.js": "./laptop.js?v=0.75",
+        "./news.js": "./news.js?v=0.75",
+        "./account.js": "./account.js?v=0.75",
+        "./profile.js": "./profile.js?v=0.75",
+        "./icons.js": "./icons.js?v=0.75",
+        "./reputation.js": "./reputation.js?v=0.75",
+        "./titles.js": "./titles.js?v=0.75",
+        "./admin.js": "./admin.js?v=0.75",
+        "./updater.js": "./updater.js?v=0.75",
+        "./weather.js": "./weather.js?v=0.75",
+        "./basket.js": "./basket.js?v=0.75",
+        "./npc.js": "./npc.js?v=0.75",
+        "./bank.js": "./bank.js?v=0.75",
+        "./kitchen.js": "./kitchen.js?v=0.75",
+        "./market.js": "./market.js?v=0.75",
+        "./menu.js": "./menu.js?v=0.75",
+        "./garden.js": "./garden.js?v=0.75",
+        "./fishing.js": "./fishing.js?v=0.75",
+        "./bus.js": "./bus.js?v=0.75"
       }
     }
   </script>
-  <script type="module" src="main.js?v=0.74"></script>
+  <script type="module" src="main.js?v=0.75"></script>
 </body>
 </html>

@@ -19,7 +19,7 @@ const CONFIG = {
     "Tip: hold 1 to 5 for a quick emote.",
     "Tip: knock before walking into a friend's room.",
     "Tip: eat a dish for a 30-minute boost. Hover the bubble by your crumbs to see it.",
-    "Tip: put things out at the trading post, even while you're away.",
+    "Tip: put things up on Porch Swap (the laptop in your bedroom), even while you're away.",
     "The raccoons would like you to know they are three raccoons. (They are.)",
     "Otis says the fish are biting. Otis always says that.",
     "Hazel has watered 4,000 plants. None of them have said thank you.",
@@ -350,9 +350,9 @@ const CONFIG = {
     ],
   },
 
-  // --- The trading post (Update 5) ---
-  // A stall in the yard where friends trade basket things: list something
-  // for crumbs, or ask for a swap. Listed things wait at the stall (even
+  // --- Porch Swap, the trading website (Update 5; was a stall in the yard) ---
+  // On the bedroom laptop: friends trade basket things. List something
+  // for crumbs, or ask for a swap. Listed things wait there (even
   // while you're away) and come back to you if nobody takes them within
   // `listingDays`. Each person can have `maxListings` at once.
   tradingPost: {

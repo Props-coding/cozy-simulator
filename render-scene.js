@@ -702,7 +702,7 @@ function drawScene(ctx, players, studySign, pets = [], floor = 0, held = null, m
   ctx.translate(-left, -top);
 
   drawFloors(ctx);
-  drawPondShimmer(ctx);
+  drawPondShimmer(ctx, me ? [...players, me] : players);
   if (!isOutdoorFloor(viewFloor)) drawOutsideWeather(ctx, lawnAreas(), true); // (the yard's is drawn over everything, in drawOutdoorLight)
   dropRuneMarks(players);
   drawRuneMarks(ctx);

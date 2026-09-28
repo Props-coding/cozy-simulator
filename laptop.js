@@ -1,7 +1,8 @@
 // The laptop on your bedroom desk (press E there). It's a little web
 // browser: a start page with shortcuts to Mail (letters to friends), The
 // Cozy Times (what's new in the house), Nest & Nook (the furniture store,
-// see home.js), and Decorate. Back, Forward and Reload work, and the
+// see home.js), Porch Swap (trading with friends, see market.js), and
+// Decorate. Back, Forward and Reload work, and the
 // address bar shows where you are.
 //
 // Mail is kept on the house server, so letters arrive even when the
@@ -10,6 +11,7 @@ import { uiIcon } from "./ui-icons.js";
 import { getPeers, sendMail, onMail } from "./network.js";
 import { NEWS } from "./news.js";
 import { renderStore, startDecorating } from "./home.js";
+import { renderSwapSite } from "./market.js";
 import { unlock } from "./achievements.js";
 import { playClickSound } from "./audio.js";
 import { serverApi, accountName } from "./account.js";
@@ -25,6 +27,7 @@ const pages = {
   mail: document.getElementById("laptop-mail"),
   news: document.getElementById("laptop-news"),
   store: document.getElementById("laptop-store"),
+  swap: document.getElementById("laptop-swap"),
 };
 const mailBadge = document.getElementById("mail-badge");
 
@@ -62,6 +65,7 @@ const SITES = {
   mail: { title: "Mail", icon: "letter", url: "https://mail.cozy/inbox" },
   news: { title: "The Cozy Times", icon: "news", url: "https://news.cozy" },
   store: { title: "Nest & Nook", icon: "nook-bird", url: "https://nestandnook.cozy/furniture" },
+  swap: { title: "Porch Swap", icon: "swap", url: "https://porchswap.cozy" },
 };
 let current = "home";
 let history = []; // pages before this one (for Back)
@@ -83,6 +87,7 @@ function show(name) {
   if (name === "mail") showInbox();
   if (name === "news") renderNews();
   if (name === "store") renderStore(pages.store, (tab) => setAddress("https://nestandnook.cozy/" + tab));
+  if (name === "swap") renderSwapSite(pages.swap, (url) => setAddress(url));
   pages[name].scrollTop = 0;
   backButton.disabled = history.length === 0;
   forwardButton.disabled = ahead.length === 0;

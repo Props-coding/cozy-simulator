@@ -1067,7 +1067,7 @@ function marketState() {
     const sellerUser = db.users[l.seller];
     if (sellerUser) {
       putIn(ensureWallet(sellerUser, l.seller), l.item, l.n);
-      sendLetter(sellerUser, { from: "Trading Post", subject: `Back from the stall: ${l.n} × ${itemLabel(l.item)}`, body: `Nobody took your ${l.n} × ${itemLabel(l.item)} this week, so it's back in your basket.` });
+      sendLetter(sellerUser, { from: "Porch Swap", subject: `Back from Porch Swap: ${l.n} × ${itemLabel(l.item)}`, body: `Nobody took your ${l.n} × ${itemLabel(l.item)} this week, so it's back in your basket.` });
     }
   }
   db.market.listings = db.market.listings.filter((x) => x.at >= old);
@@ -1495,7 +1495,7 @@ const BANK = {
     const n = amount(b.n, 1, MAX_STACK);
     if (!knownItem(item)) throw new Oops(400, "That can't be traded.");
     const market = marketState();
-    if (market.listings.filter((l) => l.seller === key).length >= GAME.CONFIG.tradingPost.maxListings) throw new Oops(409, `You can have ${GAME.CONFIG.tradingPost.maxListings} things at the stall at once.`);
+    if (market.listings.filter((l) => l.seller === key).length >= GAME.CONFIG.tradingPost.maxListings) throw new Oops(409, `You can have ${GAME.CONFIG.tradingPost.maxListings} things up on Porch Swap at once.`);
     let price = null, want = null;
     if (b.want) {
       want = { item: String(b.want.item ?? ""), n: amount(b.want.n, 1, MAX_STACK) };
@@ -1513,14 +1513,14 @@ const BANK = {
     market.listings.push({ id: newId(), seller: key, sellerName: user.name, item, n, price, want, at: Date.now(), ...(forKey ? { for: forKey, forName: db.users[forKey].name } : {}) });
     if (forKey) {
       const ask = price !== null ? `${price} crumbs` : `${want.n} × ${itemLabel(want.item)}`;
-      sendLetter(db.users[forKey], { from: user.name, subject: `A trade offer: ${n} × ${itemLabel(item)}`, body: `${user.name} offered you ${n} × ${itemLabel(item)} for ${ask}. It's waiting for you at the trading post (the orange-striped stall in the yard), under "For you".` });
+      sendLetter(db.users[forKey], { from: user.name, subject: `A trade offer: ${n} × ${itemLabel(item)}`, body: `${user.name} offered you ${n} × ${itemLabel(item)} for ${ask}. It's waiting for you on Porch Swap (the website on the laptop in your bedroom), marked "For you".` });
     }
     return {};
   },
   tradeCancel(w, b, ev, { key }) {
     const market = marketState();
     const listing = market.listings.find((l) => l.id === b.id && l.seller === key);
-    if (!listing) throw new Oops(404, "That's not at the stall any more.");
+    if (!listing) throw new Oops(404, "That's not up for trade any more.");
     market.listings = market.listings.filter((l) => l !== listing);
     putIn(w, listing.item, listing.n);
     return {};
@@ -1529,7 +1529,7 @@ const BANK = {
     const market = marketState();
     const listing = market.listings.find((l) => l.id === b.id);
     if (!listing) throw new Oops(404, "Someone got there first.");
-    if (listing.seller === key) throw new Oops(400, "That's yours! Take it back from Your stall instead.");
+    if (listing.seller === key) throw new Oops(400, "That's yours! Take it back from Your things instead.");
     if (listing.for && listing.for !== key) throw new Oops(403, "That offer is for someone else.");
     const sellerUser = db.users[listing.seller];
     if (!sellerUser) throw new Oops(404, "Whoever listed that has left the house.");
@@ -1548,7 +1548,7 @@ const BANK = {
     }
     market.listings = market.listings.filter((l) => l !== listing);
     putIn(w, listing.item, listing.n);
-    sendLetter(sellerUser, { from: "Trading Post", subject: `Sold: ${listing.n} × ${itemLabel(listing.item)}`, body: `${user.name} took your ${listing.n} × ${itemLabel(listing.item)} and paid ${paid}. It's already yours.` });
+    sendLetter(sellerUser, { from: "Porch Swap", subject: `Sold: ${listing.n} × ${itemLabel(listing.item)}`, body: `${user.name} took your ${listing.n} × ${itemLabel(listing.item)} and paid ${paid}. It's already yours.` });
     return { got: listing.item, n: listing.n };
   },
 
