@@ -401,21 +401,21 @@ const BASE_FURNITURE = [
   { kind: "snakePlant", x: 23.3, y: BUSINESS + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: BUSINESS + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 1, solid: false },
 
-  // The Lounge: a sage loveseat and an armchair round a coffee table on a
-  // rug, a fridge and a tea cart for snacks, an arcade cabinet, a beanbag,
-  // a lava lamp and plants. Voice is on, like the Conference Room.
-  { kind: "rug", x: 8.7, y: BUSINESS + 4.5, w: 3.2, h: 2.3, color: "#6f8a6a", solid: false },
-  { kind: "loveseat", x: 8.6, y: BUSINESS + 3.35, w: 1.6, h: 0.8, color: "#7a9e8c" },
-  { kind: "armchair", x: 10.6, y: BUSINESS + 3.35, w: 1.1, h: 0.8 },
-  { kind: "coffeeTable", x: 9.4, y: BUSINESS + 5.2, w: 1.2, h: 0.6 },
-  { kind: "beanbag", x: 11.1, y: BUSINESS + 6.2, w: 0.9, h: 0.8 },
+  // The Lounge: the TV against the back wall (cooking, weather and news
+  // channels, press E: Update 7), a sage sofa facing it across a coffee
+  // table on a rug (seen from behind, like the Theater's), and a beanbag; a fridge and a tea cart for
+  // snacks, an arcade cabinet, an armchair in the corner by the lava lamp,
+  // and plants. Voice is on, like the Conference Room.
+  { kind: "rug", x: 8.7, y: BUSINESS + 4.3, w: 3.4, h: 2.3, color: "#6f8a6a", solid: false },
+  { kind: "tvSet", x: 9.4, y: BUSINESS + 3.35, w: 1.3, h: 0.5 },
+  { kind: "coffeeTable", x: 9.45, y: BUSINESS + 4.75, w: 1.2, h: 0.6 },
+  { kind: "cinemaSofa", x: 9.05, y: BUSINESS + 5.9, w: 2.0, h: 0.8, color: "#7a9e8c" },
+  { kind: "beanbag", x: 11.5, y: BUSINESS + 4.7, w: 0.9, h: 0.8 },
+  { kind: "armchair", x: 12.9, y: BUSINESS + 6.5, w: 1.1, h: 0.8 },
   { kind: "fridge", x: 14.3, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
   { kind: "teaCart", x: 15.3, y: BUSINESS + 3.35, w: 1.2, h: 0.6 },
   { kind: "arcade", x: 16.9, y: BUSINESS + 3.35, w: 0.8, h: 0.6 },
   { kind: "lavaLamp", x: 14.4, y: BUSINESS + 7.3, w: 0.4, h: 0.4 },
-  // The TV (Update 7), in front of the loveseat and the coffee table:
-  // cooking, weather and news channels (press E).
-  { kind: "tvSet", x: 9.35, y: BUSINESS + 7.1, w: 1.3, h: 0.5 },
   { kind: "monstera", x: 8.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
   { kind: "palm", x: 17.2, y: BUSINESS + 7.2, w: 0.6, h: 0.6 },
 

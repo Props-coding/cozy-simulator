@@ -898,11 +898,13 @@ Object.assign(FURNITURE_DRAWERS, {
   // with a blanket thrown over it. Stand on it to sit; its back hides your
   // lower half like the cinema seats do.
   cinemaSofa(ctx, f) {
+    // (The Theater's is plum; f.color gives another, like the Lounge's sage.)
+    const c = f.color ?? "#6b2f45";
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    drawBlock(ctx, f.x + 0.1, f.y, f.w - 0.2, f.h - 0.25, 12, "#6b2f45"); // seat cushions
-    drawBlock(ctx, f.x, f.y + 0.05, 0.18, f.h - 0.05, 18, "#56243a"); // arms
-    drawBlock(ctx, f.x + f.w - 0.18, f.y + 0.05, 0.18, f.h - 0.05, 18, "#56243a");
-    const back = drawBlock(ctx, f.x + 0.05, f.y + f.h - 0.25, f.w - 0.1, 0.25, 24, "#7d3a52");
+    drawBlock(ctx, f.x + 0.1, f.y, f.w - 0.2, f.h - 0.25, 12, c); // seat cushions
+    drawBlock(ctx, f.x, f.y + 0.05, 0.18, f.h - 0.05, 18, shadeColor(c, -21)); // arms
+    drawBlock(ctx, f.x + f.w - 0.18, f.y + 0.05, 0.18, f.h - 0.05, 18, shadeColor(c, -21));
+    const back = drawBlock(ctx, f.x + 0.05, f.y + f.h - 0.25, f.w - 0.1, 0.25, 24, shadeColor(c, 18));
     ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
     const seats = 3, sw = (back.face.w - 8) / seats;
     for (let i = 0; i < seats; i++) {

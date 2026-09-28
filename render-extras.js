@@ -643,14 +643,18 @@ Object.assign(FURNITURE_DRAWERS, {
 
   // A cozy reading armchair facing up toward the window, so you see its
   // back, with a blanket draped over the top.
+  // An armchair facing the room: its tall back behind (with a blanket
+  // folded over it), the seat cushion in front, and an arm each side.
   armchair(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
-    drawBlock(ctx, f.x + 0.12, f.y, f.w - 0.24, f.h - 0.25, 12, "#c98f3c"); // seat
-    drawBlock(ctx, f.x, f.y, 0.2, f.h - 0.1, 18, "#b07c30"); // arms
-    drawBlock(ctx, f.x + f.w - 0.2, f.y, 0.2, f.h - 0.1, 18, "#b07c30");
-    const back = drawBlock(ctx, f.x + 0.05, f.y + f.h - 0.25, f.w - 0.1, 0.25, 30, "#a8732c");
-    ctx.fillStyle = "#6f8a6a";
-    ctx.fillRect(back.face.x + back.face.w * 0.55, back.top.y, back.face.w * 0.3, 16);
+    const back = drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, 0.3, 32, "#a8732c");
+    ctx.fillStyle = "#6f8a6a"; // the blanket over the back
+    ctx.fillRect(back.face.x + back.face.w * 0.55, back.top.y, back.face.w * 0.3, back.face.h + back.top.h - 8);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    ctx.fillRect(back.face.x + back.face.w * 0.55, back.top.y + back.face.h + back.top.h - 10, back.face.w * 0.3, 2);
+    drawBlock(ctx, f.x + 0.12, f.y + 0.25, f.w - 0.24, f.h - 0.25, 12, "#c98f3c"); // the seat
+    drawBlock(ctx, f.x, f.y + 0.1, 0.2, f.h - 0.1, 18, "#b07c30"); // the arms
+    drawBlock(ctx, f.x + f.w - 0.2, f.y + 0.1, 0.2, f.h - 0.1, 18, "#b07c30");
   },
 
   // A tall standing lamp with a fabric shade.

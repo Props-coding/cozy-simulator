@@ -85,7 +85,7 @@ test("House extras: a wish at the well, the TV, and the Library shelves", async 
   await page.waitForTimeout(600);
   await page.keyboard.press("e");
   await expect.poll(async () => page.evaluate(async () => (await import("./bank.js")).myWallet().wishDay)).toBeGreaterThan(0);
-  await goTo(page, { name: "lounge", spot: () => ({ x: 9.4, y: BUSINESS + 6.3 }) });
+  await goTo(page, { name: "lounge", spot: () => ({ x: 9.8, y: BUSINESS + 4.2 }) });
   await page.waitForTimeout(600);
   await page.keyboard.press("e");
   await expect(page.locator("#extras-panel")).toBeVisible();
