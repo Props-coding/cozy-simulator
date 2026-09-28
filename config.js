@@ -87,13 +87,13 @@ const CONFIG = {
 
   // Live weather: the real sky over the house's hometown shows in the yard
   // and through the windows (from Open-Meteo, free, no account needed).
-  // PLACEHOLDER: the hometown below is only a stand-in until Brandon picks
-  // the real one. To change it, put in the town's name and its latitude and
-  // longitude (search "<town> latitude longitude"; west and south are
-  // negative numbers). units: "F" or "C". refreshMinutes: how often each
-  // browser checks for new weather.
+  // The hometown is New York City (its weather, day and night, and clock:
+  // the day's requests, the porch light at nine...). To change it, put in
+  // the town's name and its latitude and longitude (search "<town>
+  // latitude longitude"; west and south are negative numbers). units: "F"
+  // or "C". refreshMinutes: how often each browser checks for new weather.
   weather: {
-    hometown: { name: "Seattle (placeholder)", latitude: 47.61, longitude: -122.33 },
+    hometown: { name: "New York City", latitude: 40.71, longitude: -74.01 },
     units: "F",
     refreshMinutes: 15,
   },
