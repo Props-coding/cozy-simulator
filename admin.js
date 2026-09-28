@@ -212,7 +212,7 @@ function meTab() {
   }
   const picker = make("div");
   for (const [floor, list] of [...byFloor].sort(([a], [b]) => a - b)) {
-    picker.appendChild(make("div", "admin-floor", floor === FARM_FLOOR ? "The Farm" : floor === ALLEY_FLOOR ? "Back Alley" : floor === LAKE_FLOOR ? "Willow Lake" : floor === YARD_FLOOR ? "Outside" : CONFIG.floors[floor]?.name ?? `Floor ${floor + 1}`));
+    picker.appendChild(make("div", "admin-floor", floor === GAMES_FLOOR ? "Games Floor" : floor === FARM_FLOOR ? "The Farm" : floor === ALLEY_FLOOR ? "Back Alley" : floor === LAKE_FLOOR ? "Willow Lake" : floor === YARD_FLOOR ? "Outside" : CONFIG.floors[floor]?.name ?? `Floor ${floor + 1}`));
     const chips = make("div", "admin-chips");
     for (const room of list) {
       const chip = make("button", "admin-chip", room.name);

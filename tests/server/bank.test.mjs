@@ -233,3 +233,44 @@ test("the porch light: only at nine, once a night", async () => {
   assert.equal((await bank("Alice", "porchSwarm")).status, 409, "once a night");
   await setSky({ night: null, offset: 0 });
 });
+
+// --- The Arcade (Update 9) ---
+test("arcade: a score can't beat the clock, and tickets go on the board", async () => {
+  await seed("Alice", { arcade: {} });
+  const { data: start } = await bank("Alice", "arcadeStart", { game: "snake" });
+  const end = await bank("Alice", "arcadeEnd", { id: start.result.id, score: 9999 });
+  assert.equal(end.status, 200);
+  assert.ok(end.data.result.score <= 4, `an instant 9999 counts as at most a few points (got ${end.data.result.score})`);
+  assert.equal(end.data.wallet.arcade.tickets, end.data.result.tickets);
+  assert.equal((await bank("Alice", "arcadeEnd", { id: start.result.id, score: 5 })).status, 409, "a play only ends once");
+  assert.equal((await bank("Alice", "arcadeStart", { game: "pinball" })).status, 400, "no such cabinet");
+  const { boards } = (await call("GET", "/api/arcade/scores", undefined, as("Bruno"))).data;
+  assert.ok(boards.snake.some((e) => e.name === "Alice"));
+});
+
+test("arcade: cashing in has a daily cap, and prizes cost tickets", async () => {
+  await seed("Alice", { crumbs: 0, arcade: { tickets: 900 }, owned: [] });
+  const cash = await bank("Alice", "arcadeCashIn");
+  assert.equal(cash.status, 200);
+  assert.equal(cash.data.result.crumbs, 30, "30 crumbs a day at most");
+  assert.equal(cash.data.wallet.arcade.tickets, 600);
+  assert.equal((await bank("Alice", "arcadeCashIn")).status, 409, "that's today's cashing in");
+  const crown = await bank("Alice", "arcadePrize", { id: "prizeCrown" });
+  assert.equal(crown.status, 200);
+  assert.ok(crown.data.wallet.owned.includes("prizeCrown"));
+  assert.equal(crown.data.wallet.arcade.tickets, 100);
+  assert.equal((await bank("Alice", "arcadePrize", { id: "miniArcade" })).status, 409, "not enough tickets");
+  assert.equal((await bank("Alice", "buy", { id: "prizeCrown" })).status, 400, "never sold by the raccoons");
+});
+
+test("arcade: the claw and the capsules cost crumbs, and the server decides", async () => {
+  await seed("Bruno", { crumbs: 20, arcade: {} });
+  const claw = await bank("Bruno", "arcadeClaw");
+  assert.equal(claw.status, 200);
+  assert.equal(typeof claw.data.result.won, "boolean");
+  const cap = await bank("Bruno", "arcadeCapsule");
+  assert.equal(cap.status, 200);
+  assert.ok(cap.data.wallet.arcade.pins[cap.data.result.pin] >= 1);
+  await seed("Bruno", { crumbs: 2 });
+  assert.equal((await bank("Bruno", "arcadeClaw")).status, 409, "5 crumbs a go");
+});

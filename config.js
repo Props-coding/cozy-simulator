@@ -60,6 +60,8 @@ const CONFIG = {
     elevator: "Elevator",
     business: "Business Floor",
     lounge: "Lounge",
+    games: "Games Floor",
+    arcade: "Arcade",
     suite: "Suite Floor",
     workshop: "Workshop",
     // Outside (Update 4)
@@ -286,6 +288,51 @@ const CONFIG = {
   // Put 2 to 4 things in the pot and cook: a known mix makes that dish
   // (and it's added to your recipe book); anything else makes a Burnt
   // Mystery (the raccoons will buy it, as junk).
+  // --- The Arcade (Update 9) ---
+  arcade: {
+    // The cabinets. Tickets for a play: `ticketsPerPoint` of your score, up
+    // to `maxTickets`. (The house server checks a play took real time: no
+    // score higher than `maxPerSecond` points a second, plus `base`.)
+    games: [
+      { id: "snake", name: "Crumb Snake", ticketsPerPoint: 1, maxTickets: 40, maxPerSecond: 1.2, base: 3, how: "Arrow keys (or WASD) to steer. Eat the crumbs, don't bite your tail." },
+      { id: "moths", name: "Moth Catcher", ticketsPerPoint: 1, maxTickets: 40, maxPerSecond: 1.5, base: 3, how: "Left and right (or A and D) to move the jar. Catch the moths, let the leaves fall." },
+    ],
+    ticketsPerDay: 300, // the most tickets the cabinets pay in a day
+    // Tickets into crumbs at the prize counter: `ticketsPerCrumb` tickets
+    // make a crumb, up to `crumbsPerDay` crumbs a day.
+    ticketsPerCrumb: 10,
+    crumbsPerDay: 30,
+    // Prizes at the counter, for tickets (arcade-only: never sold anywhere
+    // else). decor: a Nest & Nook piece for your room; owned: a raccoon
+    // catalog item (a hat).
+    prizes: [
+      { id: "plushFrog", decor: "plushFrog", tickets: 150 },
+      { id: "plushOtter", decor: "plushOtter", tickets: 200 },
+      { id: "plushRaccoon", decor: "plushRaccoon", tickets: 250 },
+      { id: "neonStar", decor: "neonStar", tickets: 300 },
+      { id: "prizeCrown", owned: "prizeCrown", tickets: 500 },
+      { id: "miniArcade", decor: "miniArcade", tickets: 800 },
+    ],
+    // The claw machine: `cost` crumbs a go, and a `winChance` (0 to 1)
+    // chance of one of the plushies.
+    claw: { cost: 5, winChance: 0.3, plushies: ["plushFrog", "plushOtter", "plushRaccoon"] },
+    // The capsule machine: `cost` crumbs for a random enamel pin (collect
+    // all eight).
+    capsule: {
+      cost: 3,
+      pins: [
+        { id: "moth", name: "Moth Pin", color: "#8a7488" },
+        { id: "leaf", name: "Leaf Pin", color: "#5fa052" },
+        { id: "fish", name: "Fish Pin", color: "#3f8ab0" },
+        { id: "mask", name: "Raccoon Mask Pin", color: "#5a5a64" },
+        { id: "star", name: "Star Pin", color: "#e8b43a" },
+        { id: "crumb", name: "Crumb Pin", color: "#c98f3c" },
+        { id: "moon", name: "Moon Pin", color: "#c8d4ec" },
+        { id: "house", name: "Porch Light Pin", color: "#e05a47" },
+      ],
+    },
+  },
+
   // --- Night & Mothman (Update 8) ---
   night: {
     // Things for Mothman (basket items "night:<id>"). Lightbulbs and
@@ -633,6 +680,7 @@ const CONFIG = {
     { name: "Ground floor", rooms: "Hallway, Theater, Study, Dinner, Library" },
     { name: "Business floor", rooms: "Offices, Conference Room, Workshop, Lounge" },
     { name: "Suite floor", rooms: "Everyone's bedroom" },
+    { name: "Games floor", rooms: "The Arcade (and soon, mini games)" },
   ],
 
   // Faces (the wardrobe's Face tab). How strong each cheek blush is (0 is
@@ -762,6 +810,9 @@ const CONFIG = {
     elevator: { style: "checker", color: "#d9cbb4" },
     elevatorUp: { style: "checker", color: "#d9cbb4" },
     elevatorTop: { style: "checker", color: "#d9cbb4" },
+    elevatorGames: { style: "checker", color: "#c9c0d8" },
+    games: { style: "planks", color: "#8a7a9a" },
+    arcade: { style: "carpet", color: "#2e2848" },
     workshop: { style: "planks", color: "#b88a5a" },
     business: { style: "planks", color: "#b9a58c" },
     lounge: { style: "carpet", color: "#a8876a" },
@@ -782,6 +833,9 @@ const CONFIG = {
     elevator: "#d8c3a0",
     elevatorUp: "#d8c3a0",
     elevatorTop: "#d8c3a0",
+    elevatorGames: "#b8aac8",
+    games: "#5a4a7a",
+    arcade: "#3a2f5a",
     workshop: "#c9b28a",
     business: "#dcd6cc",
     lounge: "#c7b49a",

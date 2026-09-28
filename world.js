@@ -57,7 +57,7 @@ function manholeArrival(side) {
 // 2 the bedroom hall, and 3 and up for the bedrooms (each is its own
 // little map, see bedroomSpot).
 function floorOf(y) {
-  return Math.max(FARM_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
+  return Math.max(GAMES_FLOOR, Math.floor((y + UPSTAIRS / 2) / UPSTAIRS));
 }
 
 // The yard (Update 4): the outdoors behind the house, on its own map one
@@ -81,9 +81,15 @@ const ALLEY = ALLEY_FLOOR * UPSTAIRS; // add this to an alley spot's y
 // size as the yard. See "The Farm" below.
 const FARM_FLOOR = -4;
 const FARM = FARM_FLOOR * UPSTAIRS; // add this to a farm spot's y
+// The Games floor (Update 9): the fourth stop on the elevator. Indoors,
+// though it's kept below the outdoor maps on the grid. A corridor across
+// the top (the mini games' doors go along its north wall, Update 10), the
+// Arcade below its west end, and the elevator lobby at its east end.
+const GAMES_FLOOR = -5;
+const GAMES = GAMES_FLOOR * UPSTAIRS + 3; // the corridor's top edge (like BUSINESS)
 // Outdoor maps (the yard, the Lake and the alley): weather, day and night, umbrellas.
 function isOutdoorFloor(floor) {
-  return floor <= YARD_FLOOR;
+  return floor <= YARD_FLOOR && floor !== GAMES_FLOOR;
 }
 
 // Open floor areas, in grid units, used to figure out which room the
@@ -110,6 +116,10 @@ const BASE_ROOMS = [
   // here are their elevator lobbies.
   { id: "elevatorUp", name: CONFIG.roomNames.elevator, rect: { x: 18, y: BUSINESS + 3, w: 6, h: 4 }, sign: { x: 20, y: BUSINESS + 3 } },
   { id: "elevatorTop", name: CONFIG.roomNames.elevator, rect: { x: 18, y: SUITE + 3, w: 6, h: 4 }, sign: { x: 20, y: SUITE + 3 } },
+  // The Games floor (Update 9): its corridor, the Arcade and its lobby.
+  { id: "games", name: CONFIG.roomNames.games, rect: { x: 0, y: GAMES, w: HOUSE_WIDTH, h: 3 } },
+  { id: "arcade", name: CONFIG.roomNames.arcade, rect: { x: 0, y: GAMES + 3, w: 18, h: 7 }, sign: { x: 9, y: GAMES + 3 } },
+  { id: "elevatorGames", name: CONFIG.roomNames.elevator, rect: { x: 18, y: GAMES + 3, w: 6, h: 4 }, sign: { x: 20, y: GAMES + 3 } },
 ];
 
 // Solid rectangles the player can't walk through: the outer walls, the
@@ -163,6 +173,21 @@ const BASE_WALLS = [
   { x: 20.8, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: BUSINESS + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 4 + WALL_THICKNESS },
   { x: 18 - WALL_THICKNESS / 2, y: BUSINESS + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+
+  // The Games floor (Update 9): the corridor's top wall (the mini games'
+  // doors come later), its sides, its bottom (with doorways into the
+  // Arcade, x 8.2 to 9.8, and the elevator lobby, x 19.2 to 20.8), the
+  // Arcade's walls, and the lobby's.
+  { x: -WALL_THICKNESS, y: GAMES - WALL_THICKNESS, w: HOUSE_WIDTH + 2 * WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: GAMES - WALL_THICKNESS, w: WALL_THICKNESS, h: 3 + WALL_THICKNESS * 1.5 },
+  { x: HOUSE_WIDTH, y: GAMES - WALL_THICKNESS, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
+  { x: -WALL_THICKNESS, y: GAMES + 3 - WALL_THICKNESS / 2, w: 8.2 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: 9.8, y: GAMES + 3 - WALL_THICKNESS / 2, w: 19.2 - 9.8, h: WALL_THICKNESS },
+  { x: 20.8, y: GAMES + 3 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 20.8 + WALL_THICKNESS, h: WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: GAMES + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS * 1.5 },
+  { x: 18 - WALL_THICKNESS / 2, y: GAMES + 3 - WALL_THICKNESS / 2, w: WALL_THICKNESS, h: 7 + WALL_THICKNESS },
+  { x: -WALL_THICKNESS, y: GAMES + 10, w: 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
+  { x: 18 - WALL_THICKNESS / 2, y: GAMES + 7 - WALL_THICKNESS / 2, w: HOUSE_WIDTH - 18 + WALL_THICKNESS * 1.5, h: WALL_THICKNESS, low: true },
 
   // The bedroom hall: its sides and bottom (with a doorway into its
   // elevator lobby, x 19.2 to 20.8), and the lobby's walls. The hall's top
@@ -420,6 +445,32 @@ const BASE_FURNITURE = [
   { kind: "fern", x: 14.2, y: SUITE + 2.05, w: 0.6, h: 0.6 },
   { kind: "monstera", x: 16.7, y: SUITE + 2.05, w: 0.6, h: 0.6 },
   { kind: "elevatorDoor", x: 21.65, y: SUITE + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 2, solid: false },
+
+  // --- The Games floor (Update 9) ---
+  // The corridor: a runner, lamps, plants. Its north wall is kept clear for
+  // the mini games' doors (Update 10).
+  { kind: "rug", x: 1.5, y: GAMES + 0.95, w: 21, h: 0.95, color: "#4a4a7a", solid: false },
+  { kind: "palm", x: 0.2, y: GAMES + 2.05, w: 0.6, h: 0.6 },
+  { kind: "palm", x: 23.2, y: GAMES + 2.05, w: 0.6, h: 0.6 },
+  { kind: "elevatorDoor", x: 21.65, y: GAMES + 3 + WALL_THICKNESS / 2, w: 1.1, floor: 3, solid: false },
+  { kind: "bench", x: 18.3, y: GAMES + 4.2, w: 1.5, h: 0.5 },
+  { kind: "snakePlant", x: 23.2, y: GAMES + 5.8, w: 0.6, h: 0.6 },
+  // The Arcade: a checkered carpet, two playable cabinets (press E), the
+  // high score board between them, the claw machine, the capsule machine,
+  // and the prize counter where tickets become prizes (or crumbs).
+  { kind: "rug", x: 1.2, y: GAMES + 4.6, w: 15.6, h: 4.9, color: "#3a2f5a", solid: false },
+  { kind: "arcadeGame", x: 1.0, y: GAMES + 3.3, w: 0.9, h: 0.65, game: "snake" },
+  { kind: "arcadeGame", x: 2.3, y: GAMES + 3.3, w: 0.9, h: 0.65, game: "moths" },
+  { kind: "scoreBoard", x: 3.7, y: GAMES + 3 + WALL_THICKNESS / 2, w: 1.6, solid: false },
+  { kind: "arcadeGame", x: 5.6, y: GAMES + 3.3, w: 0.9, h: 0.65, game: "snake", look: 1 },
+  { kind: "arcadeGame", x: 6.9, y: GAMES + 3.3, w: 0.9, h: 0.65, game: "moths", look: 1 },
+  { kind: "clawMachine", x: 11.2, y: GAMES + 3.35, w: 1.1, h: 0.8 },
+  { kind: "capsuleMachine", x: 12.8, y: GAMES + 3.4, w: 0.7, h: 0.55 },
+  { kind: "prizeCounter", x: 13.9, y: GAMES + 7.6, w: 3.6, h: 0.9 },
+  { kind: "beanbag", x: 2.0, y: GAMES + 8.2, w: 0.9, h: 0.8 },
+  { kind: "beanbag", x: 3.4, y: GAMES + 8.5, w: 0.9, h: 0.8 },
+  { kind: "neonSign", x: 14.4, y: GAMES + 3 + WALL_THICKNESS / 2, w: 1.0, solid: false },
+  { kind: "monstera", x: 17.2, y: GAMES + 3.3, w: 0.6, h: 0.6 },
   { kind: "sconce", x: 18.7, y: SUITE + 3.2, solid: false },
   { kind: "rug", x: 20.8, y: SUITE + 4.3, w: 2.8, h: 1.9, color: "#6f5a8c", round: true, solid: false },
   { kind: "bench", x: 18.3, y: SUITE + 4.2, w: 1.5, h: 0.5 },
@@ -430,7 +481,7 @@ const BASE_FURNITURE = [
 // in front of the doors and press E to pick a floor.
 // ELEVATOR_OPEN is how open each floor's doors are right now (0 shut, 1
 // wide open), set by main.js while you ride and read when drawing.
-const ELEVATOR_OPEN = [0, 0, 0];
+const ELEVATOR_OPEN = [0, 0, 0, 0];
 
 // Where a bedroom's map is: its own "floor" further down the grid (map 0
 // is floor 3, map 1 floor 4...), centered across the view like the house.
@@ -712,6 +763,18 @@ function fishingSpot(player) {
 }
 
 // Your own fish tank, if you're standing within a step of it (in your bedroom).
+// The Arcade cabinet you're standing at (Update 9), or null.
+function arcadeCabinetNear(player) {
+  const cx = player.x + PLAYER_SIZE / 2, cy = player.y + PLAYER_SIZE / 2;
+  let best = null, bestD = 0.8;
+  for (const f of FURNITURE) {
+    if (f.kind !== "arcadeGame" || floorOf(f.y) !== floorOf(player.y)) continue;
+    const d = Math.hypot(Math.max(f.x - cx, 0, cx - f.x - f.w), Math.max(f.y - cy, 0, cy - f.y - f.h));
+    if (d < bestD) (best = f), (bestD = d);
+  }
+  return best;
+}
+
 // Your own canvas, poster or rug (Update 7) within reach, or null.
 const ART_KINDS = ["artCanvas", "artPoster", "artRug"];
 function myArtInReach(player) {
@@ -1906,6 +1969,14 @@ const DECOR = {
   // The art aisle (Update 7): blank things you paint yourself (walk up to
   // one in your room and press E).
   // (Update 8) The Mothman lamp, and the plush he gives his best friends.
+  // (Update 9) Arcade prizes: never sold in Nest & Nook. The plushies come
+  // from the claw machine (and the prize counter), the little cabinet and
+  // the neon star from the prize counter (config.js arcade).
+  plushRaccoon: { name: "Raccoon Plush", kind: "plushRaccoon", w: 0.5, h: 0.4 },
+  plushOtter: { name: "Otter Plush", kind: "plushOtter", w: 0.5, h: 0.4 },
+  plushFrog: { name: "Frog Plush", kind: "plushFrog", w: 0.45, h: 0.35 },
+  miniArcade: { name: "Mini Arcade Cabinet", kind: "arcade", w: 0.8, h: 0.6 },
+  neonStar: { name: "Neon Star", kind: "neonStar", w: 0.7, wall: true },
   mothLamp: { name: "Mothman Lamp", tab: "decor", price: 45, kind: "mothLamp", w: 0.5, h: 0.4 },
   mothPlush: { name: "Mothman Plush", kind: "mothPlush", w: 0.5, h: 0.4 }, // (no price or aisle: only Mothman gives it)
   artCanvas: { name: "Blank Canvas", tab: "art", price: 12, kind: "artCanvas", w: 0.7, wall: true },
@@ -2198,6 +2269,12 @@ function nearestInteraction(player) {
   // shelves (books by friends; a tall library shelf in your bedroom works
   // too), and pixel art you can paint (your own).
   near("wishingWell", 0.9);
+  // The Arcade (Update 9): the cabinets, the claw, the capsules and the
+  // prize counter.
+  near("arcadeGame", 0.8);
+  near("clawMachine", 0.9);
+  near("capsuleMachine", 0.9);
+  near("prizeCounter", 1.0);
   // Night & Mothman (Update 8): the Workshop's toolbox (lightbulbs and
   // lanterns), and the porch light swarm at nine. (Fireflies are caught
   // only when nothing at all is in reach: main.js, night.js fireflyHere.)
@@ -2284,5 +2361,6 @@ function getCurrentRoom(player) {
   if (floorOf(cy) === LAKE_FLOOR) return LAKE_AREA;
   if (floorOf(cy) === ALLEY_FLOOR) return ALLEY_AREA;
   if (floorOf(cy) === FARM_FLOOR) return FARM_AREA;
+  if (floorOf(cy) === GAMES_FLOOR) return ROOMS.find((r) => r.id === "games");
   return ROOMS.find((r) => r.id === (["hallway", "business"][floorOf(cy)] ?? "suite")); // (a bedroom's doorway counts as the suite floor's hall)
 }

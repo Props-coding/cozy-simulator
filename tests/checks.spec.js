@@ -159,3 +159,36 @@ test("Night & Mothman: the toolbox, and Mothman in the speech box", async ({ pag
   expect(await frameErrors(page)).toEqual([]);
   expect(problems).toEqual([]);
 });
+
+test("Arcade: play a cabinet, a go on the claw, and the elevator home", async ({ page }) => {
+  const problems = await enterHouse(page);
+  await seed(page, { crumbs: 20, arcade: {} });
+  await goTo(page, { name: "arcade", spot: () => {
+    const cab = FURNITURE.find((f) => f.kind === "arcadeGame" && f.game === "snake");
+    return { x: cab.x + 0.15, y: cab.y + cab.h + 0.1 };
+  } });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await expect(page.locator(".arcade-screen")).toBeVisible();
+  await page.click("#extras-body .warm-button"); // Start
+  // (The snake runs into the wall on its own after a couple of seconds.)
+  await expect(page.locator("#extras-body .warm-button")).toHaveText("Play again", { timeout: 10_000 });
+  await page.keyboard.press("Escape");
+  await goTo(page, { name: "claw", spot: () => {
+    const claw = FURNITURE.find((f) => f.kind === "clawMachine");
+    return { x: claw.x + 0.2, y: claw.y + claw.h + 0.1 };
+  } });
+  await page.waitForTimeout(1500);
+  const crumbs = () => page.evaluate(async () => (await import("./bank.js")).myWallet().crumbs);
+  const before = await crumbs();
+  await page.keyboard.press("e");
+  await expect.poll(crumbs).not.toBe(before); // (a go costs 5 crumbs; a first win also pays the Claw Master badge)
+  // The elevator, from the Games floor down to the ground floor.
+  await goTo(page, { name: "lobby", spot: () => ({ x: 21.9, y: GAMES + 3.8 }) });
+  await page.waitForTimeout(600);
+  await page.keyboard.press("e");
+  await page.click("#elevator-floors button >> nth=0");
+  await expect.poll(async () => (await whereAmI(page)).floor).toBe(0);
+  expect(await frameErrors(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});

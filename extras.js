@@ -43,10 +43,12 @@ function openPanel(title, build, closing = null) {
   build(panelBody);
 }
 
-// The same panel, for other parts of the house (Mothman's scrapbook, night.js).
-export function openExtrasPanel(title, build) {
+// The same panel, for other parts of the house (Mothman's scrapbook,
+// night.js; the Arcade's cabinets, arcade.js). `closing` runs when it's
+// closed (a cabinet stops its game).
+export function openExtrasPanel(title, build, closing = null) {
   showing = "other";
-  openPanel(title, build);
+  openPanel(title, build, closing);
 }
 
 export function closeExtras() {

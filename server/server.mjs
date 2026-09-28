@@ -771,6 +771,15 @@ function fillWallet(w) {
   w.night.fireflies ??= 0;
   w.night.lastFirefly ??= 0;
   w.night.porchDay ??= 0;
+  // The Arcade (Update 9): your tickets, today's winnings and cash-ins,
+  // your capsule pins, and the play that's going on (if any).
+  w.arcade ??= {};
+  w.arcade.tickets ??= 0;
+  w.arcade.day ??= 0;
+  w.arcade.won ??= 0;
+  w.arcade.cashed ??= 0;
+  w.arcade.pins ??= {};
+  w.arcade.play ??= null;
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -860,7 +869,7 @@ function tasteOf(id, item) {
 // What the page gets to see (the server's own bookkeeping left out).
 function publicWallet(w) {
   const { rods, rod, bait, xp, log, lesson } = w.fishing;
-  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
+  return { crumbs: w.crumbs, owned: w.owned, met: w.met, basket: w.basket, fishing: { rods, rod, bait, xp, log, lesson }, gardenLesson: w.gardenLesson, home: w.home, unlocked: w.unlocked, tiers: w.tiers, stats: w.stats, recipes: w.recipes, boost: boostOf(w), cookieDay: w.cookieDay, wishDay: w.wishDay, night: { sightings: w.night.sightings, sightDay: w.night.sightDay, fireflyDay: w.night.fireflyDay, fireflies: w.night.fireflies, porchDay: w.night.porchDay }, arcade: { tickets: w.arcade.tickets, won: arcadeToday(w).won, cashed: arcadeToday(w).cashed, pins: w.arcade.pins }, merchant: w.merchant, requests: todaysRequests(w), friends: friendships(w) };
 }
 
 const addStat = (w, stat, n) => (w.stats[stat] = whole((w.stats[stat] ?? 0) + n));
@@ -970,6 +979,13 @@ async function checkSky() {
   } catch (err) {
     console.warn("Couldn't get the weather:", err.message);
   }
+}
+
+// Today's arcade winnings and cash-ins (Update 9), started afresh each day.
+function arcadeToday(w) {
+  const day = hometownDay();
+  if (w.arcade.day !== day) Object.assign(w.arcade, { day, won: 0, cashed: 0 });
+  return w.arcade;
 }
 
 // A night's date (Update 8): the evening's date, so the small hours after
@@ -1220,7 +1236,7 @@ const BANK = {
   },
   buy(w, b, ev) {
     const item = GAME.SHOP[b.id];
-    if (!item || item.reward) throw new Oops(400, "The raccoons don't sell that.");
+    if (!item || item.reward) throw new Oops(400, "The raccoons don't sell that."); // (Mothman's gifts and arcade prizes aren't for sale)
     if (w.owned.includes(item.id)) throw new Oops(409, "You already have that one.");
     spend(w, item.price);
     w.owned.push(item.id);
@@ -1590,6 +1606,89 @@ const BANK = {
     const crop = crops[Math.floor(Math.random() * crops.length)];
     putIn(w, `seed:${crop.id}`, 1);
     return { text, seed: crop.id };
+  },
+
+  // --- The Arcade (Update 9) ---
+  // A cabinet play starts: the house server notes the game and the time,
+  // so the score at the end can be checked against how long it took.
+  arcadeStart(w, b) {
+    const game = GAME.CONFIG.arcade.games.find((g) => g.id === b.game);
+    if (!game) throw new Oops(400, "There's no cabinet like that.");
+    w.arcade.play = { game: game.id, at: Date.now(), id: newId() };
+    return { id: w.arcade.play.id };
+  },
+  // The play ends: the score (no more than the time allows), tickets for
+  // it (within today's cap), and the high score board.
+  arcadeEnd(w, b, ev, { user }) {
+    const play = w.arcade.play;
+    if (!play || play.id !== b.id) throw new Oops(409, "That game isn't running.");
+    w.arcade.play = null;
+    const game = GAME.CONFIG.arcade.games.find((g) => g.id === play.game);
+    const seconds = Math.min(600, (Date.now() - play.at) / 1000);
+    const most = Math.floor(game.base + seconds * game.maxPerSecond);
+    const score = Math.max(0, Math.min(most, Math.floor(Number(b.score) || 0)));
+    const today = arcadeToday(w);
+    const tickets = Math.max(0, Math.min(Math.floor(score * game.ticketsPerPoint), game.maxTickets, GAME.CONFIG.arcade.ticketsPerDay - today.won));
+    today.won += tickets;
+    w.arcade.tickets = whole(w.arcade.tickets + tickets);
+    if (tickets > 0) grant(w, "firstTickets", ev);
+    // The high score board: the top ten, one line per person (their best).
+    db.arcadeScores ??= {};
+    const board = (db.arcadeScores[game.id] ??= []);
+    const mine = board.find((e) => e.name === user.name);
+    if (score > 0 && (!mine || score > mine.score)) {
+      if (mine) board.splice(board.indexOf(mine), 1);
+      board.push({ name: user.name, score, at: Date.now() });
+      board.sort((a, c) => c.score - a.score || a.at - c.at);
+      board.length = Math.min(board.length, 10);
+    }
+    const top = board[0]?.name === user.name && board[0]?.score === score;
+    if (top) grant(w, "highScore", ev);
+    return { score, tickets, top, board };
+  },
+  // Tickets into crumbs, up to the day's cap.
+  arcadeCashIn(w, b, ev) {
+    const cfg = GAME.CONFIG.arcade;
+    const today = arcadeToday(w);
+    const room = cfg.crumbsPerDay - today.cashed;
+    if (room <= 0) throw new Oops(409, "That's all the cashing in for today. Come back tomorrow!");
+    const crumbs = Math.min(room, Math.floor(w.arcade.tickets / cfg.ticketsPerCrumb), amount(b.crumbs ?? room, 1, cfg.crumbsPerDay));
+    if (crumbs <= 0) throw new Oops(409, `You need ${cfg.ticketsPerCrumb} tickets for a crumb.`);
+    w.arcade.tickets -= crumbs * cfg.ticketsPerCrumb;
+    today.cashed += crumbs;
+    earn(w, crumbs, ev);
+    return { crumbs };
+  },
+  // A prize from the counter, for tickets.
+  arcadePrize(w, b) {
+    const prize = GAME.CONFIG.arcade.prizes.find((p) => p.id === b.id);
+    if (!prize) throw new Oops(400, "That's not behind the counter.");
+    if (prize.owned && w.owned.includes(prize.owned)) throw new Oops(409, "You already have that one.");
+    if (w.arcade.tickets < prize.tickets) throw new Oops(409, `That's ${prize.tickets} tickets, and you have ${w.arcade.tickets}.`);
+    w.arcade.tickets -= prize.tickets;
+    if (prize.owned) w.owned.push(prize.owned);
+    if (prize.decor) w.home.owned[prize.decor] = Math.min(99, (w.home.owned[prize.decor] ?? 0) + 1);
+    return { got: prize.owned ?? "decor:" + prize.decor };
+  },
+  // The claw machine: crumbs for a go; the house server decides.
+  arcadeClaw(w, b, ev) {
+    const claw = GAME.CONFIG.arcade.claw;
+    spend(w, claw.cost);
+    if (Math.random() >= claw.winChance) return { won: false };
+    const plush = claw.plushies[Math.floor(Math.random() * claw.plushies.length)];
+    w.home.owned[plush] = Math.min(99, (w.home.owned[plush] ?? 0) + 1);
+    grant(w, "clawWin", ev);
+    return { won: true, got: "decor:" + plush };
+  },
+  // The capsule machine: crumbs for a random pin.
+  arcadeCapsule(w, b, ev) {
+    const cap = GAME.CONFIG.arcade.capsule;
+    spend(w, cap.cost);
+    const pin = cap.pins[Math.floor(Math.random() * cap.pins.length)];
+    const fresh = !w.arcade.pins[pin.id];
+    w.arcade.pins[pin.id] = Math.min(999, (w.arcade.pins[pin.id] ?? 0) + 1);
+    if (cap.pins.every((p) => w.arcade.pins[p.id])) grant(w, "allPins", ev);
+    return { pin: pin.id, fresh };
   },
 
   // --- Night & Mothman (Update 8) ---
@@ -2414,6 +2513,13 @@ const routes = {
     checkTiers(w, ev);
     await saveDb();
     return { wallet: publicWallet(w), events: ev, result };
+  },
+
+  // The Arcade's high score boards (Update 9): the top ten for each cabinet.
+  "GET /api/arcade/scores": async (req) => {
+    const { user } = currentUser(req);
+    if (!user.member) throw new Oops(403, "Enter the house phrase first.");
+    return { boards: db.arcadeScores ?? {} };
   },
 
   // --- Library books written by friends (Update 7) ---

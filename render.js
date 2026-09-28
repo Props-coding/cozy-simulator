@@ -422,7 +422,7 @@ function paintYard(ctx) {
     paintAlleyGround(ctx); // the back alley (render-alley.js)
     return;
   }
-  if (viewFloor >= 1) {
+  if (viewFloor >= 1 || viewFloor === GAMES_FLOOR) {
     paintIndoorBackdrop(ctx);
     return;
   }

@@ -96,6 +96,8 @@ const SHOP_CATALOG = [
   // (config.js night.rewards). `reward` keeps them out of the shop.
   { id: "mothAntennae", type: "hat", name: "Moth Antennae", price: 0, height: 16, reward: "mothman", line: "feathery. they twitch when something's near a lamp." },
   { id: "mothWings", type: "backpack", name: "Moth Wings", price: 0, reward: "mothman", line: "soft, dusty, and exactly the color of dusk." },
+  // The Arcade's prize crown (Update 9): tickets only, at the prize counter.
+  { id: "prizeCrown", type: "hat", name: "Prize Crown", price: 0, height: 14, reward: "arcade", line: "made of pure plastic gold. worth every ticket." },
   { id: "mothPet", type: "pet", name: "Tiny Moth", price: 0, reward: "mothman", line: "it follows you. and every lamp. mostly lamps." },
   { id: "cat", type: "pet", name: "Cat", price: 60, line: "technically it adopted you. we just did the paperwork." },
   { id: "dog", type: "pet", name: "Pup", price: 60, line: "good boy. very good boy. best boy. okay bye boy." },
@@ -186,6 +188,10 @@ const ACHIEVEMENT_LIST = [
   { id: "author", name: "Published", desc: "Write a book for the Library.", crumbs: 15, server: true },
   { id: "cloverFriend", name: "Best Buns", desc: "Reach 10 hearts with Clover.", crumbs: 50, server: true },
   { id: "mortimerFriend", name: "Night Owls", desc: "Reach 10 hearts with Mortimer.", crumbs: 50, server: true },
+  { id: "firstTickets", name: "Tickets, Please", desc: "Win tickets at an Arcade cabinet.", crumbs: 5, server: true },
+  { id: "highScore", name: "High Score", desc: "Top a cabinet's high score board.", crumbs: 20, server: true },
+  { id: "clawWin", name: "Claw Master", desc: "Win a plush from the claw machine.", crumbs: 10, server: true },
+  { id: "allPins", name: "Pin Collector", desc: "Collect all eight capsule pins.", crumbs: 30, server: true },
   { id: "mothmanFriend", name: "Lamp Friends", desc: "Reach 10 hearts with Mothman.", crumbs: 50, server: true },
   { id: "believer", name: "Believer", desc: "Reach 2 hearts with Mothman.", crumbs: 20, server: true },
   { id: "firstSighting", name: "Blurry Photo", desc: "Spot Mothman at night.", crumbs: 10, server: true },

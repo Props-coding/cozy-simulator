@@ -11,6 +11,7 @@ export const FLOORS = [
   { name: "yard", room: null, spot: () => YARD_SPAWN },
   { name: "Willow Lake", room: "lake", spot: () => LAKE_SPAWN },
   { name: "back alley", room: "alley", spot: () => ALLEY_SPAWN },
+  { name: "games floor", room: "arcade", spot: () => ({ x: 9.0, y: GAMES + 6.0 }) },
   { name: "the Farm", room: "farm", spot: () => FARM_SPAWN },
 ];
 

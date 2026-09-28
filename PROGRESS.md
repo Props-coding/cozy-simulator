@@ -450,6 +450,16 @@ The site stays on GitHub Pages. The droplet runs one small program for the thing
   - Known limits (decided overnight, easy to change): there's no "lamp on/off" switch, so a lamp visit is a chance when you arrive at night (35%, or 70% with a Mothman Lamp). Mothman's chat, gift and request reset at midnight like the other residents', so a night that spans midnight gets two. The server trusts the page that you saw him, were at the porch or caught a firefly outdoors (all capped once a night, like the wishing well and fortune cookie); his gifts at so many hearts, prices and items are fully server-checked.
   - **Needs the server deployed** (server.mjs, config.js, catalog.js, world.js).
 
+- Build 0.80 (overnight): Update 9, the Arcade, on a new Games floor.
+  - The Games floor: the elevator's fourth stop. A corridor across the top (its north wall is kept clear for the mini games' doors in Update 10), the Arcade below its west end, and the elevator lobby at its east end. (Inside the code it's kept below the outdoor maps on the grid, as GAMES_FLOOR, but it's indoors: no weather.)
+  - Two solo cabinets you can play any time (press E): Crumb Snake (arrow keys or WASD) and Moth Catcher (left and right; catch the moths, let the leaves fall, 45 seconds). There are two of each, in different colors.
+  - Tickets for your score (up to 40 a play, 300 a day), a high score board for each cabinet (the top ten, kept on the house server, shown by the cabinet and on the wall). Anti-cheat: the server times each play from Start to the end and won't count a score higher than that time allows.
+  - The prize counter (press E): arcade-only prizes for tickets (Frog, Otter and Raccoon plushies, a neon star, the Prize Crown hat, a mini arcade cabinet for your room), tickets into crumbs (10 tickets a crumb, up to 30 crumbs a day), and your pin collection.
+  - The claw machine (5 crumbs a go; the server decides, about 1 in 3 wins a plush) and the capsule machine (3 crumbs for one of eight enamel pins; collect them all).
+  - New badges: Tickets, Please; High Score; Claw Master; Pin Collector. Settings: `arcade` in config.js.
+  - Tests: 3 new server tests (a score can't beat the clock; cashing-in's daily cap and ticket prizes; the claw and capsules cost crumbs and the server decides) and a house test (play a cabinet, the claw, the elevator from the Games floor home). The every-floor test visits the Games floor too.
+  - **Needs the server deployed** (server.mjs, config.js, catalog.js, world.js).
+
 ## Roadmap: Updates 5 to 10 (planned 2026-09-26)
 Friend test night waits until these are in.
 
