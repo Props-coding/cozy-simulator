@@ -322,102 +322,6 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 
-  // Kitchen counter with a stove: cream cupboards, a wood worktop, two
-  // burners with a pot on one, and a cutting board with a loaf of bread.
-  stove(ctx, f) {
-    const c = drawCounter(ctx, f);
-    const { x, y, w, h } = c.top;
-    ctx.fillStyle = "#3a3a40";
-    roundRectPath(ctx, x + w - 36, y + 3, 32, h - 6, 3);
-    ctx.fill();
-    ctx.strokeStyle = "#6a6a72";
-    ctx.lineWidth = 1.5;
-    for (const bx of [x + w - 28, x + w - 12]) {
-      ctx.beginPath();
-      ctx.ellipse(bx, y + h / 2, 5, 3.5, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.fillStyle = "#c0554a"; // pot
-    ctx.fillRect(x + w - 35, y + h / 2 - 10, 14, 10);
-    ctx.fillStyle = "#a8473a";
-    ctx.fillRect(x + w - 37, y + h / 2 - 11, 18, 3);
-    ctx.fillStyle = "#d9b98f"; // cutting board
-    roundRectPath(ctx, x + 6, y + 4, 24, h - 8, 3);
-    ctx.fill();
-    ctx.fillStyle = "#c98a3c"; // bread
-    ctx.beginPath();
-    ctx.ellipse(x + 18, y + h / 2 - 1, 8, 4.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-  },
-
-  // A small counter with a sink and a tall tap.
-  sink(ctx, f) {
-    const c = drawCounter(ctx, f);
-    const { x, y, w, h } = c.top;
-    ctx.fillStyle = "#b8c2c8";
-    roundRectPath(ctx, x + 5, y + 4, w - 10, h - 8, 4);
-    ctx.fill();
-    ctx.fillStyle = "#8f9aa1";
-    roundRectPath(ctx, x + 8, y + 7, w - 16, h - 12, 3);
-    ctx.fill();
-    ctx.strokeStyle = "#cfd6da";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y + 4);
-    ctx.lineTo(x + w / 2, y - 8);
-    ctx.quadraticCurveTo(x + w / 2, y - 12, x + w / 2 + 6, y - 10);
-    ctx.stroke();
-  },
-
-  // A little wooden tea cart on wheels: plates on the bottom shelf, a
-  // teapot and two cups on top. Looks the same from any side, so it sits
-  // happily against any wall.
-  teaCart(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
-    const w = b.x - a.x, depth = b.y - a.y, trayH = 28;
-    // Bottom shelf with a stack of plates.
-    const shelf = drawBlock(ctx, f.x, f.y, f.w, f.h, 8, WOOD);
-    for (let i = 0; i < 3; i++) {
-      ctx.fillStyle = i % 2 ? "#e8dcc8" : "#f7f1e6";
-      ctx.beginPath();
-      ctx.ellipse(shelf.top.x + w / 2, shelf.top.y + depth / 2 - i * 2.5, 10, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Legs and wheels.
-    ctx.fillStyle = WOOD_DARK;
-    for (const lx of [a.x + 2, b.x - 5]) ctx.fillRect(lx, b.y - trayH, 3, trayH - 2);
-    for (const wx of [a.x + 3.5, b.x - 3.5]) {
-      ctx.beginPath();
-      ctx.arc(wx, b.y - 1.5, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Top tray with a little raised lip.
-    ctx.fillStyle = "#a3785a";
-    ctx.fillRect(a.x, a.y - trayH, w, depth);
-    ctx.fillStyle = WOOD_DARK;
-    ctx.fillRect(a.x, b.y - trayH - 3, w, 4);
-    // Teapot and cups on the tray.
-    const ty = a.y - trayH + depth / 2;
-    ctx.fillStyle = "#4a90a4";
-    ctx.beginPath();
-    ctx.ellipse(a.x + 16, ty - 4, 8, 6.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(a.x + 14, ty - 12, 4, 3);
-    ctx.strokeStyle = "#4a90a4";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(a.x + 23, ty - 4);
-    ctx.lineTo(a.x + 28, ty - 9);
-    ctx.stroke();
-    for (const cx of [a.x + w - 22, a.x + w - 11]) {
-      ctx.fillStyle = "#f7f1e6";
-      ctx.fillRect(cx - 3.5, ty - 5, 7, 6);
-      ctx.fillStyle = "#5c3a22";
-      ctx.fillRect(cx - 2.5, ty - 5, 5, 1.5);
-    }
-  },
-
   // --- Library ---
 
   // Hung on a wall face: a round clock showing the real time where you are.
@@ -457,36 +361,6 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.stroke();
     }
     ctx.lineCap = "butt";
-  },
-
-  // A long reading table with two green banker's lamps, open books and a
-  // stack of books to get through.
-  readingTable(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#5c3d2a");
-    const { x, y, w, h } = t.top;
-    const mid = y + h / 2;
-    for (const bx of [x + 14, x + w - 44]) {
-      ctx.fillStyle = "#f4ecdc"; // open book
-      ctx.fillRect(bx, mid - 3, 26, 13);
-      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-      ctx.fillRect(bx + 12.5, mid - 3, 1, 13);
-    }
-    for (const lx of [x + w * 0.33, x + w * 0.67]) {
-      ctx.fillStyle = "#b8923a"; // brass stand
-      ctx.fillRect(lx - 5, mid + 1, 10, 3);
-      ctx.fillRect(lx - 0.8, mid - 10, 1.6, 11);
-      ctx.fillStyle = "#2f6b45"; // green glass shade
-      ctx.beginPath();
-      ctx.ellipse(lx, mid - 11, 8, 4, 0, Math.PI, 0);
-      ctx.fill();
-      ctx.fillRect(lx - 8, mid - 11, 16, 2);
-    }
-    const stack = ["#8f2f2a", "#c98a3c", "#3f6f9f"];
-    stack.forEach((color, i) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(x + w / 2 - 8, mid + 4 - i * 4, 16 - i * 2, 4);
-    });
   },
 
   // --- Conference Room ---
@@ -738,19 +612,6 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // A plush red cinema seat facing the screen (so you see its back), with
-  // armrests. Sort order draws it over whoever sits in it.
-  theaterSeat(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    drawBlock(ctx, f.x + 0.08, f.y, f.w - 0.16, f.h - 0.2, 12, "#7d2a33"); // seat cushion
-    drawBlock(ctx, f.x, f.y + 0.05, 0.08, f.h - 0.05, 17, "#4a2a30"); // armrests
-    drawBlock(ctx, f.x + f.w - 0.08, f.y + 0.05, 0.08, f.h - 0.05, 17, "#4a2a30");
-    const back = drawBlock(ctx, f.x + 0.04, f.y + f.h - 0.2, f.w - 0.08, 0.2, 26, "#9b3540");
-    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
-    roundRectPath(ctx, back.face.x + 4, back.face.y + 3, back.face.w - 8, back.face.h - 9, 4);
-    ctx.fill();
-  },
-
   // Red velvet stage curtains hung just in front of the Theater's screen,
   // drawn open on both sides of it, under a gold-fringed valance with a
   // row of little marquee bulbs.
@@ -796,70 +657,6 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // A big plush back-row sofa, seen from behind (it faces the screen),
-  // with a blanket thrown over it. Stand on it to sit; its back hides your
-  // lower half like the cinema seats do.
-  cinemaSofa(ctx, f) {
-    // (The Theater's is plum; f.color gives another, like the Lounge's sage.)
-    const c = f.color ?? "#6b2f45";
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    drawBlock(ctx, f.x + 0.1, f.y, f.w - 0.2, f.h - 0.25, 12, c); // seat cushions
-    drawBlock(ctx, f.x, f.y + 0.05, 0.18, f.h - 0.05, 18, shadeColor(c, -21)); // arms
-    drawBlock(ctx, f.x + f.w - 0.18, f.y + 0.05, 0.18, f.h - 0.05, 18, shadeColor(c, -21));
-    const back = drawBlock(ctx, f.x + 0.05, f.y + f.h - 0.25, f.w - 0.1, 0.25, 24, shadeColor(c, 18));
-    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-    const seats = 3, sw = (back.face.w - 8) / seats;
-    for (let i = 0; i < seats; i++) {
-      roundRectPath(ctx, back.face.x + 4 + i * sw + 1, back.face.y + 3, sw - 2, back.face.h - 8, 4);
-      ctx.fill();
-    }
-    ctx.fillStyle = "#e9c46a"; // a mustard blanket over one end
-    ctx.beginPath();
-    ctx.moveTo(back.face.x + back.face.w - 34, back.top.y);
-    ctx.lineTo(back.face.x + back.face.w - 10, back.top.y);
-    ctx.lineTo(back.face.x + back.face.w - 8, back.face.y + back.face.h - 2);
-    ctx.lineTo(back.face.x + back.face.w - 30, back.face.y + back.face.h - 5);
-    ctx.fill();
-    ctx.fillStyle = "rgba(160, 110, 30, 0.35)";
-    for (let k = 0; k < 3; k++) ctx.fillRect(back.face.x + back.face.w - 30 + k * 7, back.top.y + 2, 1.5, back.face.h);
-  },
-
-  // A snack counter: a glass case of candy boxes, soda cups with straws,
-  // and a little "SNACKS" sign.
-  candyCounter(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#8a4a2e");
-    ctx.fillStyle = "rgba(200, 230, 240, 0.35)"; // glass front
-    ctx.fillRect(c.face.x + 4, c.face.y + 3, c.face.w - 8, c.face.h - 7);
-    const boxes = ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#e98ac0", "#f28a3a"];
-    for (let i = 0, bx = c.face.x + 7; bx < c.face.x + c.face.w - 12; i++, bx += 9) {
-      ctx.fillStyle = boxes[i % boxes.length];
-      ctx.fillRect(bx, c.face.y + 6 + (i % 2) * 3, 7, 8);
-    }
-    for (let i = 0; i < 3; i++) {
-      const x = c.top.x + 8 + i * 9, y = c.top.y + c.top.h / 2;
-      ctx.fillStyle = i === 1 ? "#5aa0d8" : "#e04a5a"; // soda cups
-      ctx.beginPath();
-      ctx.moveTo(x - 3, y - 11);
-      ctx.lineTo(x + 3, y - 11);
-      ctx.lineTo(x + 2, y);
-      ctx.lineTo(x - 2, y);
-      ctx.fill();
-      ctx.fillStyle = "#fffaf3";
-      ctx.fillRect(x - 3, y - 12, 6, 2);
-      ctx.fillRect(x + 0.5, y - 17, 1, 6); // straw
-    }
-    const sx = c.top.x + c.top.w - 34, sy = c.top.y - 10;
-    ctx.fillStyle = "#3a1f2a";
-    roundRectPath(ctx, sx, sy, 28, 11, 3);
-    ctx.fill();
-    ctx.fillStyle = "#ffcf6e";
-    ctx.font = "700 7px 'Quicksand', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("SNACKS", sx + 14, sy + 8);
-    ctx.textAlign = "left";
-  },
-
   // Little lights set into the floor along the aisle, like in a cinema.
   aisleLights(ctx, f) {
     const n = Math.max(2, Math.round(f.h / 0.9));
@@ -872,119 +669,7 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // The Study's turntable on a little record cabinet: a spinning record
-  // (its label is the color of the station you picked), a tonearm, and
-  // records filed in the cabinet below. Press E at it to pick a station.
-  turntable(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const cab = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#7a5238");
-    const sleeves = ["#d9825b", "#7a6bc8", "#3f6f9f", "#f2b84a", "#e07a8a", "#3f7a4a"];
-    sleeves.forEach((c, i) => { // records filed in the cabinet
-      ctx.fillStyle = c;
-      ctx.fillRect(cab.face.x + 4 + i * 5, cab.face.y + 4, 3.5, cab.face.h - 7);
-    });
-    const deck = drawBlock(ctx, f.x + 0.1, f.y + 0.02, f.w - 0.2, f.h - 0.12, 3, "#3a2a22");
-    const cx = deck.top.x + deck.top.w * 0.42, cy = deck.top.y + deck.top.h / 2;
-    const r = Math.min(deck.top.h, deck.top.w * 0.6) / 2 - 1;
-    ctx.fillStyle = "#1c1618"; // the record
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, r, r * 0.8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)"; // grooves
-    ctx.lineWidth = 0.6;
-    for (const k of [0.55, 0.75]) {
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r * k, r * k * 0.8, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    const spin = performance.now() / 600; // a glint going round
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, r * 0.85, r * 0.68, 0, spin, spin + 0.6);
-    ctx.stroke();
-    ctx.fillStyle = globalThis.myLofiColor || "#d9825b"; // the label
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, r * 0.3, r * 0.24, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#c9c2b8"; // the tonearm
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(deck.top.x + deck.top.w - 5, deck.top.y + 3);
-    ctx.lineTo(deck.top.x + deck.top.w - 8, cy + 2);
-    ctx.lineTo(cx + r * 0.55, cy + 1);
-    ctx.stroke();
-    ctx.fillStyle = "#e0b84c";
-    ctx.beginPath();
-    ctx.arc(deck.top.x + deck.top.w - 5, deck.top.y + 3, 2, 0, Math.PI * 2);
-    ctx.fill();
-  },
-
-  // An old-timey popcorn machine: a red cart with a glass box of popcorn.
-  popcorn(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const cart = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#b8322a");
-    ctx.fillStyle = "#e0b84c";
-    ctx.fillRect(cart.face.x, cart.face.y + 3, cart.face.w, 2);
-    const gx = cart.top.x + 4, gw = cart.top.w - 8, gh = 26, gy = cart.top.y + cart.top.h / 2 - gh;
-    ctx.fillStyle = "rgba(230, 240, 245, 0.55)"; // glass
-    ctx.fillRect(gx, gy, gw, gh);
-    ctx.fillStyle = "#f7e6a8"; // popcorn piled in the bottom
-    for (let i = 0; i < 14; i++) {
-      ctx.beginPath();
-      ctx.arc(gx + 3 + ((i * 7) % (gw - 6)), gy + gh - 4 - Math.floor(i / 5) * 4, 2.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.strokeStyle = "#8a2a24";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(gx, gy, gw, gh);
-    ctx.fillStyle = "#b8322a"; // little roof
-    ctx.beginPath();
-    ctx.moveTo(gx - 3, gy);
-    ctx.lineTo(gx + gw / 2, gy - 8);
-    ctx.lineTo(gx + gw + 3, gy);
-    ctx.closePath();
-    ctx.fill();
-  },
-
   // --- Hallway pieces ---
-
-  // A slim side table with a drawer, holding a lamp, a vase of flowers
-  // and a little bowl for keys.
-  console(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 26, WOOD);
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(c.face.x + 6.5, c.face.y + 4.5, c.face.w - 13, 9);
-    drawKnob(ctx, c.face.x + c.face.w / 2, c.face.y + 9);
-    const mid = c.top.y + c.top.h / 2;
-    drawLamp(ctx, c.top.x + 16, mid + 2);
-    // Vase of flowers.
-    const vx = c.top.x + c.top.w - 22;
-    ctx.fillStyle = "#6f8a6a";
-    roundRectPath(ctx, vx - 4, mid - 8, 8, 11, 3);
-    ctx.fill();
-    ctx.strokeStyle = "#4f7a48";
-    ctx.lineWidth = 1.2;
-    for (const [fx, fy, color] of [[-5, -18, "#e37aa0"], [0, -21, "#f3e6d0"], [5, -17, "#e0a84c"]]) {
-      ctx.beginPath();
-      ctx.moveTo(vx, mid - 8);
-      ctx.lineTo(vx + fx, mid + fy);
-      ctx.stroke();
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(vx + fx, mid + fy, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Key bowl.
-    ctx.fillStyle = "#c98a3c";
-    ctx.beginPath();
-    ctx.ellipse(c.top.x + c.top.w / 2 + 4, mid + 1, 7, 3.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#e0b84c";
-    ctx.fillRect(c.top.x + c.top.w / 2 + 2, mid - 1, 4, 2);
-  },
 
   // A wooden bench with two plump cushions and a folded throw.
   bench(ctx, f) {
@@ -1800,68 +1485,6 @@ Object.assign(FURNITURE_DRAWERS, {
     drawIvySprig(ctx, b.x - 8, b.y - 19, 20, -1);
     drawIvySprig(ctx, b.x + 8, b.y - 19, 15, 1);
     drawIvySprig(ctx, b.x + 1, b.y - 18, 11, 1);
-  },
-
-  // A tall grandfather clock: a wooden case, a face showing the real local
-  // time, and a brass pendulum swinging behind a little glass window.
-  grandfatherClock(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const c = drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, f.h, 72, "#6b4630");
-    const { x, y, w, h } = c.face;
-    ctx.fillStyle = "#4a2f20"; // the crown on top
-    ctx.fillRect(c.top.x - 2, c.top.y - 3, c.top.w + 4, 4);
-    const cx = x + w / 2, fy = y + 13;
-    ctx.fillStyle = "#f7f1e6"; // the face
-    ctx.beginPath();
-    ctx.arc(cx, fy, 8.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#c9a24a";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = "#5c4530";
-    for (let k = 0; k < 12; k++) {
-      const a = (k / 12) * Math.PI * 2;
-      ctx.fillRect(cx + Math.cos(a) * 7 - 0.4, fy + Math.sin(a) * 7 - 0.4, 0.8, 0.8);
-    }
-    const now = new Date();
-    const hand = (turn, len, width) => {
-      const a = turn * Math.PI * 2 - Math.PI / 2;
-      ctx.lineWidth = width;
-      ctx.beginPath();
-      ctx.moveTo(cx, fy);
-      ctx.lineTo(cx + Math.cos(a) * len, fy + Math.sin(a) * len);
-      ctx.stroke();
-    };
-    ctx.strokeStyle = "#2b2b2b";
-    hand(((now.getHours() % 12) + now.getMinutes() / 60) / 12, 4.5, 1.4);
-    hand((now.getMinutes() + now.getSeconds() / 60) / 60, 6.5, 1);
-    ctx.fillStyle = "rgba(200, 225, 235, 0.25)"; // the glass window
-    ctx.fillRect(x + 5, y + 26, w - 10, h - 36);
-    // One tick a second, swinging only as far as the window allows (the
-    // bob's edge stays a pixel inside it), and clipped to the glass too.
-    const room = (w - 10) / 2 - 4.5, arm = h - 42;
-    const reach = Math.min(0.35, Math.asin(Math.max(0, Math.min(1, room / arm))));
-    const swing = Math.sin(performance.now() / 1000 * Math.PI) * reach;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x + 5, y + 26, w - 10, h - 36);
-    ctx.clip();
-    ctx.translate(cx, y + 26);
-    ctx.rotate(swing);
-    ctx.strokeStyle = "#c9a24a";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, h - 44);
-    ctx.stroke();
-    ctx.fillStyle = "#d9b04a";
-    ctx.beginPath();
-    ctx.arc(0, h - 42, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    ctx.strokeStyle = "rgba(40, 25, 10, 0.4)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 5, y + 26, w - 10, h - 36);
   },
 
   // A bedroom door on the suite floor's wall (f.door comes from the house

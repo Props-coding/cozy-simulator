@@ -116,7 +116,7 @@ const modelVariant = (f) => Math.abs(Math.round(f.x * 7.3 + f.y * 3.1)) % 5;
 // have theirs swapped), or the usual size for a sample.
 function sizeOf(f, W, D) {
   if (f.w === undefined || f.h === undefined) return [W, D];
-  return f.kind.endsWith("Side") ? [f.h, f.w] : [f.w, f.h];
+  return f.kind.endsWith("Side") || f.facing === "right" || f.facing === "left" ? [f.h, f.w] : [f.w, f.h];
 }
 
 const MODELS = {
@@ -663,6 +663,27 @@ function drawFace(ctx, p, name, U, V, lit, seed) {
     else ctx.rect(0, 0, U, V);
   };
   const base = shadeColor(p.color, lit);
+  if (p.mat === "glass") { // (what's behind it first, then the glass over it)
+    ctx.save();
+    shape();
+    ctx.clip();
+    p.paint?.[name]?.(ctx, U, V);
+    ctx.fillStyle = "rgba(205, 230, 240, 0.28)";
+    ctx.fillRect(0, 0, U, V);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(U * 0.12, 0);
+    ctx.lineTo(U * 0.22, 0);
+    ctx.lineTo(U * 0.08, V);
+    ctx.lineTo(U * -0.02, V);
+    ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = "rgba(90, 110, 120, 0.5)";
+    ctx.lineWidth = 1;
+    shape();
+    ctx.stroke();
+    return;
+  }
   if (p.mat === "sheer") {
     ctx.fillStyle = "rgba(255, 250, 245, 0.42)";
     shape();
@@ -845,7 +866,7 @@ function paintModel(ctx, model, P, facing) {
 // The drawn models, kept as little pictures: kind, facing, color and zoom.
 const modelCache = new Map();
 function cachedModel(kind, f, facing, scale) {
-  const key = `${kind}|${facing}|${f.w}x${f.h}|${f.color}|${modelVariant(f)}|${scale}`;
+  const key = `${kind}|${facing}|${f.w}x${f.h}|${f.color}|${f.seat}|${f.back}|${modelVariant(f)}|${scale}`;
   let hit = modelCache.get(key);
   if (hit) return hit;
   const model = MODELS[kind](f);
@@ -897,7 +918,7 @@ function drawModelPiece(ctx, f, kind, facing) {
   if (m.model.live) m.model.live(ctx, (x, y, z) => {
     const q = m.P(x, y, z);
     return { x: at.x + q.x, y: at.y + q.y };
-  });
+  }, facing);
 }
 
 // How far a spot on a turned model piece is drawn sideways (grid units),
@@ -909,14 +930,28 @@ function modelSeatShift(f, y) {
   return f.facing === "left" ? -shift : shift;
 }
 
-// Every model's drawers: its front, and turned ("...Side", facing right
-// or left). The bench and the cloud sofa keep their hand-drawn fronts (see
-// render-rooms.js): puffs and spindles that read better straight on.
-const KEEP_FRONT = new Set(["bench", "cloudSofa"]);
-for (const kind of Object.keys(MODELS)) {
-  if (!KEEP_FRONT.has(kind)) FURNITURE_DRAWERS[kind] = (ctx, f) => drawModelPiece(ctx, f, kind, "front");
-  FURNITURE_DRAWERS[kind + "Side"] = (ctx, f) => sideView(ctx, f, () => drawModelPiece(ctx, f, kind, "right"));
+// Draws a model piece the way it faces: its own `facing` ("down" or none
+// is the front, "up" the back, "right" or "left" turned), unless `how`
+// says (theater seats always show their backs: they face the screen).
+function drawModelFacing(ctx, f, kind, how = "own") {
+  const dir = how !== "own" ? how : f.kind.endsWith("Side") ? f.facing : ({ up: "back", right: "right", left: "left" }[f.facing] ?? "front");
+  if (dir === "left") sideView(ctx, f, () => drawModelPiece(ctx, f, kind, "right"));
+  else drawModelPiece(ctx, f, kind, dir);
 }
+
+// Adds models and their drawers: the piece itself, and turned ("...Side",
+// facing right or left). `keepFront` pieces keep their hand-drawn front;
+// `facing` fixes which way some always face.
+function registerModels(models, { keepFront = [], facing = {} } = {}) {
+  Object.assign(MODELS, models);
+  for (const kind of Object.keys(models)) {
+    if (!keepFront.includes(kind)) FURNITURE_DRAWERS[kind] = (ctx, f) => drawModelFacing(ctx, f, kind, facing[kind]);
+    FURNITURE_DRAWERS[kind + "Side"] = (ctx, f) => drawModelFacing(ctx, f, kind);
+  }
+}
+// The bench and the cloud sofa keep their hand-drawn fronts (see
+// render-rooms.js): puffs and spindles that read better straight on.
+registerModels({ ...MODELS }, { keepFront: ["bench", "cloudSofa"] });
 
 // The showroom's back view (models only).
 function drawModelBack(ctx, f) {

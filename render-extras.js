@@ -329,15 +329,6 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  fridge(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const fr = drawBlock(ctx, f.x, f.y, f.w, f.h, 46, "#dfe6ea");
-    ctx.fillStyle = "#9aa6ad";
-    ctx.fillRect(fr.face.x + fr.face.w - 8, fr.face.y + 8, 3, 14); // handle
-    ctx.fillStyle = "#c0554a";
-    ctx.fillRect(fr.face.x + 6, fr.face.y + 8, 8, 8); // a magnet
-  },
-
   snackTable(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, WOOD);
@@ -353,58 +344,6 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.fillStyle = "#cfd6da";
       ctx.fillRect(x + 32 + i * 9, y + h / 2 - 11, 6, 2);
     });
-  },
-
-  // The shared study table: open books, mugs, a stack of books and a lamp.
-  studyTable(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#8b5e3c");
-    const { x, y, w, h } = t.top;
-    const mid = y + h / 2;
-    // Open books.
-    for (const bx of [x + 10, x + w - 64]) {
-      ctx.fillStyle = "#f4ecdc";
-      ctx.fillRect(bx, mid - 4, 26, 15);
-      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-      ctx.fillRect(bx + 12.5, mid - 4, 1, 15);
-      ctx.fillRect(bx + 3, mid, 7, 1);
-      ctx.fillRect(bx + 16, mid + 3, 7, 1);
-    }
-    // Mugs of tea.
-    for (const [mx, color] of [[x + 44, "#e8dcc8"], [x + w - 28, "#c0554a"]]) {
-      ctx.fillStyle = color;
-      ctx.fillRect(mx, mid - 6, 9, 10);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(mx + 10, mid - 1, 3, -Math.PI / 2, Math.PI / 2);
-      ctx.stroke();
-      ctx.fillStyle = "#5c3a22";
-      ctx.fillRect(mx + 1, mid - 6, 7, 2);
-    }
-    // A stack of closed books.
-    const stack = ["#4a90a4", "#e0a84c", "#7a9e5c"];
-    stack.forEach((color, i) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(x + w / 2 + 14, mid + 4 - i * 5, 20 - i * 2, 5);
-    });
-    drawLamp(ctx, x + w / 2, mid + 2);
-  },
-
-  // A cozy reading armchair facing up toward the window, so you see its
-  // back, with a blanket draped over the top.
-  // An armchair facing the room: its tall back behind (with a blanket
-  // folded over it), the seat cushion in front, and an arm each side.
-  armchair(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const back = drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, 0.3, 32, "#a8732c");
-    ctx.fillStyle = "#6f8a6a"; // the blanket over the back
-    ctx.fillRect(back.face.x + back.face.w * 0.55, back.top.y, back.face.w * 0.3, back.face.h + back.top.h - 8);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-    ctx.fillRect(back.face.x + back.face.w * 0.55, back.top.y + back.face.h + back.top.h - 10, back.face.w * 0.3, 2);
-    drawBlock(ctx, f.x + 0.12, f.y + 0.25, f.w - 0.24, f.h - 0.25, 12, "#c98f3c"); // the seat
-    drawBlock(ctx, f.x, f.y + 0.1, 0.2, f.h - 0.1, 18, "#b07c30"); // the arms
-    drawBlock(ctx, f.x + f.w - 0.2, f.y + 0.1, 0.2, f.h - 0.1, 18, "#b07c30");
   },
 
   // A tall standing lamp with a fabric shade.
@@ -456,72 +395,6 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.beginPath();
       ctx.arc(bulb.x, bulb.y + 2, 2.5, 0, Math.PI * 2);
       ctx.fill();
-    }
-  },
-
-  table(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#8b6b4a");
-    const cx = t.top.x + t.top.w / 2, cy = t.top.y + t.top.h / 2;
-    // A cloth runner down the middle of the table.
-    ctx.fillStyle = "#c0554a";
-    ctx.fillRect(t.top.x + 4, cy - 8, t.top.w - 8, 16);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-    ctx.fillRect(t.top.x + 4, cy - 6, t.top.w - 8, 1);
-    ctx.fillRect(t.top.x + 4, cy + 5, t.top.w - 8, 1);
-    // A plate in front of each chair.
-    const plates = [[0, -t.top.h / 2 + 8], [0, t.top.h / 2 - 7], [-t.top.w / 2 + 10, 0], [t.top.w / 2 - 10, 0]];
-    for (const [dx, dy] of plates) {
-      ctx.fillStyle = "#f7f1e6";
-      ctx.beginPath();
-      ctx.ellipse(cx + dx, cy + dy, 7, 4.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-    // Two candles either side of the fruit bowl.
-    for (const dx of [-22, 22]) {
-      ctx.fillStyle = "#f3e6c8";
-      ctx.fillRect(cx + dx - 2, cy - 12, 4, 10);
-      ctx.fillStyle = "#ffb347";
-      ctx.beginPath();
-      ctx.ellipse(cx + dx, cy - 15, 1.8, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Fruit bowl in the middle of the tabletop.
-    ctx.fillStyle = "#e8dcc8";
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 16, 9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    const fruit = [[-6, -3, "#c0554a"], [5, -4, "#e0a84c"], [0, 1, "#7a9e5c"]];
-    for (const [dx, dy, color] of fruit) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(cx + dx, cy + dy, 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  },
-
-  // A dining chair. The backrest goes on the side opposite where it faces:
-  // facing "down" (toward you) has its back at the top, facing "up" has its
-  // back at the bottom (so you see the back of the chair), and facing
-  // "left" or "right" has its back along the other side.
-  chair(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const back = f.back || "#8a6448", seat = f.seat || "#a3785a", t = 0.15;
-    if (f.facing === "up") {
-      drawBlock(ctx, f.x, f.y, f.w, f.h - t, 16, seat);
-      drawBlock(ctx, f.x, f.y + f.h - t, f.w, t, 30, back);
-    } else if (f.facing === "left") {
-      drawBlock(ctx, f.x, f.y, f.w - t, f.h, 16, seat);
-      drawBlock(ctx, f.x + f.w - t, f.y, t, f.h, 30, back);
-    } else if (f.facing === "right") {
-      drawBlock(ctx, f.x + t, f.y, f.w - t, f.h, 16, seat);
-      drawBlock(ctx, f.x, f.y, t, f.h, 30, back);
-    } else {
-      drawBlock(ctx, f.x, f.y, f.w, t, 30, back);
-      drawBlock(ctx, f.x, f.y + t, f.w, f.h - t, 16, seat);
     }
   },
 
@@ -931,21 +804,6 @@ function drawBookRow(ctx, x, y, w, seed = 0) {
   }
 }
 
-function drawCounter(ctx, f) {
-  drawShadow(ctx, f.x, f.y, f.w, f.h);
-  const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#e8dcc8");
-  ctx.fillStyle = "#b58a5c";
-  ctx.fillRect(c.top.x, c.top.y, c.top.w, c.top.h);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-  ctx.fillRect(c.top.x, c.top.y, c.top.w, 1.5);
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
-  ctx.lineWidth = 1;
-  for (let dx = 0; dx + 16 <= c.face.w; dx += 18) {
-    ctx.strokeRect(c.face.x + dx + 2.5, c.face.y + 3.5, 14, c.face.h - 8);
-  }
-  return c;
-}
-
 // A ceiling fluorescent tube in the bunker office. Mostly on, but every so
 // often it stutters off for a moment, like a bad starter.
 function drawFluorescent(ctx, f, now) {
@@ -1048,20 +906,6 @@ function drawKnob(ctx, x, y) {
   ctx.fillStyle = "#f2d78a";
   ctx.beginPath();
   ctx.arc(x - 0.7, y - 0.8, 1, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-// A little table lamp with its base at (x, y) on a surface.
-function drawLamp(ctx, x, y) {
-  ctx.fillStyle = WOOD_DARK;
-  ctx.fillRect(x - 1.5, y - 14, 3, 14);
-  ctx.fillStyle = "#f2d9a0";
-  ctx.beginPath();
-  ctx.moveTo(x - 8, y - 12);
-  ctx.lineTo(x + 8, y - 12);
-  ctx.lineTo(x + 5, y - 24);
-  ctx.lineTo(x - 5, y - 24);
-  ctx.closePath();
   ctx.fill();
 }
 
