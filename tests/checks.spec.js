@@ -230,6 +230,7 @@ test("Mini games: all eight doors open their lobbies", async ({ page }) => {
       await page.waitForTimeout(800);
       await page.locator(".mini-banner").screenshot({ path: `${process.env.BANNERS}/${g[0]}.png` });
     }
+    await expect(page.locator(".mini-fade.on")).toHaveCount(0); // (Escape is ignored while the door's fade is running)
     await page.keyboard.press("Escape");
     await expect(page.locator(".mini-scene")).toBeHidden();
     await expect(page.locator(".mini-fade.on")).toHaveCount(0); // (the fade back finishes before the next door)

@@ -124,11 +124,27 @@ registerModels({
       parts.push(part(0.2 + i * cw + 0.01, 0.26, 10, cw - 0.02, D - 0.3, 6, c, "fabric", { round: 4 }));
       parts.push(part(0.2 + i * cw + 0.01, 0, 10, cw - 0.02, 0.26, 20, shadeColor(c, 14), "fabric", { round: 6 }));
     }
+    // The outside of the back (what you see from the seats behind): one
+    // smooth upholstered panel with a row of buttons and piping.
+    parts.push(part(0.12, -0.02, 6, W - 0.24, 0.05, 25, shadeColor(c, 8), "fabric", { round: 5, paint: { back: (ctx, U, V) => {
+      ctx.strokeStyle = shadeColor(c, -30) + "90";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(3, 5);
+      ctx.lineTo(U - 3, 5);
+      ctx.stroke();
+      ctx.fillStyle = shadeColor(c, -35);
+      for (let x = 12; x < U - 6; x += 18) {
+        ctx.beginPath();
+        ctx.arc(x, 11, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } } }));
     parts.push(part(0, 0.04, 4, 0.2, D - 0.04, 16, shadeColor(c, -21), "fabric", { round: 5 }));
     parts.push(part(W - 0.2, 0.04, 4, 0.2, D - 0.04, 16, shadeColor(c, -21), "fabric", { round: 5 }));
     // A mustard blanket thrown over one end of the back, hanging down behind.
-    parts.push(part(W - 0.95, -0.01, 30, 0.5, 0.28, 1.5, "#e9c46a", "knit"));
-    parts.push(part(W - 0.95, -0.03, 12, 0.5, 0.025, 19.5, "#d9b25a", "knit", { fringe: true }));
+    parts.push(part(W - 0.95, -0.03, 31, 0.5, 0.3, 1.5, "#e9c46a", "knit"));
+    parts.push(part(W - 0.95, -0.055, 12, 0.5, 0.025, 20.5, "#d9b25a", "knit", { fringe: true }));
     return { W, D, parts };
   },
 
@@ -725,4 +741,4 @@ registerModels({
       },
     };
   },
-}, { facing: { theaterSeat: "back", cinemaSofa: "back" } });
+}, { facing: { theaterSeat: "back", cinemaSofa: "back" }, ownFacing: ["chair"] });

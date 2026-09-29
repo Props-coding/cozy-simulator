@@ -346,16 +346,34 @@ Object.assign(FURNITURE_DRAWERS, {
     });
   },
 
-  // A tall standing lamp with a fabric shade.
+  // A tall standing lamp: a weighted base, a turned wooden pole, and a
+  // pleated fabric shade glowing warm at its lower edge.
   floorLamp(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const base = toScreen(f.x + f.w / 2, f.y + f.h);
-    ctx.fillStyle = WOOD_DARK;
+    const disc = ctx.createLinearGradient(0, base.y - 6, 0, base.y);
+    disc.addColorStop(0, shadeColor(WOOD_DARK, 20));
+    disc.addColorStop(1, shadeColor(WOOD_DARK, -15));
+    ctx.fillStyle = disc;
     ctx.beginPath();
-    ctx.ellipse(base.x, base.y - 2, 7, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(base.x, base.y - 2.5, 7.5, 3.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillRect(base.x - 1.5, base.y - 58, 3, 56);
-    ctx.fillStyle = "#f2d9a0";
+    ctx.strokeStyle = "rgba(30, 18, 8, 0.5)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.fillStyle = WOOD_DARK;
+    ctx.fillRect(base.x - 1.6, base.y - 56, 3.2, 54);
+    ctx.fillStyle = "rgba(255, 230, 190, 0.3)";
+    ctx.fillRect(base.x - 1.1, base.y - 55, 0.9, 52);
+    for (const y of [base.y - 22, base.y - 40]) { // turned rings on the pole
+      ctx.fillStyle = shadeColor(WOOD_DARK, 12);
+      ctx.fillRect(base.x - 2.4, y, 4.8, 2);
+    }
+    const g = ctx.createLinearGradient(base.x - 12, 0, base.x + 12, 0);
+    g.addColorStop(0, "#f7e2b0");
+    g.addColorStop(0.6, "#f2d9a0");
+    g.addColorStop(1, "#d8b878");
+    ctx.fillStyle = g;
     ctx.beginPath();
     ctx.moveTo(base.x - 12, base.y - 52);
     ctx.lineTo(base.x + 12, base.y - 52);
@@ -363,24 +381,78 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.lineTo(base.x - 7, base.y - 70);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = "rgba(140, 100, 40, 0.5)";
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(160, 120, 60, 0.22)"; // pleats
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(base.x + i * 1.9, base.y - 69);
+      ctx.lineTo(base.x + i * 3.3, base.y - 53);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255, 244, 200, 0.9)"; // the warm glow at its lower edge
+    ctx.fillRect(base.x - 11.5, base.y - 53.5, 23, 1.6);
+    ctx.fillStyle = "#b8923a"; // a little finial
+    ctx.beginPath();
+    ctx.arc(base.x, base.y - 71.5, 1.6, 0, Math.PI * 2);
+    ctx.fill();
   },
 
-  // A squishy beanbag, lighter on top where the light hits it.
+  // A squishy beanbag: lighter on top where the light hits it, a dip where
+  // you sit, stitched panel seams, a few soft wrinkles and a darker rim.
   beanbag(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const c = toScreen(f.x + f.w / 2, f.y + f.h);
+    const color = f.color || "#d98c6a";
     const rx = (f.w * TILE) / 2, ry = 20;
+    const shape = () => {
+      ctx.beginPath();
+      ctx.moveTo(c.x - rx - 2, c.y - 5);
+      ctx.bezierCurveTo(c.x - rx - 5, c.y - ry * 1.35, c.x - rx * 0.5, c.y - ry * 1.75, c.x + 2, c.y - ry * 1.62);
+      ctx.bezierCurveTo(c.x + rx * 0.75, c.y - ry * 1.6, c.x + rx + 5, c.y - ry * 1.1, c.x + rx + 2, c.y - 5);
+      ctx.quadraticCurveTo(c.x, c.y + 3, c.x - rx - 2, c.y - 5);
+      ctx.closePath();
+    };
     const fill = ctx.createLinearGradient(0, c.y - 2 * ry, 0, c.y);
-    fill.addColorStop(0, "#d98c6a");
-    fill.addColorStop(1, "#9a5439");
+    fill.addColorStop(0, shadeColor(color, 18));
+    fill.addColorStop(1, shadeColor(color, -30));
     ctx.fillStyle = fill;
-    ctx.beginPath();
-    ctx.ellipse(c.x, c.y - ry, rx, ry, 0, 0, Math.PI * 2);
+    shape();
     ctx.fill();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.12)"; // the dip where you sit
+    ctx.strokeStyle = shadeColor(color, -48) + "a0";
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+    ctx.save();
+    shape();
+    ctx.clip();
+    ctx.strokeStyle = shadeColor(color, -28) + "90"; // stitched panel seams
+    ctx.setLineDash([2, 1.5]);
+    ctx.lineWidth = 0.9;
+    for (const k of [-0.45, 0.4]) {
+      ctx.beginPath();
+      ctx.moveTo(c.x + rx * k * 0.3, c.y - ry * 1.7);
+      ctx.quadraticCurveTo(c.x + rx * k * 1.3, c.y - ry, c.x + rx * k * 1.1, c.y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.14)"; // the dip where you sit
     ctx.beginPath();
-    ctx.ellipse(c.x + 2, c.y - ry - 4, rx * 0.5, ry * 0.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(c.x + 2, c.y - ry * 0.95, rx * 0.55, ry * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(c.x - rx * 0.4, c.y - ry * 1.3, rx * 0.3, ry * 0.15, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.12)"; // wrinkles low down
+    ctx.lineWidth = 1;
+    for (const k of [-0.6, -0.1, 0.5]) {
+      ctx.beginPath();
+      ctx.moveTo(c.x + rx * k, c.y - 3);
+      ctx.quadraticCurveTo(c.x + rx * k + 3, c.y - 8, c.x + rx * k + 1, c.y - 12);
+      ctx.stroke();
+    }
+    ctx.restore();
   },
 
   // Warm string lights draped along the top of a wall.
@@ -483,15 +555,41 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillStyle = "rgba(40, 25, 10, 0.18)";
     roundRectPath(ctx, a.x + 2, top + 3, w, h, 6);
     ctx.fill();
-    ctx.fillStyle = WOOD_DARK;
+    const frame = ctx.createLinearGradient(0, top, 0, top + h);
+    frame.addColorStop(0, shadeColor(WOOD_DARK, 25));
+    frame.addColorStop(1, shadeColor(WOOD_DARK, -12));
+    ctx.fillStyle = frame;
     roundRectPath(ctx, a.x, top, w, h, 6);
     ctx.fill();
-    ctx.fillStyle = "#dfeaf2";
+    ctx.strokeStyle = "rgba(30, 18, 8, 0.5)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    // The glass reflects a little of the room: pale wall above, floor below.
+    const glass = ctx.createLinearGradient(0, top + 3, 0, top + h - 3);
+    glass.addColorStop(0, "#eef4f7");
+    glass.addColorStop(0.55, "#d6e3ea");
+    glass.addColorStop(1, "#c9b89a");
+    ctx.fillStyle = glass;
     roundRectPath(ctx, a.x + 3, top + 3, w - 6, h - 6, 4);
     ctx.fill();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    roundRectPath(ctx, a.x + 6, top + 5, 5, h - 12, 2);
+    ctx.save();
+    roundRectPath(ctx, a.x + 3, top + 3, w - 6, h - 6, 4);
+    ctx.clip();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)"; // two streaks of light
+    ctx.beginPath();
+    ctx.moveTo(a.x + 7, top + 3);
+    ctx.lineTo(a.x + 12, top + 3);
+    ctx.lineTo(a.x + 5, top + h - 3);
+    ctx.lineTo(a.x, top + h - 3);
     ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.beginPath();
+    ctx.moveTo(a.x + 14, top + 3);
+    ctx.lineTo(a.x + 15.5, top + 3);
+    ctx.lineTo(a.x + 8.5, top + h - 3);
+    ctx.lineTo(a.x + 7, top + h - 3);
+    ctx.fill();
+    ctx.restore();
   },
 });
 
@@ -675,7 +773,12 @@ function drawPot(ctx, cx, by, style = "clay", w = 11, h = 16) {
     pink: ["#efb8c4", "#d898a8", "#f7d0da"],
     black: ["#3a3a40", "#2b2b30", "#55555c"],
   }[style];
-  ctx.fillStyle = body;
+  // The body: lit from above and a little from the left, so it's rounder.
+  const g = ctx.createLinearGradient(cx - w, 0, cx + w, 0);
+  g.addColorStop(0, shadeColor(body, 10));
+  g.addColorStop(0.35, shadeColor(body, 18));
+  g.addColorStop(1, shadeColor(body, -22));
+  ctx.fillStyle = g;
   ctx.beginPath();
   ctx.moveTo(cx - w * 0.8, by);
   ctx.lineTo(cx + w * 0.8, by);
@@ -683,6 +786,9 @@ function drawPot(ctx, cx, by, style = "clay", w = 11, h = 16) {
   ctx.lineTo(cx - w, by - h);
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = shadeColor(band, -30) + "80"; // a soft rim
+  ctx.lineWidth = 1;
+  ctx.stroke();
   if (style === "basket") {
     ctx.strokeStyle = "rgba(90, 60, 25, 0.45)"; // the weave
     ctx.lineWidth = 1;
@@ -692,14 +798,25 @@ function drawPot(ctx, cx, by, style = "clay", w = 11, h = 16) {
       ctx.lineTo(cx + w, y);
       ctx.stroke();
     }
+    ctx.fillStyle = "rgba(255, 235, 190, 0.3)";
+    for (let y = by - 2, k = 0; y > by - h; y -= 4, k++) for (let x = cx - w + 2 + (k % 2) * 2; x < cx + w - 2; x += 4) ctx.fillRect(x, y, 2, 1.2);
   } else {
-    ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // a soft highlight, lit from above
-    ctx.fillRect(cx - w * 0.6, by - h + 4, 3, h - 7);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)"; // a soft highlight, lit from above
+    ctx.fillRect(cx - w * 0.6, by - h + 4, 2.5, h - 7);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)"; // speckles in the glaze or clay
+    for (let i = 0; i < 6; i++) ctx.fillRect(cx - w * 0.7 + noise(cx + i * 3.1) * w * 1.4, by - h + 3 + noise(by + i * 5.3) * (h - 6), 1, 1);
   }
   ctx.fillStyle = band;
   ctx.fillRect(cx - w * 0.8, by - 3, w * 1.6, 3);
-  ctx.fillStyle = rim;
+  // The rim, with dark soil showing inside it.
+  ctx.fillStyle = shadeColor(rim, -18);
   ctx.fillRect(cx - w - 1, by - h - 4, (w + 1) * 2, 5);
+  ctx.fillStyle = rim;
+  ctx.fillRect(cx - w - 1, by - h - 4, (w + 1) * 2, 2.5);
+  ctx.fillStyle = "#4a3222";
+  ctx.beginPath();
+  ctx.ellipse(cx, by - h - 3.5, w - 0.5, 1.6, 0, 0, Math.PI * 2);
+  ctx.fill();
   return by - h - 2;
 }
 
@@ -717,6 +834,17 @@ function drawLeaf(ctx, x, y, angle, len, wid, color, vein = "rgba(255, 255, 255,
   ctx.quadraticCurveTo(wid, -len * 0.45, 0, -len);
   ctx.quadraticCurveTo(-wid, -len * 0.45, 0, 0);
   ctx.fill();
+  if (color[0] === "#" && len > 5) {
+    ctx.strokeStyle = shadeColor(color, -38) + "90"; // a soft darker rim
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; // one half catches the light
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-wid, -len * 0.45, 0, -len);
+    ctx.lineTo(0, 0);
+    ctx.fill();
+  }
   if (vein) {
     ctx.strokeStyle = vein;
     ctx.lineWidth = 0.7;

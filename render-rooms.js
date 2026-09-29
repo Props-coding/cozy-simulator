@@ -307,18 +307,52 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 
-  // A round stool or cushion you stand on to sit at a desk or table.
+  // A round stool you stand on to sit at a desk or table: three wooden
+  // legs with a footrest ring, and a plump cushion with a piped edge.
   stool(ctx, f) {
     const c = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+    const color = f.color || "#c0554a";
     ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
     ctx.beginPath();
     ctx.ellipse(c.x, c.y + 6, 13, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#2b2b33";
-    ctx.fillRect(c.x - 2, c.y - 4, 4, 10);
-    ctx.fillStyle = f.color || "#c0554a";
+    ctx.strokeStyle = WOOD_DARK;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = "round";
+    for (const dx of [-7, 0, 7]) {
+      ctx.beginPath();
+      ctx.moveTo(c.x + dx * 0.6, c.y - 3);
+      ctx.lineTo(c.x + dx, c.y + (dx ? 5 : 7));
+      ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = shadeColor(WOOD_DARK, 15);
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.ellipse(c.x, c.y - 5, 11, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(c.x, c.y + 2, 6, 2, 0, 0, Math.PI);
+    ctx.stroke();
+    // The cushion: a darker side band, a lit top, piping and a button.
+    ctx.fillStyle = shadeColor(color, -22);
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y - 3, 11.5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const g = ctx.createLinearGradient(0, c.y - 12, 0, c.y - 1);
+    g.addColorStop(0, shadeColor(color, 22));
+    g.addColorStop(1, color);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y - 5.5, 11, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = shadeColor(color, -40) + "90";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.beginPath();
+    ctx.ellipse(c.x - 3, c.y - 7.5, 4.5, 1.6, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shadeColor(color, -35);
+    ctx.beginPath();
+    ctx.arc(c.x, c.y - 5.5, 0.9, 0, Math.PI * 2);
     ctx.fill();
   },
 
@@ -332,10 +366,16 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.beginPath();
     ctx.arc(cx + 1.5, cy + 2.5, r + 2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#8b6b4a";
+    const bezel = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+    bezel.addColorStop(0, "#b08a62");
+    bezel.addColorStop(1, "#6b4a30");
+    ctx.fillStyle = bezel;
     ctx.beginPath();
-    ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r + 2.5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = "rgba(40, 25, 10, 0.5)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
     ctx.fillStyle = "#fbf6ea";
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -360,6 +400,21 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
       ctx.stroke();
     }
+    const sec = (now.getSeconds() / 60) * Math.PI * 2 - Math.PI / 2; // the second hand
+    ctx.strokeStyle = "#c0554a";
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(sec) * r * 0.85, cy + Math.sin(sec) * r * 0.85);
+    ctx.stroke();
+    ctx.fillStyle = "#3a2a1e";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)"; // a glint on the glass
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.4, cy - r * 0.45, r * 0.35, r * 0.15, -0.6, 0, Math.PI * 2);
+    ctx.fill();
     ctx.lineCap = "butt";
   },
 
@@ -844,40 +899,94 @@ Object.assign(FURNITURE_DRAWERS, {
   coatHooks(ctx, f) {
     const a = toScreen(f.x, f.y);
     const top = a.y - WALL_HEIGHT + 6, w = f.w * TILE;
+    ctx.fillStyle = "rgba(40, 25, 10, 0.2)";
+    ctx.fillRect(a.x + 1, top + 2, w, 4);
     ctx.fillStyle = WOOD;
     ctx.fillRect(a.x, top, w, 4);
-    ctx.fillStyle = WOOD_DARK;
-    for (let i = 0; i < 3; i++) ctx.fillRect(a.x + 7 + i * (w - 14) / 2 - 1.5, top + 3, 3, 4);
+    ctx.fillStyle = shadeColor(WOOD, 25);
+    ctx.fillRect(a.x, top, w, 1);
+    for (let i = 0; i < 3; i++) { // pegs with round heads
+      const px = a.x + 7 + (i * (w - 14)) / 2;
+      ctx.fillStyle = WOOD_DARK;
+      ctx.fillRect(px - 1.2, top + 3, 2.4, 3.5);
+      ctx.beginPath();
+      ctx.arc(px, top + 6.5, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
     for (const [cx, color] of [[a.x + 7, "#6f8a6a"], [a.x + w / 2, "#b5603c"]]) {
       ctx.fillStyle = "rgba(40, 25, 10, 0.18)";
-      roundRectPath(ctx, cx - 6, top + 7, 14, 24, 4);
+      roundRectPath(ctx, cx - 6, top + 8, 14, 24, 4);
       ctx.fill();
-      ctx.fillStyle = color;
-      roundRectPath(ctx, cx - 7, top + 5, 14, 24, 4);
+      const g = ctx.createLinearGradient(cx - 7, 0, cx + 7, 0);
+      g.addColorStop(0, shadeColor(color, 12));
+      g.addColorStop(1, shadeColor(color, -18));
+      ctx.fillStyle = g;
+      ctx.beginPath(); // the coat, wider at the hem
+      ctx.moveTo(cx - 5, top + 6);
+      ctx.lineTo(cx + 5, top + 6);
+      ctx.lineTo(cx + 8, top + 29);
+      ctx.lineTo(cx - 8, top + 29);
+      ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-      ctx.fillRect(cx - 0.5, top + 9, 1, 19);
+      ctx.strokeStyle = shadeColor(color, -40) + "90";
+      ctx.lineWidth = 0.9;
+      ctx.stroke();
+      ctx.fillStyle = shadeColor(color, -25); // the collar
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, top + 6);
+      ctx.lineTo(cx, top + 11);
+      ctx.lineTo(cx + 5, top + 6);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.18)"; // the opening and a pocket
+      ctx.fillRect(cx - 0.4, top + 11, 0.8, 18);
+      ctx.fillRect(cx + 2, top + 20, 4, 0.9);
+      ctx.fillStyle = "#e8d8b8"; // buttons
+      for (const by of [14, 19, 24]) ctx.fillRect(cx - 2.2, top + by, 1.4, 1.4);
     }
-    ctx.fillStyle = "#e0a84c"; // scarf
-    ctx.fillRect(a.x + w - 10, top + 5, 5, 22);
-    ctx.fillRect(a.x + w - 13, top + 5, 5, 16);
+    for (const [dx, h] of [[-10, 23], [-13, 17]]) { // a striped scarf
+      ctx.fillStyle = "#e0a84c";
+      ctx.fillRect(a.x + w + dx, top + 5, 5, h);
+      ctx.fillStyle = "#c0554a";
+      for (let y = top + 8; y < top + 3 + h; y += 5) ctx.fillRect(a.x + w + dx, y, 5, 1.5);
+      ctx.fillStyle = "#f3e6c8";
+      for (let k = 0; k < 3; k++) ctx.fillRect(a.x + w + dx + 0.5 + k * 1.6, top + 5 + h, 0.9, 2.5);
+    }
   },
 
   // Hung on a wall face: a small lamp with a warm glowing shade.
   sconce(ctx, f) {
     const a = toScreen(f.x, f.y);
     const y = a.y - WALL_HEIGHT + 14;
-    ctx.fillStyle = WOOD_DARK;
-    roundRectPath(ctx, a.x - 3, y + 2, 6, 10, 2);
+    ctx.fillStyle = "#9a7a34"; // the brass backplate and arm
+    roundRectPath(ctx, a.x - 3, y + 3, 6, 11, 2.5);
     ctx.fill();
-    ctx.fillStyle = "#f2d9a0";
+    ctx.fillStyle = "rgba(255, 240, 190, 0.45)";
+    ctx.fillRect(a.x - 2, y + 4.5, 1, 8);
+    ctx.fillStyle = "#b8923a";
+    ctx.fillRect(a.x - 0.8, y + 2, 1.6, 4);
+    const g = ctx.createLinearGradient(0, y - 7, 0, y + 5);
+    g.addColorStop(0, "#f7e4b4");
+    g.addColorStop(1, "#e8c887");
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(a.x - 6, y + 4);
-    ctx.lineTo(a.x + 6, y + 4);
-    ctx.lineTo(a.x + 4, y - 6);
-    ctx.lineTo(a.x - 4, y - 6);
+    ctx.moveTo(a.x - 6.5, y + 4);
+    ctx.lineTo(a.x + 6.5, y + 4);
+    ctx.lineTo(a.x + 4, y - 7);
+    ctx.lineTo(a.x - 4, y - 7);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = "rgba(150, 110, 40, 0.45)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(170, 130, 60, 0.25)"; // pleats
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(a.x + i * 1.6, y - 6.5);
+      ctx.lineTo(a.x + i * 2.5, y + 3.5);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255, 246, 205, 0.95)"; // the glowing lower rim
+    ctx.fillRect(a.x - 6.2, y + 3, 12.4, 1.4);
   },
 
   // Hung on a wall face: a framed painting.
@@ -895,15 +1004,35 @@ Object.assign(FURNITURE_DRAWERS, {
     // sills and curtains, so the two never look alike).
     ctx.fillStyle = "rgba(40, 25, 10, 0.15)";
     ctx.fillRect(x + 1, y + 1.5, w, h);
-    ctx.fillStyle = "#c9a24a";
+    // A beveled gold frame: lit along the top and left, shaded below.
+    ctx.fillStyle = "#b08a38";
     ctx.fillRect(x, y, w, h);
-    const ix = x + 1.5, iy = y + 1.5, iw = w - 3, ih = h - 3;
+    ctx.fillStyle = "#e0bc62";
+    ctx.fillRect(x, y, w, 1.2);
+    ctx.fillRect(x, y, 1.2, h);
+    ctx.fillStyle = "#8a6a28";
+    ctx.fillRect(x, y + h - 1.2, w, 1.2);
+    ctx.fillRect(x + w - 1.2, y, 1.2, h);
+    ctx.fillStyle = "#f3ead6"; // a cream mat
+    ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+    const ix = x + 3.5, iy = y + 3.5, iw = w - 7, ih = h - 7;
     ctx.save();
     ctx.beginPath();
     ctx.rect(ix, iy, iw, ih);
     ctx.clip();
     PICTURE_ART[f.art](ctx, ix, iy, iw, ih);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // a sheen of varnish
+    ctx.beginPath();
+    ctx.moveTo(ix, iy);
+    ctx.lineTo(ix + iw * 0.45, iy);
+    ctx.lineTo(ix, iy + ih);
+    ctx.fill();
     ctx.restore();
+    ctx.strokeStyle = "rgba(90, 70, 40, 0.35)";
+    ctx.lineWidth = 0.6;
+    ctx.strokeRect(ix - 0.3, iy - 0.3, iw + 0.6, ih + 0.6);
+    ctx.fillStyle = "#6a5030"; // the nail it hangs from
+    ctx.fillRect(x + w / 2 - 0.7, y - 2.5, 1.4, 1.6);
     ctx.restore();
   },
 

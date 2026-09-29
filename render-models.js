@@ -116,8 +116,14 @@ const modelVariant = (f) => Math.abs(Math.round(f.x * 7.3 + f.y * 3.1)) % 5;
 // have theirs swapped), or the usual size for a sample.
 function sizeOf(f, W, D) {
   if (f.w === undefined || f.h === undefined) return [W, D];
-  return f.kind.endsWith("Side") || f.facing === "right" || f.facing === "left" ? [f.h, f.w] : [f.w, f.h];
+  const turned = f.kind.endsWith("Side") || (OWN_FACING.has(f.kind) && (f.facing === "right" || f.facing === "left"));
+  return turned ? [f.h, f.w] : [f.w, f.h];
 }
+
+// Models that face whichever way the piece says (its `facing`: "down",
+// "up", "right" or "left"), like the chairs around a table. Others only
+// turn as "...Side" pieces.
+const OWN_FACING = new Set();
 
 const MODELS = {
   bookshelf: (f) => {
@@ -934,16 +940,19 @@ function modelSeatShift(f, y) {
 // is the front, "up" the back, "right" or "left" turned), unless `how`
 // says (theater seats always show their backs: they face the screen).
 function drawModelFacing(ctx, f, kind, how = "own") {
-  const dir = how !== "own" ? how : f.kind.endsWith("Side") ? f.facing : ({ up: "back", right: "right", left: "left" }[f.facing] ?? "front");
+  const own = OWN_FACING.has(kind) ? ({ up: "back", right: "right", left: "left" }[f.facing] ?? "front") : "front";
+  const dir = how !== "own" ? how : f.kind.endsWith("Side") ? f.facing : own;
   if (dir === "left") sideView(ctx, f, () => drawModelPiece(ctx, f, kind, "right"));
   else drawModelPiece(ctx, f, kind, dir);
 }
 
 // Adds models and their drawers: the piece itself, and turned ("...Side",
 // facing right or left). `keepFront` pieces keep their hand-drawn front;
-// `facing` fixes which way some always face.
-function registerModels(models, { keepFront = [], facing = {} } = {}) {
+// `facing` fixes which way some always face; `ownFacing` pieces face their
+// own way (see OWN_FACING).
+function registerModels(models, { keepFront = [], facing = {}, ownFacing = [] } = {}) {
   Object.assign(MODELS, models);
+  for (const kind of ownFacing) OWN_FACING.add(kind);
   for (const kind of Object.keys(models)) {
     if (!keepFront.includes(kind)) FURNITURE_DRAWERS[kind] = (ctx, f) => drawModelFacing(ctx, f, kind, facing[kind]);
     FURNITURE_DRAWERS[kind + "Side"] = (ctx, f) => drawModelFacing(ctx, f, kind);

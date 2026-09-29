@@ -45,30 +45,29 @@ const FURNITURE_DRAWERS = {
   // --- More plants (each with its own pot) ---
 
   // A Boston fern: lots of feathery fronds arching out and drooping over
-  // the pot's rim.
+  // the pot's rim, each lined with two-tone leaflets.
   fern(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const base = toScreen(f.x + f.w / 2, f.y + f.h);
     const soil = drawPot(ctx, base.x, base.y - 2, "clay", 10, 14);
-    for (let i = -5; i <= 5; i++) {
-      const angle = i * 0.28;
-      const len = 26 - Math.abs(i) * 1.2;
-      const tipX = base.x + Math.sin(angle) * len * 1.2, tipY = soil - Math.cos(angle) * len + Math.abs(i) * 3.2;
-      const shade = ["#3f6b3c", "#4f7a48", "#5f8a50", "#6fa05e"][(i + 8) % 4];
-      ctx.strokeStyle = shade;
-      ctx.lineWidth = 1.2;
+    // Outer (drooping, darker) fronds first, the upright lighter ones last.
+    const order = [-5, 5, -4, 4, -3, 3, -2, 2, -1, 1, 0];
+    for (const i of order) {
+      const angle = i * 0.3;
+      const len = 27 - Math.abs(i) * 1.1;
+      const tipX = base.x + Math.sin(angle) * len * 1.25, tipY = soil - Math.cos(angle) * len + Math.abs(i) * 3.6;
+      const shade = ["#6fa05e", "#5f8a50", "#4f7a48", "#446e40", "#3a6238", "#335a33"][Math.abs(i)];
+      ctx.strokeStyle = shadeColor(shade, -15);
+      ctx.lineWidth = 1.1;
       ctx.beginPath();
       ctx.moveTo(base.x, soil);
       ctx.quadraticCurveTo(base.x + Math.sin(angle) * len * 0.5, soil - len * 0.9, tipX, tipY);
       ctx.stroke();
-      // Little leaflets along each frond.
-      ctx.fillStyle = shade;
-      for (let t = 0.3; t < 1; t += 0.14) {
+      for (let t = 0.2; t < 1; t += 0.085) {
         const px = base.x + (tipX - base.x) * t, py = soil + (tipY - soil) * t - Math.sin(t * Math.PI) * 8;
-        ctx.beginPath();
-        ctx.ellipse(px, py, 3.2 * (1.1 - t), 1.3, angle + 0.9, 0, Math.PI * 2);
-        ctx.ellipse(px, py, 3.2 * (1.1 - t), 1.3, angle - 0.9, 0, Math.PI * 2);
-        ctx.fill();
+        const size = 6.2 * (1.12 - t);
+        drawLeaf(ctx, px, py, angle - 1.15, size, 2.2, shade, null);
+        drawLeaf(ctx, px, py, angle + 1.15, size, 2.2, shadeColor(shade, 14), null);
       }
     }
   },
@@ -213,91 +212,142 @@ const FURNITURE_DRAWERS = {
     }
   },
 
-  // A fiddle-leaf fig: a slim trunk with big wavy leaves up top, in a
-  // woven basket. Tall.
+  // A fiddle-leaf fig: a slim trunk with big wavy, glossy leaves up top,
+  // each with a darker rim, veins and a lit side, in a woven basket. Tall.
   fiddleFig(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const base = toScreen(f.x + f.w / 2, f.y + f.h);
     const soil = drawPot(ctx, base.x, base.y - 2, "basket", 11, 16);
     ctx.strokeStyle = "#7a5a3a";
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.6;
     ctx.beginPath();
     ctx.moveTo(base.x, soil);
-    ctx.quadraticCurveTo(base.x + 3, soil - 25, base.x - 1, soil - 44);
+    ctx.quadraticCurveTo(base.x + 3, soil - 25, base.x - 1, soil - 46);
     ctx.stroke();
-    const leaves = [[-9, -40, -0.9], [9, -44, 0.8], [-6, -54, -0.4], [7, -58, 0.5], [0, -64, 0], [-11, -30, -1.2], [10, -32, 1.1], [2, -50, 0.2]];
-    leaves.forEach(([dx, dy, tilt], i) => {
+    ctx.strokeStyle = "rgba(255, 230, 190, 0.25)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(base.x - 0.8, soil);
+    ctx.quadraticCurveTo(base.x + 2, soil - 25, base.x - 1.8, soil - 44);
+    ctx.stroke();
+    // Back leaves first (darker), front ones last (lighter, lit from above).
+    const leaves = [[-11, -31, -1.2, 0], [10, -33, 1.1, 0], [-9, -41, -0.9, 1], [9, -45, 0.8, 1], [-6, -55, -0.4, 2], [7, -59, 0.5, 2], [2, -50, 0.2, 1], [0, -66, 0, 2], [-3, -37, -0.3, 2]];
+    const tones = [["#244a2c", "#2f5a36"], ["#2f5a36", "#3d6b40"], ["#3d6b40", "#5a8a52"]];
+    for (const [dx, dy, tilt, tone] of leaves) {
+      const [dark, light] = tones[tone];
       ctx.save();
       ctx.translate(base.x + dx, soil + dy);
       ctx.rotate(tilt);
-      ctx.fillStyle = ["#2f5a36", "#3d6b40", "#4a7a48"][i % 3];
-      ctx.beginPath();
-      ctx.moveTo(0, 7);
-      ctx.bezierCurveTo(-7, 5, -8, -2, -5, -6);
-      ctx.bezierCurveTo(-3, -9, 3, -9, 5, -6);
-      ctx.bezierCurveTo(8, -2, 7, 5, 0, 7);
+      const shape = () => {
+        ctx.beginPath();
+        ctx.moveTo(0, 8);
+        ctx.bezierCurveTo(-8, 6, -9, -2, -6, -7);
+        ctx.bezierCurveTo(-3, -10.5, 3, -10.5, 6, -7);
+        ctx.bezierCurveTo(9, -2, 8, 6, 0, 8);
+      };
+      const g = ctx.createLinearGradient(0, -10, 0, 8);
+      g.addColorStop(0, light);
+      g.addColorStop(1, dark);
+      ctx.fillStyle = g;
+      shape();
       ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.strokeStyle = shadeColor(dark, -30) + "a0";
+      ctx.lineWidth = 0.9;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; // the midrib and veins
       ctx.lineWidth = 0.7;
       ctx.beginPath();
-      ctx.moveTo(0, 6);
-      ctx.lineTo(0, -7);
+      ctx.moveTo(0, 7);
+      ctx.lineTo(0, -8);
+      for (const y of [-4, 0, 4]) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(-4.5, y - 2.5);
+        ctx.moveTo(0, y);
+        ctx.lineTo(4.5, y - 2.5);
+      }
       ctx.stroke();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // a glossy glint
+      ctx.beginPath();
+      ctx.ellipse(-2.5, -4, 2.2, 1, -0.5, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
-    });
+    }
   },
 
-  // A kentia palm: arching feathery fronds, in a white pot.
+  // A kentia palm: a few bare stems rising out of the pot, then long
+  // arching fronds of slim, two-tone leaflets that fan out sideways (the
+  // fern's are short and droop), in a white pot. Tall.
   palm(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const base = toScreen(f.x + f.w / 2, f.y + f.h);
-    const soil = drawPot(ctx, base.x, base.y - 2, "ceramic", 11, 17);
-    for (const [angle, len] of [[-1.1, 30], [-0.6, 40], [-0.15, 46], [0.3, 42], [0.75, 36], [1.15, 28]]) {
-      const tipX = base.x + Math.sin(angle) * len, tipY = soil - Math.cos(angle) * len * 0.9 + Math.abs(angle) * 10;
+    const pot = drawPot(ctx, base.x, base.y - 2, "ceramic", 11, 17);
+    ctx.strokeStyle = "#6a7a3a"; // the stems
+    ctx.lineWidth = 1.6;
+    for (const dx of [-3, 0, 3]) {
+      ctx.beginPath();
+      ctx.moveTo(base.x + dx * 0.5, pot);
+      ctx.lineTo(base.x + dx, pot - 16);
+      ctx.stroke();
+    }
+    const soil = pot - 16;
+    const fronds = [[-1.1, 34, 0], [1.05, 33, 0], [-0.6, 44, 1], [0.6, 43, 1], [-0.1, 50, 2]];
+    const tones = [["#3f6b34", "#4f7a3c"], ["#4a7a3e", "#5f8a48"], ["#5a8a48", "#7aa85a"]];
+    for (const [angle, len, tone] of fronds) {
+      const [under, over] = tones[tone];
+      const tipX = base.x + Math.sin(angle) * len, tipY = soil - Math.cos(angle) * len * 0.9 + Math.abs(angle) * 12;
       const midX = base.x + Math.sin(angle) * len * 0.45, midY = soil - len * 0.85;
-      ctx.strokeStyle = "#5f7a3a";
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "#6a7a3a";
+      ctx.lineWidth = 1.3;
       ctx.beginPath();
       ctx.moveTo(base.x, soil);
       ctx.quadraticCurveTo(midX, midY, tipX, tipY);
       ctx.stroke();
-      ctx.strokeStyle = "#4f8a4a"; // leaflets hanging off the frond
-      for (let t = 0.25; t < 0.98; t += 0.09) {
+      const out = Math.sign(angle) || 1;
+      for (let t = 0.18; t < 0.98; t += 0.1) {
         const u = 1 - t;
         const px = u * u * base.x + 2 * u * t * midX + t * t * tipX;
         const py = u * u * soil + 2 * u * t * midY + t * t * tipY;
-        const drop = 7 * (1 - t * 0.6);
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px - 3, py + drop);
-        ctx.moveTo(px, py);
-        ctx.lineTo(px + 3, py + drop);
-        ctx.stroke();
+        const size = 13 * (1 - t * 0.5);
+        drawLeaf(ctx, px, py, angle + out * 1.9, size, 1.2, under, null); // (long, slim, fanning out)
+        drawLeaf(ctx, px, py, angle - out * 1.3, size * 0.85, 1.2, over, null);
       }
     }
   },
 
-  // A little lemon tree: a round leafy top dotted with lemons, in clay.
+  // A little lemon tree: a bark trunk, a full leafy crown built like the
+  // yard's bushes (many small clumps, darker below, lighter on top), dotted
+  // with shiny lemons, in a clay pot.
   lemonTree(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const base = toScreen(f.x + f.w / 2, f.y + f.h);
     const soil = drawPot(ctx, base.x, base.y - 2, "clay", 11, 16);
     ctx.fillStyle = "#6b4a2e";
-    ctx.fillRect(base.x - 1.5, soil - 22, 3, 22);
-    for (const [dx, dy, r, color] of [[-8, -30, 10, "#3d6b40"], [8, -32, 10, "#3d6b40"], [0, -40, 11, "#4a7a48"], [-4, -26, 8, "#4f8a4a"], [6, -24, 8, "#4f8a4a"], [1, -34, 9, "#5f9a55"]]) {
-      ctx.fillStyle = color;
+    ctx.fillRect(base.x - 1.8, soil - 22, 3.6, 22);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.35)"; // bark
+    for (let y = soil - 20; y < soil - 2; y += 4) ctx.fillRect(base.x - 1.8, y, 2, 1);
+    ctx.strokeStyle = "#6b4a2e";
+    ctx.lineWidth = 1.4;
+    for (const s of [-1, 1]) {
       ctx.beginPath();
-      ctx.arc(base.x + dx, soil + dy, r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(base.x, soil - 16);
+      ctx.lineTo(base.x + s * 6, soil - 25);
+      ctx.stroke();
     }
-    ctx.fillStyle = "#f2d45c";
-    for (const [dx, dy] of [[-10, -26], [7, -36], [-2, -44], [11, -27], [-6, -36]]) {
+    drawLeafClump(ctx, base.x, soil - 34, 17, 15, ["#3a6a3c", "#5e924f", "#94c67c"], f.x * 3.1 + f.y, 26);
+    for (const [dx, dy] of [[-10, -28], [7, -38], [-2, -44], [11, -29], [-7, -38], [3, -26]]) {
+      const x = base.x + dx, y = soil + dy;
+      const g = ctx.createRadialGradient(x - 1, y - 1, 0.3, x, y, 3.2);
+      g.addColorStop(0, "#fff6b0");
+      g.addColorStop(0.5, "#f2d45c");
+      g.addColorStop(1, "#c9a42c");
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.ellipse(base.x + dx, soil + dy, 2.6, 2, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(x, y, 3, 2.3, 0.4, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = "rgba(120, 90, 20, 0.5)";
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
     }
-    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    for (const [dx, dy] of [[-10.8, -26.8], [6.2, -36.8]]) ctx.fillRect(base.x + dx, soil + dy, 1, 1);
   },
 
   // --- More furniture and decor (Nest & Nook, and a few around the house) ---
