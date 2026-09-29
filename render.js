@@ -178,10 +178,21 @@ function drawLeafClump(ctx, cx, cy, rx, ry, [dark, mid, light], seed = 0, count 
   for (const b of blobs) dot(b.x, b.y + 0.8, b.r + 1.6);
   ctx.fillStyle = dark;
   for (const b of blobs) dot(b.x, b.y, b.r);
+  // Each clump of leaves gets a soft dark rim, so they read as separate
+  // bunches (lighter ones on top).
+  const rim = (x, y, r) => {
+    ctx.beginPath();
+    ctx.arc(x, y, r + 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    dot(x, y, r);
+  };
+  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = shadeColor(dark, -30) + "b0";
   ctx.fillStyle = mid;
-  for (const b of blobs) if (b.up < 0.8) dot(b.x - b.r * 0.1, b.y - b.r * 0.2, b.r * 0.78);
+  for (const b of blobs) if (b.up < 0.8) rim(b.x - b.r * 0.1, b.y - b.r * 0.2, b.r * 0.78);
+  ctx.strokeStyle = shadeColor(dark, -10) + "90";
   ctx.fillStyle = light;
-  for (const b of blobs) if (b.up < 0.45) dot(b.x - b.r * 0.25, b.y - b.r * 0.4, b.r * 0.42);
+  for (const b of blobs) if (b.up < 0.45) rim(b.x - b.r * 0.25, b.y - b.r * 0.4, b.r * 0.42);
   // Texture: tiny dark leaf gaps across the clusters.
   ctx.fillStyle = shadeColor(dark, -20);
   for (let i = 0; i < count; i++) {

@@ -649,11 +649,38 @@ function noteFrameTime(workMs, now) {
     console.info("Porchlight: object outlines off on this computer, to keep things smooth.");
   }
 }
+// The outline goes around the whole object at once: it's drawn plainly on
+// a scratch canvas first, then copied over with the outline. (Putting the
+// outline on while drawing would outline every little shape in it
+// separately, which is several times slower and outlines the specks too.)
+// The copy covers a generous box around the object: its footprint plus a
+// tile or so either side, and tall enough for trees and lamps.
+let scratch = null;
 function drawOutlined(ctx, f) {
   if (!outlinesOn || NO_OUTLINE.has(f.kind)) return FURNITURE_DRAWERS[f.kind](ctx, f);
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  if (!scratch || scratch.canvas.width !== W || scratch.canvas.height !== H) {
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    scratch = c.getContext("2d");
+  }
+  const m = ctx.getTransform();
+  const a = toScreen(f.x - 1.5, f.y), b = toScreen(f.x + (f.w ?? 1) + 1.5, f.y + (f.h ?? 0.6));
+  const x0 = Math.max(0, Math.floor(m.a * a.x + m.e)), x1 = Math.min(W, Math.ceil(m.a * b.x + m.e));
+  const y0 = Math.max(0, Math.floor(m.d * (a.y - 260) + m.f)), y1 = Math.min(H, Math.ceil(m.d * (b.y + 30) + m.f));
+  if (x1 <= x0 || y1 <= y0) return; // (off screen)
+  scratch.setTransform(1, 0, 0, 1, 0, 0);
+  scratch.clearRect(x0, y0, x1 - x0, y1 - y0);
+  scratch.setTransform(m);
+  scratch.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
+  scratch.save();
+  FURNITURE_DRAWERS[f.kind](scratch, f);
+  scratch.restore();
   ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.filter = f.h === undefined ? WALL_FILTER : OUTLINE_FILTER;
-  FURNITURE_DRAWERS[f.kind](ctx, f);
+  ctx.drawImage(scratch.canvas, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
   ctx.restore();
 }
 
