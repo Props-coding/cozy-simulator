@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.89",
+    title: "Cellar Crawl, polished",
+    text: "The cellar under the house got a proper polish. Crates burst into splinters and straw, crumbs and treasure fly into your bag, critters puff and sparkle when you bop them, and there are sounds for all of it (the sound effects slider). Lanterns glow softly and flicker, candles light most rooms, and the floors are proper cobbles. A red \"!\" warns you before a critter lunges, crates you can reach glow gently, and beating the Rat King is a party. Also fixed: brooms, getting knocked out and being helped up ran slow on slower computers.",
+  },
+  {
     build: "0.88",
     title: "Push to talk, and a big art pass",
     text: "Voice is push to talk now: hold V to talk, and Shift + V next to a friend to whisper to only them. Prefer an open mic? Turn Push to talk off in the sound settings (the cog), where friends' voices, sound effects and dance music also have their own sliders now, and Mute friends' voices no longer mutes everything. Voices carry about nine steps and fade out, and the grandfather clock only chimes for those near it. The house also had a big art pass: furniture is built from real parts, so turned bookcases, sofas, beds and desks look right from every side; about sixty pieces are redrawn with grain, fabric and little details; every plant has rounder pots and fuller leaves; and at night, lamps and windows cast real pools of light.",
