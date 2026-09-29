@@ -923,11 +923,38 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.fillRect(x, a.y - 2, 4, 4);
     }
     for (let x = a.x, i = 0; x < b.x; x += 9, i++) {
-      ctx.fillStyle = shadeColor("#a07a52", Math.round((noise(i * 3.7) - 0.5) * 20));
+      const plank = shadeColor("#a07a52", Math.round((noise(i * 3.7) - 0.5) * 20));
+      ctx.fillStyle = plank;
       ctx.fillRect(x, a.y, 8, b.y - a.y);
+      ctx.fillStyle = "rgba(255, 240, 210, 0.12)"; // lit along its left edge
+      ctx.fillRect(x, a.y, 1.5, b.y - a.y);
+      ctx.strokeStyle = "rgba(60, 35, 15, 0.18)"; // grain
+      ctx.lineWidth = 0.6;
+      for (const gx of [2.5, 5]) {
+        ctx.beginPath();
+        ctx.moveTo(x + gx, a.y);
+        for (let y = a.y; y <= b.y; y += 5) ctx.lineTo(x + gx + Math.sin(y * 0.4 + i) * 0.6, y);
+        ctx.stroke();
+      }
+      if (noise(i * 5.1) > 0.6) { // a knot
+        ctx.fillStyle = "rgba(60, 35, 15, 0.35)";
+        ctx.beginPath();
+        ctx.ellipse(x + 4, a.y + (b.y - a.y) * noise(i * 2.9), 1.2, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "rgba(40, 30, 25, 0.55)"; // nail heads at each end
+      ctx.fillRect(x + 2, a.y + 2, 1, 1);
+      ctx.fillRect(x + 5, b.y - 3, 1, 1);
       ctx.fillStyle = "rgba(60, 35, 15, 0.35)";
       ctx.fillRect(x + 8, a.y, 1, b.y - a.y);
     }
+    ctx.strokeStyle = "#c9b08a"; // a rope looped round the first post
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(a.x + 5, b.y - 3, 3.5, 1.6, 0, 0, Math.PI * 2);
+    ctx.moveTo(a.x + 8, b.y - 2.5);
+    ctx.quadraticCurveTo(a.x + 12, b.y + 2, a.x + 18, b.y);
+    ctx.stroke();
   },
 
   // Reeds and cattails at the pond's edge, swaying.
@@ -2084,53 +2111,6 @@ function drawBobber(ctx, p) {
 }
 
 Object.assign(FURNITURE_DRAWERS, {
-  // Otis's bait stand: a wooden crate with a cooler on top, a bucket of
-  // worms and a hand-painted "BAIT" sign.
-  baitCrate(ctx, f) {
-    if (!isThere(f)) return; // (the pond one leaves with Otis)
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const box = drawBlock(ctx, f.x, f.y, f.w, f.h, 16, "#9a7250");
-    ctx.fillStyle = "rgba(60, 35, 15, 0.35)";
-    for (let i = 1; i < 3; i++) ctx.fillRect(box.face.x, box.face.y + (box.face.h * i) / 3, box.face.w, 1);
-    // The cooler.
-    const cx = box.top.x + 6, cy = box.top.y - 10;
-    ctx.fillStyle = "#4a8ab8";
-    roundRectPath(ctx, cx, cy, 22, 14, 3);
-    ctx.fill();
-    ctx.fillStyle = "#f4f4f0";
-    ctx.fillRect(cx, cy, 22, 4);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    ctx.fillRect(cx + 2, cy + 6, 3, 6);
-    // A bucket of worms.
-    const bx = box.top.x + box.top.w - 12, by = box.top.y + 6;
-    ctx.fillStyle = "#8a9298";
-    ctx.beginPath();
-    ctx.moveTo(bx - 7, by - 12);
-    ctx.lineTo(bx + 7, by - 12);
-    ctx.lineTo(bx + 5, by);
-    ctx.lineTo(bx - 5, by);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#e08a8a";
-    ctx.lineWidth = 1.6;
-    const t = performance.now() / 1000;
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath();
-      ctx.moveTo(bx - 4 + i * 4, by - 12);
-      ctx.quadraticCurveTo(bx - 3 + i * 4 + Math.sin(t * 3 + i) * 2, by - 17, bx - 2 + i * 4, by - 14);
-      ctx.stroke();
-    }
-    // The sign.
-    ctx.fillStyle = "#f4ead4";
-    roundRectPath(ctx, box.face.x + box.face.w / 2 - 14, box.face.y + 3, 28, 10, 2);
-    ctx.fill();
-    ctx.fillStyle = "#3f6f9f";
-    ctx.font = "800 8px 'Quicksand', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("BAIT", box.face.x + box.face.w / 2, box.face.y + 11);
-    ctx.textAlign = "left";
-  },
-
   // Otis the otter: sleek and brown with a cream face, a yellow rain hat
   // and a little fish in his paws.
   // Otis's self-serve bait box at the pond (once he's moved to the Lake):
@@ -2377,27 +2357,53 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillStyle = bark;
     roundRectPath(ctx, a.x + 3, y, b.x - a.x - 6, h, h / 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(60, 35, 20, 0.35)";
+    ctx.strokeStyle = "rgba(50, 30, 15, 0.55)"; // a soft darker rim
     ctx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-      const x = a.x + 12 + noise(f.x * 3 + i) * (b.x - a.x - 30);
+    ctx.stroke();
+    // Bark: ridges running along the log, split here and there.
+    ctx.save();
+    roundRectPath(ctx, a.x + 3, y, b.x - a.x - 6, h, h / 2);
+    ctx.clip();
+    for (let i = 0; i < 12; i++) {
+      const x = a.x + 8 + noise(f.x * 3 + i) * (b.x - a.x - 22), ry = y + 3 + noise(f.y + i * 2.3) * (h - 6);
+      ctx.strokeStyle = i % 3 ? "rgba(50, 30, 15, 0.35)" : "rgba(255, 230, 190, 0.18)";
+      ctx.lineWidth = i % 3 ? 1 : 0.8;
       ctx.beginPath();
-      ctx.moveTo(x, y + 4);
-      ctx.lineTo(x + 10, y + 4);
+      ctx.moveTo(x, ry);
+      ctx.lineTo(x + 8 + noise(i * 4.4) * 8, ry + (noise(i * 1.9) - 0.5) * 1.5);
       ctx.stroke();
     }
-    // Cut ends showing their rings.
+    ctx.fillStyle = "rgba(110, 145, 80, 0.55)"; // moss on the shaded underside
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(a.x + 16 + noise(f.x + i * 5.5) * (b.x - a.x - 36), b.y - 2, 4 + noise(i) * 3, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    // Cut ends showing their rings, a darker bark edge and a crack.
     for (const x of [a.x + 3 + h / 4, b.x - 3 - h / 4]) {
+      ctx.fillStyle = "#5a3c24";
+      ctx.beginPath();
+      ctx.ellipse(x, y + h / 2, h / 4 + 1, h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = "#d8b888";
       ctx.beginPath();
-      ctx.ellipse(x, y + h / 2, h / 4, h / 2 - 1, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, y + h / 2, h / 4 - 0.5, h / 2 - 1.5, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = "#a88458";
+      ctx.strokeStyle = "#b08c5e";
+      ctx.lineWidth = 0.7;
+      for (const k of [0.25, 0.5, 0.75]) {
+        ctx.beginPath();
+        ctx.ellipse(x, y + h / 2, (h / 4) * k, (h / 2 - 1.5) * k, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(90, 60, 30, 0.6)";
       ctx.beginPath();
-      ctx.ellipse(x, y + h / 2, h / 8, h / 4, 0, 0, Math.PI * 2);
+      ctx.moveTo(x, y + h / 2);
+      ctx.lineTo(x + h / 5, y + h * 0.2);
       ctx.stroke();
     }
-    ctx.fillStyle = "rgba(255, 240, 210, 0.2)";
+    ctx.fillStyle = "rgba(255, 240, 210, 0.25)"; // the lit top
     ctx.fillRect(a.x + h / 2, y + 2, b.x - a.x - h, 2);
   },
 
@@ -2761,7 +2767,10 @@ Object.assign(FURNITURE_DRAWERS, {
   birdbath(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h * 0.6);
-    ctx.fillStyle = "#a8a196"; // pedestal
+    const stone = ctx.createLinearGradient(b.x - 7, 0, b.x + 7, 0); // the pedestal
+    stone.addColorStop(0, "#bdb6aa");
+    stone.addColorStop(1, "#8f887c");
+    ctx.fillStyle = stone;
     ctx.beginPath();
     ctx.moveTo(b.x - 7, b.y);
     ctx.lineTo(b.x - 3, b.y - 16);
@@ -2769,18 +2778,43 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.lineTo(b.x + 7, b.y);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = "rgba(60, 55, 48, 0.45)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
     ctx.fillStyle = "#948d82";
     ctx.fillRect(b.x - 8, b.y - 2, 16, 3);
-    ctx.fillStyle = "#b8b1a6"; // bowl
+    ctx.fillStyle = "#948d82"; // a carved ring round its middle
+    ctx.fillRect(b.x - 4.5, b.y - 9, 9, 1.8);
+    ctx.fillStyle = "rgba(110, 140, 80, 0.55)"; // moss at its foot
+    for (const [dx, r] of [[-6, 2], [-3.5, 1.5], [5, 1.8]]) {
+      ctx.beginPath();
+      ctx.arc(b.x + dx, b.y - 1, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#9a9388"; // the bowl: its underside, then its lip
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 16.5, 13, 5, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#c2bbb0";
     ctx.beginPath();
     ctx.ellipse(b.x, b.y - 18, 14, 5.5, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = "rgba(60, 55, 48, 0.45)";
+    ctx.stroke();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.08)"; // speckles in the stone
+    for (let i = 0; i < 6; i++) ctx.fillRect(b.x - 12 + noise(f.x + i * 2.1) * 24, b.y - 20 + noise(f.y + i * 3.3) * 4, 1, 1);
     ctx.fillStyle = yardSeason() === "winter" ? "#dfeef4" : "#8fc3d6"; // water (or ice)
     ctx.beginPath();
     ctx.ellipse(b.x, b.y - 18.5, 11, 3.8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
     ctx.fillRect(b.x - 5, b.y - 20, 4, 1);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.35)"; // a slow ripple
+    ctx.lineWidth = 0.6;
+    const ripple = (performance.now() / 1600 + f.x) % 1;
+    ctx.beginPath();
+    ctx.ellipse(b.x + 2, b.y - 18.5, 3 + ripple * 6, 1 + ripple * 2, 0, 0, Math.PI * 2);
+    ctx.stroke();
     if (yardSeason() !== "winter") {
       const bx = b.x + 10, by = b.y - 22 + (Math.sin(performance.now() / 700 + f.x) > 0.8 ? -1 : 0);
       ctx.fillStyle = "#5a8ac8"; // a bluebird
@@ -2803,9 +2837,17 @@ Object.assign(FURNITURE_DRAWERS, {
   mailbox(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const b = toScreen(f.x + f.w / 2, f.y + f.h * 0.6);
-    ctx.fillStyle = "#7a5238"; // post
-    ctx.fillRect(b.x - 1.5, b.y - 20, 3, 20);
-    ctx.fillStyle = "#5a7a9a"; // box, with a rounded top
+    ctx.fillStyle = "#7a5238"; // the post, lit on its left, with a little grain
+    ctx.fillRect(b.x - 2, b.y - 20, 4, 20);
+    ctx.fillStyle = "rgba(255, 225, 180, 0.3)";
+    ctx.fillRect(b.x - 2, b.y - 20, 1.2, 20);
+    ctx.fillStyle = "rgba(40, 25, 10, 0.35)";
+    ctx.fillRect(b.x + 0.5, b.y - 15, 0.8, 6);
+    ctx.fillRect(b.x - 2.5, b.y - 21, 5, 2); // (the bracket)
+    const body = ctx.createLinearGradient(b.x - 9, 0, b.x + 9, 0); // the box, with a rounded top
+    body.addColorStop(0, "#7a9aba");
+    body.addColorStop(1, "#4a6a8a");
+    ctx.fillStyle = body;
     ctx.beginPath();
     ctx.moveTo(b.x - 9, b.y - 20);
     ctx.lineTo(b.x - 9, b.y - 27);
@@ -2813,13 +2855,33 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.lineTo(b.x + 9, b.y - 20);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-    ctx.fillRect(b.x - 7, b.y - 31, 6, 2);
+    ctx.strokeStyle = "rgba(30, 45, 60, 0.6)";
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(b.x - 7, b.y - 32, 6, 1.5);
+    ctx.strokeStyle = "rgba(30, 45, 60, 0.45)"; // the door and its latch
+    ctx.beginPath();
+    ctx.arc(b.x, b.y - 27, 6, Math.PI, 0);
+    ctx.lineTo(b.x + 6, b.y - 21);
+    ctx.lineTo(b.x - 6, b.y - 21);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = "#d9d9d9";
+    ctx.fillRect(b.x - 1, b.y - 31.5, 2, 1.5);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.45)"; // rivets
+    for (const dx of [-7.5, 7.5]) ctx.fillRect(b.x + dx - 0.5, b.y - 23, 1, 1);
     ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
     ctx.fillRect(b.x - 9, b.y - 22, 18, 2);
-    ctx.fillStyle = "#c0554a"; // the flag
+    ctx.fillStyle = "#c0554a"; // the flag, on its pivot
     ctx.fillRect(b.x + 9, b.y - 33, 1.5, 11);
     ctx.fillRect(b.x + 9, b.y - 33, 6, 4);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(b.x + 9, b.y - 33, 6, 1);
+    ctx.fillStyle = "#3a3a40";
+    ctx.beginPath();
+    ctx.arc(b.x + 9.8, b.y - 23, 1, 0, Math.PI * 2);
+    ctx.fill();
   },
 });
 

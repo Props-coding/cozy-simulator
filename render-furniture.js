@@ -656,33 +656,6 @@ const FURNITURE_DRAWERS = {
     ctx.fillRect(cx - 3, by - 39, 6, 3);
   },
 
-  // A retro arcade cabinet with a glowing screen and joystick.
-  arcade(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const cab = drawBlock(ctx, f.x, f.y, f.w, f.h, 56, "#3f4f8a");
-    const { x, y, w } = cab.face;
-    ctx.fillStyle = "#e37aa0"; // marquee
-    ctx.fillRect(x + 3, y + 3, w - 6, 7);
-    ctx.fillStyle = "#1a1a24"; // screen
-    ctx.fillRect(x + 4, y + 13, w - 8, 18);
-    const t = performance.now() / 1000;
-    ctx.fillStyle = "#6fe0a8";
-    ctx.fillRect(x + 6 + ((t * 10) % (w - 16)), y + 20, 3, 3);
-    ctx.fillStyle = "#f2d45c";
-    ctx.fillRect(x + w - 12, y + 16, 2, 2);
-    ctx.fillStyle = "#2b2b30"; // control panel
-    ctx.fillRect(x + 2, y + 33, w - 4, 7);
-    ctx.fillStyle = "#c0554a";
-    ctx.beginPath();
-    ctx.arc(x + 8, y + 34, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f2d45c";
-    ctx.beginPath();
-    ctx.arc(x + w - 10, y + 36, 1.8, 0, Math.PI * 2);
-    ctx.arc(x + w - 5, y + 36, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-  },
-
   // A brass telescope on a tripod, pointed at the sky.
   telescope(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);

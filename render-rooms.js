@@ -450,44 +450,6 @@ Object.assign(FURNITURE_DRAWERS, {
     });
   },
 
-  // A big walnut conference table with laptops, notepads, water glasses
-  // and a little plant in the middle.
-  conferenceTable(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 24, "#6b4a32");
-    const { x, y, w, h } = t.top;
-    // Laptops along each long side.
-    for (const lx of [x + 22, x + w - 48]) {
-      ctx.fillStyle = "#c8ccd2";
-      roundRectPath(ctx, lx, y + 6, 26, 16, 2);
-      ctx.fill();
-      ctx.fillStyle = "#6fa7c8";
-      ctx.fillRect(lx + 3, y + 8, 20, 11);
-    }
-    // Notepads and pens on the near side.
-    for (const nx of [x + 30, x + w - 44]) {
-      ctx.fillStyle = "#f4ecd2";
-      ctx.fillRect(nx, y + h - 20, 14, 16);
-      ctx.fillStyle = "#3f6f9f";
-      ctx.fillRect(nx + 16, y + h - 19, 2, 13);
-    }
-    // Water glasses.
-    for (const gx of [x + 14, x + w / 2 + 24, x + w - 14]) {
-      ctx.fillStyle = "rgba(200, 230, 245, 0.7)";
-      ctx.fillRect(gx - 3, y + h / 2 - 4, 6, 8);
-    }
-    // A small plant in the middle.
-    const cx = x + w / 2, cy = y + h / 2;
-    ctx.fillStyle = "#e8dcc8";
-    ctx.fillRect(cx - 6, cy - 2, 12, 8);
-    for (const [dx, dy, color] of [[-4, -6, "#4f7a48"], [4, -7, "#5c8a54"], [0, -10, "#6fa05e"]]) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(cx + dx, cy + dy, 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  },
-
   // --- The raccoon shop ---
 
   // Three raccoons stacked in one long trenchcoat, swaying a little: the top
@@ -1791,74 +1753,4 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.stroke();
   },
 
-  // A sturdy workbench with a vise, some wood offcuts, and the "done jar":
-  // a glass jar that fills up with little colored paper stars as cards are
-  // finished (globalThis.kanbanJar, from kanban.js).
-  workbench(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const legs = drawBlock(ctx, f.x + 0.1, f.y + 0.15, f.w - 0.2, f.h - 0.15, 20, "#6b4630");
-    const top = drawBlock(ctx, f.x, f.y, f.w, f.h - 0.2, 6, "#a0703e");
-    ctx.fillStyle = "rgba(40, 25, 10, 0.25)"; // the shelf underneath
-    ctx.fillRect(legs.face.x + 4, legs.face.y + 6, legs.face.w - 8, 2);
-    const t = top.top;
-    ctx.fillStyle = "#8a8f96"; // a vise on the left end
-    ctx.fillRect(t.x + 4, t.y - 6, 12, 7);
-    ctx.fillStyle = "#5f656c";
-    ctx.fillRect(t.x + 7, t.y - 9, 6, 3);
-    ctx.fillStyle = "#d9b98a"; // a couple of wood offcuts
-    ctx.fillRect(t.x + 24, t.y + 6, 18, 5);
-    ctx.fillStyle = "#c49a5c";
-    ctx.fillRect(t.x + 30, t.y + 2, 14, 4);
-    // The done jar, on the right end.
-    const jx = t.x + t.w - 24, jb = t.y + t.h - 4, jw = 16, jh = 22;
-    const done = globalThis.kanbanJar ?? 0;
-    const fill = Math.min(1, done / 40); // full after 40 finished cards
-    const colors = ["#f2a0b8", "#fff2a8", "#a8d8e8", "#c8b0e8", "#b9e0a4", "#f7c68a"];
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(jx + 1, jb - jh + 4, jw - 2, jh - 5);
-    ctx.clip();
-    const level = jb - 1 - (jh - 6) * fill;
-    for (let i = 0; i < Math.min(done, 80); i++) {
-      const sx = jx + 3 + noise(i * 2.3) * (jw - 6), sy = jb - 3 - noise(i * 4.1) * (jb - 3 - level);
-      ctx.fillStyle = colors[i % colors.length];
-      ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
-    }
-    ctx.restore();
-    ctx.fillStyle = "rgba(200, 225, 235, 0.35)"; // the glass
-    roundRectPath(ctx, jx, jb - jh + 3, jw, jh - 3, 3);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.45)"; // shine
-    ctx.fillRect(jx + 2, jb - jh + 6, 1.5, jh - 10);
-    ctx.fillStyle = "#c9a24a"; // lid
-    ctx.fillRect(jx - 1, jb - jh, jw + 2, 4);
-    ctx.fillStyle = "#fffaf3"; // its label
-    ctx.fillRect(jx + 3, jb - 11, jw - 6, 5);
-    ctx.fillStyle = "#5c4530";
-    ctx.font = "700 4px 'Quicksand', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("DONE", jx + jw / 2, jb - 7.5);
-    ctx.textAlign = "left";
-  },
-
-  // A red metal toolbox with a handle.
-  toolbox(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const b = drawBlock(ctx, f.x, f.y, f.w, f.h, 14, "#c0403a");
-    ctx.fillStyle = "#8a2a24";
-    ctx.fillRect(b.face.x, b.face.y + 4, b.face.w, 1.5);
-    ctx.fillStyle = "#d9d9d9";
-    ctx.fillRect(b.face.x + b.face.w / 2 - 3, b.face.y + 6, 6, 3);
-    ctx.strokeStyle = "#3a3a40"; // handle
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(b.top.x + b.top.w / 2 - 7, b.top.y + b.top.h / 2);
-    ctx.lineTo(b.top.x + b.top.w / 2 - 7, b.top.y + b.top.h / 2 - 5);
-    ctx.lineTo(b.top.x + b.top.w / 2 + 7, b.top.y + b.top.h / 2 - 5);
-    ctx.lineTo(b.top.x + b.top.w / 2 + 7, b.top.y + b.top.h / 2);
-    ctx.stroke();
-  },
 });

@@ -940,6 +940,7 @@ function modelSeatShift(f, y) {
 // is the front, "up" the back, "right" or "left" turned), unless `how`
 // says (theater seats always show their backs: they face the screen).
 function drawModelFacing(ctx, f, kind, how = "own") {
+  if (!isThere(f)) return; // (a visitor's things that are away, like Otis's pond stand)
   const own = OWN_FACING.has(kind) ? ({ up: "back", right: "right", left: "left" }[f.facing] ?? "front") : "front";
   const dir = how !== "own" ? how : f.kind.endsWith("Side") ? f.facing : own;
   if (dir === "left") sideView(ctx, f, () => drawModelPiece(ctx, f, kind, "right"));
