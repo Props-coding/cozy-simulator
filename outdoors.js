@@ -408,6 +408,7 @@ function yardGlows() {
   return glows;
 }
 
+let nightLayer = null; // (the darkness, drawn off screen: see drawOutdoorLight)
 function drawOutdoorLight(ctx) {
   // (The back alley is always dusk, whatever the weather: darker, with its
   // own lights glowing, and no rain or haze.)
@@ -420,20 +421,49 @@ function drawOutdoorLight(ctx) {
     drawOutsideWeather(ctx, whole);
     return;
   }
-  ctx.fillStyle = alley ? "rgba(18, 12, 40, 0.58)" : `rgba(14, 22, 62, ${0.55 * level})`;
-  ctx.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
+  // Night is a layer of darkness with the lights cut out of it: under a
+  // lamp you see the scene as it is, fading to dark around it. Then a soft,
+  // wide warm tint where each light falls (not a bright orb).
+  const glows = viewFloor === LAKE_FLOOR ? lakeGlows() : viewFloor === ALLEY_FLOOR ? alleyGlows() : viewFloor === FARM_FLOOR ? farmGlows() : yardGlows();
+  const m = ctx.getTransform(), W = ctx.canvas.width, H = ctx.canvas.height;
+  if (!nightLayer || nightLayer.canvas.width !== W || nightLayer.canvas.height !== H) {
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    nightLayer = c.getContext("2d");
+  }
+  const dark = nightLayer;
+  dark.setTransform(1, 0, 0, 1, 0, 0);
+  dark.clearRect(0, 0, W, H);
+  dark.setTransform(m);
+  dark.globalCompositeOperation = "source-over";
+  dark.fillStyle = alley ? "rgba(18, 12, 40, 0.66)" : `rgba(14, 22, 62, ${0.62 * level})`;
+  dark.fillRect(left - 20, top - 20, right - left + 40, bottom - top + 40);
+  dark.globalCompositeOperation = "destination-out";
+  for (const [x, y, r, strength] of glows) {
+    const p = toScreen(x, y), reach = r * 1.25;
+    const hole = dark.createRadialGradient(p.x, p.y, 0, p.x, p.y, reach);
+    hole.addColorStop(0, `rgba(0, 0, 0, ${Math.min(0.9, 0.85 * strength)})`);
+    hole.addColorStop(0.45, `rgba(0, 0, 0, ${Math.min(0.6, 0.5 * strength)})`);
+    hole.addColorStop(1, "rgba(0, 0, 0, 0)");
+    dark.fillStyle = hole;
+    dark.fillRect(p.x - reach, p.y - reach, reach * 2, reach * 2);
+  }
+  dark.globalCompositeOperation = "source-over";
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(dark.canvas, 0, 0);
+  ctx.restore();
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
-  const glows = viewFloor === LAKE_FLOOR ? lakeGlows() : viewFloor === ALLEY_FLOOR ? alleyGlows() : viewFloor === FARM_FLOOR ? farmGlows() : yardGlows();
   for (const [x, y, r, strength, color = "255, 185, 95"] of glows) {
-    const p = toScreen(x, y);
-    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-    glow.addColorStop(0, `rgba(${color}, ${0.55 * strength * level})`);
+    const p = toScreen(x, y), reach = r * 1.4;
+    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, reach);
+    glow.addColorStop(0, `rgba(${color}, ${0.28 * strength * level})`);
+    glow.addColorStop(0.5, `rgba(${color}, ${0.1 * strength * level})`);
     glow.addColorStop(1, `rgba(${color}, 0)`);
     ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(p.x - reach, p.y - reach, reach * 2, reach * 2);
   }
   ctx.restore();
   // A few stars over the roof line (when the sky is clear enough).
