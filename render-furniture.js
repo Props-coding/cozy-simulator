@@ -423,20 +423,37 @@ const FURNITURE_DRAWERS = {
     const w = f.w * TILE, x = a.x + w / 2 - 7, y = a.y - WALL_HEIGHT + 10;
     ctx.fillStyle = "rgba(40, 25, 10, 0.22)";
     ctx.fillRect(x + 2, y + 3, 14, 20);
-    ctx.fillStyle = "#d9534f"; // the body
+    const body = ctx.createLinearGradient(x, 0, x + 14, 0); // the body, lit from the left
+    body.addColorStop(0, "#e8665f");
+    body.addColorStop(1, "#b8403c");
+    ctx.fillStyle = body;
     roundRectPath(ctx, x, y, 14, 20, 3);
     ctx.fill();
-    ctx.fillStyle = "#f6e7d0"; // the dial
+    ctx.strokeStyle = "rgba(90, 20, 20, 0.55)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.fillRect(x + 2, y + 3, 1.2, 14);
+    ctx.fillStyle = "#f6e7d0"; // the dial, with its finger holes
     ctx.beginPath();
-    ctx.arc(x + 7, y + 12, 4, 0, Math.PI * 2);
+    ctx.arc(x + 7, y + 12, 4.2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = "#c9b89a";
+    for (let k = 0; k < 8; k++) {
+      const a = -Math.PI * 0.2 + (k / 10) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(x + 7 + Math.cos(a) * 2.9, y + 12 + Math.sin(a) * 2.9, 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = "#b8403c";
     ctx.beginPath();
     ctx.arc(x + 7, y + 12, 1.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#c2433f"; // the handset on top
-    roundRectPath(ctx, x - 2, y - 3, 18, 4, 2);
+    ctx.fillStyle = "#c2433f"; // the handset on top, with a lit edge
+    roundRectPath(ctx, x - 2, y - 3, 18, 4.5, 2);
     ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillRect(x, y - 2.5, 14, 1);
     ctx.strokeStyle = "#8f2f2c"; // the curly cord
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -577,131 +594,6 @@ const FURNITURE_DRAWERS = {
       ctx.arc(x + 2 + fx * (w - 4), y + 2 + fy * (h - 4), 1.5, 0, Math.PI * 2);
       ctx.fill();
     }
-  },
-
-  // A low coffee table with a mug, a book and a little candle.
-  coffeeTable(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 12, "#8b5e3c");
-    const { x, y, w, h } = t.top;
-    ctx.fillStyle = "#c0554a";
-    ctx.fillRect(x + 6, y + h / 2 - 5, 14, 9);
-    ctx.fillStyle = "#f4ecdc";
-    ctx.fillRect(x + 7, y + h / 2 - 4, 12, 1.2);
-    ctx.fillStyle = "#f2ece2";
-    ctx.fillRect(x + w / 2 - 3, y + h / 2 - 4, 6, 7);
-    ctx.fillStyle = "#6b3a1e";
-    ctx.fillRect(x + w / 2 - 2.5, y + h / 2 - 4, 5, 1.5);
-    drawCandle(ctx, x + w - 10, y + h / 2 + 3, performance.now() / 1000 + f.x);
-  },
-
-  // A record player on a little stand, with the record spinning.
-  recordPlayer(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const s = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#6b4630");
-    ctx.fillStyle = "#e37aa0"; // record sleeves in the stand
-    ctx.fillRect(s.face.x + 4, s.face.y + 4, 5, s.face.h - 8);
-    ctx.fillStyle = "#3f6f9f";
-    ctx.fillRect(s.face.x + 10, s.face.y + 4, 5, s.face.h - 8);
-    const cx = s.top.x + s.top.w / 2 - 3, cy = s.top.y + s.top.h / 2;
-    ctx.fillStyle = "#2b2b30"; // the player
-    roundRectPath(ctx, cx - 14, cy - 9, 30, 18, 3);
-    ctx.fill();
-    ctx.fillStyle = "#15151a"; // the record
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 11, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    const spin = performance.now() / 300;
-    ctx.fillStyle = "#c0554a"; // its label, turning
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 3.5, 2.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-    ctx.fillRect(cx + Math.cos(spin) * 7 - 1, cy + Math.sin(spin) * 4.5 - 0.5, 2, 1);
-    ctx.strokeStyle = "#c9c9d0"; // tone arm
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx + 13, cy - 6);
-    ctx.lineTo(cx + 5, cy + 1);
-    ctx.stroke();
-  },
-
-  // A fish tank on a cabinet: water, plants, bubbles and two little fish.
-  fishTank(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const cab = drawBlock(ctx, f.x, f.y, f.w, f.h, 16, "#5c3d2a");
-    const x = cab.top.x + 2, w = cab.top.w - 4, bottom = cab.top.y + cab.top.h - 2, h = 26, top = bottom - h;
-    const water = ctx.createLinearGradient(0, top, 0, bottom);
-    water.addColorStop(0, "rgba(140, 200, 230, 0.8)");
-    water.addColorStop(1, "rgba(60, 130, 170, 0.85)");
-    ctx.fillStyle = water;
-    ctx.fillRect(x, top, w, h);
-    ctx.fillStyle = "#e9dcb8"; // sand
-    ctx.fillRect(x, bottom - 4, w, 4);
-    ctx.strokeStyle = "#4f8a4a"; // water plants
-    ctx.lineWidth = 2;
-    const t = performance.now() / 1000;
-    for (const px of [x + 5, x + w - 7]) {
-      ctx.beginPath();
-      ctx.moveTo(px, bottom - 3);
-      ctx.quadraticCurveTo(px + Math.sin(t * 1.5 + px) * 3, bottom - 12, px + 1, bottom - 18);
-      ctx.stroke();
-    }
-    // Fish you've caught and put in (Update 4), or two little starter fish.
-    const caught = Array.isArray(f.fish) && f.fish.length
-      ? f.fish.map((id, i) => [CONFIG.fish.find((fish) => fish.id === id)?.color ?? "#f2a03a", 0.3 + ((i * 0.13) % 0.35), 0.25 + ((i * 0.37) % 0.55), i * 1.7])
-      : [["#f2a03a", 0.5, 0.4, 0], ["#e37aa0", 0.35, 0.65, 2]];
-    for (const [color, speed, row, phase] of caught) {
-      const swim = (Math.sin(t * speed + phase) + 1) / 2;
-      const fx = x + 6 + swim * (w - 14), fy = top + row * h;
-      const dir = Math.cos(t * speed + phase) >= 0 ? 1 : -1;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.ellipse(fx, fy, 3.5, 2.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(fx - dir * 3, fy);
-      ctx.lineTo(fx - dir * 6, fy - 2);
-      ctx.lineTo(fx - dir * 6, fy + 2);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.fillStyle = "rgba(255, 255, 255, 0.7)"; // bubbles
-    for (let i = 0; i < 3; i++) {
-      const rise = (t * 0.6 + i / 3) % 1;
-      ctx.beginPath();
-      ctx.arc(x + w * 0.55 + Math.sin(rise * 8) * 1.5, bottom - 4 - rise * (h - 6), 1.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.6)"; // glass edge and a glint
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, top, w, h);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-    ctx.fillRect(x + 2, top + 2, 2, h - 8);
-    ctx.fillStyle = "#2b2b30"; // lid
-    ctx.fillRect(x - 1, top - 3, w + 2, 3);
-  },
-
-  // An upright piano with the keys showing and a candle on top.
-  piano(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const back = drawBlock(ctx, f.x, f.y, f.w, 0.3, 46, "#3a2a24");
-    const keysBed = drawBlock(ctx, f.x, f.y + 0.3, f.w, f.h - 0.3, 22, "#3a2a24");
-    const kx = keysBed.top.x + 3, ky = keysBed.top.y + 2, kw = keysBed.top.w - 6, kh = keysBed.top.h - 4;
-    ctx.fillStyle = "#f7f4ee";
-    ctx.fillRect(kx, ky, kw, kh);
-    ctx.fillStyle = "#2b2b2b";
-    for (let i = 0; i < kw / 4.5; i++) {
-      if (i % 7 === 2 || i % 7 === 6) continue;
-      ctx.fillRect(kx + 3 + i * 4.5, ky, 2.2, kh * 0.6);
-    }
-    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-    for (let i = 1; i < kw / 4.5; i++) ctx.fillRect(kx + i * 4.5, ky, 0.5, kh);
-    ctx.fillStyle = "#f4ecdc"; // sheet music
-    ctx.fillRect(back.face.x + back.face.w / 2 - 10, back.face.y + 8, 20, 13);
-    ctx.fillStyle = "rgba(40, 30, 20, 0.5)";
-    for (let i = 0; i < 4; i++) ctx.fillRect(back.face.x + back.face.w / 2 - 8, back.face.y + 11 + i * 2.5, 16, 0.6);
-    drawCandle(ctx, back.top.x + 8, back.top.y + back.top.h / 2 + 2, performance.now() / 1000 + 3);
   },
 
   // A rocking chair that gently rocks, with a knitted blanket.
@@ -848,32 +740,6 @@ const FURNITURE_DRAWERS = {
     ctx.beginPath();
     ctx.arc(cx, cy, 10.5, Math.PI * 0.6, Math.PI * 2.4);
     ctx.stroke();
-  },
-
-  // A painted toy chest with a star on the front.
-  toyChest(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 18, "#c0664a");
-    ctx.fillStyle = shadeColor("#c0664a", 25); // lid edge
-    ctx.fillRect(c.face.x, c.face.y, c.face.w, 3);
-    ctx.fillStyle = "#f2d45c";
-    const sx = c.face.x + c.face.w / 2, sy = c.face.y + c.face.h / 2 + 1;
-    ctx.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const r = i % 2 ? 2.2 : 5, a = -Math.PI / 2 + (i * Math.PI) / 5;
-      ctx.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#6fa8c8"; // a toy boat poking out
-    ctx.fillRect(c.top.x + 6, c.top.y - 4, 10, 4);
-    ctx.fillStyle = "#f7f4ee";
-    ctx.beginPath();
-    ctx.moveTo(c.top.x + 11, c.top.y - 4);
-    ctx.lineTo(c.top.x + 11, c.top.y - 13);
-    ctx.lineTo(c.top.x + 17, c.top.y - 6);
-    ctx.closePath();
-    ctx.fill();
   },
 
   // A pile of big floor cushions to flop onto.
@@ -1941,19 +1807,6 @@ const FURNITURE_DRAWERS = {
     drawIvySprig(ctx, x + w * 0.5 + 3, rungs[2] - 7, 10, 1);
     ctx.fillStyle = "#f2d45c"; // a little candle up top
     ctx.fillRect(x + w * 0.5 - 2, rungs[3] - 6, 4, 6);
-  },
-
-  // A wooden crate full of vinyl records.
-  recordCrate(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const c = drawBlock(ctx, f.x, f.y, f.w, f.h, 16, "#b08a60");
-    ctx.fillStyle = "rgba(90, 60, 30, 0.35)";
-    ctx.fillRect(c.face.x, c.face.y + c.face.h / 2, c.face.w, 1.5);
-    const colors = ["#e37aa0", "#3f6f9f", "#f2d45c", "#7a9e5c", "#c0554a", "#9a6fb0", "#2b2b30"];
-    for (let i = 0; i < 7; i++) {
-      ctx.fillStyle = colors[i];
-      ctx.fillRect(c.top.x + 3 + i * ((c.top.w - 6) / 7), c.top.y - 8 + (i % 2), (c.top.w - 6) / 7 - 1, 12);
-    }
   },
 
   // --- Decor ---

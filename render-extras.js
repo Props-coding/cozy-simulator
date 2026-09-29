@@ -298,37 +298,6 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 
-  // A little nightstand with a drawer and a glowing lamp.
-  nightstand(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const n = drawBlock(ctx, f.x, f.y, f.w, f.h, 18, "#7a5238");
-    ctx.fillStyle = "#5c3d2a";
-    ctx.fillRect(n.face.x + 4, n.face.y + 4, n.face.w - 8, 6);
-    ctx.fillStyle = "#c9a24a";
-    ctx.fillRect(n.face.x + n.face.w / 2 - 1.5, n.face.y + 6, 3, 2);
-    const cx = n.top.x + n.top.w / 2, cy = n.top.y + n.top.h / 2;
-    ctx.fillStyle = "#5c4530"; // lamp stand and shade
-    ctx.fillRect(cx - 1, cy - 14, 2, 14);
-    ctx.fillStyle = "#f2d9a0";
-    ctx.beginPath();
-    ctx.moveTo(cx - 8, cy - 12);
-    ctx.lineTo(cx + 8, cy - 12);
-    ctx.lineTo(cx + 5, cy - 22);
-    ctx.lineTo(cx - 5, cy - 22);
-    ctx.closePath();
-    ctx.fill();
-    // The journal lying beside the lamp, with a ribbon bookmark.
-    if (f.journal) {
-      const bx = n.top.x + 2, by = n.top.y + n.top.h / 2 - 3;
-      ctx.fillStyle = "#8c3b46";
-      ctx.fillRect(bx, by, 7, 5);
-      ctx.fillStyle = "#f3e6cc"; // the pages' edge
-      ctx.fillRect(bx + 7, by + 0.5, 1, 4);
-      ctx.fillStyle = "#e0b84c";
-      ctx.fillRect(bx + 4, by + 5, 1, 2.5);
-    }
-  },
-
   snackTable(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const t = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, WOOD);
@@ -1143,7 +1112,7 @@ function drawLights(ctx) {
       const p = toScreen(f.x + f.w / 2, f.y);
       drawGlow(ctx, p.x, p.y - 26, 26, "rgba(170, 215, 245, 0.35)");
     } else if (f.kind === "nightstand") {
-      const p = toScreen(f.x + f.w / 2, f.y + f.h / 2);
+      const p = toScreen(f.x + f.w * 0.66, f.y + f.h / 2); // (the lamp stands to the right)
       drawGlow(ctx, p.x, p.y - 18 - 17, 34, "rgba(255, 205, 130, 0.5)");
     } else if (f.kind === "cottageDesk") {
       // Candlelight on the desk.

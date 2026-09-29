@@ -872,7 +872,7 @@ function paintModel(ctx, model, P, facing) {
 // The drawn models, kept as little pictures: kind, facing, color and zoom.
 const modelCache = new Map();
 function cachedModel(kind, f, facing, scale) {
-  const key = `${kind}|${facing}|${f.w}x${f.h}|${f.color}|${f.seat}|${f.back}|${modelVariant(f)}|${scale}`;
+  const key = `${kind}|${facing}|${f.w}x${f.h}|${f.color}|${f.seat}|${f.back}|${!!f.journal}|${modelVariant(f)}|${scale}`;
   let hit = modelCache.get(key);
   if (hit) return hit;
   const model = MODELS[kind](f);
@@ -924,7 +924,7 @@ function drawModelPiece(ctx, f, kind, facing) {
   if (m.model.live) m.model.live(ctx, (x, y, z) => {
     const q = m.P(x, y, z);
     return { x: at.x + q.x, y: at.y + q.y };
-  }, facing);
+  }, facing, f);
 }
 
 // How far a spot on a turned model piece is drawn sideways (grid units),

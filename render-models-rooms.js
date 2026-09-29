@@ -546,7 +546,12 @@ registerModels({
           ctx.arc(m.x + dx - 1.5, m.y + dy - 1.8, 1.3, 0, Math.PI * 2);
           ctx.fill();
         }
-        for (const dx of [-0.48, 0.48]) drawCandle(ctx, P(W / 2 + dx, D / 2, H + 1.3).x, P(W / 2 + dx, D / 2, H + 1.3).y, 0);
+      },
+      live: (ctx, P) => { // (the candles flicker)
+        for (const dx of [-0.48, 0.48]) {
+          const q = P(W / 2 + dx, D / 2, H + 1.3);
+          drawCandle(ctx, q.x, q.y, performance.now() / 1000 + dx);
+        }
       },
     };
   },
@@ -682,7 +687,7 @@ registerModels({
         ctx.beginPath();
         ctx.ellipse(o.x, o.y, r * 0.85, r * 0.68, 0, spin, spin + 0.6);
         ctx.stroke();
-        ctx.fillStyle = globalThis.myLofiColor || "#d9825b"; // the label
+        ctx.fillStyle = f.label ?? (globalThis.myLofiColor || "#d9825b"); // the label (the Study's is your lo-fi station's color)
         ctx.beginPath();
         ctx.ellipse(o.x, o.y, r * 0.3, r * 0.24, 0, 0, Math.PI * 2);
         ctx.fill();
