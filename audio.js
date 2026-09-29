@@ -1261,3 +1261,64 @@ export function updateLofi(dt) {
     if (lofiCurrentVolume <= 0.002 && !inStudy) backupAudioEl.pause();
   }
 }
+
+// --- Cellar Crawl's sounds (sound effects slider) ---
+// A little burst of shaped noise: `type` of filter, its `freq` (and where
+// it slides to), how long, and how loud.
+function noiseSweep({ type = "bandpass", freq = 800, to = freq, q = 1, duration = 0.2, gain = 0.1, delay = 0 }) {
+  if (!toneContext || isSilentSpot() || masterMuted) return;
+  const start = toneContext.currentTime + delay;
+  const buffer = toneContext.createBuffer(1, Math.ceil(toneContext.sampleRate * duration), toneContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.5);
+  const src = toneContext.createBufferSource();
+  src.buffer = buffer;
+  const filter = toneContext.createBiquadFilter();
+  filter.type = type;
+  filter.Q.value = q;
+  filter.frequency.setValueAtTime(freq, start);
+  filter.frequency.exponentialRampToValueAtTime(Math.max(40, to), start + duration);
+  const g = toneContext.createGain();
+  g.gain.value = gain * effectsLevel();
+  src.connect(filter);
+  filter.connect(g);
+  g.connect(toneContext.destination);
+  src.start(start);
+}
+
+// kind: "swing" (the broom's whoosh), "hit" (a critter bopped), "knock" (a
+// crate that holds), "crack" (a crate breaking), "coin" (crumbs), "find" (a
+// rare find), "hurt", "poof" (a critter gone), "ladder", "king" (the Rat
+// King's squeak of rage).
+export function playCellarSound(kind) {
+  switch (kind) {
+    case "swing":
+      return noiseSweep({ freq: 500, to: 2400, q: 1.4, duration: 0.18, gain: 0.07 });
+    case "hit":
+      noiseSweep({ type: "lowpass", freq: 900, to: 200, duration: 0.12, gain: 0.14 });
+      return playTone(170, 0, { gain: 0.1, duration: 0.12, type: "triangle" });
+    case "knock":
+      return playTone(140, 0, { gain: 0.12, duration: 0.1, type: "triangle" });
+    case "crack":
+      noiseSweep({ type: "highpass", freq: 1800, duration: 0.09, gain: 0.12 });
+      noiseSweep({ type: "lowpass", freq: 700, to: 150, duration: 0.28, gain: 0.12, delay: 0.03 });
+      return playTone(95, 0, { gain: 0.12, duration: 0.2, type: "triangle" });
+    case "coin":
+      playTone(1318.51, 0, { gain: 0.05, duration: 0.08, type: "triangle" });
+      return playTone(1760, 70, { gain: 0.05, duration: 0.14, type: "triangle" });
+    case "find":
+      [784, 988, 1175, 1568].forEach((f, i) => playTone(f, i * 70, { gain: 0.06, duration: 0.2, type: "triangle" }));
+      return;
+    case "hurt":
+      noiseSweep({ type: "lowpass", freq: 600, to: 120, duration: 0.25, gain: 0.14 });
+      return playTone(220, 0, { gain: 0.08, duration: 0.25, type: "sawtooth" });
+    case "poof":
+      return noiseSweep({ freq: 1200, to: 300, q: 0.8, duration: 0.3, gain: 0.07 });
+    case "ladder":
+      [0, 140, 280].forEach((d) => playTone(300 - d * 0.3, d, { gain: 0.05, duration: 0.08, type: "triangle" }));
+      return;
+    case "king":
+      playTone(620, 0, { gain: 0.07, duration: 0.18, type: "square" });
+      return playTone(460, 150, { gain: 0.07, duration: 0.3, type: "square" });
+  }
+}

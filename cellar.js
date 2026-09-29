@@ -10,6 +10,35 @@
 import { drawHero } from "./game-kit.js";
 import { bank, myWallet } from "./bank.js";
 import { uiIcon } from "./ui-icons.js";
+import { playCellarSound } from "./audio.js";
+
+// --- Little bits flying about (the game's "feel") ---
+// Splinters and straw from a crate, tufts of fur from a bopped critter,
+// sparkles when one's gone, crumbs flying to you, dust at your feet. Each
+// bit: where it is (x, y on the floor, z up in the air, in tiles), how it
+// moves, how long it lives, its color and size. `home` bits fly to you.
+const BURSTS = {
+  splinters: { n: 12, colors: ["#8a6038", "#b8844e", "#6b4426", "#d9b98a"], speed: 2.6, up: 3.2, size: [2, 4.5], life: 0.9, shape: "chip" },
+  straw: { n: 6, colors: ["#e8c86a", "#d9b45a"], speed: 1.8, up: 2.2, size: [1, 2], life: 1.1, shape: "stalk" },
+  fur: { n: 7, colors: ["#b8b0b8", "#8a8290", "#f4ecf4"], speed: 2.2, up: 1.6, size: [1.5, 3], life: 0.5, shape: "dot" },
+  stars: { n: 5, colors: ["#fff4c8", "#ffe39a"], speed: 1.6, up: 2.6, size: [2, 3.5], life: 0.55, shape: "star" },
+  sparkle: { n: 12, colors: ["#fff4c8", "#ffe39a", "#d8f0ff"], speed: 2.2, up: 2.4, size: [1.5, 3], life: 0.8, shape: "star" },
+  crumbs: { n: 8, colors: ["#e8b85a", "#c98a3c", "#f2d27a"], speed: 1.4, up: 3.4, size: [2, 3], life: 3, shape: "dot", home: true },
+  treasure: { n: 16, colors: ["#b8f0c0", "#fff4c8", "#9fd8ff"], speed: 2.4, up: 3.6, size: [2, 3.5], life: 3, shape: "star", home: true },
+  dust: { n: 2, colors: ["rgba(216, 204, 184, 0.7)"], speed: 0.4, up: 0.3, size: [2.5, 4], life: 0.45, shape: "puff" },
+};
+function burst(effects, floor, at, kind, rng = Math.random) {
+  const b = BURSTS[kind];
+  for (let i = 0; i < b.n; i++) {
+    const a = rng() * Math.PI * 2, v = b.speed * (0.4 + rng() * 0.6);
+    effects.bits.push({
+      f: floor, x: at.x, y: at.y, z: at.z ?? 0.3,
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6, vz: b.up * (0.5 + rng() * 0.5),
+      life: b.life * (0.7 + rng() * 0.3), age: 0, spin: rng() * 6,
+      color: b.colors[i % b.colors.length], size: b.size[0] + rng() * (b.size[1] - b.size[0]), shape: b.shape, home: !!b.home,
+    });
+  }
+}
 
 const CFG = () => CONFIG.minigames.cellar;
 const debug = { view: 0, lightsOn: false }; // (tests only: see startCellar)
@@ -260,6 +289,7 @@ export function startCellar(screen, round, { finish }) {
   const up = upgradesNow();
   const me = { x: 0, y: 0, floor: 0, face: 1, moving: false, deepest: 0, aimX: 1, aimY: 0, hearts: CFG().hearts, hurt: 0, kx: 0, ky: 0, swing: 0, cooldown: 0, downed: false, downFor: 0, revive: 0, floorAt: 0 };
   const place = (n, at) => {
+    if (n !== 0 || at) playCellarSound("ladder");
     me.floor = n;
     me.deepest = Math.max(me.deepest, n);
     me.floorAt = performance.now();
@@ -267,7 +297,10 @@ export function startCellar(screen, round, { finish }) {
   };
   place(0);
   const friends = new Map(); // peerId -> { x, y, floor, face, moving, shown, downed, revive, swing, aim }
-  const effects = { puffs: [], words: [] }; // (dust puffs, and words floating up)
+  const effects = { puffs: [], words: [], bits: [], swipes: [] }; // (dust puffs, words floating up, flying bits, broom swooshes)
+  let quake = 0; // (the screen shakes a little: a hit, a crate breaking, getting hurt)
+  const shake = (n) => (quake = Math.max(quake, n));
+  let stepIn = 0; // (a little dust at your feet as you walk)
   let over = false, frame = 0, last2 = performance.now();
   let fadeIn = 1; // (a moment of dark between floors)
   let prompt = "";
@@ -368,6 +401,8 @@ export function startCellar(screen, round, { finish }) {
     const b = broom();
     me.cooldown = b.cooldown;
     me.swing = 1;
+    playCellarSound("swing");
+    effects.swipes.push({ f: me.floor, x: me.x, y: me.y - 0.2, aim: Math.atan2(me.aimY, me.aimX), reach: b.reach, age: 0 });
     const f = floors[me.floor];
     const cx = me.x, cy = me.y - 0.2;
     // (In the arc in front of you, or right on top of you.)
@@ -380,6 +415,10 @@ export function startCellar(screen, round, { finish }) {
     for (const c of [...f.critters]) {
       const dir = inArc(c.sx, c.sy - 0.15, c.kind === "ratKing" ? 0.55 : 0.2);
       if (!dir) continue;
+      playCellarSound(c.kind === "ratKing" ? "king" : "hit");
+      burst(effects, f.n, { x: c.sx, y: c.sy, z: 0.3 }, "fur");
+      burst(effects, f.n, { x: c.sx, y: c.sy, z: 0.5 }, "stars");
+      shake(c.kind === "ratKing" ? 0.3 : 0.18);
       if (screen.isHost()) hitCritter(f, c, dir.dx, dir.dy, b.damage);
       else {
         c.hurt = 0.25; // (the host does the real knocking; this shows it at once)
@@ -391,11 +430,18 @@ export function startCellar(screen, round, { finish }) {
       o.hits = (o.hits ?? o.breakable) - 1;
       o.shake = 0.25;
       if (o.hits > 0) {
+        playCellarSound("knock");
+        burst(effects, f.n, { x: o.x + o.w / 2, y: o.y + o.h, z: 0.4 }, "dust");
+        shake(0.1);
         screen.send({ t: "o", f: f.n, id: o.id, left: o.hits });
         continue;
       }
       o.broken = true;
       effects.puffs.push({ x: o.x + o.w / 2, y: o.y + o.h, age: 0, f: f.n });
+      playCellarSound("crack");
+      burst(effects, f.n, { x: o.x + o.w / 2, y: o.y + o.h - 0.1, z: 0.4 }, "splinters");
+      burst(effects, f.n, { x: o.x + o.w / 2, y: o.y + o.h - 0.1, z: 0.4 }, "straw");
+      shake(0.28);
       screen.send({ t: "o", f: f.n, id: o.id, left: 0 });
       openUp(o);
     }
@@ -409,10 +455,18 @@ export function startCellar(screen, round, { finish }) {
       await new Promise((r) => setTimeout(r, 210)); // (the server wants a breath between crates)
       if (!res) return;
       const got = res.got;
-      if (got.kind === "crumbs") say(at, `+${got.crumbs} crumbs`, "#ffd98a");
-      else if (got.kind === "nothing") say(at, "Just dust and cobwebs", "#d8ccb8");
+      const from = { x: at.x, y: at.y + 0.4, z: 0.5 };
+      if (got.kind === "crumbs") {
+        say(at, `+${got.crumbs} crumbs`, "#ffd98a");
+        burst(effects, me.floor, from, "crumbs");
+        playCellarSound("coin");
+      } else if (got.kind === "nothing") say(at, "Just dust and cobwebs", "#d8ccb8");
       else if (got.kind === "full") say(at, "Your bag is full!", "#ffb0a0");
-      else say(at, `Found: ${got.name}!`, "#b8f0c0", true);
+      else {
+        say(at, `Found: ${got.name}!`, "#b8f0c0", true);
+        burst(effects, me.floor, from, "treasure");
+        playCellarSound("find");
+      }
       carrying(res.carried);
     });
   };
@@ -430,6 +484,8 @@ export function startCellar(screen, round, { finish }) {
     if (c.hp > 0) return;
     f.critters.splice(f.critters.indexOf(c), 1);
     effects.puffs.push({ x: c.x, y: c.y, age: 0, f: f.n });
+    burst(effects, f.n, { x: c.x, y: c.y, z: 0.3 }, "sparkle");
+    playCellarSound("poof");
     if (c.kind === "ratKing") {
       screen.send({ t: "k", f: f.n });
       kingDown(f.n);
@@ -466,6 +522,8 @@ export function startCellar(screen, round, { finish }) {
     me.hearts -= 1;
     me.hurt = CFG().hurtSeconds;
     flash = 1;
+    shake(0.45);
+    playCellarSound("hurt");
     const dx = me.x - fromX, dy = me.y - fromY, d = Math.hypot(dx, dy) || 1;
     me.kx = (dx / d) * 7;
     me.ky = (dy / d) * 7;
@@ -473,7 +531,7 @@ export function startCellar(screen, round, { finish }) {
     hud();
   };
   const knockedOut = () => {
-    Object.assign(me, { hearts: 0, downed: true, downFor: 0, revive: 0, moving: false });
+    Object.assign(me, { hearts: 0, downed: true, downFor: 0, revive: 0, moving: false, kx: 0, ky: 0 }); // (you drop where you were hit, so friends find you there)
     banner = { text: "Knocked out! A friend can help you up.", left: 3 };
     const at = { x: me.x, y: me.y - 1 };
     later(async () => {
@@ -552,7 +610,11 @@ export function startCellar(screen, round, { finish }) {
   let sendIn = 0;
   const tick = (now) => {
     if (over) return;
-    const dt = Math.min(0.05, (now - last2) / 1000);
+    // (Moving uses small steps, so a slow frame never jumps you through a
+    // wall; the knocked-out and help-up timers count real seconds, so they
+    // take as long on a slow or background window as anywhere else.)
+    const real = Math.min(1, (now - last2) / 1000);
+    const dt = Math.min(0.05, real);
     last2 = now;
     const f = floors[me.floor];
     const k = screen.keys;
@@ -571,8 +633,8 @@ export function startCellar(screen, round, { finish }) {
       me.kx *= Math.exp(-9 * dt);
       me.ky *= Math.exp(-9 * dt);
     }
-    me.hurt = Math.max(0, me.hurt - dt);
-    me.cooldown = Math.max(0, me.cooldown - dt);
+    me.hurt = Math.max(0, me.hurt - real);
+    me.cooldown = Math.max(0, me.cooldown - real); // (real seconds: a slow computer swings as often as a fast one)
     me.swing = Math.max(0, me.swing - dt * 4.5);
     flash = Math.max(0, flash - dt * 2.5);
     for (const o of f.objects) if (o.shake) o.shake = Math.max(0, o.shake - dt);
@@ -580,10 +642,10 @@ export function startCellar(screen, round, { finish }) {
     // Knocked out: a friend standing close gets you up; otherwise you come
     // to by the ladder (quickly, if there's nobody here to help).
     if (me.downed) {
-      me.downFor += dt;
+      me.downFor += real;
       const helpers = [...friends.values()].filter((fr) => fr.floor === me.floor && !fr.downed && fr.shown);
       const helping = helpers.some((fr) => Math.hypot(fr.shown.x - me.x, fr.shown.y - me.y) < CFG().reviveRange);
-      me.revive = helping ? me.revive + dt : Math.max(0, me.revive - dt * 0.5);
+      me.revive = helping ? me.revive + real : Math.max(0, me.revive - real * 0.5);
       if (me.revive >= CFG().reviveSeconds) getUp(CFG().reviveHearts);
       else if (me.downFor >= (helpers.length ? CFG().downedSeconds : 2.5)) getUp(CFG().hearts, f.spawn);
     }
@@ -618,6 +680,37 @@ export function startCellar(screen, round, { finish }) {
     for (const w of effects.words) w.age += dt;
     effects.puffs = effects.puffs.filter((p) => p.age < 0.5);
     effects.words = effects.words.filter((w) => w.age < 2.4);
+    for (const b of effects.bits) {
+      b.age += dt;
+      if (b.home && b.age > 0.35 && b.f === me.floor) { // (crumbs and treasure fly to you)
+        const dx = me.x - b.x, dy = me.y - 0.3 - b.y, d = Math.hypot(dx, dy) || 1;
+        const pull = Math.min(14, 3 + (b.age - 0.35) * 16);
+        b.vx += (dx / d) * pull * dt * 6 - b.vx * dt * 3;
+        b.vy += (dy / d) * pull * dt * 6 - b.vy * dt * 3;
+        b.z += (0.6 - b.z) * dt * 4;
+        b.vz = 0;
+        if (d < 0.3) b.age = b.life;
+      } else {
+        b.vz -= 9 * dt;
+        if (b.z + b.vz * dt < 0 && b.vz < 0) { // (a little bounce, then it settles)
+          b.vz *= -0.35;
+          b.vx *= 0.5;
+          b.vy *= 0.5;
+        }
+      }
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.z = Math.max(0, b.z + b.vz * dt);
+      b.spin += dt * 8;
+    }
+    effects.bits = effects.bits.filter((b) => b.age < b.life).slice(-300);
+    for (const s of effects.swipes) s.age += dt;
+    effects.swipes = effects.swipes.filter((s) => s.age < 0.22);
+    quake = Math.max(0, quake - dt * 1.8);
+    if (me.moving && !me.downed && (stepIn -= dt) <= 0) {
+      stepIn = 0.26;
+      burst(effects, me.floor, { x: me.x, y: me.y, z: 0.05 }, "dust");
+    }
     if (banner && (banner.left -= dt) <= 0) banner = null;
 
     const downedFriend = [...friends.values()].some((fr) => fr.floor === me.floor && fr.downed && fr.shown && Math.hypot(fr.shown.x - me.x, fr.shown.y - me.y) < CFG().reviveRange + 1);
@@ -633,7 +726,7 @@ export function startCellar(screen, round, { finish }) {
               : "Catch your breath a moment..."
             : "";
     fadeIn = Math.max(0, fadeIn - dt * 1.6);
-    draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, effects, lantern: CFG().lantern + up.lantern, last });
+    draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, effects, lantern: CFG().lantern + up.lantern, last, quake });
     frame = requestAnimationFrame(tick);
   };
   frame = requestAnimationFrame(tick);
@@ -675,6 +768,8 @@ export function startCellar(screen, round, { finish }) {
         if (o.hits <= 0) {
           o.broken = true;
           effects.puffs.push({ x: o.x + o.w / 2, y: o.y + o.h, age: 0, f: floorNo(data.f) });
+          burst(effects, floorNo(data.f), { x: o.x + o.w / 2, y: o.y + o.h - 0.1, z: 0.4 }, "splinters");
+          if (floorNo(data.f) === me.floor) playCellarSound("crack");
         }
       }
       // A friend's broom hit a critter (only the host does anything with it).
@@ -840,6 +935,7 @@ function applySnapshot(f, data, effects) {
     if (seen.has(c.id)) continue;
     f.critters.splice(f.critters.indexOf(c), 1);
     effects.puffs.push({ x: c.sx, y: c.sy, age: 0, f: f.n });
+    burst(effects, f.n, { x: c.sx, y: c.sy, z: 0.3 }, "sparkle");
   }
   if (Array.isArray(data.w)) f.webs = data.w.slice(0, 60).filter(Array.isArray).map((w) => ({ x: num(w[0]), y: num(w[1]), left: num(w[2]) }));
 }
@@ -859,7 +955,7 @@ function mixed(seed, n) {
 
 // --- Drawing ---
 // The camera follows you, showing about `view` tiles across.
-function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, effects, lantern, last }) {
+function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, effects, lantern, last, quake = 0 }) {
   const ctx = screen.begin();
   const cw = screen.canvas.width, ch = screen.canvas.height;
   const t = performance.now() / 1000;
@@ -867,7 +963,8 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   ctx.fillRect(0, 0, cw, ch);
   const view = debug.view || CFG().view;
   const z = Math.min(cw / (view * TILE), ch / ((view * 0.62) * TILE));
-  const camX = me.x, camY = me.y - 0.6;
+  const tt = performance.now() / 1000, q = quake * quake * 0.35; // (the shake: strong at first, settling fast)
+  const camX = me.x + Math.sin(tt * 67) * q, camY = me.y - 0.6 + Math.cos(tt * 59) * q;
   const toPx = (gx, gy) => ({ x: cw / 2 + (gx - camX) * TILE * z, y: ch / 2 + (gy - camY) * TILE * z });
   const world = () => ctx.setTransform(z, 0, 0, z, cw / 2 - (camX * TILE + ORIGIN_X) * z, ch / 2 - (camY * TILE + ORIGIN_Y) * z);
   ctx.save();
@@ -934,6 +1031,8 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
     const at = toScreen(p.x, p.y);
     drawPuff(ctx, at.x, at.y, p.age);
   }
+  for (const sw of effects.swipes) if (sw.f === f.n) drawSwipe(ctx, sw);
+  for (const b of effects.bits) if (b.f === f.n) drawBit(ctx, b);
   ctx.restore();
 
   // The dark, with a hole of light around every lantern.
@@ -992,8 +1091,15 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   }
   for (const w of effects.words) {
     const at = toScreen(w.x, w.y);
+    // (They pop in a little big, settle, drift up and fade.)
+    const pop = w.age < 0.18 ? 0.6 + (w.age / 0.18) * 0.55 : Math.max(1, 1.15 - (w.age - 0.18) * 1.5);
+    const rise = 20 + (1 - Math.exp(-w.age * 2.2)) * 34;
     ctx.globalAlpha = Math.min(1, (2.4 - w.age) / 0.6);
-    pill(ctx, w.text, at.x, at.y - 20 - w.age * 22, w.big ? 14 : 12, w.color);
+    ctx.save();
+    ctx.translate(at.x, at.y - rise);
+    ctx.scale(pop, pop);
+    pill(ctx, w.text, 0, 0, w.big ? 14 : 12, w.color);
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
   if (prompt) {
@@ -1023,6 +1129,15 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
     roundRectPath(ctx, x, y, Math.max(0, (w * king.hp) / king.max), 9, 4);
     ctx.fill();
     ctx.textAlign = "left";
+  }
+  // On your last heart: a slow heartbeat at the edges.
+  if (me.hearts === 1 && !me.downed) {
+    const beat = Math.pow(Math.max(0, Math.sin(t * 5.2)), 6);
+    const g = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.35, cw / 2, ch / 2, Math.max(cw, ch) * 0.72);
+    g.addColorStop(0, "rgba(150, 20, 20, 0)");
+    g.addColorStop(1, `rgba(150, 20, 20, ${0.12 + beat * 0.2})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, cw, ch);
   }
   // Hurt: the edges glow red for a moment.
   if (flash > 0) {
@@ -1111,6 +1226,62 @@ function drawReviveRing(ctx, x, y, amount, t) {
   ctx.bezierCurveTo(-7, -1, -4, -7, 0, -3);
   ctx.bezierCurveTo(4, -7, 7, -1, 0, 4);
   ctx.fill();
+  ctx.restore();
+}
+
+// A flying bit (see BURSTS): its shadow on the floor, then the bit up in
+// the air, fading out at the end of its life.
+function drawBit(ctx, b) {
+  const at = toScreen(b.x, b.y), up = b.z * TILE;
+  const fade = Math.min(1, (b.life - b.age) / 0.25);
+  ctx.globalAlpha = fade;
+  if (b.shape !== "puff") {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.beginPath();
+    ctx.ellipse(at.x, at.y, b.size * 0.8, b.size * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = b.color;
+  const x = at.x, y = at.y - up;
+  if (b.shape === "chip" || b.shape === "stalk") {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(b.spin);
+    ctx.fillRect(-b.size, -b.size * (b.shape === "stalk" ? 0.15 : 0.35), b.size * 2, b.size * (b.shape === "stalk" ? 0.3 : 0.7));
+    ctx.restore();
+  } else if (b.shape === "star") {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(b.spin * 0.4);
+    ctx.fillRect(-b.size, -b.size * 0.22, b.size * 2, b.size * 0.44);
+    ctx.fillRect(-b.size * 0.22, -b.size, b.size * 0.44, b.size * 2);
+    ctx.restore();
+  } else if (b.shape === "puff") {
+    ctx.globalAlpha = fade * (1 - b.age / b.life);
+    ctx.beginPath();
+    ctx.arc(x, y, b.size * (1 + b.age * 2), 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(x, y, b.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// The broom's swoosh: a pale arc swept in front of you, fading fast.
+function drawSwipe(ctx, sw) {
+  const at = toScreen(sw.x, sw.y), r = sw.reach * TILE, k = sw.age / 0.22;
+  ctx.save();
+  ctx.globalAlpha = (1 - k) * 0.55;
+  ctx.strokeStyle = "#fff4dc";
+  ctx.lineCap = "round";
+  for (let i = 0; i < 3; i++) {
+    ctx.lineWidth = 5 - i * 1.5;
+    ctx.beginPath();
+    ctx.ellipse(at.x, at.y, r * (0.75 + i * 0.12), r * (0.75 + i * 0.12) * 0.62, 0, sw.aim - 1.1 + k * 0.4, sw.aim + 1.1 * (0.3 + k));
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
