@@ -31,6 +31,8 @@ import {
   setMasterVolume,
   setSoundLevel,
   setVoicesMuted,
+  setPushToTalk,
+  setTalkKey,
   enterStudy,
   leaveStudy,
   setLofiVolume,
@@ -194,6 +196,7 @@ try {
 const soundSettings = [
   // [the slider or switch, what it changes, its starting value]
   [document.getElementById("mute-all-toggle"), setMasterMuted, false],
+  [document.getElementById("push-to-talk-toggle"), setPushToTalk, true],
   [muteToggle, setVoicesMuted, false],
   [volumeSlider, setMasterVolume, 1],
   [document.getElementById("voices-volume-slider"), (v) => setSoundLevel("voices", v), 1],
@@ -1586,13 +1589,21 @@ function checkWhisper() {
   }
 }
 
+// V on its own is push to talk; Shift + V whispers.
 window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() === CONFIG.whisper.key && !e.repeat && !isTyping(e) && !gameScreen.hidden && !uiBusy() && !dialogOpen) startWhisper();
+  if (e.key.toLowerCase() !== CONFIG.whisper.key || e.repeat || isTyping(e) || gameScreen.hidden || uiBusy() || dialogOpen) return;
+  if (e.shiftKey) startWhisper();
+  else setTalkKey(true);
 });
 window.addEventListener("keyup", (e) => {
-  if (e.key.toLowerCase() === CONFIG.whisper.key) stopWhisper();
+  if (e.key.toLowerCase() !== CONFIG.whisper.key) return;
+  setTalkKey(false);
+  stopWhisper();
 });
-window.addEventListener("blur", () => stopWhisper());
+window.addEventListener("blur", () => {
+  setTalkKey(false);
+  stopWhisper();
+});
 
 // Which way someone whispering is leaning: -1 left, 1 right, toward the
 // person they're whispering to (their peer id, or ours).

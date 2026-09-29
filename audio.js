@@ -944,9 +944,25 @@ export async function requestMic() {
 // (While you whisper, your normal voice is off: only the whisper goes out.)
 export function updateMicForRoom(roomId) {
   currentRoomId = roomId;
-  if (localTrack) {
-    localTrack.enabled = isVoiceRoom(roomId) && !whisperingTo && !adminMuted;
-  }
+  if (localTrack) localTrack.enabled = micOpen();
+}
+
+// Push to talk (the default, in the sound settings): your voice only goes
+// out while you hold the talk key (V). Off, the mic is open in voice rooms.
+let pushToTalk = true, talkKeyDown = false;
+export function setPushToTalk(on) {
+  pushToTalk = on;
+}
+export function setTalkKey(down) {
+  talkKeyDown = down;
+  if (localTrack) localTrack.enabled = micOpen();
+}
+
+// Whether your normal voice goes out right now: in a voice room, not
+// whispering, not muted by an admin, and holding the talk key if you use
+// push to talk.
+function micOpen() {
+  return isVoiceRoom(currentRoomId) && !whisperingTo && !adminMuted && (!pushToTalk || talkKeyDown);
 }
 
 // Muted by an admin: your mic stays off everywhere until it's lifted.
@@ -1024,7 +1040,7 @@ export function setWhisperTarget(peerId) {
   if (peerId && !whisperTracks[peerId]) return false;
   whisperingTo = peerId;
   for (const [id, track] of Object.entries(whisperTracks)) track.enabled = id === peerId;
-  if (localTrack) localTrack.enabled = isVoiceRoom(currentRoomId) && !whisperingTo;
+  if (localTrack) localTrack.enabled = micOpen();
   return true;
 }
 

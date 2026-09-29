@@ -635,6 +635,13 @@
               Main volume
               <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1">
             </label>
+            <label class="voice-row toggle-row" title="On: hold V to talk (Shift + V whispers). Off: your mic is open in voice rooms.">
+              Push to talk (hold V)
+              <span class="toggle">
+                <input id="push-to-talk-toggle" type="checkbox" checked>
+                <span class="toggle-track"></span>
+              </span>
+            </label>
             <label class="voice-row toggle-row">
               Mute friends' voices
               <span class="toggle">
@@ -1011,7 +1018,7 @@
           </div>
         </div>
         <p id="action-hint"></p>
-        <p id="move-hint" class="hint">Move with the arrow keys or WASD. Press M for the map.</p>
+        <p id="move-hint" class="hint">Move with the arrow keys or WASD. Hold V to talk. Press M for the map.</p>
       </div>
       <div id="side-column">
       <div id="sidebar">

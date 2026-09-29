@@ -63,7 +63,7 @@ Always keep a visible master mute and a volume control, in case someone needs to
 ## How audio should work
 
 - **Mic permission** is requested once on the Join screen. The Join button click also satisfies the browser rule that audio can only start after a user click.
-- **Sending:** the mic is only live while the player stands in a voice room. In quiet rooms (like the Study) the mic track is disabled so nothing leaves their computer.
+- **Sending:** the mic is only live while the player stands in a voice room and, with push to talk (the default, decided 2026-09-29), holds V. Shift + V whispers to the friend right beside you. Push to talk can be turned off in the sound settings for an open mic. In quiet rooms (like the Study) the mic track is disabled so nothing leaves their computer.
 - **Receiving:** play a friend's voice only if both people are in the same voice room, quieter the further away they stand (`voice` in config.js).
 - **Lo-fi in Study:** plays locally for each person, not synced. It starts when they enter Study, fades out when they leave, and has its own volume slider.
   - First try embedding a live lo-fi YouTube stream using the official YouTube embed. Embedding is sometimes blocked, so also prepare a backup: a direct audio stream URL.

@@ -2,6 +2,11 @@
 // first. Add a new entry at the top each time the house gets an update.
 export const NEWS = [
   {
+    build: "0.88",
+    title: "Push to talk, and a big art pass",
+    text: "Voice is push to talk now: hold V to talk, and Shift + V next to a friend to whisper to only them. Prefer an open mic? Turn Push to talk off in the sound settings (the cog), where friends' voices, sound effects and dance music also have their own sliders now, and Mute friends' voices no longer mutes everything. Voices carry about nine steps and fade out, and the grandfather clock only chimes for those near it. The house also had a big art pass: furniture is built from real parts, so turned bookcases, sofas, beds and desks look right from every side; about sixty pieces are redrawn with grain, fabric and little details; every plant has rounder pots and fuller leaves; and at night, lamps and windows cast real pools of light.",
+  },
+  {
     build: "0.761",
     title: "The Farm, and Hazel's gardening lesson",
     text: "Gus's bus goes to the Farm now! Hazel's farm has a big red barn and silo, her farm stand, a chicken run with a coop and a few busy hens, a windmill, an orchard of apple trees, a pumpkin patch with sunflowers and a scarecrow, a well, a picnic table and a bench, and sixteen shared garden beds. Everything grows at the Farm. The garden at home is now a starter patch of three beds for quick crops (radishes, lettuce and carrots); crops that were already growing in the old beds carry on at the Farm. You can each grow in four beds at once now (it was three). New to gardening? Hazel waits by her seed stand in the yard. She gives you a radish seed and talks you through planting, watering and harvesting it (your lesson radish grows in a few minutes), then you show her what you grew. After that she's at her farm, and her yard stand is self-serve for beginner seeds. Voice is on at the Farm.",
