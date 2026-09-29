@@ -443,6 +443,20 @@ onGames((message, peerId) => {
   }
 });
 
+// A friend left the house (closed their window, or lost their connection):
+// out of the lobby, and out of the round (so the next one along takes over
+// the cellar's critters, and the results stop waiting for them).
+export function friendLeft(peerId) {
+  here.delete(peerId);
+  if (!open) return;
+  if (open.mode === "lobby") open.lobbyRefresh?.();
+  const player = open.players?.find((p) => p.id === peerId);
+  if (!player || player.left) return;
+  player.left = true;
+  if (open.mode === "round") open.run?.left?.(peerId);
+  if (open.mode === "results") open.showResults?.();
+}
+
 // --- A round ---
 // `players`: the friends in it ({ id, name }), not counting you.
 function playRound(round, players) {
@@ -661,7 +675,7 @@ function showResults(got, extra) {
     // Everyone's scores, as their characters.
     if (open.players.length) {
       const rows = [...open.results.entries()].sort((a, b) => b[1].score - a[1].score);
-      const waitingFor = open.players.length + 1 - rows.length;
+      const waitingFor = open.players.filter((p) => !p.left && !open.results.has(p.id)).length; // (not friends who went home)
       card.append(make("p", "mini-note", waitingFor > 0 ? `This round (waiting for ${waitingFor === 1 ? "one more score" : `${waitingFor} more scores`}):` : "This round:"));
       const board = make("div", "mini-board");
       rows.forEach(([key, r], i) => {

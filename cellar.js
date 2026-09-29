@@ -322,20 +322,31 @@ export function startCellar(screen, round, { finish }) {
     if (over || me.downed) return;
     const f = floors[me.floor];
     if (near(f.ladderUp, 1.3)) return climbUp();
-    if (f.ladderDown && near(f.ladderDown, 1.4) && settled()) {
-      const next = me.floor + 1;
-      later(() => run && bank("cellarDeeper", { id: run.id, floor: next }));
-      place(next);
-      fadeIn = 1;
-      banner = { text: next === last ? "The bottom floor. Something squeaks, royally." : `Floor ${next + 1}: darker, and the crates look older.`, left: 3 };
-      hud();
+    if (f.ladderDown && near(f.ladderDown, 1.4) && settled() && !climbing) {
+      // (The house server keeps which floor your run is on, for the loot:
+      // down you go once it says yes. If it says no, you stay, and can try
+      // again in a moment.)
+      const from = me.floor, next = from + 1;
+      climbing = true;
+      later(async () => {
+        const ok = noServer || !run || (await bank("cellarDeeper", { id: run.id, floor: next }));
+        climbing = false;
+        if (over || me.floor !== from) return;
+        if (!ok) return void (banner = { text: "The ladder creaks. Try again in a moment.", left: 2 });
+        place(next);
+        fadeIn = 1;
+        banner = { text: next === last ? "The bottom floor. Something squeaks, royally." : `Floor ${next + 1}: darker, and the crates look older.`, left: 3 };
+        hud();
+      });
     }
   };
+  let climbing = false;
   // Up the ladder: everything you're carrying comes home.
   const climbUp = async () => {
     if (over) return;
     over = true;
     cancelAnimationFrame(frame);
+    clearInterval(hiddenTimer);
     screen.send({ t: "gone" });
     await chain;
     const got = run ? await bank("cellarBank", { id: run.id }) : null;
@@ -344,7 +355,7 @@ export function startCellar(screen, round, { finish }) {
       lines.push(got.home.length ? `Came home with you: ${got.home.join(", ")}.` : "No rare finds this time, just crumbs.");
       if (got.home.some((name) => Object.values(DECOR).some((d) => d.name === name))) lines.push("Decor goes into your room's storage, ready to place.");
       if (got.capped) lines.push("Some crumbs stayed behind: that's all the cellar pays today.");
-    } else lines.push("(The house server didn't answer, so nothing came home this time.)");
+    }
     lines.push(`You got as deep as floor ${me.deepest + 1} of ${floors.length}.`);
     if (kingPaid) lines.push("You beat the Rat King!");
     finish(got?.score ?? 0, got, { title: "Back up into the daylight", scoreLabel: "Your haul", lines });
@@ -424,18 +435,29 @@ export function startCellar(screen, round, { finish }) {
       kingDown(f.n);
     }
   };
+  // Everyone on the bottom floor when he falls gets the prize. (The house
+  // server wants you to have been down there a little while first, so if
+  // you only just arrived, your claim waits until then.)
+  let kingClaimed = false;
   const kingDown = (n) => {
-    if (kingPaid || n !== last || me.floor !== last) return;
-    kingPaid = true;
+    if (kingClaimed || n !== last || me.floor !== last) return;
+    kingClaimed = true;
     banner = { text: "The Rat King is beaten!", left: 4 };
-    const at = { x: me.x, y: me.y - 1 };
-    later(async () => {
-      if (!run) return;
-      const res = await bank("cellarKing", { id: run.id });
-      if (!res) return;
-      say(at, `The king's treasure! ${res.got.join(", ")}`, "#ffd98a", true);
-      carrying(res.carried);
-    });
+    const wait = Math.max(0, (CFG().kingMinSeconds + 0.6) * 1000 - (performance.now() - me.floorAt));
+    setTimeout(() => {
+      later(async () => {
+        if (!run || over) return;
+        let res = await bank("cellarKing", { id: run.id });
+        if (!res && !over) {
+          await new Promise((r) => setTimeout(r, 1500));
+          res = await bank("cellarKing", { id: run.id });
+        }
+        if (!res) return;
+        kingPaid = true;
+        say({ x: me.x, y: me.y - 1 }, res.got.length ? `The king's treasure! ${res.got.join(", ")}` : "The king's treasure: a pile of crumbs!", "#ffd98a", true);
+        carrying(res.carried);
+      });
+    }, wait);
   };
 
   // --- Getting hurt, knocked out, and back up ---
@@ -488,8 +510,46 @@ export function startCellar(screen, round, { finish }) {
     };
   }
 
+  // --- The critters: the host moves them and tells everyone; the others
+  // glide theirs towards what the host said. (Also run from a timer, so
+  // they keep going while the host's window is hidden or minimized, when
+  // the browser pauses its drawing. Hidden windows get their timers slowed
+  // down, so the critters move in bigger, rarer steps then.)
+  let critterLast = performance.now(), shareIn = 0;
+  const critters = () => {
+    const now = performance.now();
+    const dt = Math.min(1, (now - critterLast) / 1000);
+    critterLast = now;
+    const host = screen.isHost();
+    for (const floor of floors) {
+      const people = peopleOn(floor.n, me, friends);
+      if (!people.length && floor.n !== me.floor) continue;
+      // (Big steps are taken in small pieces, so nothing jumps through walls.)
+      if (host) for (let left = dt; left > 0; left -= 0.05) simulate(floor, people.filter((p) => !p.downed), Math.min(0.05, left));
+      for (const c of floor.critters) {
+        c.hurt = Math.max(0, c.hurt - dt);
+        if (host) Object.assign(c, { sx: c.x, sy: c.y });
+        else {
+          const ease = 1 - Math.pow(0.0005, dt);
+          c.sx += (c.x - c.sx) * ease;
+          c.sy += (c.y - c.sy) * ease;
+        }
+      }
+      if (host) for (const w of floor.webs) w.left -= dt;
+      floor.webs = floor.webs.filter((w) => w.left > 0);
+    }
+    if (host) {
+      shareIn -= dt;
+      if (shareIn <= 0) {
+        shareIn = 0.1;
+        for (const floor of floors) if (peopleOn(floor.n, me, friends).some((p) => p.friend)) screen.send(snapshot(floor));
+      }
+    }
+  };
+  const hiddenTimer = setInterval(() => document.hidden && !over && critters(), 100);
+
   // --- Every frame ---
-  let sendIn = 0, shareIn = 0;
+  let sendIn = 0;
   const tick = (now) => {
     if (over) return;
     const dt = Math.min(0.05, (now - last2) / 1000);
@@ -528,32 +588,7 @@ export function startCellar(screen, round, { finish }) {
       else if (me.downFor >= (helpers.length ? CFG().downedSeconds : 2.5)) getUp(CFG().hearts, f.spawn);
     }
 
-    // The critters: the host moves them and tells everyone; the others
-    // glide theirs towards what the host said.
-    const host = screen.isHost();
-    for (const floor of floors) {
-      const people = peopleOn(floor.n, me, friends);
-      if (!people.length && floor.n !== me.floor) continue;
-      if (host) simulate(floor, people.filter((p) => !p.downed), dt);
-      for (const c of floor.critters) {
-        c.hurt = Math.max(0, c.hurt - dt);
-        if (host) Object.assign(c, { sx: c.x, sy: c.y });
-        else {
-          const ease = 1 - Math.pow(0.0005, dt);
-          c.sx += (c.x - c.sx) * ease;
-          c.sy += (c.y - c.sy) * ease;
-        }
-      }
-      if (host) for (const w of floor.webs) w.left -= dt;
-      floor.webs = floor.webs.filter((w) => w.left > 0);
-    }
-    if (host) {
-      shareIn -= dt;
-      if (shareIn <= 0) {
-        shareIn = 0.1;
-        for (const floor of floors) if (peopleOn(floor.n, me, friends).some((p) => p.friend)) screen.send(snapshot(floor));
-      }
-    }
+    critters();
     // A critter bumping into you (your own computer decides).
     if (!me.downed && me.hurt <= 0) {
       for (const c of f.critters) {
@@ -609,14 +644,16 @@ export function startCellar(screen, round, { finish }) {
     stop() {
       over = true;
       cancelAnimationFrame(frame);
+      clearInterval(hiddenTimer);
     },
     // Escape, then Leave: out of the cellar, empty-handed.
     leave() {
       if (over) return;
       over = true;
       cancelAnimationFrame(frame);
+      clearInterval(hiddenTimer);
       screen.send({ t: "gone" });
-      finish(0, null, { title: "You left the cellar", scoreLabel: "Your haul", lines: ["You left without climbing the ladder, so what you carried stays down there."] });
+      finish(0, { score: 0, crumbs: 0 }, { title: "You left the cellar", scoreLabel: "Your haul", lines: ["You left without climbing the ladder, so what you carried stays down there."] });
     },
     message(data, peerId) {
       if (!data || typeof data !== "object") return;

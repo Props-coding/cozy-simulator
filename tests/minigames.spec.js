@@ -287,6 +287,32 @@ test("Cellar Crawl: brooms, crates, critters, a knockout, a revive and the Rat K
   for (const f of friends) expect(f.problems).toEqual([]);
 });
 
+// --- When a friend leaves mid-run ---
+test("Cellar Crawl: the host closes their window, and the cellar carries on", async ({ browser }) => {
+  const dir = process.env.CELLAR_DIR || DIR;
+  const friends = await friendsInHouse(browser, ["Alice", "Bob"]);
+  const [alice, bob] = friends;
+  const start = await startTogether(friends, "cellarCrawl");
+  await start.click();
+  for (const f of friends) await f.page.waitForFunction(() => window.porchlightTest.cellar, null, { timeout: 15_000 });
+  await allDown(friends); // (floor 2: every room has rats)
+  // Alice (the host) goes; Bob's computer takes over the critters.
+  await alice.page.evaluate(() => globalThis.__meshBye());
+  await alice.page.close();
+  const where = () => cellar(bob, (c) => c.floors[1].critters.map((x) => [x.id, Math.round(x.x * 10), Math.round(x.y * 10)]).join(";"));
+  const before = await where();
+  await bob.page.waitForTimeout(4000);
+  expect(await where()).not.toBe(before);
+  // Bob climbs up; the results don't wait for Alice's score.
+  await cellarGo(bob, (fl) => ({ x: fl.ladderUp.x + 0.5, y: fl.ladderUp.y + 1 }));
+  await bob.page.waitForTimeout(200);
+  await bob.page.keyboard.press("e");
+  await bob.page.locator(".mini-results-card").waitFor({ state: "visible", timeout: 10_000 });
+  await expect(bob.page.locator(".mini-results-card")).not.toContainText("waiting for");
+  await bob.page.screenshot({ path: `${dir}/11-results-after-the-host-left.png` });
+  expect(bob.problems).toEqual([]);
+});
+
 // --- Step 4: the workbench ---
 test("Cellar Crawl: the workbench's upgrades, and what they do down there", async ({ browser }) => {
   const dir = process.env.CELLAR_DIR || DIR;

@@ -800,6 +800,7 @@ function fillWallet(w) {
   cel.deepest ??= 0;
   cel.kings ??= 0;
   cel.upgrades ??= {};
+  cel.kingDay ??= 0; // (the day his throne last came home: once a day)
   w.merchant ??= { week: 0, bought: {} };
   w.residents ??= { seed: Math.floor(Math.random() * 1e9), day: 0, done: {} }; // (Update 6: today's requests)
   w.residents.hearts ??= {}; // friendship points with each resident
@@ -1772,8 +1773,11 @@ const BANK = {
     run.king = true;
     const [lo, hi] = cfg.king.crumbs;
     run.crumbs += lo + Math.floor(Math.random() * (hi - lo + 1));
+    // (His throne once a day; after that, just the crumbs.)
     const got = [];
-    if (Object.hasOwn(GAME.DECOR, cfg.king.decor)) {
+    const c = w.minis.cellar;
+    if (Object.hasOwn(GAME.DECOR, cfg.king.decor) && c.kingDay !== hometownDay()) {
+      c.kingDay = hometownDay();
       run.items.push("decor:" + cfg.king.decor);
       got.push(cellarItemName("decor:" + cfg.king.decor));
     }

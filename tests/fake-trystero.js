@@ -58,6 +58,9 @@ export function joinRoom() {
       actions.get(m.name)?.onMessage?.(m.data, { peerId: m.from });
     };
     setTimeout(() => mesh({ from: selfId, to: null, name: "__hello", data: null }), 50);
+    // (A test calls this just before closing a friend's window: the others
+    // hear that they left, the way a real connection dropping would.)
+    globalThis.__meshBye = () => mesh({ from: selfId, to: null, name: "__bye", data: null });
   }
   return room;
 }

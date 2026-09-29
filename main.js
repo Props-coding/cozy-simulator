@@ -97,7 +97,7 @@ import { initKitchen, openStove, openFridge, openCookieJar, isGiftOpen } from ".
 import { talkToResident, residentHint } from "./residents.js";
 import { uiIcon } from "./ui-icons.js";
 import { initTravel, isTraveling } from "./travel.js";
-import { initMinigames, openPortal, portalHint, isMiniOpen } from "./minigames.js";
+import { initMinigames, openPortal, portalHint, isMiniOpen, friendLeft } from "./minigames.js";
 import { initArcade, openCabinet, openPrizeCounter, useClaw, useCapsule } from "./arcade.js";
 import { initNight, openToolbox, catchFirefly, fireflyHere, watchSwarm, checkMothSighting, maybeLampVisit, fullMoonHello } from "./night.js";
 import { initExtras, isExtrasOpen, makeWish, wellHint, openTv, openLibrary, openPaint } from "./extras.js";
@@ -161,6 +161,7 @@ const confirmDialog = document.getElementById("confirm-dialog");
 onPeerStream(handlePeerStream);
 onPeerLeave((peerId) => {
   removePeerAudio(peerId);
+  friendLeft(peerId); // (out of any mini game lobby or round)
   delete petTrails[peerId];
   playLeaveSound();
 });

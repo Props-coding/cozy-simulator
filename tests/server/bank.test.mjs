@@ -379,4 +379,15 @@ test("Cellar Crawl: three floors down, not too fast, and the Rat King's throne c
   assert.equal(home.data.result.deepest, 2);
   assert.equal(home.data.wallet.home.owned.ratThrone, 1, "the throne is in storage, ready to place");
   assert.equal(home.data.wallet.minis.cellar.kings, 1);
+  // A second king the same day: crumbs, but no second throne.
+  const { data: s2 } = await bank("Alice", "cellarStart");
+  for (const floor of [1, 2]) {
+    await new Promise((r) => setTimeout(r, 5_100));
+    await bank("Alice", "cellarDeeper", { id: s2.result.id, floor });
+  }
+  await new Promise((r) => setTimeout(r, 12_100));
+  const again = await bank("Alice", "cellarKing", { id: s2.result.id });
+  assert.equal(again.status, 200);
+  assert.deepEqual(again.data.result.got, [], "the throne comes home once a day");
+  assert.ok(again.data.result.carried.crumbs >= 25);
 });
