@@ -30,27 +30,45 @@ function drawCellarFloorTile(ctx, tx, ty, floorNo) {
   const a = toScreen(tx, ty);
   ctx.fillStyle = s.joint;
   ctx.fillRect(a.x, a.y, TILE, TILE);
-  // Two or four stones per tile, staggered by row.
+  // Four stones a tile, in two staggered rows (so the joints never line
+  // up), each its own shade, with a bevel: lit along the top and left
+  // edges, shaded along the bottom and right.
   const seed = tx * 13.7 + ty * 7.3;
-  const split = noise(seed) > 0.5;
-  const stones = split ? [[0, 0, 0.5, 1], [0.5, 0, 0.5, 1]] : [[0, 0, 1, 0.5], [0, 0.5, 1, 0.5]];
+  const cut = (k) => 0.35 + noise(seed + k * 4.1) * 0.3;
+  const c0 = cut(1), c1 = cut(2);
+  const stones = [[0, 0, c0, 0.5], [c0, 0, 1 - c0, 0.5], [0, 0.5, c1, 0.5], [c1, 0.5, 1 - c1, 0.5]];
   stones.forEach(([sx, sy, sw, sh], i) => {
-    const x = a.x + sx * TILE + 1.5, y = a.y + sy * TILE + 1.5, w = sw * TILE - 3, h = sh * TILE - 3;
-    const shade = Math.round((noise(seed + i * 3.1) - 0.5) * 22);
-    ctx.fillStyle = shadeColor(s.floor, shade);
-    roundRectPath(ctx, x, y, w, h, 3);
+    const x = a.x + sx * TILE + 1.2, y = a.y + sy * TILE + 1.2, w = sw * TILE - 2.4, h = sh * TILE - 2.4;
+    const shade = Math.round((noise(seed + i * 3.1) - 0.5) * 24);
+    const base = shadeColor(s.floor, shade);
+    ctx.fillStyle = base;
+    roundRectPath(ctx, x, y, w, h, 2.5);
     ctx.fill();
-    // Lit from above: a lighter upper edge, a darker lower one.
-    ctx.fillStyle = "rgba(255, 240, 220, 0.08)";
-    ctx.fillRect(x + 2, y, w - 4, 1.5);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
-    ctx.fillRect(x + 2, y + h - 1.5, w - 4, 1.5);
-    // Texture: pits and flecks.
-    for (let k = 0; k < 5; k++) {
-      ctx.fillStyle = k % 2 ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.1)";
-      ctx.fillRect(x + 2 + noise(seed + i * 5 + k * 1.7) * (w - 4), y + 2 + noise(seed + i * 7 + k * 2.3) * (h - 4), 1.8, 1.2);
+    ctx.fillStyle = shadeColor(base, 14); // (the bevel)
+    ctx.fillRect(x + 1.5, y, w - 3, 1.4);
+    ctx.fillRect(x, y + 1.5, 1.2, h - 3);
+    ctx.fillStyle = shadeColor(base, -22);
+    ctx.fillRect(x + 1.5, y + h - 1.4, w - 3, 1.4);
+    ctx.fillRect(x + w - 1.2, y + 1.5, 1.2, h - 3);
+    // Texture: pits, flecks and a worn, smoother middle.
+    ctx.fillStyle = "rgba(255, 245, 230, 0.05)";
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h / 2, w * 0.3, h * 0.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (let k = 0; k < 4; k++) {
+      ctx.fillStyle = k % 2 ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(x + 2 + noise(seed + i * 5 + k * 1.7) * (w - 4), y + 2 + noise(seed + i * 7 + k * 2.3) * (h - 4), 1.6, 1.1);
     }
   });
+  // A little moss in a joint now and then.
+  if (noise(seed * 2.7) < 0.18) {
+    ctx.fillStyle = s.moss;
+    for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.arc(a.x + c0 * TILE + (k - 1) * 1.5, a.y + TILE * 0.25 + k * 4, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   // Now and then a crack, some dirt, or a wisp of straw.
   const r = noise(seed * 1.9);
   if (r < 0.12) {
@@ -61,10 +79,26 @@ function drawCellarFloorTile(ctx, tx, ty, floorNo) {
     ctx.lineTo(a.x + 14 + noise(seed + 2) * 14, a.y + 20);
     ctx.lineTo(a.x + 10 + noise(seed + 3) * 20, a.y + 34);
     ctx.stroke();
-  } else if (r < 0.2) {
+  } else if (r < 0.16) {
     ctx.fillStyle = "rgba(70, 50, 30, 0.35)";
     ctx.beginPath();
     ctx.ellipse(a.x + TILE / 2, a.y + TILE / 2, 14, 6, noise(seed) * 3, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (r < 0.2) { // a shallow puddle: darker, wet stone with a glint of light
+    const px = a.x + TILE / 2, py = a.y + TILE / 2;
+    const wet = ctx.createRadialGradient(px, py, 0, px, py, 16);
+    wet.addColorStop(0, "rgba(30, 40, 55, 0.4)");
+    wet.addColorStop(0.7, "rgba(30, 40, 55, 0.25)");
+    wet.addColorStop(1, "rgba(30, 40, 55, 0)");
+    ctx.fillStyle = wet;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.scale(1, 0.5);
+    ctx.fillRect(-16, -16, 32, 32);
+    ctx.restore();
+    ctx.fillStyle = "rgba(220, 235, 245, 0.22)";
+    ctx.beginPath();
+    ctx.ellipse(px - 4, py - 1.5, 5, 1.2, -0.15, 0, Math.PI * 2);
     ctx.fill();
   } else if (r < 0.25) {
     ctx.strokeStyle = "rgba(210, 180, 100, 0.55)";
@@ -214,6 +248,51 @@ function drawCobweb(ctx, gx, gy, side, size = 1) {
 // --- The things in the cellar (each takes { x, y, w, h } in grid units:
 // the footprint on the floor, top-left corner) ---
 const CELLAR_DRAWERS = {
+  // A candle in an iron sconce on the back wall: a curly bracket, a drip
+  // tray, the candle with wax running down it, and a flickering flame.
+  wallCandle(ctx, o) {
+    const at = toScreen(o.x + o.w / 2, o.y);
+    const y = at.y - 26, t = performance.now() / 1000;
+    ctx.strokeStyle = "#2a2420"; // the bracket
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(at.x, y - 4);
+    ctx.lineTo(at.x, y + 8);
+    ctx.quadraticCurveTo(at.x, y + 13, at.x + 5, y + 12);
+    ctx.stroke();
+    ctx.fillStyle = "#3a322c";
+    ctx.fillRect(at.x - 2.5, y - 6, 5, 4);
+    ctx.fillStyle = "#4a4038"; // the drip tray
+    ctx.beginPath();
+    ctx.ellipse(at.x, y, 6, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#efe4cc"; // the candle, lit on its left
+    ctx.fillRect(at.x - 2.5, y - 11, 5, 11);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.fillRect(at.x - 2.5, y - 11, 1.2, 11);
+    ctx.fillStyle = "#e4d6b8"; // wax running down
+    ctx.fillRect(at.x + 0.5, y - 11, 1.5, 5);
+    ctx.beginPath();
+    ctx.arc(at.x + 1.25, y - 6, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+    const sway = Math.sin(t * 9 + o.x) * 0.9, tall = 1 + Math.sin(t * 13 + o.y) * 0.12;
+    const g = ctx.createRadialGradient(at.x, y - 15, 0, at.x, y - 15, 9);
+    g.addColorStop(0, "rgba(255, 210, 120, 0.55)");
+    g.addColorStop(1, "rgba(255, 170, 70, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(at.x - 9, y - 24, 18, 18);
+    ctx.fillStyle = "#ffb347"; // the flame
+    ctx.beginPath();
+    ctx.moveTo(at.x - 2, y - 11.5);
+    ctx.quadraticCurveTo(at.x - 2.5, y - 15, at.x + sway, y - 11.5 - 7 * tall);
+    ctx.quadraticCurveTo(at.x + 2.5, y - 15, at.x + 2, y - 11.5);
+    ctx.fill();
+    ctx.fillStyle = "#fff4c8";
+    ctx.beginPath();
+    ctx.ellipse(at.x + sway * 0.4, y - 13.5, 0.9, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  },
+
   // A wooden crate: slatted sides, dark corner boards, nails, a stencil.
   crate(ctx, o) {
     drawShadow(ctx, o.x, o.y, o.w, o.h);

@@ -158,6 +158,13 @@ function makeFloor(n, rng) {
     // Cobwebs up in the top corners (more of them deeper down).
     if (rng() < CFG().floors[n].cobwebs) floor.cobwebs.push({ x: room.x0, y: room.y0, side: -1, size: 0.8 + rng() * 0.6 });
     if (rng() < CFG().floors[n].cobwebs) floor.cobwebs.push({ x: room.x1, y: room.y0, side: 1, size: 0.8 + rng() * 0.6 });
+    // A candle in an iron sconce on the back wall of most rooms (fewer
+    // deeper down), flickering. (From `noise`, not the round's dice, so
+    // the rest of the floor comes out the same as it always has.)
+    if (kind !== "start" && noise(n * 7.3 + room.mx * 1.7 + room.y0 * 2.9) < 0.75 - n * 0.15) {
+      add({ kind: "wallCandle", x: room.mx + 0.2, y: room.y0, w: 0.6, h: 0.05, solid: false });
+      floor.lights.push({ x: room.mx + 0.5, y: room.y0 + 0.1, r: 2.3, warm: true, flicker: true });
+    }
     // The ladders.
     if (kind === "start") {
       add({ kind: "ladderUp", x: room.mx - 0.5, y: room.y0, w: 1, h: 0.1, solid: false });
@@ -1044,22 +1051,23 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   const floorCfg = CFG().floors[f.n];
   d.globalCompositeOperation = "source-over";
   d.clearRect(0, 0, cw, ch);
-  d.fillStyle = `rgba(6, 4, 3, ${debug.lightsOn ? 0.15 : floorCfg.dark})`;
+  d.fillStyle = `rgba(9, 7, 13, ${debug.lightsOn ? 0.15 : floorCfg.dark})`;
   d.fillRect(0, 0, cw, ch);
   d.globalCompositeOperation = "destination-out";
   const lights = [...people.map((p) => ({ x: p.x, y: p.y - 0.4, r: p.lantern * floorCfg.light * (p.downed ? 0.6 : 1) * (1 + Math.sin(t * 9 + p.x) * 0.02) })), ...f.lights];
+  const flick = (l) => (l.flicker ? 1 + Math.sin(t * 13 + l.x * 3) * 0.05 + Math.sin(t * 7.7 + l.y) * 0.04 : 1);
   for (const l of lights) {
     const at = toPx(l.x, l.y);
-    const r = l.r * TILE * z;
+    const r = l.r * TILE * z * 1.3 * flick(l); // (a long, soft falloff: no hard edge to the light)
     if (at.x < -r || at.x > cw + r || at.y < -r || at.y > ch + r) continue;
-    const g = d.createRadialGradient(at.x, at.y, r * 0.15, at.x, at.y, r);
+    const g = d.createRadialGradient(at.x, at.y, 0, at.x, at.y, r);
     g.addColorStop(0, "rgba(0, 0, 0, 1)");
-    g.addColorStop(0.55, "rgba(0, 0, 0, 0.75)");
+    g.addColorStop(0.3, "rgba(0, 0, 0, 0.95)");
+    g.addColorStop(0.55, "rgba(0, 0, 0, 0.66)");
+    g.addColorStop(0.8, "rgba(0, 0, 0, 0.25)");
     g.addColorStop(1, "rgba(0, 0, 0, 0)");
     d.fillStyle = g;
-    d.beginPath();
-    d.arc(at.x, at.y, r, 0, Math.PI * 2);
-    d.fill();
+    d.fillRect(at.x - r, at.y - r, r * 2, r * 2);
   }
   ctx.drawImage(dark, 0, 0);
   // The warm color of the lanterns (and the cool of the mushrooms).
@@ -1067,9 +1075,10 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   ctx.globalCompositeOperation = "lighter";
   for (const l of lights) {
     const at = toPx(l.x, l.y);
-    const r = l.r * TILE * z * 0.8;
+    const r = l.r * TILE * z * 1.05 * flick(l);
     const g = ctx.createRadialGradient(at.x, at.y, 0, at.x, at.y, r);
-    g.addColorStop(0, l.cool ? "rgba(60, 140, 130, 0.18)" : "rgba(255, 160, 70, 0.16)");
+    g.addColorStop(0, l.cool ? "rgba(60, 140, 130, 0.2)" : "rgba(255, 160, 70, 0.2)");
+    g.addColorStop(0.5, l.cool ? "rgba(40, 110, 110, 0.07)" : "rgba(255, 140, 60, 0.07)");
     g.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = g;
     ctx.fillRect(at.x - r, at.y - r, r * 2, r * 2);
