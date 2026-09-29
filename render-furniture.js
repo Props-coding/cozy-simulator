@@ -529,27 +529,6 @@ const FURNITURE_DRAWERS = {
     }
   },
 
-  // A small two-seat sofa (loveseat), facing into the room, with cushions.
-  loveseat(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const c = f.color || "#7a9e8c";
-    drawBlock(ctx, f.x + 0.05, f.y, f.w - 0.1, 0.28, 30, shadeColor(c, -15)); // back
-    const seat = drawBlock(ctx, f.x + 0.15, f.y + 0.22, f.w - 0.3, f.h - 0.22, 13, c);
-    drawBlock(ctx, f.x, f.y + 0.1, 0.18, f.h - 0.1, 19, shadeColor(c, -15)); // arms
-    drawBlock(ctx, f.x + f.w - 0.18, f.y + 0.1, 0.18, f.h - 0.1, 19, shadeColor(c, -15));
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.15)"; // the seam between the two cushions
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(seat.top.x + seat.top.w / 2, seat.top.y + 2);
-    ctx.lineTo(seat.top.x + seat.top.w / 2, seat.top.y + seat.top.h - 2);
-    ctx.stroke();
-    for (const [fx, color] of [[0.22, "#f2d9a0"], [0.78, "#e0845a"]]) {
-      ctx.fillStyle = color; // throw pillows
-      roundRectPath(ctx, seat.top.x + seat.top.w * fx - 7, seat.top.y - 8, 14, 11, 4);
-      ctx.fill();
-    }
-  },
-
   // A low coffee table with a mug, a book and a little candle.
   coffeeTable(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
@@ -564,57 +543,6 @@ const FURNITURE_DRAWERS = {
     ctx.fillStyle = "#6b3a1e";
     ctx.fillRect(x + w / 2 - 2.5, y + h / 2 - 4, 5, 1.5);
     drawCandle(ctx, x + w - 10, y + h / 2 + 3, performance.now() / 1000 + f.x);
-  },
-
-  // A chest of drawers with brass handles and a little lamp on top.
-  dresser(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 30, "#9a6a45");
-    const { x, y, w, h } = d.face;
-    for (let row = 0; row < 3; row++) {
-      ctx.strokeStyle = "rgba(40, 25, 10, 0.35)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x + 3, y + 3 + row * 8.5, w - 6, 7.5);
-      ctx.fillStyle = "#c9a24a";
-      ctx.fillRect(x + w / 2 - 4, y + 6 + row * 8.5, 8, 1.6);
-    }
-    const cx = d.top.x + d.top.w * 0.75, cy = d.top.y + d.top.h / 2;
-    ctx.fillStyle = "#5c4530";
-    ctx.fillRect(cx - 1, cy - 12, 2, 12);
-    ctx.fillStyle = "#f2d9a0";
-    ctx.beginPath();
-    ctx.moveTo(cx - 7, cy - 10);
-    ctx.lineTo(cx + 7, cy - 10);
-    ctx.lineTo(cx + 4, cy - 19);
-    ctx.lineTo(cx - 4, cy - 19);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#e37aa0"; // a small framed photo
-    ctx.fillRect(d.top.x + 6, cy - 9, 8, 9);
-    ctx.fillStyle = "#fffaf3";
-    ctx.fillRect(d.top.x + 7.5, cy - 7.5, 5, 5);
-  },
-
-  // A writing desk with a stack of paper, a pen pot and a lamp.
-  writingDesk(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#7a5238");
-    const { x, y, w, h } = d.top;
-    ctx.fillStyle = "#f4ecdc";
-    ctx.fillRect(x + w * 0.3, y + h / 2 - 6, 18, 12);
-    ctx.fillStyle = "rgba(60, 50, 40, 0.35)";
-    for (let i = 0; i < 4; i++) ctx.fillRect(x + w * 0.3 + 2, y + h / 2 - 4 + i * 2.5, 13, 0.8);
-    ctx.fillStyle = "#3f6f9f";
-    ctx.fillRect(x + 6, y + h / 2 - 7, 6, 8);
-    ctx.fillStyle = "#e0a84c";
-    ctx.fillRect(x + 7, y + h / 2 - 11, 1, 5);
-    ctx.fillRect(x + 9.5, y + h / 2 - 12, 1, 6);
-    const lx = x + w - 10;
-    ctx.fillStyle = "#4f7a48"; // a green banker's lamp
-    ctx.fillRect(lx - 1, y + h / 2 - 10, 2, 10);
-    ctx.beginPath();
-    ctx.ellipse(lx, y + h / 2 - 11, 8, 3.5, 0, Math.PI, 0);
-    ctx.fill();
   },
 
   // A record player on a little stand, with the record spinning.
@@ -1937,45 +1865,6 @@ const FURNITURE_DRAWERS = {
       ctx.arc(mx + 4.5, shelf.y + 10, 2.2, -Math.PI / 2, Math.PI / 2);
       ctx.stroke();
     }
-  },
-
-  // A 2-by-2 cube shelf with woven baskets, and a record and plant on top.
-  cubeShelf(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const s = drawBlock(ctx, f.x, f.y, f.w, f.h, 34, "#f2ece2");
-    const { x, y, w, h } = s.face;
-    ctx.fillStyle = "#d8cfbe";
-    ctx.fillRect(x + w / 2 - 1, y, 2, h);
-    ctx.fillRect(x, y + h / 2 - 1, w, 2);
-    for (const [cx, cy, basket] of [[0, 0, true], [1, 0, false], [0, 1, false], [1, 1, true]]) {
-      const bx = x + 3 + cx * (w / 2), by = y + 3 + cy * (h / 2), bw = w / 2 - 6, bh = h / 2 - 5;
-      if (basket) {
-        ctx.fillStyle = "#c49a5c";
-        ctx.fillRect(bx, by + 2, bw, bh - 2);
-        ctx.strokeStyle = "rgba(90, 60, 25, 0.4)";
-        ctx.lineWidth = 0.8;
-        for (let yy = by + 5; yy < by + bh; yy += 3) {
-          ctx.beginPath();
-          ctx.moveTo(bx, yy);
-          ctx.lineTo(bx + bw, yy);
-          ctx.stroke();
-        }
-      } else {
-        drawBookRow(ctx, bx + 1, by + bh, bw - 2, cx + cy * 3);
-      }
-    }
-    const t = s.top;
-    ctx.fillStyle = "#15151a"; // a record leaning on top
-    ctx.beginPath();
-    ctx.arc(t.x + t.w * 0.3, t.y + 2, 8, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = "#e37aa0";
-    ctx.beginPath();
-    ctx.arc(t.x + t.w * 0.3, t.y + 2, 2.5, Math.PI, 0);
-    ctx.fill();
-    drawPot(ctx, t.x + t.w * 0.75, t.y + t.h / 2 + 2, "ceramic", 5, 8);
-    drawHeartLeaf(ctx, t.x + t.w * 0.75 - 3, t.y - 6, 3.5, "#5f9a55", -0.3);
-    drawHeartLeaf(ctx, t.x + t.w * 0.75 + 3, t.y - 7, 3.5, "#4f8a4a", 0.3);
   },
 
   // A ladder shelf leaning on the wall, with a blanket, books and a plant.

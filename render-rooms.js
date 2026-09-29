@@ -35,37 +35,6 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fillRect(d.face.x + d.face.w / 2 - 5, d.face.y + 8, 10, 1.6);
   },
 
-  // A bed with four posts, sheer drapes and fairy lights. You can sleep in it.
-  canopyBed(ctx, f) {
-    FURNITURE_DRAWERS.bed(ctx, f);
-    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
-    const topY = a.y - 58;
-    ctx.fillStyle = "#e9dcc2"; // posts
-    for (const px of [a.x + 1, b.x - 4]) {
-      ctx.fillRect(px, topY, 3, a.y - topY);
-      ctx.fillRect(px, b.y - 40, 3, 30);
-    }
-    ctx.fillStyle = "#e9dcc2";
-    ctx.fillRect(a.x, topY - 2, b.x - a.x, 3);
-    ctx.fillStyle = "rgba(255, 250, 245, 0.45)"; // sheer drapes
-    for (const [x1, dir] of [[a.x + 3, 1], [b.x - 3, -1]]) {
-      ctx.beginPath();
-      ctx.moveTo(x1, topY);
-      ctx.quadraticCurveTo(x1 + dir * 14, topY + 30, x1 + dir * 4, b.y - 12);
-      ctx.lineTo(x1, b.y - 12);
-      ctx.closePath();
-      ctx.fill();
-    }
-    const t = performance.now() / 1000;
-    for (let i = 0; i <= 10; i++) {
-      const px = a.x + ((b.x - a.x) * i) / 10;
-      ctx.fillStyle = `rgba(255, 220, 140, ${0.7 + Math.sin(t * 2 + i) * 0.3})`;
-      ctx.beginPath();
-      ctx.arc(px, topY + 3 + Math.sin((i / 10) * Math.PI) * 5, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  },
-
   // A papasan chair: a big round rattan bowl with a thick cushion.
   papasanChair(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
@@ -300,49 +269,6 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // An aesthetic desk: a pastel keyboard, a monitor with a sunset, a plant
-  // and a lamp.
-  aestheticDesk(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 22, "#f2ece2");
-    const { x, y, w, h } = d.top;
-    const mx = x + w / 2 - 20, my = y - 22;
-    ctx.fillStyle = "#e8e2d8";
-    roundRectPath(ctx, mx, my, 40, 26, 3);
-    ctx.fill();
-    const sky = ctx.createLinearGradient(0, my + 2, 0, my + 23);
-    sky.addColorStop(0, "#f7b8c8");
-    sky.addColorStop(1, "#f2d09a");
-    ctx.fillStyle = sky;
-    ctx.fillRect(mx + 2, my + 2, 36, 21);
-    ctx.fillStyle = "#fff4d0";
-    ctx.beginPath();
-    ctx.arc(mx + 20, my + 17, 5, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = "#e8e2d8";
-    ctx.fillRect(mx + 18, my + 26, 4, 5);
-    ctx.fillStyle = "#f7d0da"; // pastel keyboard and mouse
-    roundRectPath(ctx, x + w / 2 - 16, y + h - 12, 28, 7, 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2 + 18, y + h - 8, 2.5, 3.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    drawPot(ctx, x + 9, y + h / 2 + 2, "pink", 5, 7);
-    drawLeaf(ctx, x + 9, y + h / 2 - 6, -0.4, 9, 3, "#5f9a55");
-    drawLeaf(ctx, x + 9, y + h / 2 - 6, 0.4, 9, 3, "#4f8a4a");
-    const lx = x + w - 10; // a little arch lamp
-    ctx.strokeStyle = "#f2ece2";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(lx, y + h / 2);
-    ctx.quadraticCurveTo(lx, y - 20, lx - 8, y - 14);
-    ctx.stroke();
-    ctx.fillStyle = "#fff4c8";
-    ctx.beginPath();
-    ctx.arc(lx - 8, y - 12, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-  },
-
   // A LAN station: desk with a PC tower, keyboard and a monitor facing
   // you. Whoever stands on the stool in front covers the desk's front,
   // with the screen still glowing above their head.
@@ -531,30 +457,6 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.stroke();
     }
     ctx.lineCap = "butt";
-  },
-
-  // A tall freestanding bookcase, packed with three rows of books, with a
-  // couple of books lying on top.
-  libraryShelf(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const shelf = drawBlock(ctx, f.x, f.y, f.w, f.h, 58, "#5a3a26");
-    const bookColors = ["#8f2f2a", "#3f6f9f", "#c98a3c", "#4f7a48", "#7d6a8f", "#b5603c", "#2f4f4f"];
-    const { x, y, w } = shelf.face;
-    for (let row = 0; row < 3; row++) {
-      const rowY = y + 4 + row * 17;
-      ctx.fillStyle = "#3a2618";
-      ctx.fillRect(x + 3, rowY, w - 6, 14);
-      for (let i = 0; i * 6 + 5 < w - 6; i++) {
-        const bh = 10 + ((i * 5 + row * 3) % 4);
-        ctx.fillStyle = bookColors[(i * 3 + row * 2 + Math.round(f.x)) % bookColors.length];
-        ctx.fillRect(x + 5 + i * 6, rowY + 14 - bh, 5, bh);
-      }
-    }
-    const top = shelf.top;
-    ctx.fillStyle = "#c98a3c";
-    ctx.fillRect(top.x + 6, top.y + top.h / 2 - 3, 16, 4);
-    ctx.fillStyle = "#3f6f9f";
-    ctx.fillRect(top.x + 8, top.y + top.h / 2 - 7, 13, 4);
   },
 
   // A long reading table with two green banker's lamps, open books and a

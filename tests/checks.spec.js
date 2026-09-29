@@ -232,6 +232,7 @@ test("Mini games: all eight doors open their lobbies", async ({ page }) => {
     }
     await page.keyboard.press("Escape");
     await expect(page.locator(".mini-scene")).toBeHidden();
+    await expect(page.locator(".mini-fade.on")).toHaveCount(0); // (the fade back finishes before the next door)
   }
   expect(problems).toEqual([]);
 });

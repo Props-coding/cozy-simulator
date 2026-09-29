@@ -79,9 +79,9 @@ function drawCell(canvas, kind, view, look, scale = 1) {
   ctx.fillRect(0, 0, CELL, CELL);
   let f = sampleOf(kind);
   const turned = view === "left" || view === "right";
-  if (view === "back" || (turned && !FURNITURE_DRAWERS[kind + "Side"])) {
+  if ((view === "back" && !MODELS[kind]) || (turned && !FURNITURE_DRAWERS[kind + "Side"])) {
     ctx.restore();
-    return false; // (no piece has a back look yet)
+    return false; // (only pieces built as models have a back look: render-models.js)
   }
   if (turned) f = { ...f, kind: kind + "Side", facing: view, w: f.h ?? f.w, h: f.w };
   const foot = toScreen(f.x + f.w / 2, f.y + (f.h ?? 0.6));
@@ -97,7 +97,8 @@ function drawCell(canvas, kind, view, look, scale = 1) {
     seasonPreview = look.season;
     ctx.save();
     toPiece();
-    drawOutlined(ctx, f);
+    if (view === "back") drawModelBack(ctx, f);
+    else drawOutlined(ctx, f);
     ctx.restore();
     // Night: the dark over it, then its own light (a lamp, the campfire).
     if (look.night) {

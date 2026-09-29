@@ -1589,7 +1589,10 @@ function seatSpots(f) {
     } else if (face === "front") {
       face = "down";
     }
-    const x = f.x + f.w * fx, y = f.y + f.h * fy;
+    const y = f.y + f.h * fy;
+    // (A turned model piece is drawn turned a little toward the camera, so
+    // its seats move with it: see render-models.js.)
+    const x = f.x + f.w * fx + (turned && typeof modelSeatShift === "function" ? modelSeatShift(f, y) : 0);
     return { key: `${floorOf(y)}:${Math.round(x * 20)}:${Math.round(y * 20)}`, x, y, face, lift: s.lift, sortY: f.y + f.h + (covered ? -0.02 : 0.02), n: i };
   });
 }
@@ -1887,7 +1890,7 @@ const DECOR = {
   poufCream: { name: "Cream Knit Pouf", tab: "furniture", price: 20, kind: "pouf", w: 0.6, h: 0.5, color: "#e0c8b0" },
   poufPink: { name: "Pink Knit Pouf", tab: "furniture", price: 20, kind: "pouf", w: 0.6, h: 0.5, color: "#efb8c4" },
   mushroomStool: { name: "Mushroom Stool", tab: "furniture", price: 18, kind: "mushroomStool", w: 0.5, h: 0.45 },
-  bench: { name: "Cushioned Bench", tab: "furniture", price: 25, kind: "bench", w: 1.5, h: 0.5 },
+  bench: { name: "Cushioned Bench", tab: "furniture", price: 25, kind: "bench", w: 1.5, h: 0.5, turn: true },
   coffeeTable: { name: "Coffee Table", tab: "furniture", price: 30, kind: "coffeeTable", w: 1.2, h: 0.6 },
   sideTable: { name: "Round Side Table", tab: "furniture", price: 22, kind: "sideTable", w: 0.6, h: 0.5 },
   writingDesk: { name: "Writing Desk", tab: "furniture", price: 40, kind: "writingDesk", w: 1.3, h: 0.6 , turn: true },

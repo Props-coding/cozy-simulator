@@ -3,138 +3,7 @@
 // drawing helpers, doors, and the draw order (getStaticSprites).
 
 Object.assign(FURNITURE_DRAWERS, {
-  // --- Turned furniture: side views ---
-  // A piece turned to face right (against the left wall) or left (against
-  // the right wall; the same drawing, mirrored). Its footprint is turned
-  // too, so f.w is the piece's depth and f.h its width. See `turn` in
-  // DECOR (world.js).
-
-  wardrobeSide(ctx, f) {
-    sideView(ctx, f, () => {
-      drawShadow(ctx, f.x, f.y, f.w, f.h);
-      const wd = drawBlock(ctx, f.x, f.y, f.w, f.h, 58, "#8b5e3c");
-      const { x, y, w, h } = wd.face;
-      ctx.strokeStyle = "rgba(40, 25, 10, 0.35)"; // the side panel
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x + 4, y + 5, w - 11, h - 12);
-      // The two doors, seen edge-on along the front (the side facing the
-      // room), with their knobs.
-      const t = wd.top;
-      ctx.fillStyle = "#7a5234";
-      ctx.fillRect(t.x + t.w - 7, t.y, 7, t.h);
-      ctx.fillRect(x + w - 7, y, 7, h);
-      ctx.fillStyle = "rgba(40, 25, 10, 0.45)"; // the gap between the doors
-      ctx.fillRect(t.x + t.w - 7, t.y + t.h / 2 - 0.5, 7, 1);
-      ctx.fillStyle = "#c9a24a";
-      ctx.fillRect(t.x + t.w - 4, t.y + t.h / 2 - 5, 3, 3);
-      ctx.fillRect(t.x + t.w - 4, t.y + t.h / 2 + 2, 3, 3);
-      ctx.fillStyle = WOOD_DARK; // crown on top
-      ctx.fillRect(wd.top.x - 2, wd.top.y - 2, wd.top.w + 4, 3);
-    });
-  },
-
-  dresserSide(ctx, f) {
-    sideView(ctx, f, () => {
-      drawShadow(ctx, f.x, f.y, f.w, f.h);
-      const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 30, "#9a6a45");
-      const { x, y, w, h } = d.face;
-      ctx.strokeStyle = "rgba(40, 25, 10, 0.3)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x + 3, y + 3, w - 9, h - 8);
-      ctx.fillStyle = "#7d5436"; // the drawer fronts along the front edge
-      ctx.fillRect(x + w - 4, y, 4, h);
-      ctx.fillStyle = "#c9a24a";
-      for (let row = 0; row < 3; row++) ctx.fillRect(x + w - 3, y + 4 + row * 8.5, 2, 3);
-      const cx = d.top.x + d.top.w * 0.4, cy = d.top.y + d.top.h * 0.55; // the lamp, near the wall
-      ctx.fillStyle = "#5c4530";
-      ctx.fillRect(cx - 1, cy - 12, 2, 12);
-      ctx.fillStyle = "#f2d9a0";
-      ctx.beginPath();
-      ctx.moveTo(cx - 7, cy - 10);
-      ctx.lineTo(cx + 7, cy - 10);
-      ctx.lineTo(cx + 4, cy - 19);
-      ctx.lineTo(cx - 4, cy - 19);
-      ctx.closePath();
-      ctx.fill();
-    });
-  },
-
-  bookshelfSide(ctx, f) {
-    sideView(ctx, f, () => drawShelfSide(ctx, f, 62, WOOD));
-  },
-
-  libraryShelfSide(ctx, f) {
-    sideView(ctx, f, () => drawShelfSide(ctx, f, 76, "#6b4630"));
-  },
-
-  cubeShelfSide(ctx, f) {
-    sideView(ctx, f, () => drawShelfSide(ctx, f, 44, "#e9e1d3", ["#c49a5c", "#b8906a", "#d9b67e"]));
-  },
-
-  bedSide(ctx, f) {
-    sideView(ctx, f, () => drawBedSide(ctx, f, 12, "#7a5238", true));
-  },
-
-  mattressSide(ctx, f) {
-    sideView(ctx, f, () => drawBedSide(ctx, f, 7, "#e9e1d3", false));
-  },
-
-  canopyBedSide(ctx, f) {
-    sideView(ctx, f, () => {
-      drawBedSide(ctx, f, 12, "#7a5238", true);
-      const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
-      const topY = a.y - 58;
-      ctx.fillStyle = "#e9dcc2"; // posts at the four corners
-      for (const px of [a.x + 1, b.x - 4]) {
-        ctx.fillRect(px, topY, 3, a.y - topY);
-        ctx.fillRect(px, b.y - 40, 3, 30);
-      }
-      ctx.fillRect(a.x, topY - 2, b.x - a.x, 3);
-      ctx.fillStyle = "rgba(255, 250, 245, 0.45)"; // sheer drapes gathered at the corners
-      for (const [x1, dir] of [[a.x + 3, 1], [b.x - 3, -1]]) {
-        ctx.beginPath();
-        ctx.moveTo(x1, topY);
-        ctx.quadraticCurveTo(x1 + dir * 10, topY + 30, x1 + dir * 3, b.y - 12);
-        ctx.lineTo(x1, b.y - 12);
-        ctx.fill();
-      }
-      ctx.fillStyle = "#ffe9a8"; // a few twinkly lights along the top
-      for (let lx = a.x + 6; lx < b.x - 4; lx += 9) {
-        ctx.beginPath();
-        ctx.arc(lx, topY + 2, 1.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-  },
-
-  loveseatSide(ctx, f) {
-    sideView(ctx, f, () => drawSofaSide(ctx, f, f.color || "#7a9e8c"));
-  },
-
-  cloudSofaSide(ctx, f) {
-    sideView(ctx, f, () => {
-      drawSofaSide(ctx, f, "#f4efe8");
-      const a = toScreen(f.x, f.y), b = toScreen(f.x, f.y + f.h);
-      ctx.fillStyle = "#fbf8f3"; // puffy cloud bumps along the back
-      for (let py = a.y + 6; py < b.y - 4; py += 11) {
-        ctx.beginPath();
-        ctx.arc(a.x + 8, py - 30, 7, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-  },
-
-  writingDeskSide(ctx, f) {
-    sideView(ctx, f, () => drawDeskSide(ctx, f, "#7a5238", "lamp"));
-  },
-
-  aestheticDeskSide(ctx, f) {
-    sideView(ctx, f, () => drawDeskSide(ctx, f, "#efe6d6", "flowers"));
-  },
-
-  laptopDeskSide(ctx, f) {
-    sideView(ctx, f, () => drawDeskSide(ctx, f, "#9a6a45", "laptop"));
-  },
+  // (Turned furniture is built as models now: see render-models.js.)
 
   // --- Seasonal decorations (see SEASONAL in world.js) ---
 
@@ -429,91 +298,6 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.fill();
   },
 
-  // The starter desk every bedroom has: a small wooden desk with an open
-  // laptop (its screen glowing), a mug, and a little chair tucked in.
-  // Press E at your own to open the laptop.
-  laptopDesk(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const d = drawBlock(ctx, f.x, f.y, f.w, f.h, 20, "#9a6a45");
-    const { x, y, w, h } = d.top;
-    const lx = x + w / 2 - 16, ly = y + 2;
-    ctx.fillStyle = "#3a3a44"; // screen lid
-    roundRectPath(ctx, lx, ly - 16, 32, 20, 3);
-    ctx.fill();
-    const glow = ctx.createLinearGradient(0, ly - 14, 0, ly + 2);
-    glow.addColorStop(0, "#bfe3f2");
-    glow.addColorStop(1, "#7fb2d6");
-    ctx.fillStyle = glow;
-    ctx.fillRect(lx + 2, ly - 14, 28, 15);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.7)"; // little app icons
-    for (let i = 0; i < 4; i++) ctx.fillRect(lx + 5 + i * 6, ly - 10, 4, 4);
-    ctx.fillStyle = "#c8c8d0"; // keyboard base
-    ctx.fillRect(lx, ly + 4, 32, h - 10);
-    ctx.fillStyle = "rgba(60, 60, 70, 0.35)";
-    for (let i = 0; i < 3; i++) ctx.fillRect(lx + 3, ly + 6 + i * 2.5, 26, 1);
-    ctx.fillStyle = "#f2ece2"; // mug
-    ctx.fillRect(x + w - 11, y + h / 2 - 6, 6, 7);
-    ctx.fillStyle = "#6b3a1e";
-    ctx.fillRect(x + w - 10.5, y + h / 2 - 6, 5, 1.5);
-  },
-
-  // A plain mattress on the floor, with a pillow and a blanket in the
-  // owner's color. Step onto it to sleep.
-  mattress(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const m = drawBlock(ctx, f.x, f.y, f.w, f.h, 7, "#e9e1d3");
-    const { x, y, w, h } = m.top;
-    ctx.fillStyle = "#fffaf3";
-    roundRectPath(ctx, x + 6, y + 4, w - 12, 15, 6);
-    ctx.fill();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
-    ctx.fillRect(x + 9, y + 15, w - 18, 2);
-    const top = y + 24;
-    const blanket = ctx.createLinearGradient(0, top, 0, y + h);
-    blanket.addColorStop(0, shadeColor(f.color, 30));
-    blanket.addColorStop(1, shadeColor(f.color, -10));
-    ctx.fillStyle = blanket;
-    roundRectPath(ctx, x + 1, top, w - 2, y + h - top + m.face.h - 2, 4);
-    ctx.fill();
-    ctx.fillStyle = shadeColor(f.color, 55);
-    ctx.fillRect(x + 1, top, w - 2, 5);
-  },
-
-  // A big cozy bed: a wooden headboard against the wall, pillows, and a
-  // puffy blanket in the owner's color folded back at the top. It isn't
-  // solid: step into it to go to sleep (you're drawn tucked in).
-  bed(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const frame = drawBlock(ctx, f.x, f.y + 0.25, f.w, f.h - 0.25, 12, "#7a5238");
-    const head = drawBlock(ctx, f.x - 0.05, f.y, f.w + 0.1, 0.25, 34, "#6b4630"); // headboard
-    ctx.fillStyle = "rgba(255, 235, 200, 0.18)";
-    roundRectPath(ctx, head.face.x + 6, head.face.y + 5, head.face.w - 12, head.face.h - 12, 6);
-    ctx.fill();
-    const { x, y, w, h } = frame.top;
-    // Sheet and pillows.
-    ctx.fillStyle = "#f5eee2";
-    ctx.fillRect(x + 3, y + 2, w - 6, h - 4);
-    for (const px of [x + 8, x + w / 2 + 3]) {
-      ctx.fillStyle = "#fffaf3";
-      roundRectPath(ctx, px, y + 5, w / 2 - 11, 16, 6);
-      ctx.fill();
-      ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
-      ctx.fillRect(px + 3, y + 16, w / 2 - 17, 2);
-    }
-    // Blanket over the lower part, with a folded-back cuff.
-    const top = y + 28;
-    const blanket = ctx.createLinearGradient(0, top, 0, y + h);
-    blanket.addColorStop(0, shadeColor(f.color, 30));
-    blanket.addColorStop(1, shadeColor(f.color, -10));
-    ctx.fillStyle = blanket;
-    roundRectPath(ctx, x + 1, top, w - 2, y + h - top + frame.face.h - 3, 5);
-    ctx.fill();
-    ctx.fillStyle = shadeColor(f.color, 55);
-    ctx.fillRect(x + 1, top, w - 2, 6);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // quilted lines
-    for (let qy = top + 14; qy < y + h - 4; qy += 12) ctx.fillRect(x + 4, qy, w - 8, 1);
-  },
-
   // A little nightstand with a drawer and a glowing lamp.
   nightstand(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
@@ -545,22 +329,6 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // A tall wooden wardrobe with two doors and brass knobs.
-  wardrobe(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const wd = drawBlock(ctx, f.x, f.y, f.w, f.h, 58, "#8b5e3c");
-    const { x, y, w, h } = wd.face;
-    ctx.strokeStyle = "rgba(40, 25, 10, 0.4)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 4, y + 4, w / 2 - 6, h - 12);
-    ctx.strokeRect(x + w / 2 + 2, y + 4, w / 2 - 6, h - 12);
-    ctx.fillStyle = "#c9a24a";
-    ctx.fillRect(x + w / 2 - 4, y + h / 2 - 2, 2, 4);
-    ctx.fillRect(x + w / 2 + 2, y + h / 2 - 2, 2, 4);
-    ctx.fillStyle = WOOD_DARK; // crown on top
-    ctx.fillRect(wd.top.x - 2, wd.top.y - 2, wd.top.w + 4, 3);
-  },
-
   fridge(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
     const fr = drawBlock(ctx, f.x, f.y, f.w, f.h, 46, "#dfe6ea");
@@ -585,24 +353,6 @@ Object.assign(FURNITURE_DRAWERS, {
       ctx.fillStyle = "#cfd6da";
       ctx.fillRect(x + 32 + i * 9, y + h / 2 - 11, 6, 2);
     });
-  },
-
-  bookshelf(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const shelf = drawBlock(ctx, f.x, f.y, f.w, f.h, 62, WOOD);
-    // Two rows of books on the front face.
-    const bookColors = ["#c0554a", "#4a90a4", "#e0a84c", "#7a9e5c", "#9a6fb0", "#d98c6a"];
-    const { x, y, w } = shelf.face;
-    for (let row = 0; row < 2; row++) {
-      const rowY = y + 6 + row * 26;
-      ctx.fillStyle = WOOD_DARK;
-      ctx.fillRect(x + 4, rowY, w - 8, 22);
-      for (let i = 0; i * 9 + 8 < w - 8; i++) {
-        ctx.fillStyle = bookColors[(i + row * 2) % bookColors.length];
-        const bh = 16 + ((i * 7 + row * 3) % 5);
-        ctx.fillRect(x + 7 + i * 9, rowY + 22 - bh, 7, bh);
-      }
-    }
   },
 
   // The shared study table: open books, mugs, a stack of books and a lamp.
