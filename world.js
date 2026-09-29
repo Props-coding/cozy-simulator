@@ -1589,10 +1589,7 @@ function seatSpots(f) {
     } else if (face === "front") {
       face = "down";
     }
-    const y = f.y + f.h * fy;
-    // (A turned model piece is drawn turned a little toward the camera, so
-    // its seats move with it: see render-models.js.)
-    const x = f.x + f.w * fx + (turned && typeof modelSeatShift === "function" ? modelSeatShift(f, y) : 0);
+    const x = f.x + f.w * fx, y = f.y + f.h * fy;
     return { key: `${floorOf(y)}:${Math.round(x * 20)}:${Math.round(y * 20)}`, x, y, face, lift: s.lift, sortY: f.y + f.h + (covered ? -0.02 : 0.02), n: i };
   });
 }

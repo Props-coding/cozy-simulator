@@ -2,23 +2,17 @@
 // hand-drawn picture for each way a piece can face, a piece is described
 // once as its real parts (side panels, shelves, books, cushions, legs...),
 // each a box with a size, a color and a material, and drawn from whichever
-// way it faces: the front, turned right or left, or from the back. So a
-// turned bookcase shows its shelves and books, not a plank.
+// way it faces: the front, turned right or left, or from the back. Turned
+// pieces stay square with the room (a lean toward the camera was tried and
+// made them look like they were tipping over); a turned bookcase leaves off
+// its top board (parts marked `lid`), so you look down onto its books.
 //
 // How a model is laid out: in its own front-facing frame, x runs along its
 // width (0 to W, grid units), y from its back (0, against the wall) to its
 // front (D), and z up from the floor (pixels, like drawBlock's height).
-// Turned pieces are drawn a little turned toward the camera (SHEAR), the
-// way cozy games cheat, so the side that faces the room shows.
-//
 // Models never move, so each one is drawn once into a little picture
 // (per facing, color and zoom) and copied onto the screen after that.
 // Anything that twinkles (the canopy bed's fairy lights) is drawn live.
-
-// How far a turned piece is turned toward the camera: its far end is
-// drawn this many tiles out into the room per tile of length (its near
-// end stays put, so nothing leans back into the wall).
-const MODEL_SHEAR = 0.42;
 
 // --- The parts ---
 // A box part: x, y (grid units) and z (pixels) of its back-left-bottom
@@ -139,11 +133,11 @@ const MODELS = {
         ...bookRow(0.08, W - 0.08, 33, 24, 0.1, 0.34, 11 + v),
         part(0, 0, 0, 0.08, D, H, c),
         part(W - 0.08, 0, 0, 0.08, D, H, c),
-        part(-0.02, -0.01, H, W + 0.04, D + 0.03, 4, shadeColor(c, 6)),
-        part(0.2, 0.12, H + 4, 0.34, 0.24, 4, "#3f6f9f", "book"), // books lying on top
-        part(0.24, 0.14, H + 8, 0.28, 0.2, 3.5, "#c98a3c", "book"),
+        part(-0.02, -0.01, H, W + 0.04, D + 0.03, 4, shadeColor(c, 6), "wood", { lid: true }),
+        part(0.2, 0.12, H + 4, 0.34, 0.24, 4, "#3f6f9f", "book", { lid: true }), // books lying on top
+        part(0.24, 0.14, H + 8, 0.28, 0.2, 3.5, "#c98a3c", "book", { lid: true }),
       ],
-      after: (ctx, P) => modelPlant(ctx, P(W - 0.28, D * 0.55, H + 4), 0.8, 4),
+      after: (ctx, P, facing) => facing !== "right" && modelPlant(ctx, P(W - 0.28, D * 0.55, H + 4), 0.8, 4),
     };
   },
 
@@ -157,13 +151,13 @@ const MODELS = {
         part(0.07, 0.03, 0, W - 0.14, D - 0.05, 4, shadeColor(c, -6)),
         ...shelves.flatMap((z, i) => [
           ...bookRow(0.08, W - 0.08, z, 15, 0.08, 0.32, 20 + i * 9 + v),
-          part(0.07, 0.03, z + 15, W - 0.14, D - 0.05, 2, c),
+          part(0.07, 0.03, z + 15, W - 0.14, D - 0.05, 2, c, "wood", { lid: i === shelves.length - 1 }),
         ]),
         part(0, 0, 0, 0.07, D, H, c),
         part(W - 0.07, 0, 0, 0.07, D, H, c),
-        part(-0.03, -0.01, H, W + 0.06, D + 0.03, 4, shadeColor(c, 8)),
-        part(0.14, 0.1, H + 4, 0.36, 0.24, 4, "#c98a3c", "book"),
-        part(0.17, 0.12, H + 8, 0.3, 0.2, 4, "#3f6f9f", "book"),
+        part(-0.03, -0.01, H, W + 0.06, D + 0.03, 4, shadeColor(c, 8), "wood", { lid: true }),
+        part(0.14, 0.1, H + 4, 0.36, 0.24, 4, "#c98a3c", "book", { lid: true }),
+        part(0.17, 0.12, H + 8, 0.3, 0.2, 4, "#3f6f9f", "book", { lid: true }),
       ],
     };
   },
@@ -411,7 +405,7 @@ const MODELS = {
   mattress: (f) => {
     const [W, D] = sizeOf(f, 1.4, 2.1), c = f.color || "#e05a47";
     return {
-      W, D, shear: 0.28, // (beds turn a little less: someone asleep lies where they stand)
+      W, D,
       parts: [
         part(0, 0, 0, W, D, 7, "#e9e1d3", "fabric", { round: 3 }),
         part(0.12, 0.08, 7, W - 0.24, 0.36, 5, "#fffaf3", "fabric", { round: 5 }),
@@ -568,7 +562,7 @@ function bedModel(f, canopy) {
     parts.push(part(-0.03, D - 0.26, 20, 0.05, 0.18, 52, "#fffaf5", "sheer"), part(W - 0.02, D - 0.26, 20, 0.05, 0.18, 52, "#fffaf5", "sheer"));
   }
   return {
-    W, D, parts, shear: 0.28, // (see the mattress)
+    W, D, parts,
     live: canopy ? (ctx, P) => { // fairy lights along the front rail, twinkling
       const t = performance.now() / 1000;
       for (let i = 0; i <= 12; i++) {
@@ -585,21 +579,16 @@ function bedModel(f, canopy) {
 // --- Drawing a model ---
 
 // The model's points on screen, relative to the piece's top-left corner,
-// for a facing. Turned: its length runs down the page, and it's drawn
-// turned a little toward the camera (the side facing the room shows).
+// for a facing. Turned: its length runs down the page.
 function modelProjector(model, facing) {
   const { W, D } = model;
   const turned = facing === "right";
-  const h = turned ? W : D;
   return (mx, my, mz) => {
     let wx, wy;
     if (facing === "back") [wx, wy] = [W - mx, D - my];
     else if (turned) [wx, wy] = [my, W - mx];
     else [wx, wy] = [mx, my];
-    // (Pinned at the near end, so the far end leans out into the room,
-    // never back into the wall behind.)
-    const shift = turned ? -(model.shear ?? MODEL_SHEAR) * (wy - h) * TILE : 0;
-    return { x: wx * TILE + shift, y: wy * TILE - mz, wx, wy };
+    return { x: wx * TILE, y: wy * TILE - mz, wx, wy };
   };
 }
 
@@ -851,6 +840,7 @@ function paintMaterial(ctx, p, name, U, V, seed) {
 // Draws a whole model, part by part, with P placing its points.
 function paintModel(ctx, model, P, facing) {
   for (const p of orderParts(model, P, facing)) {
+    if (p.lid && facing === "right") continue; // (turned: open on top, see above)
     const seed = p.x * 13.1 + p.y * 7.7 + p.z * 0.31 + p.w * 3.3;
     for (const [name, o, u, v, U, V] of partFaces(p)) {
       if (U < 0.3 || V < 0.3) continue;
@@ -866,7 +856,7 @@ function paintModel(ctx, model, P, facing) {
       ctx.restore();
     }
   }
-  model.after?.(ctx, P);
+  model.after?.(ctx, P, facing);
 }
 
 // The drawn models, kept as little pictures: kind, facing, color and zoom.
@@ -925,15 +915,6 @@ function drawModelPiece(ctx, f, kind, facing) {
     const q = m.P(x, y, z);
     return { x: at.x + q.x, y: at.y + q.y };
   }, facing, f);
-}
-
-// How far a spot on a turned model piece is drawn sideways (grid units),
-// so seats line up with the turned drawing (see seatsOf in world.js).
-function modelSeatShift(f, y) {
-  const make = f.kind.endsWith("Side") && MODELS[f.kind.slice(0, -4)];
-  if (!make) return 0;
-  const shift = -(make(f).shear ?? MODEL_SHEAR) * (y - (f.y + f.h));
-  return f.facing === "left" ? -shift : shift;
 }
 
 // Draws a model piece the way it faces: its own `facing` ("down" or none

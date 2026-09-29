@@ -161,7 +161,34 @@ function drawShadow(ctx, gx, gy, w, h) {
 // oval, darker at the bottom and lighter on top (light from above), with a
 // soft darker outline, a little leafy texture, and a few stray leaves at
 // the edges. `seed` keeps each plant's clusters the same every frame.
-function drawLeafClump(ctx, cx, cy, rx, ry, [dark, mid, light], seed = 0, count = 24) {
+// Each plant's leaves are painted once into a little picture, with the soft
+// dark outline around every single clump of leaves (that's what gives the
+// bushes their rich, bunched look), and copied onto the screen after that.
+// (Outlining every clump live, every frame, was what made the house lag.)
+const leafCache = new Map();
+function drawLeafClump(ctx, cx, cy, rx, ry, colors, seed = 0, count = 24) {
+  const t = ctx.getTransform();
+  const scale = Math.max(1, Math.round(Math.hypot(t.a, t.b) * 100) / 100);
+  const outline = typeof outlinesOn === "undefined" || outlinesOn;
+  const key = `${rx}|${ry}|${colors.join()}|${seed}|${count}|${scale}|${outline}`;
+  let pic = leafCache.get(key);
+  if (!pic) {
+    const pad = 8, w = (rx + pad) * 2, h = (ry + pad) * 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(w * scale);
+    canvas.height = Math.ceil(h * scale);
+    const c = canvas.getContext("2d");
+    c.setTransform(scale, 0, 0, scale, 0, 0);
+    if (outline && typeof OUTLINE_FILTER !== "undefined") c.filter = OUTLINE_FILTER;
+    drawLeafClumpPainted(c, rx + pad, ry + pad, rx, ry, colors, seed, count);
+    if (leafCache.size > 800) leafCache.clear();
+    pic = { canvas, w, h, pad };
+    leafCache.set(key, pic);
+  }
+  ctx.drawImage(pic.canvas, cx - rx - pic.pad, cy - ry - pic.pad, pic.w, pic.h);
+}
+
+function drawLeafClumpPainted(ctx, cx, cy, rx, ry, [dark, mid, light], seed = 0, count = 24) {
   const blobs = [];
   for (let i = 0; i < count; i++) {
     const a = noise(seed * 7.1 + i * 3.7) * Math.PI * 2, d = Math.sqrt(noise(seed * 5.3 + i * 1.9));
@@ -178,21 +205,10 @@ function drawLeafClump(ctx, cx, cy, rx, ry, [dark, mid, light], seed = 0, count 
   for (const b of blobs) dot(b.x, b.y + 0.8, b.r + 1.6);
   ctx.fillStyle = dark;
   for (const b of blobs) dot(b.x, b.y, b.r);
-  // Each clump of leaves gets a soft dark rim, so they read as separate
-  // bunches (lighter ones on top).
-  const rim = (x, y, r) => {
-    ctx.beginPath();
-    ctx.arc(x, y, r + 0.5, 0, Math.PI * 2);
-    ctx.stroke();
-    dot(x, y, r);
-  };
-  ctx.lineWidth = 1.1;
-  ctx.strokeStyle = shadeColor(dark, -30) + "b0";
   ctx.fillStyle = mid;
-  for (const b of blobs) if (b.up < 0.8) rim(b.x - b.r * 0.1, b.y - b.r * 0.2, b.r * 0.78);
-  ctx.strokeStyle = shadeColor(dark, -10) + "90";
+  for (const b of blobs) if (b.up < 0.8) dot(b.x - b.r * 0.1, b.y - b.r * 0.2, b.r * 0.78);
   ctx.fillStyle = light;
-  for (const b of blobs) if (b.up < 0.45) rim(b.x - b.r * 0.25, b.y - b.r * 0.4, b.r * 0.42);
+  for (const b of blobs) if (b.up < 0.45) dot(b.x - b.r * 0.25, b.y - b.r * 0.4, b.r * 0.42);
   // Texture: tiny dark leaf gaps across the clusters.
   ctx.fillStyle = shadeColor(dark, -20);
   for (let i = 0; i < count; i++) {

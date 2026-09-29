@@ -89,7 +89,7 @@ registerModels({
       part(0.03, 0, 26, W - 0.06, 0.08, 6, back, "wood", { round: 1 }), // the top rail
     ];
     for (let i = 1; i < 4; i++) parts.push(part(0.03 + (i * (W - 0.1)) / 4, 0.01, 16, 0.05, 0.05, 10, shadeColor(back, 8)));
-    return { W, D, parts, shear: 0.12 };
+    return { W, D, parts };
   },
 
   theaterSeat: (f) => {
