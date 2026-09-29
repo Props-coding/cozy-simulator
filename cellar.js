@@ -26,6 +26,7 @@ const BURSTS = {
   crumbs: { n: 8, colors: ["#e8b85a", "#c98a3c", "#f2d27a"], speed: 1.4, up: 3.4, size: [2, 3], life: 3, shape: "dot", home: true },
   treasure: { n: 16, colors: ["#b8f0c0", "#fff4c8", "#9fd8ff"], speed: 2.4, up: 3.6, size: [2, 3.5], life: 3, shape: "star", home: true },
   dust: { n: 2, colors: ["rgba(216, 204, 184, 0.7)"], speed: 0.4, up: 0.3, size: [2.5, 4], life: 0.45, shape: "puff" },
+  confetti: { n: 60, colors: ["#e04a5a", "#f2c94c", "#5aa0d8", "#7ac07a", "#e98ac0", "#fff4c8"], speed: 3.4, up: 6, size: [2, 3.5], life: 2.6, shape: "chip" },
 };
 function burst(effects, floor, at, kind, rng = Math.random) {
   const b = BURSTS[kind];
@@ -506,6 +507,11 @@ export function startCellar(screen, round, { finish }) {
     if (kingClaimed || n !== last || me.floor !== last) return;
     kingClaimed = true;
     banner = { text: "The Rat King is beaten!", left: 4 };
+    const throne = floors[last].throne ?? { x: me.x, y: me.y };
+    burst(effects, last, { x: throne.x, y: throne.y, z: 0.8 }, "confetti");
+    burst(effects, last, { x: throne.x, y: throne.y, z: 0.6 }, "sparkle");
+    shake(0.7);
+    playCellarSound("victory");
     const wait = Math.max(0, (CFG().kingMinSeconds + 0.6) * 1000 - (performance.now() - me.floorAt));
     setTimeout(() => {
       later(async () => {
@@ -994,8 +1000,20 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   for (const o of f.objects) {
     if (!inView(o.x, o.y, o.w, o.h)) continue;
     if (o.broken) drawDebris(ctx, o);
+    else if (o.breakable && Math.hypot(o.x + o.w / 2 - me.x, o.y + o.h / 2 - me.y) < 2.2) {
+      standing.push({ y: o.y + o.h - 0.001, draw: () => drawBreakableGlint(ctx, o, t) }); // (drawn just behind it)
+      standing.push({
+        y: o.y + o.h,
+        draw: () => {
+          ctx.save();
+          if (o.shake) ctx.translate(Math.sin(t * 70) * o.shake * 12, 0);
+          CELLAR_DRAWERS[o.kind](ctx, o);
+          ctx.restore();
+        },
+      });
+    }
     else if (o.kind === "ladderDown") CELLAR_DRAWERS.ladderDown(ctx, o);
-    else {
+    else if (!(o.breakable && Math.hypot(o.x + o.w / 2 - me.x, o.y + o.h / 2 - me.y) < 2.2)) {
       standing.push({
         y: o.kind === "ladderUp" ? o.y - 0.5 : o.y + o.h,
         draw: () => {
@@ -1019,11 +1037,44 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
       y: c.sy,
       draw: () => {
         const at = toScreen(c.sx, c.sy);
-        const state = { windup: c.mode === "windup", dash: c.mode === "dash", hurt: c.hurt > 0 && Math.floor(t * 20) % 2 === 0 };
+        const state = { windup: c.mode === "windup", dash: c.mode === "dash" };
+        const big = c.kind === "ratKing" ? 1.8 : 1;
+        // Lunging: streaks of speed trailing behind.
+        if (state.dash) {
+          ctx.strokeStyle = "rgba(230, 220, 205, 0.45)";
+          ctx.lineWidth = 1.5;
+          for (let k = 0; k < 3; k++) {
+            const y = at.y - 6 * big - k * 5 * big, len = (14 + ((t * 90 + k * 17) % 10)) * big;
+            ctx.beginPath();
+            ctx.moveTo(at.x - c.face * 14 * big, y);
+            ctx.lineTo(at.x - c.face * (14 * big + len), y);
+            ctx.stroke();
+          }
+        }
+        // Hit: a white flash (not a fade), so you can tell it landed.
+        ctx.save();
+        if (c.hurt > 0) ctx.filter = "brightness(2.4) saturate(0.35)";
         if (c.kind === "ratKing") drawRatKing(ctx, at.x, at.y, c.face, t, state);
         else if (c.kind === "bunny") drawBunny(ctx, at.x, at.y, c.face, t, state);
         else if (c.kind === "spider") drawSpider(ctx, at.x, at.y, c.face, t, state);
         else drawRat(ctx, at.x, at.y, c.face, t, state);
+        ctx.restore();
+        // Winding up to lunge: a red "!" bounces above it, a moment's warning.
+        if (state.windup) {
+          const y = at.y - (c.kind === "ratKing" ? 78 : c.kind === "bunny" ? 34 : 32) - Math.abs(Math.sin(t * 14)) * 4;
+          ctx.fillStyle = "#e04a3a";
+          ctx.strokeStyle = "#fff4e0";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(at.x, y, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#fff4e0";
+          ctx.font = "800 11px 'Quicksand', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("!", at.x, y + 4);
+          ctx.textAlign = "left";
+        }
       },
     });
   }
@@ -1235,6 +1286,20 @@ function drawReviveRing(ctx, x, y, amount, t) {
   ctx.bezierCurveTo(-7, -1, -4, -7, 0, -3);
   ctx.bezierCurveTo(4, -7, 7, -1, 0, 4);
   ctx.fill();
+  ctx.restore();
+}
+
+// A soft pale ring under a crate or barrel you could break from here,
+// breathing gently.
+function drawBreakableGlint(ctx, o, t) {
+  const at = toScreen(o.x + o.w / 2, o.y + o.h);
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
+  ctx.save();
+  ctx.strokeStyle = `rgba(255, 236, 190, ${0.25 + pulse * 0.25})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(at.x, at.y - 2, (o.w * TILE) / 2 + 5, 7, 0, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 

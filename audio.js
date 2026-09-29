@@ -1289,7 +1289,7 @@ function noiseSweep({ type = "bandpass", freq = 800, to = freq, q = 1, duration 
 // kind: "swing" (the broom's whoosh), "hit" (a critter bopped), "knock" (a
 // crate that holds), "crack" (a crate breaking), "coin" (crumbs), "find" (a
 // rare find), "hurt", "poof" (a critter gone), "ladder", "king" (the Rat
-// King's squeak of rage).
+// King's squeak of rage), "victory" (the Rat King beaten).
 export function playCellarSound(kind) {
   switch (kind) {
     case "swing":
@@ -1320,5 +1320,8 @@ export function playCellarSound(kind) {
     case "king":
       playTone(620, 0, { gain: 0.07, duration: 0.18, type: "square" });
       return playTone(460, 150, { gain: 0.07, duration: 0.3, type: "square" });
+    case "victory": // a little fanfare
+      [[523.25, 0], [659.25, 120], [783.99, 240], [1046.5, 380], [783.99, 560], [1046.5, 680]].forEach(([f, d]) => playTone(f, d, { gain: 0.07, duration: d >= 680 ? 0.7 : 0.18, type: "triangle" }));
+      return noiseSweep({ type: "highpass", freq: 3000, duration: 0.6, gain: 0.04, delay: 0.38 });
   }
 }

@@ -615,7 +615,16 @@ function buildHud(game) {
   const score = make("span", "mini-hud-score");
   const friends = make("span", "mini-hud-friends");
   bar.append(name, extra, time, score, friends);
-  const help = make("div", "mini-hud-help", `${game.how}  Escape to leave.`);
+  // The keys, as little key caps (a game's `keys`), or its "how" line.
+  const help = make("div", "mini-hud-help");
+  if (game.keys) {
+    help.classList.add("keys");
+    for (const [key, what] of [...game.keys, ["Esc", "leave"]]) {
+      const chip = make("span", "mini-key");
+      chip.append(make("kbd", "", key), ` ${what}`);
+      help.append(chip);
+    }
+  } else help.textContent = `${game.how}  Escape to leave.`;
   hudEl.append(bar, help);
   hudParts = { time, timeFill, extra, score, friends, last: {} };
   time.hidden = game.id === "cellarCrawl"; // (no clock in the cellar)

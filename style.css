@@ -6111,6 +6111,25 @@ canvas.item-picture {
 .mini-hud-help.faded {
   opacity: 0;
 }
+/* A game's keys, as little key caps (Cellar Crawl). */
+.mini-hud-help.keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.mini-key kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: #fff4e0;
+  color: #4a3424;
+  font: 700 0.9em inherit;
+  font-family: inherit;
+  box-shadow: 0 2px 0 #a88a66;
+  text-align: center;
+}
 .mini-hud[data-count]::after {
   content: attr(data-count);
   position: fixed;

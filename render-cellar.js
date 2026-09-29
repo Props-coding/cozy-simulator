@@ -757,7 +757,6 @@ function drawRat(ctx, x, y, face, t, state = {}) {
   ctx.save();
   ctx.translate(x + shake, y - hop);
   ctx.scale(face * s, s);
-  if (state.hurt) ctx.globalAlpha = 0.6;
   cellarOutlined(ctx, () => {
     ctx.strokeStyle = "#c9a0a0"; // the tail
     ctx.lineWidth = 2;
@@ -818,7 +817,6 @@ function drawBunny(ctx, x, y, face, t, state = {}) {
   ctx.beginPath();
   ctx.ellipse(x, y, 9, 3, 0, 0, Math.PI * 2);
   ctx.fill();
-  if (state.hurt) ctx.globalAlpha = 0.6;
   const cx = x, cy = y - 9 - hop;
   for (const ex of [-4, 4]) {
     ctx.fillStyle = "#8e8a90"; // ears
@@ -846,7 +844,6 @@ function drawSpider(ctx, x, y, face, t, state = {}) {
   ctx.beginPath();
   ctx.ellipse(x, y, 14, 4, 0, 0, Math.PI * 2);
   ctx.fill();
-  if (state.hurt) ctx.globalAlpha = 0.6;
   const cy = y - 12;
   ctx.strokeStyle = "#2a2226";
   ctx.lineWidth = 1.6;
@@ -894,7 +891,6 @@ function drawRatKing(ctx, x, y, face, t, state = {}) {
   ctx.save();
   ctx.translate(x + shake, y);
   ctx.scale(face, 1);
-  if (state.hurt) ctx.globalAlpha = 0.7;
   cellarOutlined(ctx, () => {
     ctx.strokeStyle = "#c9a0a0"; // his tail
     ctx.lineWidth = 3;
