@@ -162,7 +162,7 @@ function makeFloor(n, rng) {
     // A candle in an iron sconce on the back wall of most rooms (fewer
     // deeper down), flickering. (From `noise`, not the round's dice, so
     // the rest of the floor comes out the same as it always has.)
-    if (kind !== "start" && noise(n * 7.3 + room.mx * 1.7 + room.y0 * 2.9) < 0.75 - n * 0.15) {
+    if (kind !== "start" && !room.doors.includes("n") && noise(n * 7.3 + room.mx * 1.7 + room.y0 * 2.9) < 0.75 - n * 0.15) {
       add({ kind: "wallCandle", x: room.mx + 0.2, y: room.y0, w: 0.6, h: 0.05, solid: false });
       floor.lights.push({ x: room.mx + 0.5, y: room.y0 + 0.1, r: 2.3, warm: true, flicker: true });
     }
@@ -420,10 +420,11 @@ export function startCellar(screen, round, { finish }) {
       if (d > 0.5 && (dx * me.aimX + dy * me.aimY) / d < 0.15) return null;
       return { dx: dx / (d || 1), dy: dy / (d || 1) };
     };
+    let hitSound = null; // (one sound per swing, however many it hits)
     for (const c of [...f.critters]) {
       const dir = inArc(c.sx, c.sy - 0.15, c.kind === "ratKing" ? 0.55 : 0.2);
       if (!dir) continue;
-      playCellarSound(c.kind === "ratKing" ? "king" : "hit");
+      hitSound = c.kind === "ratKing" ? "king" : hitSound ?? "hit";
       burst(effects, f.n, { x: c.sx, y: c.sy, z: 0.3 }, "fur");
       burst(effects, f.n, { x: c.sx, y: c.sy, z: 0.5 }, "stars");
       shake(c.kind === "ratKing" ? 0.3 : 0.18);
@@ -433,6 +434,7 @@ export function startCellar(screen, round, { finish }) {
         screen.send({ t: "h", f: f.n, id: c.id, dx: round2(dir.dx), dy: round2(dir.dy), n: b.damage });
       }
     }
+    if (hitSound) playCellarSound(hitSound);
     for (const o of f.objects) {
       if (!o.breakable || o.broken || !inArc(o.x + o.w / 2, o.y + o.h / 2, 0.45)) continue;
       o.hits = (o.hits ?? o.breakable) - 1;
@@ -493,7 +495,7 @@ export function startCellar(screen, round, { finish }) {
     f.critters.splice(f.critters.indexOf(c), 1);
     effects.puffs.push({ x: c.x, y: c.y, age: 0, f: f.n });
     burst(effects, f.n, { x: c.x, y: c.y, z: 0.3 }, "sparkle");
-    playCellarSound("poof");
+    if (f.n === me.floor) playCellarSound("poof");
     if (c.kind === "ratKing") {
       screen.send({ t: "k", f: f.n });
       kingDown(f.n);
@@ -793,7 +795,7 @@ export function startCellar(screen, round, { finish }) {
         if (c) hitCritter(f, c, dx / l, dy / l, Math.floor(num(data.n)) || 1);
       }
       // Where the critters are now (from the host).
-      if (data.t === "e" && !screen.isHost()) applySnapshot(floors[floorNo(data.f)], data, effects);
+      if (data.t === "e" && !screen.isHost() && applySnapshot(floors[floorNo(data.f)], data, effects) && floorNo(data.f) === me.floor) playCellarSound("poof");
       if (data.t === "k") kingDown(floorNo(data.f));
       if (data.t === "gone") friends.delete(peerId);
     },
@@ -930,7 +932,7 @@ function snapshot(f) {
   };
 }
 function applySnapshot(f, data, effects) {
-  if (!Array.isArray(data.c)) return;
+  if (!Array.isArray(data.c)) return false;
   const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
   const seen = new Set();
   for (const row of data.c.slice(0, 200)) {
@@ -944,13 +946,16 @@ function applySnapshot(f, data, effects) {
     Object.assign(c, { x: num(row[2]), y: num(row[3]), face: row[4] === -1 ? -1 : 1, mode: MODES[num(row[5])] ?? "idle", hp: num(row[6]), max: Math.max(1, num(row[7])) });
     if (row[8] === 1) c.hurt = Math.max(c.hurt, 0.15);
   }
+  let gone = false; // (returns whether any critter went: for its sound)
   for (const c of [...f.critters]) {
     if (seen.has(c.id)) continue;
     f.critters.splice(f.critters.indexOf(c), 1);
     effects.puffs.push({ x: c.sx, y: c.sy, age: 0, f: f.n });
     burst(effects, f.n, { x: c.sx, y: c.sy, z: 0.3 }, "sparkle");
+    gone = true;
   }
   if (Array.isArray(data.w)) f.webs = data.w.slice(0, 60).filter(Array.isArray).map((w) => ({ x: num(w[0]), y: num(w[1]), left: num(w[2]) }));
+  return gone;
 }
 
 const round2 = (v) => Math.round(v * 100) / 100;
@@ -976,8 +981,8 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   ctx.fillRect(0, 0, cw, ch);
   const view = debug.view || CFG().view;
   const z = Math.min(cw / (view * TILE), ch / ((view * 0.62) * TILE));
-  const tt = performance.now() / 1000, q = quake * quake * 0.35; // (the shake: strong at first, settling fast)
-  const camX = me.x + Math.sin(tt * 67) * q, camY = me.y - 0.6 + Math.cos(tt * 59) * q;
+  const q = quake * quake * 0.35; // (the shake: strong at first, settling fast)
+  const camX = me.x + Math.sin(t * 67) * q, camY = me.y - 0.6 + Math.cos(t * 59) * q;
   const toPx = (gx, gy) => ({ x: cw / 2 + (gx - camX) * TILE * z, y: ch / 2 + (gy - camY) * TILE * z });
   const world = () => ctx.setTransform(z, 0, 0, z, cw / 2 - (camX * TILE + ORIGIN_X) * z, ch / 2 - (camY * TILE + ORIGIN_Y) * z);
   ctx.save();
@@ -1000,20 +1005,10 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   for (const o of f.objects) {
     if (!inView(o.x, o.y, o.w, o.h)) continue;
     if (o.broken) drawDebris(ctx, o);
-    else if (o.breakable && Math.hypot(o.x + o.w / 2 - me.x, o.y + o.h / 2 - me.y) < 2.2) {
-      standing.push({ y: o.y + o.h - 0.001, draw: () => drawBreakableGlint(ctx, o, t) }); // (drawn just behind it)
-      standing.push({
-        y: o.y + o.h,
-        draw: () => {
-          ctx.save();
-          if (o.shake) ctx.translate(Math.sin(t * 70) * o.shake * 12, 0);
-          CELLAR_DRAWERS[o.kind](ctx, o);
-          ctx.restore();
-        },
-      });
-    }
     else if (o.kind === "ladderDown") CELLAR_DRAWERS.ladderDown(ctx, o);
-    else if (!(o.breakable && Math.hypot(o.x + o.w / 2 - me.x, o.y + o.h / 2 - me.y) < 2.2)) {
+    else {
+      // (A crate or barrel your broom can reach: a soft ring, just behind it.)
+      if (o.breakable && Math.hypot(o.x + o.w / 2 - me.x, o.y + o.h / 2 - me.y) < 2.2) standing.push({ y: o.y + o.h - 0.001, draw: () => drawBreakableGlint(ctx, o, t) });
       standing.push({
         y: o.kind === "ladderUp" ? o.y - 0.5 : o.y + o.h,
         draw: () => {
@@ -1127,6 +1122,7 @@ function draw(screen, f, me, friends, dark, { prompt, fadeIn, flash, banner, eff
   for (const l of lights) {
     const at = toPx(l.x, l.y);
     const r = l.r * TILE * z * 1.05 * flick(l);
+    if (at.x < -r || at.x > cw + r || at.y < -r || at.y > ch + r) continue;
     const g = ctx.createRadialGradient(at.x, at.y, 0, at.x, at.y, r);
     g.addColorStop(0, l.cool ? "rgba(60, 140, 130, 0.2)" : "rgba(255, 160, 70, 0.2)");
     g.addColorStop(0.5, l.cool ? "rgba(40, 110, 110, 0.07)" : "rgba(255, 140, 60, 0.07)");

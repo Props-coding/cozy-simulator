@@ -6125,8 +6125,9 @@ canvas.item-picture {
   border-radius: 6px;
   background: #fff4e0;
   color: #4a3424;
-  font: 700 0.9em inherit;
   font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9em;
   box-shadow: 0 2px 0 #a88a66;
   text-align: center;
 }
