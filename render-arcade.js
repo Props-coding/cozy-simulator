@@ -10,64 +10,6 @@ const CABINET_LOOKS = {
 };
 
 Object.assign(FURNITURE_DRAWERS, {
-  // A standing cabinet: a lit marquee with its name, a glowing screen
-  // playing its game, a joystick and two buttons, and speaker grilles.
-  arcadeGame(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const [body, glow] = (CABINET_LOOKS[f.game] ?? CABINET_LOOKS.snake)[f.look ?? 0];
-    const cab = drawBlock(ctx, f.x, f.y, f.w, f.h, 60, body);
-    const { x, y, w } = cab.face;
-    const t = performance.now() / 1000;
-    // The marquee.
-    ctx.fillStyle = "#1e1c26";
-    ctx.fillRect(x + 2, y + 2, w - 4, 10);
-    ctx.fillStyle = glow;
-    ctx.globalAlpha = 0.85 + 0.15 * Math.sin(t * 3);
-    ctx.fillRect(x + 3, y + 3, w - 6, 8);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "#1e1c26";
-    ctx.font = "800 6px 'Quicksand', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(f.game === "moths" ? "MOTHS" : "SNAKE", x + w / 2, y + 9.5);
-    ctx.textAlign = "left";
-    // The screen, and what's playing on it.
-    const sx = x + 4, sy = y + 15, sw = w - 8, sh = 20;
-    ctx.fillStyle = "#101018";
-    ctx.fillRect(sx, sy, sw, sh);
-    if (f.game === "snake") {
-      ctx.fillStyle = "#6fd8c8";
-      const k = Math.floor(t * 4) % 10;
-      for (let i = 0; i < 5; i++) ctx.fillRect(sx + 2 + ((k + i) % 10) * 2.6, sy + 9, 2.2, 2.2);
-      ctx.fillStyle = "#e8b84a";
-      ctx.fillRect(sx + sw - 6, sy + 5, 2.5, 2.5);
-    } else {
-      ctx.fillStyle = "#e6d6c8";
-      for (let i = 0; i < 3; i++) ctx.fillRect(sx + 4 + i * 7, sy + ((t * 12 + i * 7) % (sh - 4)), 3, 2);
-      ctx.fillStyle = "#cfe6ee";
-      ctx.fillRect(sx + sw / 2 - 3, sy + sh - 4, 6, 3);
-    }
-    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
-    ctx.fillRect(sx, sy, sw, 2);
-    // The control panel: a joystick and two buttons.
-    ctx.fillStyle = "#2b2b30";
-    ctx.fillRect(x + 1, y + 37, w - 2, 7);
-    ctx.fillStyle = "#1a1a1e";
-    ctx.fillRect(x + 7, y + 34, 1.6, 5);
-    ctx.fillStyle = "#c0392b";
-    ctx.beginPath();
-    ctx.arc(x + 7.8, y + 34, 2.4, 0, Math.PI * 2);
-    ctx.fill();
-    for (const [dx, c] of [[w - 12, "#f2d45c"], [w - 6, "#6fd8c8"]]) {
-      ctx.fillStyle = c;
-      ctx.beginPath();
-      ctx.arc(x + dx, y + 40, 1.9, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Speaker grilles, low down.
-    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-    for (let i = 0; i < 3; i++) ctx.fillRect(x + 5, y + 48 + i * 2.5, w - 10, 1);
-  },
-
   // The high score board on the wall: a dark panel with glowing rows.
   scoreBoard(ctx, f) {
     const a = toScreen(f.x, f.y);

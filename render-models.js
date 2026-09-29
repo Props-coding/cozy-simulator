@@ -872,7 +872,7 @@ function paintModel(ctx, model, P, facing) {
 // The drawn models, kept as little pictures: kind, facing, color and zoom.
 const modelCache = new Map();
 function cachedModel(kind, f, facing, scale) {
-  const key = `${kind}|${facing}|${f.w}x${f.h}|${f.color}|${f.seat}|${f.back}|${!!f.journal}|${modelVariant(f)}|${scale}`;
+  const key = `${kind}|${facing}|${f.w}x${f.h}|${f.color}|${f.seat}|${f.back}|${!!f.journal}|${f.game}|${f.look}|${modelVariant(f)}|${scale}`;
   let hit = modelCache.get(key);
   if (hit) return hit;
   const model = MODELS[kind](f);

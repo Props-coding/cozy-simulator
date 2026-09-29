@@ -1145,51 +1145,6 @@ Object.assign(FURNITURE_DRAWERS, {
     }
   },
 
-  // An old sagging sofa, mustard velvet, patched, with a crocheted blanket
-  // over one arm. Sit on it.
-  alleySofa(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
-    const w = b.x - a.x;
-    // Back cushions.
-    ctx.fillStyle = "#a88838";
-    roundRectPath(ctx, a.x + 2, b.y - 40, w - 4, 22, 6);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255, 240, 200, 0.18)";
-    ctx.fillRect(a.x + 6, b.y - 38, w - 12, 3);
-    // Seat, sagging in the middle.
-    ctx.fillStyle = "#b8963e";
-    ctx.beginPath();
-    ctx.moveTo(a.x + 4, b.y - 20);
-    ctx.quadraticCurveTo(a.x + w / 2, b.y - 14, a.x + w - 4, b.y - 20);
-    ctx.lineTo(a.x + w - 4, b.y - 6);
-    ctx.lineTo(a.x + 4, b.y - 6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#8a6e2c";
-    ctx.fillRect(a.x + 4, b.y - 8, w - 8, 5);
-    // Arms.
-    for (const x of [a.x, a.x + w - 10]) {
-      ctx.fillStyle = "#9a7c34";
-      roundRectPath(ctx, x, b.y - 28, 10, 24, 4);
-      ctx.fill();
-    }
-    // A patch, and the blanket over the right arm.
-    ctx.fillStyle = "#6a8ab0";
-    ctx.fillRect(a.x + w * 0.3, b.y - 33, 9, 7);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 0.8;
-    ctx.strokeRect(a.x + w * 0.3, b.y - 33, 9, 7);
-    for (let i = 0; i < 4; i++) {
-      ctx.fillStyle = ["#d9644f", "#f2c94c", "#5fa052", "#e8e0cc"][i];
-      ctx.fillRect(a.x + w - 13, b.y - 30 + i * 5, 14, 5);
-    }
-    // Stubby legs.
-    ctx.fillStyle = "#3a2a1c";
-    ctx.fillRect(a.x + 4, b.y - 3, 3, 3);
-    ctx.fillRect(a.x + w - 7, b.y - 3, 3, 3);
-  },
-
   // A wooden cable spool as a table, a candle stuck in a bottle on top,
   // and a deck of cards.
   cableSpool(ctx, f) {

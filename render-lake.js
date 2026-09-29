@@ -648,32 +648,6 @@ Object.assign(FURNITURE_DRAWERS, {
     ctx.restore();
   },
 
-  // A park bench facing the water (so we see its back): iron legs, wooden
-  // slats, and a soft shadow.
-  parkBench(ctx, f) {
-    drawShadow(ctx, f.x, f.y, f.w, f.h);
-    const a = toScreen(f.x, f.y), b = toScreen(f.x + f.w, f.y + f.h);
-    const w = b.x - a.x, seatY = a.y + 2;
-    // Seat slats (lit from above).
-    for (let k = 0; k < 3; k++) {
-      ctx.fillStyle = shadeColor("#a8804f", 10 - k * 8);
-      ctx.fillRect(a.x + 2, seatY + k * 4, w - 4, 3.2);
-    }
-    // Iron legs.
-    ctx.fillStyle = "#2f2f34";
-    for (const x of [a.x + 5, b.x - 8]) {
-      ctx.fillRect(x, seatY + 10, 3, b.y - seatY - 8);
-      ctx.fillRect(x - 1, seatY - 12, 3, 24);
-    }
-    // The backrest, in front of the seat (it faces away from us).
-    for (let k = 0; k < 3; k++) {
-      ctx.fillStyle = shadeColor("#9a7448", 14 - k * 10);
-      ctx.fillRect(a.x, seatY - 12 + k * 5.5, w, 4.2);
-      ctx.fillStyle = "rgba(255, 240, 210, 0.2)";
-      ctx.fillRect(a.x, seatY - 12 + k * 5.5, w, 0.8);
-    }
-  },
-
   // A black iron lamp post with a glass lantern on top (glows at night).
   lampPost(ctx, f) {
     drawShadow(ctx, f.x, f.y, f.w, f.h);
